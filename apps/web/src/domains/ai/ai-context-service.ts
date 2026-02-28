@@ -7,13 +7,21 @@
  * Bounded Context: ai / tasks
  */
 
-import { getTask } from "../offline/offline-store";
+import { getTask, type OfflineTask } from "../offline/offline-store";
+
+/** Extended task interface with optional fields from persistence layer */
+interface TaskWithExtras extends OfflineTask {
+    taskType?: string;
+    task_type?: string;
+    priority?: number;
+}
 
 export async function askAIForTask(taskId: string): Promise<void> {
-    const task = await getTask(taskId);
-    if (!task) {
+    const raw = await getTask(taskId);
+    if (!raw) {
         throw new Error(`Task ${taskId} not found in local store.`);
     }
+    const task = raw as TaskWithExtras;
 
     // 1. Fetch configured provider
     let provider = "chatgpt";
@@ -34,14 +42,14 @@ export async function askAIForTask(taskId: string): Promise<void> {
     }
 
     // 2. Construct deterministic prompt
-    const type = (task as any).taskType || (task as any).task_type || "Task";
+    const type = task.taskType ?? task.task_type ?? "Task";
     const prompt = `I am working on the following ${type} in my local Meitheal system. I need help planning, debugging, or decomposing this piece of work.
 
 ## 📋 Context
 **Title**: ${task.title}
 **Status**: ${task.status}
-**Priority**: ${(task as any).priority || "None"}
-**Due Date**: ${task.dueDate || "No due date"}
+**Priority**: ${task.priority ?? "None"}
+**Due Date**: ${task.dueDate ?? "No due date"}
 
 ## 📝 Description
 ${task.description || "No description provided."}
@@ -49,12 +57,14 @@ ${task.description || "No description provided."}
 Please act as a senior technical co-pilot and help me break this down into actionable sub-tasks or solve the immediate blocking issues.
 `;
 
-    // 3. Write to Clipboard
-    try {
-        await navigator.clipboard.writeText(prompt);
-    } catch (err) {
-        console.error("Clipboard write failed:", err);
-        throw new Error("Unable to copy context to clipboard.");
+    // 3. Write to Clipboard (requires secure context)
+    if (typeof navigator !== "undefined" && navigator.clipboard && window.isSecureContext) {
+        try {
+            await navigator.clipboard.writeText(prompt);
+        } catch (err) {
+            console.error("Clipboard write failed:", err);
+            // Fallback: user will see text in the opened AI provider
+        }
     }
 
     // 4. Route accurately based on provider

@@ -27,7 +27,10 @@ export async function registerServiceWorker(): Promise<ServiceWorkerRegistration
       type: "module",
     })
 
-    // Check for updates every 60 seconds
+    // Check for SW updates every 60s. This is a tradeoff:
+    // - Lower = faster update detection, more battery/network usage
+    // - Higher = slower update detection, less resource usage
+    // 60s balances user experience with PWA best practices.
     setInterval(() => {
       registration.update().catch(() => {
         // Silent fail — update check is best-effort

@@ -240,7 +240,7 @@ try {
                 <option value="story">📖 Story</option>
                 <option value="epic">🎯 Epic</option>
               </select>
-              <span id="td-board" class="text-xs text-text-muted"></span>
+              <select id="td-board" class="inline-select" title="Board"></select>
             </div>
 
             <!-- Description -->
@@ -974,8 +974,26 @@ try {
             String(t.start_date ?? "");
           (document.getElementById("td-end-date") as HTMLInputElement).value =
             String(t.end_date ?? "");
-          (document.getElementById("td-board") as HTMLElement).textContent =
-            String(t.board_id ?? "default");
+          // Populate board dropdown
+          const boardSelect = document.getElementById("td-board") as HTMLSelectElement;
+          const currentBoardId = String(t.board_id ?? "default");
+          try {
+            const boardRes = await fetch("/api/boards");
+            if (boardRes.ok) {
+              const boardData = await boardRes.json();
+              const boards = boardData.boards ?? [];
+              boardSelect.innerHTML = "";
+              boards.forEach((b: { id: string; title: string; icon: string }) => {
+                const opt = document.createElement("option");
+                opt.value = b.id;
+                opt.textContent = `${b.icon} ${b.title}`;
+                boardSelect.appendChild(opt);
+              });
+              boardSelect.value = currentBoardId;
+            }
+          } catch {
+            boardSelect.innerHTML = `<option value="${currentBoardId}">${currentBoardId}</option>`;
+          }
           // Phase 20: Agile hierarchy type
           (document.getElementById("td-task-type") as HTMLSelectElement).value =
             String(t.task_type ?? "task");
@@ -1217,6 +1235,12 @@ try {
         .getElementById("td-task-type")
         ?.addEventListener("change", (e) => {
           saveTD("task_type", (e.target as HTMLSelectElement).value);
+        });
+      // Phase 26: board change auto-save
+      document
+        .getElementById("td-board")
+        ?.addEventListener("change", (e) => {
+          saveTD("board_id", (e.target as HTMLSelectElement).value);
         });
       document.getElementById("td-progress")?.addEventListener("input", (e) => {
         const v = (e.target as HTMLInputElement).value;

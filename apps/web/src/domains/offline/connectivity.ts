@@ -86,8 +86,9 @@ export function startConnectivityMonitor(): void {
     transitionTo("offline")
   })
 
-  // Periodic health check
+  // Periodic health check (skip when tab is backgrounded to save bandwidth)
   healthCheckTimer = setInterval(async () => {
+    if (typeof document !== "undefined" && document.visibilityState === "hidden") return
     if (navigator.onLine) {
       const ok = await checkHealth()
       if (!ok && currentState === "online") {
