@@ -5,500 +5,768 @@
 
 /* ===== Base Layer: Global resets + typography ===== */
 @layer base {
-    :root {
-        /* Runtime CSS vars — keep for JS access + inline styles */
-        --bg-primary: #0f0f1a;
-        --bg-secondary: #1a1a2e;
-        --bg-card: #16213e;
-        --bg-hover: #1e2d4f;
-        --bg-input: #0a0a14;
-        --text-primary: #e8e8f0;
-        --text-secondary: #9b9bb4;
-        --text-muted: #5e5e78;
-        --accent: #10b981;
-        --accent-hover: #059669;
-        --accent-light: rgba(16, 185, 129, 0.12);
-        --warning: #f59e0b;
-        --danger: #ef4444;
-        --info: #3b82f6;
-        --border: #2a2a42;
-        --border-focus: #10b981;
-        --radius-sm: 6px;
-        --radius-md: 10px;
-        --radius-lg: 16px;
-        --shadow-sm: 0 1px 3px rgba(0, 0, 0, 0.3);
-        --shadow-md: 0 4px 12px rgba(0, 0, 0, 0.4);
-        --shadow-lg: 0 8px 24px rgba(0, 0, 0, 0.5);
-        --transition: 200ms ease;
-        --sidebar-width: 240px;
-    }
+  :root {
+    /* Runtime CSS vars — keep for JS access + inline styles */
+    --bg-primary: #0f0f1a;
+    --bg-secondary: #1a1a2e;
+    --bg-card: #16213e;
+    --bg-hover: #1e2d4f;
+    --bg-input: #0a0a14;
+    --text-primary: #e8e8f0;
+    --text-secondary: #9b9bb4;
+    --text-muted: #5e5e78;
+    --accent: #10b981;
+    --accent-hover: #059669;
+    --accent-light: rgba(16, 185, 129, 0.12);
+    --warning: #f59e0b;
+    --danger: #ef4444;
+    --info: #3b82f6;
+    --border: #2a2a42;
+    --border-focus: #10b981;
+    --radius-sm: 6px;
+    --radius-md: 10px;
+    --radius-lg: 16px;
+    --shadow-sm: 0 1px 3px rgba(0, 0, 0, 0.3);
+    --shadow-md: 0 4px 12px rgba(0, 0, 0, 0.4);
+    --shadow-lg: 0 8px 24px rgba(0, 0, 0, 0.5);
+    --transition: 200ms ease;
+    --sidebar-width: 240px;
+  }
 
-    html {
-        @apply text-base;
-    }
+  html {
+    @apply text-base;
+  }
 
-    body {
-        @apply font-sans bg-bg-primary text-text-primary leading-relaxed flex min-h-screen;
-    }
+  body {
+    @apply font-sans bg-bg-primary text-text-primary leading-relaxed flex min-h-screen;
+  }
 
-    a {
-        @apply text-accent no-underline transition-colors;
-    }
+  a {
+    @apply text-accent no-underline transition-colors;
+  }
 
-    a:hover {
-        @apply text-accent-hover;
-    }
+  a:hover {
+    @apply text-accent-hover;
+  }
 
-    ::selection {
-        @apply bg-accent/30 text-text-primary;
-    }
+  ::selection {
+    @apply bg-accent/30 text-text-primary;
+  }
 }
 
 /* ===== Component Layer: Reusable patterns ===== */
 @layer components {
-
-    /* --- Layout --- */
-    .sidebar {
-        @apply w-sidebar bg-bg-secondary flex flex-col border-r border-border fixed h-screen z-40;
-    }
-
-    .sidebar-header {
-        @apply p-5 border-b border-border;
-    }
-
-    .sidebar-header h1 {
-        @apply text-lg font-bold text-accent;
-    }
-
-    .sidebar-nav {
-        @apply flex-1 py-3;
-    }
-
-    .nav-link {
-        @apply flex items-center gap-3 px-5 py-2.5 text-sm text-text-secondary transition-colors rounded-none;
-    }
-
-    .nav-link:hover {
-        @apply bg-bg-hover text-text-primary;
-    }
-
-    .nav-link.active {
-        @apply bg-accent/10 text-accent border-r-2 border-accent;
-    }
-
-    .nav-badge {
-        @apply ml-auto text-xs bg-accent/20 text-accent px-2 py-0.5 rounded-[10px] min-w-[20px] text-center;
-    }
-
-    .sidebar-footer {
-        @apply px-5 py-4 border-t border-border;
-    }
-
-    .board-switcher {
-        @apply px-5 py-3 border-t border-border;
-    }
-
-    .board-switcher-label {
-        @apply text-[10px] uppercase tracking-wide text-text-muted mb-1.5 font-semibold;
-    }
-
-    .board-select {
-        @apply bg-bg-input border border-border rounded-sm text-text-primary text-[13px] px-2 py-1.5 cursor-pointer w-[calc(100%-32px)];
-    }
-
-    .board-select option {
-        @apply bg-bg-card text-text-primary;
-    }
-
-    .board-select:focus {
-        @apply outline-none border-accent;
-    }
-
-    .board-add-btn {
-        @apply w-[26px] h-[26px] border border-dashed border-border rounded-full bg-transparent text-text-muted cursor-pointer text-base leading-none ml-1 align-middle transition-all;
-    }
-
-    .board-add-btn:hover {
-        @apply border-accent text-accent;
-    }
-
-    /* --- Main content area --- */
-    .main-content {
-        @apply ml-sidebar flex-1 flex flex-col min-h-screen;
-    }
-
-    .page-header {
-        @apply flex items-center justify-between px-6 py-4 bg-bg-secondary/50 border-b border-border;
-    }
-
-    .content-area {
-        @apply flex-1 p-6;
-    }
-
-    /* --- Forms --- */
-    .form-input,
-    .form-select {
-        @apply w-full bg-bg-input border border-border rounded-md px-3 py-2.5 text-text-primary text-sm transition-colors;
-    }
-
-    .form-input:focus,
-    .form-select:focus {
-        @apply outline-none border-accent ring-2 ring-accent/15;
-    }
-
-    .form-input::placeholder {
-        @apply text-text-muted;
-    }
-
-    .btn-primary {
-        @apply bg-accent text-white border-none px-4 py-2.5 rounded-md font-medium text-sm cursor-pointer transition-colors;
-    }
-
-    .btn-primary:hover {
-        @apply bg-accent-hover;
-    }
-
-    .btn-secondary {
-        @apply bg-transparent text-text-secondary border border-border px-4 py-2.5 rounded-md font-medium text-sm cursor-pointer transition-colors;
-    }
-
-    .btn-secondary:hover {
-        @apply bg-bg-hover text-text-primary;
-    }
-
-    /* --- Cards --- */
-    .card {
-        @apply bg-bg-card border border-border rounded-lg p-5 shadow-sm;
-    }
-
-    .card-header {
-        @apply text-base font-semibold mb-4 flex items-center gap-2;
-    }
-
-    /* --- Status indicators --- */
-    .status-indicator {
-        @apply flex items-center gap-2 text-xs text-text-muted;
-    }
-
-    .status-dot {
-        @apply w-2 h-2 rounded-full;
-    }
-
-    .status-dot.online {
-        @apply bg-accent;
-    }
-
-    /* --- Badges --- */
-    .task-badge {
-        @apply text-xs font-medium px-2.5 py-1 rounded-[8px];
-    }
-
-    .badge-pending {
-        @apply bg-info/15 text-info;
-    }
-
-    .badge-active,
-    .badge-in_progress {
-        @apply bg-warning/15 text-warning;
-    }
-
-    .badge-done,
-    .badge-complete {
-        @apply bg-accent/15 text-accent;
-    }
-
-    /* --- Filter bar --- */
-    .filter-bar {
-        @apply flex gap-3 items-center flex-wrap mb-4;
-    }
-
-    /* --- Task list --- */
-    .task-list {
-        @apply flex flex-col gap-2;
-    }
-
-    .task-item {
-        @apply flex items-center gap-3 bg-bg-card border border-border rounded-lg px-4 py-3 transition-all cursor-pointer;
-    }
-
-    .task-item:hover {
-        @apply bg-bg-hover border-border-focus shadow-md;
-    }
-
-    .task-item.task-done {
-        @apply opacity-60;
-    }
-
-    .task-content {
-        @apply flex-1 min-w-0;
-    }
-
-    .task-title {
-        @apply font-medium text-text-primary truncate;
-    }
-
-    .task-title.done {
-        @apply line-through text-text-muted;
-    }
-
-    .task-meta {
-        @apply text-xs text-text-secondary mt-1 flex items-center gap-1;
-    }
-
-    .task-checkbox {
-        @apply w-[18px] h-[18px] rounded-full border-2 border-border bg-transparent cursor-pointer appearance-none flex-shrink-0 transition-all;
-    }
-
-    .task-checkbox:checked {
-        @apply bg-accent border-accent;
-    }
-
-    .task-labels {
-        @apply flex gap-1 flex-wrap mt-1.5;
-    }
-
-    .label-chip {
-        @apply text-[10px] px-2 py-0.5 rounded-[8px] bg-accent/10 text-accent border border-accent/20;
-    }
-
-    /* --- View switcher --- */
-    .view-switcher {
-        @apply flex bg-bg-card rounded-md overflow-hidden border border-border;
-    }
-
-    .view-btn {
-        @apply px-3 py-2 text-sm text-text-muted transition-colors no-underline;
-    }
-
-    .view-btn:hover {
-        @apply bg-bg-hover text-text-primary;
-    }
-
-    .view-btn.active {
-        @apply bg-accent/15 text-accent;
-    }
-
-    /* --- Kanban board --- */
-    .kanban-board {
-        @apply flex gap-4 overflow-x-auto pb-4 min-h-[60vh];
-    }
-
-    .kanban-column {
-        @apply min-w-[260px] max-w-[300px] bg-bg-secondary/50 rounded-lg border border-border flex flex-col;
-    }
-
-    .kanban-column-header {
-        @apply flex items-center justify-between px-4 py-3 font-semibold text-sm;
-    }
-
-    .kanban-count {
-        @apply bg-bg-card text-text-muted text-xs px-2 py-0.5 rounded-[8px];
-    }
-
-    .kanban-cards {
-        @apply flex flex-col gap-2 p-3 flex-1 min-h-[100px];
-    }
-
-    .kanban-card {
-        @apply bg-bg-card border border-border rounded-md p-3 cursor-grab shadow-sm transition-all relative;
-    }
-
-    .kanban-card:hover {
-        @apply border-accent/40 shadow-md;
-    }
-
-    .kanban-card.dragging {
-        @apply opacity-50 rotate-[2deg];
-    }
-
-    .kanban-card-title {
-        @apply font-medium text-sm text-text-primary mb-1;
-    }
-
-    .kanban-card-desc {
-        @apply text-xs text-text-muted leading-relaxed mb-2 line-clamp-2;
-    }
-
-    .kanban-card-meta {
-        @apply flex items-center gap-2 text-xs;
-    }
-
-    .kanban-card-actions {
-        @apply absolute bottom-2 right-2 flex gap-1 opacity-0 transition-opacity;
-    }
-
-    .kanban-card:hover .kanban-card-actions {
-        @apply opacity-100;
-    }
-
-    .card-action-btn {
-        @apply bg-bg-hover/80 border-none rounded px-1.5 py-0.5 cursor-pointer text-xs transition-colors;
-    }
-
-    .card-action-btn:hover {
-        @apply bg-accent/20;
-    }
-
-    .kanban-empty {
-        @apply text-center text-text-muted text-sm py-8 border border-dashed border-border rounded-md;
-    }
-
-    .kanban-add-task {
-        @apply text-sm text-text-muted cursor-pointer px-4 py-2 transition-colors;
-    }
-
-    .kanban-add-task:hover {
-        @apply text-accent;
-    }
-
-    .priority-dot {
-        @apply w-2 h-2 rounded-full inline-block;
-    }
-
-    /* --- Table view --- */
-    .table-container {
-        @apply overflow-x-auto;
-    }
-
-    .data-table {
-        @apply w-full border-collapse text-sm;
-    }
-
-    .data-table th {
-        @apply text-left text-xs text-text-muted font-semibold px-3 py-2.5 bg-bg-secondary/50 border-b border-border;
-    }
-
-    .data-table td {
-        @apply px-3 py-2.5 border-b border-border/50 text-text-primary;
-    }
-
-    .data-table tr:hover td {
-        @apply bg-bg-hover/50;
-    }
-
-    .data-table .sortable {
-        @apply cursor-pointer select-none;
-    }
-
-    .data-table .sortable:hover {
-        @apply text-accent;
-    }
-
-    .inline-select {
-        @apply bg-bg-card border border-border rounded text-xs px-2 py-1 text-text-primary cursor-pointer;
-    }
-
-    .inline-select option {
-        @apply bg-bg-card text-text-primary;
-    }
-
-    .inline-select:focus {
-        @apply outline-none border-accent;
-    }
-
-    .editable-cell {
-        @apply outline-none rounded px-1 py-0.5 transition-colors min-h-[1.5em] text-text-primary;
-    }
-
-    .editable-cell:focus {
-        @apply bg-accent/10 ring-2 ring-accent/30;
-    }
-
-    /* --- Settings page --- */
-    .settings-grid {
-        @apply grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4;
-    }
-
-    /* --- Toast --- */
-    .toast-container {
-        @apply fixed top-4 right-4 z-50 flex flex-col gap-2;
-    }
-
-    .toast {
-        @apply px-4 py-3 rounded-lg text-sm font-medium shadow-lg animate-slide-in;
-    }
-
-    .toast.success {
-        @apply bg-accent/90 text-white;
-    }
-
-    .toast.error {
-        @apply bg-danger/90 text-white;
-    }
-
-    /* --- Drag-and-drop --- */
-    .drag-over {
-        @apply bg-accent/5 border-accent/30 border-dashed;
-    }
-
-    /* --- Dashboard --- */
-    .stat-card {
-        @apply bg-bg-card border border-border rounded-lg p-4 text-center;
-    }
-
-    .stat-value {
-        @apply text-2xl font-bold text-accent;
-    }
-
-    .stat-label {
-        @apply text-xs text-text-muted mt-1;
-    }
-
-    /* --- Loading skeleton --- */
-    .skeleton {
-        @apply bg-bg-hover rounded animate-pulse;
-    }
-
-    .skeleton-text {
-        @apply h-4 rounded w-3/4 mb-2;
-    }
-
-    .skeleton-card {
-        @apply h-20 rounded-lg;
-    }
-
-    /* --- Empty state --- */
-    .empty-state {
-        @apply text-center py-16 text-text-muted;
-    }
-
-    .empty-state-icon {
-        @apply text-5xl mb-4 opacity-30;
-    }
-
-    .empty-state-title {
-        @apply text-lg font-medium text-text-secondary mb-2;
-    }
-
-    .empty-state-desc {
-        @apply text-sm mb-6;
-    }
+  /* --- Layout --- */
+  .sidebar {
+    @apply w-sidebar bg-bg-secondary flex flex-col border-r border-border fixed h-screen z-40;
+  }
+
+  .sidebar-header {
+    @apply p-5 border-b border-border;
+  }
+
+  .sidebar-header h1 {
+    @apply text-lg font-bold text-accent;
+  }
+
+  .sidebar-nav {
+    @apply flex-1 py-3;
+  }
+
+  .nav-link {
+    @apply flex items-center gap-3 px-5 py-2.5 text-sm text-text-secondary transition-colors rounded-none;
+  }
+
+  .nav-link:hover {
+    @apply bg-bg-hover text-text-primary;
+  }
+
+  .nav-link.active {
+    @apply bg-accent/10 text-accent border-r-2 border-accent;
+  }
+
+  .nav-badge {
+    @apply ml-auto text-xs bg-accent/20 text-accent px-2 py-0.5 rounded-[10px] min-w-[20px] text-center;
+  }
+
+  .sidebar-footer {
+    @apply px-5 py-4 border-t border-border;
+  }
+
+  .board-switcher {
+    @apply px-5 py-3 border-t border-border;
+  }
+
+  .board-switcher-label {
+    @apply text-[10px] uppercase tracking-wide text-text-muted mb-1.5 font-semibold;
+  }
+
+  .board-select {
+    @apply bg-bg-input border border-border rounded-sm text-text-primary text-[13px] px-2 py-1.5 cursor-pointer w-[calc(100%-32px)];
+  }
+
+  .board-select option {
+    @apply bg-bg-card text-text-primary;
+  }
+
+  .board-select:focus {
+    @apply outline-none border-accent;
+  }
+
+  .board-add-btn {
+    @apply w-[26px] h-[26px] border border-dashed border-border rounded-full bg-transparent text-text-muted cursor-pointer text-base leading-none ml-1 align-middle transition-all;
+  }
+
+  .board-add-btn:hover {
+    @apply border-accent text-accent;
+  }
+
+  /* --- Main content area --- */
+  .main-content {
+    @apply ml-sidebar flex-1 flex flex-col min-h-screen;
+  }
+
+  .page-header {
+    @apply flex items-center justify-between px-6 py-4 bg-bg-secondary/50 border-b border-border;
+  }
+
+  .content-area {
+    @apply flex-1 p-6;
+  }
+
+  /* --- Forms --- */
+  .form-input,
+  .form-select {
+    @apply w-full bg-bg-input border border-border rounded-md px-3 py-2.5 text-text-primary text-sm transition-colors;
+  }
+
+  .form-input:focus,
+  .form-select:focus {
+    @apply outline-none border-accent ring-2 ring-accent/15;
+  }
+
+  .form-input::placeholder {
+    @apply text-text-muted;
+  }
+
+  .btn-primary {
+    @apply bg-accent text-white border-none px-4 py-2.5 rounded-md font-medium text-sm cursor-pointer transition-colors;
+  }
+
+  .btn-primary:hover {
+    @apply bg-accent-hover;
+  }
+
+  .btn-secondary {
+    @apply bg-transparent text-text-secondary border border-border px-4 py-2.5 rounded-md font-medium text-sm cursor-pointer transition-colors;
+  }
+
+  .btn-secondary:hover {
+    @apply bg-bg-hover text-text-primary;
+  }
+
+  /* --- Cards --- */
+  .card {
+    @apply bg-bg-card border border-border rounded-lg p-5 shadow-sm;
+  }
+
+  .card-header {
+    @apply text-base font-semibold mb-4 flex items-center gap-2;
+  }
+
+  /* --- Status indicators --- */
+  .status-indicator {
+    @apply flex items-center gap-2 text-xs text-text-muted;
+  }
+
+  .status-dot {
+    @apply w-2 h-2 rounded-full;
+  }
+
+  .status-dot.online {
+    @apply bg-accent;
+  }
+
+  /* --- Badges --- */
+  .task-badge {
+    @apply text-xs font-medium px-2.5 py-1 rounded-[8px];
+  }
+
+  .badge-pending {
+    @apply bg-info/15 text-info;
+  }
+
+  .badge-active,
+  .badge-in_progress {
+    @apply bg-warning/15 text-warning;
+  }
+
+  .badge-done,
+  .badge-complete {
+    @apply bg-accent/15 text-accent;
+  }
+
+  /* --- Filter bar --- */
+  .filter-bar {
+    @apply flex gap-3 items-center flex-wrap mb-4;
+  }
+
+  /* --- Task list --- */
+  .task-list {
+    @apply flex flex-col gap-2;
+  }
+
+  .task-item {
+    @apply flex items-center gap-3 bg-bg-card border border-border rounded-lg px-4 py-3 transition-all cursor-pointer;
+  }
+
+  .task-item:hover {
+    @apply bg-bg-hover border-border-focus shadow-md;
+  }
+
+  .task-item.task-done {
+    @apply opacity-60;
+  }
+
+  .task-content {
+    @apply flex-1 min-w-0;
+  }
+
+  .task-title {
+    @apply font-medium text-text-primary truncate;
+  }
+
+  .task-title.done {
+    @apply line-through text-text-muted;
+  }
+
+  .task-meta {
+    @apply text-xs text-text-secondary mt-1 flex items-center gap-1;
+  }
+
+  .task-checkbox {
+    @apply w-[18px] h-[18px] rounded-full border-2 border-border bg-transparent cursor-pointer appearance-none flex-shrink-0 transition-all;
+  }
+
+  .task-checkbox:checked {
+    @apply bg-accent border-accent;
+  }
+
+  .task-labels {
+    @apply flex gap-1 flex-wrap mt-1.5;
+  }
+
+  .label-chip {
+    @apply text-[10px] px-2 py-0.5 rounded-[8px] bg-accent/10 text-accent border border-accent/20;
+  }
+
+  /* --- View switcher --- */
+  .view-switcher {
+    @apply flex bg-bg-card rounded-md overflow-hidden border border-border;
+  }
+
+  .view-btn {
+    @apply px-3 py-2 text-sm text-text-muted transition-colors no-underline;
+  }
+
+  .view-btn:hover {
+    @apply bg-bg-hover text-text-primary;
+  }
+
+  .view-btn.active {
+    @apply bg-accent/15 text-accent;
+  }
+
+  /* --- Kanban board --- */
+  .kanban-board {
+    @apply flex gap-4 overflow-x-auto pb-4 min-h-[60vh];
+  }
+
+  .kanban-column {
+    @apply min-w-[260px] max-w-[300px] bg-bg-secondary/50 rounded-lg border border-border flex flex-col;
+  }
+
+  .kanban-column-header {
+    @apply flex items-center justify-between px-4 py-3 font-semibold text-sm;
+  }
+
+  .kanban-count {
+    @apply bg-bg-card text-text-muted text-xs px-2 py-0.5 rounded-[8px];
+  }
+
+  .kanban-cards {
+    @apply flex flex-col gap-2 p-3 flex-1 min-h-[100px];
+  }
+
+  .kanban-card {
+    @apply bg-bg-card border border-border rounded-md p-3 cursor-grab shadow-sm transition-all relative;
+  }
+
+  .kanban-card:hover {
+    @apply border-accent/40 shadow-md;
+  }
+
+  .kanban-card.dragging {
+    @apply opacity-50 rotate-[2deg];
+  }
+
+  .kanban-card-title {
+    @apply font-medium text-sm text-text-primary mb-1;
+  }
+
+  .kanban-card-desc {
+    @apply text-xs text-text-muted leading-relaxed mb-2 line-clamp-2;
+  }
+
+  .kanban-card-meta {
+    @apply flex items-center gap-2 text-xs;
+  }
+
+  .kanban-card-actions {
+    @apply absolute bottom-2 right-2 flex gap-1 opacity-0 transition-opacity;
+  }
+
+  .kanban-card:hover .kanban-card-actions {
+    @apply opacity-100;
+  }
+
+  .card-action-btn {
+    @apply bg-bg-hover/80 border-none rounded px-1.5 py-0.5 cursor-pointer text-xs transition-colors;
+  }
+
+  .card-action-btn:hover {
+    @apply bg-accent/20;
+  }
+
+  .kanban-empty {
+    @apply text-center text-text-muted text-sm py-8 border border-dashed border-border rounded-md;
+  }
+
+  .kanban-add-task {
+    @apply text-sm text-text-muted cursor-pointer px-4 py-2 transition-colors;
+  }
+
+  .kanban-add-task:hover {
+    @apply text-accent;
+  }
+
+  .priority-dot {
+    @apply w-2 h-2 rounded-full inline-block;
+  }
+
+  /* --- Table view --- */
+  .table-container {
+    @apply overflow-x-auto;
+  }
+
+  .data-table {
+    @apply w-full border-collapse text-sm;
+  }
+
+  .data-table th {
+    @apply text-left text-xs text-text-muted font-semibold px-3 py-2.5 bg-bg-secondary/50 border-b border-border;
+  }
+
+  .data-table td {
+    @apply px-3 py-2.5 border-b border-border/50 text-text-primary;
+  }
+
+  .data-table tr:hover td {
+    @apply bg-bg-hover/50;
+  }
+
+  .data-table .sortable {
+    @apply cursor-pointer select-none;
+  }
+
+  .data-table .sortable:hover {
+    @apply text-accent;
+  }
+
+  .inline-select {
+    @apply bg-bg-card border border-border rounded text-xs px-2 py-1 text-text-primary cursor-pointer;
+  }
+
+  .inline-select option {
+    @apply bg-bg-card text-text-primary;
+  }
+
+  .inline-select:focus {
+    @apply outline-none border-accent;
+  }
+
+  .editable-cell {
+    @apply outline-none rounded px-1 py-0.5 transition-colors min-h-[1.5em] text-text-primary;
+  }
+
+  .editable-cell:focus {
+    @apply bg-accent/10 ring-2 ring-accent/30;
+  }
+
+  /* --- Settings page --- */
+  .settings-grid {
+    @apply grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4;
+  }
+
+  /* --- Toast --- */
+  .toast-container {
+    @apply fixed top-4 right-4 z-50 flex flex-col gap-2;
+  }
+
+  .toast {
+    @apply px-4 py-3 rounded-lg text-sm font-medium shadow-lg animate-slide-in;
+  }
+
+  .toast.success {
+    @apply bg-accent/90 text-white;
+  }
+
+  .toast.error {
+    @apply bg-danger/90 text-white;
+  }
+
+  /* --- Drag-and-drop --- */
+  .drag-over {
+    @apply bg-accent/5 border-accent/30 border-dashed;
+  }
+
+  /* --- Dashboard --- */
+  .stat-card {
+    @apply bg-bg-card border border-border rounded-lg p-4 flex items-center shadow-sm;
+  }
+
+  .stat-value {
+    @apply text-2xl font-bold text-accent;
+  }
+
+  .stat-label {
+    @apply text-xs text-text-muted mt-1;
+  }
+
+  /* --- Loading skeleton --- */
+  .skeleton {
+    @apply bg-bg-hover rounded animate-pulse;
+  }
+
+  .skeleton-text {
+    @apply h-4 rounded w-3/4 mb-2;
+  }
+
+  .skeleton-card {
+    @apply h-20 rounded-lg;
+  }
+
+  /* --- Empty state --- */
+  .empty-state {
+    @apply text-center py-16 text-text-muted;
+  }
+
+  .empty-state-icon {
+    @apply text-5xl mb-4 opacity-30;
+  }
+
+  .empty-state-title {
+    @apply text-lg font-medium text-text-secondary mb-2;
+  }
+
+  .empty-state-desc {
+    @apply text-sm mb-6;
+  }
+
+  /* --- Topbar / Layout chrome --- */
+  .topbar {
+    @apply flex items-center justify-between px-6 py-3 bg-bg-secondary/60 border-b border-border backdrop-blur-sm sticky top-0 z-30;
+  }
+
+  .logo {
+    @apply flex items-center gap-2;
+  }
+
+  .logo-icon {
+    @apply text-2xl;
+  }
+
+  .logo-text {
+    @apply text-lg font-bold text-accent;
+  }
+
+  .nav-links {
+    @apply flex-1 py-3 list-none p-0 m-0;
+  }
+
+  .nav-icon {
+    @apply mr-1 text-base;
+  }
+
+  .page-title {
+    @apply text-lg font-semibold text-text-primary m-0;
+  }
+
+  .menu-toggle {
+    @apply hidden items-center justify-center w-9 h-9 bg-transparent border border-border rounded-md text-text-secondary cursor-pointer text-lg transition-colors;
+  }
+
+  .menu-toggle:hover {
+    @apply bg-bg-hover text-text-primary;
+  }
+
+  .topbar-actions {
+    @apply flex items-center gap-2;
+  }
+
+  .status-text {
+    @apply text-xs;
+  }
+
+  /* --- Search --- */
+  .search-container {
+    @apply relative flex-1 max-w-sm mx-6;
+  }
+
+  .search-input {
+    @apply w-full bg-bg-input border border-border rounded-md px-3 py-2 text-sm text-text-primary outline-none transition-colors;
+  }
+
+  .search-input::placeholder {
+    @apply text-text-muted;
+  }
+
+  .search-input:focus {
+    @apply border-accent ring-2 ring-accent/15;
+  }
+
+  .search-results {
+    @apply absolute top-full left-0 right-0 mt-1 bg-bg-card border border-border rounded-lg shadow-lg overflow-hidden z-50;
+  }
+
+  .search-item {
+    @apply flex flex-col gap-0.5 px-4 py-2.5 text-sm text-text-primary no-underline transition-colors;
+  }
+
+  .search-item:hover {
+    @apply bg-bg-hover;
+  }
+
+  .search-meta {
+    @apply text-xs text-text-muted;
+  }
+
+  .search-empty {
+    @apply px-4 py-3 text-sm text-text-muted text-center;
+  }
+
+  /* --- Stats / Dashboard --- */
+  .stats-grid {
+    @apply grid grid-cols-2 md:grid-cols-4 gap-4 mb-6;
+  }
+
+  .stat-icon {
+    @apply text-2xl mr-3;
+  }
+
+  .card-title {
+    @apply text-base font-semibold text-text-primary;
+  }
+
+  .card-subtitle {
+    @apply text-xs text-text-muted mt-0.5;
+  }
+
+  /* --- Buttons --- */
+  .btn {
+    @apply inline-flex items-center justify-center border-none px-4 py-2.5 rounded-md font-medium text-sm cursor-pointer transition-colors;
+  }
+
+  .btn-ghost {
+    @apply bg-transparent text-text-secondary border border-border px-4 py-2.5 rounded-md font-medium text-sm cursor-pointer transition-colors;
+  }
+
+  .btn-ghost:hover {
+    @apply bg-bg-hover text-text-primary;
+  }
+
+  .btn-danger {
+    @apply bg-danger text-white border-none px-4 py-2.5 rounded-md font-medium text-sm cursor-pointer transition-colors;
+  }
+
+  .btn-danger:hover {
+    @apply bg-red-600;
+  }
+
+  .btn-icon {
+    @apply bg-transparent border-none cursor-pointer text-text-muted text-sm p-1 rounded transition-colors;
+  }
+
+  .btn-icon:hover {
+    @apply text-text-primary bg-bg-hover;
+  }
+
+  /* --- Forms --- */
+  .form-group {
+    @apply mb-4;
+  }
+
+  .form-label {
+    @apply block text-sm font-medium text-text-secondary mb-1.5;
+  }
+
+  /* --- Modal --- */
+  .modal-overlay {
+    @apply fixed inset-0 bg-black/60 z-50 hidden items-center justify-center;
+  }
+
+  .modal-overlay.active {
+    @apply flex;
+  }
+
+  .modal {
+    @apply bg-bg-card border border-border rounded-xl shadow-lg w-full max-w-lg mx-4 p-6 animate-fade-in;
+  }
+
+  .modal-title {
+    @apply text-lg font-semibold text-text-primary mb-4;
+  }
+
+  .modal-actions {
+    @apply flex justify-end gap-3 mt-6 pt-4 border-t border-border;
+  }
+
+  /* --- Empty state variants --- */
+  .empty-icon {
+    @apply text-5xl mb-4 opacity-30;
+  }
+
+  .empty-text {
+    @apply text-lg font-medium text-text-secondary mb-2;
+  }
+
+  .empty-sub {
+    @apply text-sm text-text-muted mb-6;
+  }
+
+  /* --- Task action buttons --- */
+  .task-delete,
+  .task-duplicate,
+  .task-ask-ai {
+    @apply bg-transparent border-none cursor-pointer text-text-muted text-sm p-1 rounded transition-colors opacity-0;
+  }
+
+  .task-item:hover .task-delete,
+  .task-item:hover .task-duplicate,
+  .task-item:hover .task-ask-ai {
+    @apply opacity-100;
+  }
+
+  .task-delete:hover {
+    @apply text-danger bg-danger/10;
+  }
+
+  .task-duplicate:hover {
+    @apply text-info bg-info/10;
+  }
+
+  .task-ask-ai:hover {
+    @apply text-accent bg-accent/10;
+  }
+
+  .task-custom-fields {
+    @apply flex gap-1.5 flex-wrap mt-1;
+  }
+
+  /* --- Table extras --- */
+  .table-filter-bar {
+    @apply flex gap-3 items-center flex-wrap px-4 py-3;
+  }
+
+  .row-check {
+    @apply w-4 h-4 rounded border-2 border-border bg-transparent cursor-pointer appearance-none transition-all;
+  }
+
+  .row-check:checked {
+    @apply bg-accent border-accent;
+  }
+
+  .delete-row {
+    @apply bg-transparent border-none cursor-pointer text-text-muted text-sm p-1 rounded transition-colors;
+  }
+
+  .delete-row:hover {
+    @apply text-danger;
+  }
+
+  /* --- Lane management --- */
+  .lane-mgmt {
+    @apply fixed inset-0 bg-black/60 z-50 flex items-center justify-center;
+  }
+
+  .lane-mgmt-inner {
+    @apply bg-bg-card border border-border rounded-xl shadow-lg w-full max-w-md mx-4 p-6;
+  }
+
+  .lane-item {
+    @apply flex items-center gap-2 py-1;
+  }
+
+  .lane-edit,
+  .lane-remove {
+    @apply bg-transparent border-none cursor-pointer text-text-muted text-sm;
+  }
+
+  .lane-edit:hover {
+    @apply text-info;
+  }
+
+  .lane-remove:hover {
+    @apply text-danger;
+  }
+
+  /* --- Command palette items --- */
+  .cp-item {
+    @apply px-4 py-2.5 cursor-pointer text-sm text-text-primary transition-colors;
+  }
+
+  .cp-item:hover {
+    @apply bg-bg-hover;
+  }
+
+  /* --- Misc --- */
+  .shortcut-hint {
+    @apply fixed top-4 right-4 bg-bg-card border border-border rounded-lg px-4 py-2 text-xs text-text-muted shadow-md cursor-pointer z-50 animate-fade-in;
+  }
+
+  .n8n-event {
+    @apply flex items-center justify-between py-2 px-3 bg-bg-secondary/50 rounded-md text-sm;
+  }
 }
 
 /* ===== Responsive ===== */
 @media (max-width: 768px) {
-    .sidebar {
-        @apply -translate-x-full transition-transform fixed z-50;
-    }
+  .sidebar {
+    @apply -translate-x-full transition-transform fixed z-50;
+  }
 
-    .sidebar.open {
-        @apply translate-x-0;
-    }
+  .sidebar.open {
+    @apply translate-x-0;
+  }
 
-    .main-content {
-        @apply ml-0;
-    }
+  .main-content {
+    @apply ml-0;
+  }
 
-    .kanban-board {
-        @apply flex-col;
-    }
+  .menu-toggle {
+    @apply inline-flex items-center justify-center w-9 h-9 bg-transparent border border-border rounded-md text-text-secondary cursor-pointer text-lg;
+  }
 
-    .kanban-column {
-        @apply min-w-full max-w-full;
-    }
+  .kanban-board {
+    @apply flex-col;
+  }
+
+  .kanban-column {
+    @apply min-w-full max-w-full;
+  }
 }
 
 /* ===== Skip-to-content (a11y) ===== */
 .skip-to-content {
-    @apply sr-only focus:not-sr-only focus:fixed focus:top-4 focus:left-4 focus:z-[100] focus:bg-accent focus:text-white focus:px-4 focus:py-2 focus:rounded-md focus:shadow-lg;
+  @apply sr-only focus:not-sr-only focus:fixed focus:top-4 focus:left-4 focus:z-[100] focus:bg-accent focus:text-white focus:px-4 focus:py-2 focus:rounded-md focus:shadow-lg;
 }
