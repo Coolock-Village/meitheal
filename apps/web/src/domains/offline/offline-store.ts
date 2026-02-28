@@ -34,11 +34,12 @@ export interface PendingSyncOperation {
 // --- IndexedDB Schema ---
 
 const DB_NAME = "meitheal-offline"
-const DB_VERSION = 1
+const DB_VERSION = 2
 
 const STORES = {
   tasks: "tasks",
   pendingSync: "pending_sync",
+  taskAttachments: "task_attachments",
 } as const
 
 // --- Database Initialization ---
@@ -62,6 +63,13 @@ function openDatabase(): Promise<IDBDatabase> {
         const syncStore = db.createObjectStore(STORES.pendingSync, { keyPath: "id" })
         syncStore.createIndex("createdAt", "createdAt", { unique: false })
         syncStore.createIndex("table", "table", { unique: false })
+      }
+
+      // Offline Attachments (V2)
+      if (!db.objectStoreNames.contains(STORES.taskAttachments)) {
+        const attachStore = db.createObjectStore(STORES.taskAttachments, { keyPath: "id" })
+        attachStore.createIndex("taskId", "taskId", { unique: false })
+        attachStore.createIndex("createdAt", "createdAt", { unique: false })
       }
     }
 
@@ -280,3 +288,48 @@ export function getDbVersion(): number {
   return DB_VERSION
 }
 
+// --- Attachments (Phase 23) ---
+
+export interface TaskAttachment {
+  id: string; // crypto.randomUUID()
+  taskId: string;
+  filename: string;
+  mimeType: string;
+  base64Data: string;
+  createdAt: string;
+}
+
+export async function saveAttachment(attachment: TaskAttachment): Promise<void> {
+  const db = await getDb()
+  return new Promise((resolve, reject) => {
+    const tx = db.transaction(STORES.taskAttachments, "readwrite")
+    const store = tx.objectStore(STORES.taskAttachments)
+    const request = store.put(attachment)
+    request.onsuccess = () => resolve()
+    request.onerror = () => reject(new Error(`saveAttachment failed: ${request.error?.message}`))
+    tx.onerror = () => reject(new Error(`saveAttachment tx failed: ${tx.error?.message}`))
+  })
+}
+
+export async function getAttachmentsByTaskId(taskId: string): Promise<TaskAttachment[]> {
+  const db = await getDb()
+  return new Promise((resolve, reject) => {
+    const tx = db.transaction(STORES.taskAttachments, "readonly")
+    const store = tx.objectStore(STORES.taskAttachments)
+    const index = store.index("taskId")
+    const request = index.getAll(IDBKeyRange.only(taskId))
+    request.onsuccess = () => resolve((request.result || []) as TaskAttachment[])
+    request.onerror = () => reject(new Error(`getAttachmentsByTaskId failed: ${request.error?.message}`))
+  })
+}
+
+export async function deleteAttachment(id: string): Promise<void> {
+  const db = await getDb()
+  return new Promise((resolve, reject) => {
+    const tx = db.transaction(STORES.taskAttachments, "readwrite")
+    const store = tx.objectStore(STORES.taskAttachments)
+    const request = store.delete(id)
+    request.onsuccess = () => resolve()
+    request.onerror = () => reject(new Error(`deleteAttachment failed: ${request.error?.message}`))
+  })
+}

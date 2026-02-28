@@ -109,6 +109,9 @@ Interop design is informed by existing HA/Vikunja integration patterns, includin
 | Filter + sort (status, priority) | ✅ | Vikunja ✅ Trello ⚠️ |
 | Framework scoring (RICE, HEART, KCS) | ✅ | Vikunja ❌ Trello ❌ |
 | Kanban swimlane management | ✅ | Vikunja ❌ Trello ✅ |
+| Native Data Export (JSON/CSV) | ✅ | Vikunja ⚠️ Trello ✅ |
+| Raw SQLite DB Download | ✅ | Vikunja ❌ Trello ❌ |
+| Settings Portability | ✅ | Vikunja ❌ Trello ❌ |
 | Configurable settings | ✅ | Vikunja ✅ Trello ✅ |
 | Dark mode | ✅ | Vikunja ✅ Trello ✅ |
 | Home Assistant integration | ✅ | Vikunja ❌ Trello ❌ |

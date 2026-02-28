@@ -413,18 +413,19 @@ import Layout from "../layouts/Layout.astro";
       <div class="form-group" style="margin-top: 12px;">
         <label class="form-label" style="margin-bottom: 8px;">Export Tasks</label>
         <div style="display: flex; gap: 8px;">
-          <a href="/api/export/tasks.json" download class="btn btn-primary" id="export-json-btn" style="flex: 1; text-align: center; text-decoration: none;">📥 Download JSON</a>
+          <a href="#" class="btn btn-primary" id="export-json-btn" style="flex: 1; text-align: center; text-decoration: none;">📥 Download JSON</a>
           <a href="/api/export/tasks.csv" download class="btn btn-secondary" id="export-csv-btn" style="flex: 1; text-align: center; text-decoration: none;">📊 Download CSV</a>
+          <a href="/api/export/database.sqlite" download class="btn btn-secondary" id="export-db-btn" style="flex: 1; text-align: center; text-decoration: none;">🗄️ Raw DB</a>
         </div>
         <small style="color: var(--text-muted); font-size: 11px; display: block; margin-top: 6px;">
-          Exports all tasks from your local IndexedDB to your device.
+          Export your tasks to JSON/CSV, or download the entire raw SQLite database file for full local-first data sovereignty.
         </small>
       </div>
 
       <div class="form-group" style="margin-top: 16px; border-top: 1px solid var(--border-color); padding-top: 16px;">
         <label class="form-label" style="margin-bottom: 8px;">Settings Configuration</label>
         <div style="display: flex; gap: 8px;">
-          <button class="btn btn-secondary" id="export-settings-btn" style="flex: 1;">⚙️ Export Config</button>
+          <a href="/api/export/settings.json" download class="btn btn-secondary" id="export-settings-btn" style="flex: 1; text-align: center; text-decoration: none;">⚙️ Export Config</a>
           <label class="btn btn-secondary" style="flex: 1; text-align: center; cursor: pointer; margin: 0; padding: 6px 16px; display: inline-flex; justify-content: center; align-items: center;">
             🔄 Import Config
             <input type="file" id="import-settings-input" accept=".json" style="display: none;" />
@@ -464,55 +465,50 @@ import Layout from "../layouts/Layout.astro";
   <div id="toast-container" class="toast-container"></div>
 
   <script>
-    import { exportTasksAsJson, exportTasksAsCsv, exportSettingsAsJson, importSettingsFromJson } from "../domains/offline/export-service";
+    import { exportLocalDataAsJson } from "../domains/offline/export-service";
 
-    // Export Binding
-    document.getElementById("export-json-btn")?.addEventListener("click", async () => {
+    // Export Tasks Binding
+    document.getElementById("export-json-btn")?.addEventListener("click", async (e) => {
+      e.preventDefault();
       try {
-        await exportTasksAsJson();
-        showToast("JSON export generated successfully.");
+        await exportLocalDataAsJson();
+        showToast("Local data and attachments exported successfully.");
       } catch (err) {
-        console.error("Export error:", err);
-        showToast("JSON export failed. Check console.", "error");
+        console.error("Failed to export JSON:", err);
+        showToast("Failed to generate local export.", "error");
       }
     });
 
-    document.getElementById("export-csv-btn")?.addEventListener("click", async () => {
-      try {
-        await exportTasksAsCsv();
-        showToast("CSV export generated successfully.");
-      } catch (err) {
-        console.error("Export error:", err);
-        showToast("CSV export failed. Check console.", "error");
-      }
-    });
+    // Import Config Binding
+    const importInput = document.getElementById("import-settings-input") as HTMLInputElement;
+    if (importInput) {
+      importInput.addEventListener("change", async (e) => {
+        const file = (e.target as HTMLInputElement).files?.[0];
+        if (!file) return;
 
-    // Settings Export/Import
-    document.getElementById("export-settings-btn")?.addEventListener("click", async () => {
-      try {
-        await exportSettingsAsJson();
-        showToast("Settings exported successfully.");
-      } catch (err) {
-        console.error("Export settings error:", err);
-        showToast("Settings export failed.", "error");
-      }
-    });
+        try {
+          const text = await file.text();
+          const payload = JSON.parse(text);
 
-    document.getElementById("import-settings-input")?.addEventListener("change", async (e) => {
-      const file = (e.target as HTMLInputElement).files?.[0];
-      if (!file) return;
-      
-      try {
-        showToast("Restoring config...");
-        await importSettingsFromJson(file);
-        showToast("Settings restored successfully. Reloading...");
-        setTimeout(() => window.location.reload(), 1500);
-      } catch (err) {
-        console.error("Import settings error:", err);
-        showToast("Settings import failed. Invalid file format?", "error");
-      }
-      (e.target as HTMLInputElement).value = ""; // Reset input
-    });
+          const response = await fetch("/api/import/settings", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify(payload)
+          });
+
+          if (!response.ok) {
+            throw new Error(await response.text());
+          }
+
+          showToast("Settings restored successfully. Reloading...");
+          setTimeout(() => window.location.reload(), 1500);
+        } catch (error) {
+          console.error("Failed to import settings:", error);
+          showToast("Import failed. Check console.", "error");
+        }
+      });
+    }
+
     function showToast(message: string, type: "success" | "error" = "success") {
       const container = document.getElementById("toast-container");
       if (!container) return;
@@ -755,6 +751,26 @@ import Layout from "../layouts/Layout.astro";
       if (group) {
         group.style.display = (this as HTMLSelectElement).value === "custom" ? "block" : "none";
       }
+    });
+
+    document.getElementById("save-ai")?.addEventListener("click", async () => {
+      const provider = (document.getElementById("ai-provider") as HTMLSelectElement).value;
+      const customUrl = (document.getElementById("ai-custom-url") as HTMLInputElement).value;
+      
+      const saveBtn = document.getElementById("save-ai") as HTMLButtonElement;
+      if (!saveBtn) return;
+      const origText = saveBtn.innerHTML;
+      saveBtn.innerHTML = "💾 Saving...";
+      saveBtn.disabled = true;
+
+      await saveSetting("ai-provider", provider);
+      if (provider === "custom") {
+        await saveSetting("ai-custom-url", customUrl);
+      }
+
+      saveBtn.innerHTML = origText;
+      saveBtn.disabled = false;
+      showToast("AI settings saved");
     });
 
     // Init

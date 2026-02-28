@@ -213,6 +213,8 @@ const typeConfig: Record<
             data-status={col.key}
             data-lane-id={col.id}
             data-wip-limit={String(col.wipLimit)}
+            role="region"
+            aria-label={`${col.label} Swimlane`}
             ondrop="handleDrop(arguments[0])"
             ondragover="arguments[0].preventDefault(); this.classList.add('drag-over')"
             ondragleave="this.classList.remove('drag-over')"
@@ -312,6 +314,9 @@ const typeConfig: Record<
                   <div
                     class={`kanban-card flat-card`}
                     draggable="true"
+                    role="button"
+                    tabindex="0"
+                    aria-label={`Task: ${String(task.title)}, Priority: ${priorityLabels[p]}`}
                     data-id={String(task.id)}
                     data-title={String(task.title)}
                     data-desc={
@@ -344,6 +349,9 @@ const typeConfig: Record<
                         </span>
                       )}
                     </div>
+                    {/* Attachment Placeholder */}
+                    <img class="kanban-attachment hidden" data-task-id={String(task.id)} alt="Attachment" />
+                    
                     {task.description && String(task.description).trim() && (
                       <div class="kanban-card-desc">
                         {String(task.description).slice(0, 80)}
@@ -1227,6 +1235,29 @@ const typeConfig: Record<
         });
       });
     })();
+
+    // --- Offline Attachments Feature (Phase 23) ---
+    (async function renderThumbnails() {
+      if (!window.indexedDB) return;
+      try {
+        const { getAttachmentsByTaskId } = await import('../domains/offline/offline-store');
+        document.querySelectorAll('img.kanban-attachment').forEach(async (img) => {
+          const taskId = img.getAttribute('data-task-id');
+          if (!taskId) return;
+          const attachments = await getAttachmentsByTaskId(taskId);
+          if (attachments.length > 0) {
+            // Get the first image
+            const cover = attachments.find((a) => a.mimeType.startsWith("image/"));
+            if (cover) {
+              img.setAttribute("src", cover.base64Data);
+              img.classList.remove("hidden");
+            }
+          }
+        });
+      } catch (e) {
+        console.warn("Failed to load attachments on Kanban:", e);
+      }
+    })();
   </script>
 </Layout>
 
@@ -1385,6 +1416,17 @@ const typeConfig: Record<
     display: -webkit-box;
     -webkit-line-clamp: 2;
     -webkit-box-orient: vertical;
+  }
+  .kanban-attachment {
+    width: 100%;
+    max-height: 120px;
+    object-fit: cover;
+    border-radius: var(--radius-sm);
+    margin-bottom: 8px;
+    border: 1px solid var(--border);
+  }
+  .kanban-attachment.hidden {
+    display: none;
   }
   .kanban-card-due {
     font-size: 11px;
@@ -1706,5 +1748,18 @@ const typeConfig: Record<
     border-bottom: none;
     margin-bottom: 0;
     padding-bottom: 0;
+  }
+  
+  /* Phase 23: Offline Attachment Thumbnails */
+  .kanban-attachment {
+    width: 100%;
+    max-height: 120px;
+    object-fit: cover;
+    border-radius: var(--radius-sm);
+    margin: 8px 0;
+    border: 1px solid var(--border);
+  }
+  .kanban-attachment.hidden {
+    display: none;
   }
 </style>

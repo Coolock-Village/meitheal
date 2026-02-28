@@ -244,6 +244,14 @@ try {
                 placeholder="Add a description..."></textarea>
             </div>
 
+            <!-- Attachments (Phase 23) -->
+            <div>
+              <label class="text-xs text-text-muted font-semibold uppercase tracking-wide mb-2 block">Attachments</label>
+              <div id="td-attachments-grid" class="td-attachments-grid">
+                <!-- Dynamically populated via script -->
+              </div>
+            </div>
+
             <!-- Labels (interactive) -->
             <div>
               <label
@@ -271,6 +279,20 @@ try {
                 class="text-xs text-accent hover:text-accent-hover mt-2 transition-colors"
                 >+ Add Field</button
               >
+            </div>
+
+            <!-- Attachments (Phase 23) -->
+            <div>
+              <label
+                class="text-xs text-text-muted font-semibold uppercase tracking-wide mb-2 flex items-center justify-between"
+              >
+                <span>Attachments</span>
+                <label class="text-xs text-accent hover:text-accent-hover cursor-pointer m-0">
+                  + Add Image
+                  <input type="file" id="td-attachment-input" accept="image/*" class="hidden" />
+                </label>
+              </label>
+              <div id="td-attachments" class="flex flex-wrap gap-3 mt-2"></div>
             </div>
 
             <!-- Comments -->
@@ -410,6 +432,12 @@ try {
                 class="w-full text-left px-3 py-2 text-sm text-primary rounded-md hover:bg-primary/10 transition-colors"
                 >🤖 Ask AI</button
               >
+              <label
+                class="w-full block text-left px-3 py-2 text-sm text-secondary rounded-md hover:bg-secondary/10 transition-colors cursor-pointer m-0"
+              >
+                🖼️ Attach Image
+                <input type="file" id="td-attach-image" accept="image/png, image/jpeg, image/webp, image/gif" style="display: none;" />
+              </label>
               <button
                 id="td-delete"
                 class="w-full text-left px-3 py-2 text-sm text-danger rounded-md hover:bg-danger/10 transition-colors"
@@ -806,6 +834,7 @@ try {
 
     <script>
       import { askAIForTask } from "../domains/ai/ai-context-service";
+      import { saveAttachment, getAttachmentsByTaskId, deleteAttachment } from "../domains/offline/offline-store";
 
       // === Task Detail Panel ===
       const tdOverlay = document.getElementById(
@@ -877,6 +906,55 @@ try {
           (
             document.getElementById("td-description") as HTMLTextAreaElement
           ).value = String(t.description ?? "");
+
+          // Phase 23: Load Attachments
+          const grid = document.getElementById("td-attachments-grid");
+          if (grid) {
+            grid.innerHTML = "<em>Loading local attachments...</em>";
+            try {
+              const { getAttachmentsByTaskId } = await import('../domains/offline/offline-store');
+              const attachments = await getAttachmentsByTaskId(taskId);
+              if (attachments.length === 0) {
+                grid.innerHTML = '<span class="text-xs text-text-muted">No attachments</span>';
+              } else {
+                grid.innerHTML = "";
+                attachments.forEach((a: any) => {
+                  const item = document.createElement("div");
+                  item.className = "td-attachment-item";
+                  if (a.mimeType.startsWith("image/")) {
+                    item.innerHTML = `
+                      <img src="${a.base64Data}" class="td-attachment-img" alt="${a.filename}" onclick="window.open('${a.base64Data}')" />
+                      <button class="td-attachment-delete" data-id="${a.id}" title="Delete attachment">×</button>
+                    `;
+                  } else {
+                    item.innerHTML = `
+                      <div style="padding: 12px; font-size: 11px; text-align: center; color: var(--text-muted);">${a.filename}</div>
+                      <button class="td-attachment-delete" data-id="${a.id}" title="Delete attachment">×</button>
+                    `;
+                  }
+                  grid.appendChild(item);
+                });
+                
+                // Bind delete buttons
+                grid.querySelectorAll(".td-attachment-delete").forEach(btn => {
+                  btn.addEventListener("click", async (e: any) => {
+                    e.stopPropagation();
+                    if (!confirm("Remove this attachment completely?")) return;
+                    try {
+                      const { deleteAttachment } = await import('../domains/offline/offline-store');
+                      await deleteAttachment(e.target.dataset.id);
+                      e.target.closest(".td-attachment-item").remove();
+                    } catch (err) {
+                      console.error("Failed to delete attachment:", err);
+                    }
+                  });
+                });
+              }
+            } catch (err) {
+              console.error(err);
+              grid.innerHTML = '<span class="text-danger text-xs">Failed to load attachments</span>';
+            }
+          }
           (document.getElementById("td-priority") as HTMLSelectElement).value =
             String(t.priority ?? 3);
           const progress = Number(t.progress ?? 0);
@@ -967,6 +1045,9 @@ try {
 
           // Load comments
           loadComments(taskId);
+
+          // Load attachments (Phase 23)
+          loadAttachments(taskId);
         } catch (e) {
           console.error("Failed to load task detail", e);
         }
@@ -997,6 +1078,61 @@ try {
         }
       }
 
+      // Phase 23 Attachments Loader
+      async function loadAttachments(taskId: string) {
+        const container = document.getElementById("td-attachments") as HTMLElement;
+        if (!container) return;
+        container.innerHTML = "";
+        
+        try {
+          const attachments = await getAttachmentsByTaskId(taskId);
+          if (attachments.length === 0) {
+            container.innerHTML = '<span class="text-[10px] text-text-muted italic">No attachments.</span>';
+            return;
+          }
+
+          attachments.forEach(att => {
+            const thumb = document.createElement("div");
+            thumb.className = "relative group cursor-pointer border border-border rounded-md overflow-hidden hover:border-accent transition-colors";
+            thumb.style.width = "64px";
+            thumb.style.height = "64px";
+            
+            const img = document.createElement("img");
+            img.src = att.base64Data;
+            img.className = "w-full h-full object-cover";
+            img.title = att.filename;
+            
+            // Delete overlay
+            const delOverlay = document.createElement("div");
+            delOverlay.className = "absolute inset-0 bg-black/60 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity";
+            const delBtn = document.createElement("button");
+            delBtn.className = "text-white text-xs hover:text-danger p-2";
+            delBtn.innerHTML = "🗑";
+            delBtn.onclick = async (e) => {
+              e.stopPropagation();
+              if (confirm("Delete this attachment?")) {
+                await deleteAttachment(att.id);
+                loadAttachments(taskId);
+              }
+            };
+            delOverlay.appendChild(delBtn);
+
+            // Lightbox view on click
+            thumb.onclick = () => {
+              const w = window.open("");
+              w?.document.write(`<html><body style="margin:0;background:#000;display:flex;align-items:center;justify-content:center;height:100vh;"><img src="${att.base64Data}" style="max-width:100%;max-height:100vh;" /></body></html>`);
+            };
+
+            thumb.appendChild(img);
+            thumb.appendChild(delOverlay);
+            container.appendChild(thumb);
+          });
+        } catch (e) {
+          console.error("Failed to load attachments", e);
+          container.innerHTML = '<span class="text-xs text-danger">Failed to load attachments</span>';
+        }
+      }
+
       async function saveTD(field: string, value: unknown) {
         if (!currentTaskId) return;
         await fetch(`/api/tasks/${currentTaskId}`, {
@@ -1017,6 +1153,39 @@ try {
         ?.addEventListener("blur", (e) =>
           saveTD("description", (e.target as HTMLTextAreaElement).value),
         );
+      
+      // Phase 23: Image attachments upload
+      document.getElementById("td-attachment-input")?.addEventListener("change", async (e) => {
+        if (!currentTaskId) return;
+        const input = e.target as HTMLInputElement;
+        const file = input.files?.[0];
+        if (!file) return;
+        
+        // Convert to Base64
+        const reader = new FileReader();
+        reader.onload = async (re) => {
+          const base64Data = String(re.target?.result);
+          try {
+            await saveAttachment({
+              id: crypto.randomUUID(),
+              taskId: currentTaskId!,
+              filename: file.name,
+              mimeType: file.type,
+              base64Data,
+              createdAt: new Date().toISOString()
+            });
+            loadAttachments(currentTaskId!);
+          } catch (err) {
+            console.error("Failed to save attachment", err);
+            alert("Failed to save attachment due to storage limits or error.");
+          }
+        };
+        reader.readAsDataURL(file);
+        
+        // Reset input so the same file can be selected again
+        input.value = "";
+      });
+
       document.getElementById("td-status")?.addEventListener("change", (e) => {
         saveTD("status", (e.target as HTMLSelectElement).value);
         const isDone = (e.target as HTMLSelectElement).value === "done";
@@ -1192,6 +1361,39 @@ try {
             console.error("AI Context error:", err);
             alert("Failed to generate AI context.");
           }
+        });
+
+      // Attach Image
+      document
+        .getElementById("td-attach-image")
+        ?.addEventListener("change", async (e) => {
+          if (!currentTaskId) return;
+          const input = e.target as HTMLInputElement;
+          const file = input.files?.[0];
+          if (!file) return;
+
+          // Convert to Base64
+          const reader = new FileReader();
+          reader.onload = async (evt) => {
+            const base64Data = evt.target?.result as string;
+            try {
+              await saveAttachment({
+                id: crypto.randomUUID(),
+                taskId: currentTaskId!,
+                filename: file.name,
+                mimeType: file.type,
+                base64Data,
+                createdAt: new Date().toISOString()
+              });
+              alert("Image attached successfully! (Thumbnail grid coming in Wave 22)");
+            } catch (err) {
+              console.error("Attachment failed:", err);
+              alert("Failed to save attachment.");
+            } finally {
+              input.value = ""; // reset
+            }
+          };
+          reader.readAsDataURL(file);
         });
 
       // Delete
