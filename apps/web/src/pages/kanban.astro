@@ -57,10 +57,22 @@ const priorityColors: Record<number, string> = {
 <Layout title="Meitheal — Kanban">
   <span slot="page-title">Kanban Board</span>
   <div slot="actions" style="display: flex; gap: 8px; align-items: center;">
-    <div class="view-switcher">
-      <a href="/tasks" class="view-btn" title="List view">☰</a>
-      <a href="/kanban" class="view-btn active" title="Kanban board">▦</a>
-      <a href="/table" class="view-btn" title="Table view">⊞</a>
+    <div class="view-switcher" role="group" aria-label="View mode">
+      <a href="/tasks" class="view-btn" title="List view" aria-label="List view"
+        >☰</a
+      >
+      <a
+        href="/kanban"
+        class="view-btn active"
+        title="Kanban board"
+        aria-label="Kanban board">▦</a
+      >
+      <a
+        href="/table"
+        class="view-btn"
+        title="Table view"
+        aria-label="Table view">⊞</a
+      >
     </div>
   </div>
 
@@ -134,6 +146,23 @@ const priorityColors: Record<number, string> = {
                         <span style="font-size: 11px;">✅</span>
                       ) : null}
                     </div>
+                    {(() => {
+                      try {
+                        const lbls = JSON.parse(String(task.labels ?? "[]"));
+                        if (Array.isArray(lbls) && lbls.length > 0) {
+                          return (
+                            <div class="task-labels" style="margin-top: 6px;">
+                              {lbls.map((l: string) => (
+                                <span class="label-chip">{l}</span>
+                              ))}
+                            </div>
+                          );
+                        }
+                      } catch {
+                        /* skip */
+                      }
+                      return null;
+                    })()}
                   </div>
                 );
               })}
@@ -141,7 +170,11 @@ const priorityColors: Record<number, string> = {
                 <div class="kanban-empty">Drop tasks here</div>
               )}
             </div>
-            <button class="kanban-add-btn" data-status={col.key}>
+            <button
+              class="kanban-add-btn"
+              data-status={col.key}
+              aria-label={`Add task to ${col.label}`}
+            >
               + Add Task
             </button>
           </div>

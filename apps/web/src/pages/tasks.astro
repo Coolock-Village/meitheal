@@ -44,10 +44,25 @@ const statusLabels: Record<string, string> = {
 <Layout title="Meitheal — Tasks">
   <span slot="page-title">Tasks</span>
   <div slot="actions" style="display: flex; gap: 8px; align-items: center;">
-    <div class="view-switcher">
-      <a href="/tasks" class="view-btn active" title="List view">☰</a>
-      <a href="/kanban" class="view-btn" title="Kanban board">▦</a>
-      <a href="/table" class="view-btn" title="Table view">⊞</a>
+    <div class="view-switcher" role="group" aria-label="View mode">
+      <a
+        href="/tasks"
+        class="view-btn active"
+        title="List view"
+        aria-label="List view">☰</a
+      >
+      <a
+        href="/kanban"
+        class="view-btn"
+        title="Kanban board"
+        aria-label="Kanban board">▦</a
+      >
+      <a
+        href="/table"
+        class="view-btn"
+        title="Table view"
+        aria-label="Table view">⊞</a
+      >
     </div>
     <button class="btn btn-primary" id="create-task-btn">+ New Task</button>
   </div>
@@ -561,7 +576,12 @@ const statusLabels: Record<string, string> = {
           framework_payload: JSON.stringify(fp),
         };
 
+        const saveBtn = document.getElementById(
+          "save-task-btn",
+        ) as HTMLButtonElement;
         try {
+          saveBtn.classList.add("loading");
+          saveBtn.disabled = true;
           const url = editingId ? `/api/tasks/${editingId}` : "/api/tasks";
           const method = editingId ? "PUT" : "POST";
           const res = await fetch(url, {
@@ -579,6 +599,9 @@ const statusLabels: Record<string, string> = {
           }
         } catch {
           showToast("Network error", "error");
+        } finally {
+          saveBtn.classList.remove("loading");
+          saveBtn.disabled = false;
         }
       });
 

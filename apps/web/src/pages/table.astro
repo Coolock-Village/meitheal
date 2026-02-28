@@ -36,10 +36,22 @@ const priorityColors: Record<number, string> = {
 <Layout title="Meitheal — Table">
   <span slot="page-title">Table View</span>
   <div slot="actions" style="display: flex; gap: 8px; align-items: center;">
-    <div class="view-switcher">
-      <a href="/tasks" class="view-btn" title="List view">☰</a>
-      <a href="/kanban" class="view-btn" title="Kanban board">▦</a>
-      <a href="/table" class="view-btn active" title="Table view">⊞</a>
+    <div class="view-switcher" role="group" aria-label="View mode">
+      <a href="/tasks" class="view-btn" title="List view" aria-label="List view"
+        >☰</a
+      >
+      <a
+        href="/kanban"
+        class="view-btn"
+        title="Kanban board"
+        aria-label="Kanban board">▦</a
+      >
+      <a
+        href="/table"
+        class="view-btn active"
+        title="Table view"
+        aria-label="Table view">⊞</a
+      >
     </div>
   </div>
 
