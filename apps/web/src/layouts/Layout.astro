@@ -193,20 +193,30 @@ try {
       >
         <div class="px-6 pt-4">
           <a href="#" id="td-parent" class="text-xs text-info hidden hover:underline flex items-center gap-1 mb-1"></a>
-          <div class="flex items-center justify-between pb-4 border-b border-border">
+          <div class="flex items-center justify-between pb-2 border-b border-border">
             <div class="flex items-center gap-3 w-full">
-              <span id="td-id" class="text-xs text-text-muted">#</span>
+              <span id="td-priority-dot" class="td-priority-dot" title="Priority">●</span>
               <input
                 id="td-title"
               class="form-input bg-transparent border-none text-lg font-bold p-0 focus:ring-0"
               placeholder="Task title"
             />
+            <span id="td-id" class="text-[10px] text-text-muted opacity-50 cursor-help hidden" title="Task ID"></span>
           </div>
           <button
             id="td-close"
             class="btn-secondary px-3 py-1.5 text-sm"
             aria-label="Close detail">✕</button
           >
+        </div>
+        <!-- Progress bar -->
+        <div id="td-progress-bar-container" class="td-progress-bar-container">
+          <div id="td-progress-bar-fill" class="td-progress-bar-fill" style="width: 0%"></div>
+        </div>
+        <!-- Due date -->
+        <div id="td-due-row" class="td-due-row hidden">
+          <span class="text-[10px] text-text-muted uppercase tracking-wider">Due</span>
+          <span id="td-due-display" class="text-xs text-text-muted font-medium"></span>
         </div>
 
         <div class="flex flex-col lg:flex-row">
@@ -884,10 +894,23 @@ try {
             parentEl.classList.add("hidden");
           }
 
-          (document.getElementById("td-id") as HTMLElement).textContent =
-            `#${String(t.id).slice(0, 8)}`;
+          // ID — hidden, accessible via tooltip
+          const tdIdEl = document.getElementById("td-id") as HTMLElement;
+          tdIdEl.textContent = `#${String(t.id).slice(0, 8)}`;
+          tdIdEl.title = `Full ID: ${t.id}`;
+
           (document.getElementById("td-title") as HTMLInputElement).value =
             String(t.title ?? "");
+
+          // Priority dot color
+          const priorityDot = document.getElementById("td-priority-dot") as HTMLElement;
+          const priorityColors: Record<string, string> = {
+            "1": "#ef4444", "2": "#f97316", "3": "#eab308", "4": "#22c55e", "5": "#6b7280"
+          };
+          const pVal = String(t.priority ?? 3);
+          priorityDot.style.color = priorityColors[pVal] || "#eab308";
+          priorityDot.title = `Priority ${pVal}`;
+
           // If the task's status isn't in the dropdown, add it as an option
           const taskStatus = String(t.status ?? "pending");
           if (!statusSelect.querySelector(`option[value="${taskStatus}"]`)) {
@@ -910,6 +933,34 @@ try {
           (
             document.getElementById("td-progress-value") as HTMLElement
           ).textContent = `${progress}%`;
+
+          // Progress bar fill
+          const progressBarFill = document.getElementById("td-progress-bar-fill") as HTMLElement;
+          if (progressBarFill) {
+            progressBarFill.style.width = `${progress}%`;
+            progressBarFill.style.background = progress === 100 ? "var(--success)" : "var(--accent)";
+          }
+
+          // Due date display with relative time
+          const dueRow = document.getElementById("td-due-row") as HTMLElement;
+          const dueDisplay = document.getElementById("td-due-display") as HTMLElement;
+          const dueVal = String(t.due_date ?? "");
+          if (dueVal && dueRow && dueDisplay) {
+            const dueDate = new Date(dueVal);
+            const now = new Date();
+            const diffDays = Math.ceil((dueDate.getTime() - now.getTime()) / (1000 * 60 * 60 * 24));
+            let relText = "";
+            if (diffDays < 0) relText = `${Math.abs(diffDays)}d overdue`;
+            else if (diffDays === 0) relText = "Today";
+            else if (diffDays === 1) relText = "Tomorrow";
+            else relText = `in ${diffDays}d`;
+            dueDisplay.textContent = `${dueDate.toLocaleDateString()} (${relText})`;
+            dueDisplay.style.color = diffDays < 0 ? "var(--danger)" : diffDays <= 3 ? "var(--warning)" : "var(--text-muted)";
+            dueRow.classList.remove("hidden");
+          } else if (dueRow) {
+            dueRow.classList.add("hidden");
+          }
+
           (document.getElementById("td-color") as HTMLInputElement).value =
             String(t.color ?? "#10b981");
           (document.getElementById("td-due-date") as HTMLInputElement).value =
