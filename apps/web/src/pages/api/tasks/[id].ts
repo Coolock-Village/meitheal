@@ -193,10 +193,39 @@ export const PUT: APIRoute = async ({ params, request }) => {
   args.push(now);
   args.push(params.id!);
 
+  // Fetch old values for activity log diffing
+  const oldRow = await client.execute({
+    sql: `SELECT title, description, status, priority, due_date, labels,
+                 framework_payload, board_id, custom_fields, parent_id,
+                 task_type, start_date, end_date, progress, color, is_favorite
+          FROM tasks WHERE id = ? LIMIT 1`,
+    args: [params.id!],
+  });
+  const oldTask = oldRow.rows[0] as Record<string, unknown> | undefined;
+
   await client.execute({
     sql: `UPDATE tasks SET ${updates.join(", ")} WHERE id = ?`,
     args,
   });
+
+  // Record activity log entries for each changed field
+  if (oldTask) {
+    const activityInserts: Promise<unknown>[] = [];
+    for (const [field, newVal] of Object.entries(sanitized)) {
+      const oldVal = oldTask[field];
+      if (String(newVal) !== String(oldVal ?? "")) {
+        activityInserts.push(
+          client.execute({
+            sql: `INSERT INTO task_activity_log (task_id, field, old_value, new_value, actor, created_at)
+                  VALUES (?, ?, ?, ?, 'user', ?)`,
+            args: [params.id!, field, oldVal != null ? String(oldVal) : null, String(newVal), now] as InValue[],
+          })
+        );
+      }
+    }
+    // Fire-and-forget — don't block the response on activity logging
+    Promise.all(activityInserts).catch(() => { });
+  }
 
   // Return updated
   const updated = await client.execute({
