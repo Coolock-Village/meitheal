@@ -570,8 +570,15 @@ const priorityColors: Record<number, string> = {
   .data-table tr:hover td {
     background: var(--bg-hover);
   }
+  .data-table tbody tr:nth-child(even) td {
+    background: rgba(255, 255, 255, 0.02);
+  }
+  .data-table tbody tr:nth-child(even):hover td {
+    background: var(--bg-hover);
+  }
   .data-table .row-done td {
     opacity: 0.5;
+    text-decoration: line-through;
   }
   .sortable {
     cursor: pointer;

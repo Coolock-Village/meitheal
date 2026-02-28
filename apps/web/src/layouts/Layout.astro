@@ -220,6 +220,15 @@ try {
                 <option value="in_progress">In Progress</option>
                 <option value="done">Done</option>
               </select>
+              <select
+                id="td-task-type"
+                class="inline-select"
+                title="Work item type"
+              >
+                <option value="task">✅ Task</option>
+                <option value="story">📖 Story</option>
+                <option value="epic">🎯 Epic</option>
+              </select>
               <span id="td-board" class="text-xs text-text-muted"></span>
             </div>
 
@@ -542,10 +551,10 @@ try {
               searchResults.innerHTML = data.tasks
                 .map(
                   (t) =>
-                    `<a class="search-item" href="/tasks">
+                    `<div class="search-item" data-task-id="${String(t.id ?? "")}" style="cursor:pointer;">
                   <strong>${String(t.title ?? "")}</strong>
                   <span class="search-meta">${String(t.status ?? "pending")} · P${t.priority ?? 3}</span>
-                </a>`,
+                </div>`,
                 )
                 .join("");
             }
@@ -764,6 +773,24 @@ try {
         history.pushState(null, "", `#task-${taskId}`);
 
         try {
+          // Populate status dropdown from lanes API
+          const statusSelect = document.getElementById("td-status") as HTMLSelectElement;
+          try {
+            const lanesRes = await fetch("/api/lanes");
+            if (lanesRes.ok) {
+              const lanesData = await lanesRes.json();
+              const lanes = lanesData.lanes || [];
+              statusSelect.innerHTML = "";
+              for (const lane of lanes) {
+                // Add the main key as an option
+                const opt = document.createElement("option");
+                opt.value = lane.key;
+                opt.textContent = `${lane.icon} ${lane.label}`;
+                statusSelect.appendChild(opt);
+              }
+            }
+          } catch { /* keep existing options */ }
+
           const res = await fetch(`/api/tasks/${taskId}`);
           if (!res.ok) return;
           const t = (await res.json()) as Record<string, unknown>;
@@ -772,8 +799,15 @@ try {
             `#${String(t.id).slice(0, 8)}`;
           (document.getElementById("td-title") as HTMLInputElement).value =
             String(t.title ?? "");
-          (document.getElementById("td-status") as HTMLSelectElement).value =
-            String(t.status ?? "pending");
+          // If the task's status isn't in the dropdown, add it as an option
+          const taskStatus = String(t.status ?? "pending");
+          if (!statusSelect.querySelector(`option[value="${taskStatus}"]`)) {
+            const opt = document.createElement("option");
+            opt.value = taskStatus;
+            opt.textContent = taskStatus;
+            statusSelect.appendChild(opt);
+          }
+          statusSelect.value = taskStatus;
           (
             document.getElementById("td-description") as HTMLTextAreaElement
           ).value = String(t.description ?? "");
@@ -795,6 +829,9 @@ try {
             String(t.end_date ?? "");
           (document.getElementById("td-board") as HTMLElement).textContent =
             String(t.board_id ?? "default");
+          // Phase 20: Agile hierarchy type
+          (document.getElementById("td-task-type") as HTMLSelectElement).value =
+            String(t.task_type ?? "task");
 
           const isFav = Number(t.is_favorite ?? 0);
           (
@@ -925,6 +962,12 @@ try {
         ?.addEventListener("change", (e) =>
           saveTD("priority", Number((e.target as HTMLSelectElement).value)),
         );
+      // Phase 20: task_type auto-save
+      document
+        .getElementById("td-task-type")
+        ?.addEventListener("change", (e) => {
+          saveTD("task_type", (e.target as HTMLSelectElement).value);
+        });
       document.getElementById("td-progress")?.addEventListener("input", (e) => {
         const v = (e.target as HTMLInputElement).value;
         (
@@ -1123,6 +1166,13 @@ try {
         if (taskId) {
           e.preventDefault();
           e.stopPropagation();
+          // Clean up search dropdown if opened from search results
+          if (taskEl.closest("#search-results")) {
+            const sr = document.getElementById("search-results");
+            const si = document.getElementById("global-search") as HTMLInputElement;
+            if (sr) sr.style.display = "none";
+            if (si) si.value = "";
+          }
           openTaskDetail(taskId);
         }
       });
