@@ -462,7 +462,7 @@ import Layout from "../layouts/Layout.astro";
     </div>
   </div>
 
-  <div id="toast-container" class="toast-container"></div>
+  <div id="toast-container" class="toast-container" aria-live="polite" role="status"></div>
 
   <script>
     import { exportLocalDataAsJson } from "../domains/offline/export-service";

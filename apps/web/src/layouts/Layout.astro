@@ -690,7 +690,7 @@ try {
         const taskDetailOpen = !document.getElementById("task-detail-overlay")?.classList.contains("hidden");
         if (taskDetailOpen && e.key !== "?" && e.key !== "Escape" && e.key !== "Tab") return;
 
-        if (e.key === "/") {
+        if (e.key === "/" && !e.shiftKey) {
           e.preventDefault();
           searchInput?.focus();
         }
@@ -1103,10 +1103,10 @@ try {
             // Check if RICE scoring is enabled in settings
             let riceEnabled = false;
             try {
-              const riceRes = await fetch("/api/settings?key=rice-scoring-enabled");
+              const riceRes = await fetch("/api/settings");
               if (riceRes.ok) {
-                const riceData = await riceRes.json();
-                riceEnabled = riceData.value === true || riceData.value === "true";
+                const allSettings = await riceRes.json();
+                riceEnabled = allSettings["rice-scoring-enabled"] === true || allSettings["rice-scoring-enabled"] === "true";
               }
             } catch { /* default to false */ }
 

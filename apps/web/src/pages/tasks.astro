@@ -464,7 +464,7 @@ const statusLabels: Record<string, string> = {
     </div>
   </div>
 
-  <div id="toast-container" class="toast-container"></div>
+  <div id="toast-container" class="toast-container" aria-live="polite" role="status"></div>
 
   <script>
     function showToast(message: string, type: "success" | "error" = "success") {
