@@ -154,6 +154,12 @@ Current state:
 - Planned out `22-01` to construct task metadata prompts and route users to configured LLM providers (ChatGPT, Claude, Gemini, Ollama).
 - Satisfies the integrations panel settings added in Phase 7.
 
+## Phase 23: Offline Image Attachments 🖼️
+
+Current state:
+
+- Planned out `23-01` to allow Base64/Blob local storage of images against task IDs.
+
 ## Open Blockers (Roadmap-Level)
 
 1. PR #1 still has failing required checks.
