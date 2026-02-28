@@ -748,6 +748,20 @@ try {
       window.addEventListener("hashchange", checkHash);
       checkHash();
 
+      // Delegated click → open task detail for any task element
+      document.body.addEventListener("click", (e) => {
+        const target = e.target as HTMLElement;
+        const taskEl = target.closest(".task-item, .kanban-card, tr[data-id], [data-task-id]") as HTMLElement | null;
+        if (!taskEl) return;
+        // Don't intercept action buttons
+        if (target.closest("button, a, .task-actions, .action-btn")) return;
+        const taskId = taskEl.dataset.id || taskEl.dataset.taskId;
+        if (taskId) {
+          e.preventDefault();
+          e.stopPropagation();
+          openTaskDetail(taskId);
+        }
+      });
       // Global access
       (window as unknown as Record<string, unknown>).openTaskDetail = openTaskDetail;
 
