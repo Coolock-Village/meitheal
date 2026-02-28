@@ -63,9 +63,22 @@ async def async_setup(hass: HomeAssistant, config: dict[str, Any]) -> bool:
             async with request_coro as response:
                 if response.status >= 300:
                     response_text = await response.text()
-                    raise HomeAssistantError(
-                        f"Meitheal task create failed ({response.status}): {response_text}"
-                    )
+                    try:
+                        import json as _json
+                        error_data = _json.loads(response_text)
+                        error_msg = error_data.get("error", response_text)
+                        hint = error_data.get("hint", "")
+                        missing = error_data.get("missingHeaders", [])
+                        parts = [f"Meitheal task create failed ({response.status}): {error_msg}"]
+                        if hint:
+                            parts.append(f"Hint: {hint}")
+                        if missing:
+                            parts.append(f"Missing headers: {', '.join(missing)}")
+                        raise HomeAssistantError(". ".join(parts))
+                    except (ValueError, KeyError):
+                        raise HomeAssistantError(
+                            f"Meitheal task create failed ({response.status}): {response_text}"
+                        )
 
     hass.services.async_register(
         DOMAIN, SERVICE_CREATE_TASK, async_create_task, schema=CREATE_TASK_SCHEMA

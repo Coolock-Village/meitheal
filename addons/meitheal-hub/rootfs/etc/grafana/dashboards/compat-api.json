@@ -1,0 +1,85 @@
+{
+  "annotations": {
+    "list": []
+  },
+  "editable": true,
+  "fiscalYearStartMonth": 0,
+  "liveNow": false,
+  "panels": [
+    {
+      "datasource": { "type": "loki", "uid": "meitheal-loki" },
+      "fieldConfig": { "defaults": {} },
+      "gridPos": { "h": 5, "w": 12, "x": 0, "y": 0 },
+      "id": 1,
+      "title": "Compat Request Rate (5m)",
+      "type": "timeseries",
+      "targets": [
+        {
+          "expr": "sum(rate({service=\"meitheal\", domain=\"integrations\", component=\"vikunja-compat\"} |= \"compat.request.completed\" | json | status >= 0 [5m])) by (route)",
+          "legendFormat": "{{route}}"
+        }
+      ]
+    },
+    {
+      "datasource": { "type": "loki", "uid": "meitheal-loki" },
+      "fieldConfig": { "defaults": {} },
+      "gridPos": { "h": 5, "w": 12, "x": 12, "y": 0 },
+      "id": 2,
+      "title": "Compat Error Rate (5m)",
+      "type": "timeseries",
+      "targets": [
+        {
+          "expr": "sum(rate({service=\"meitheal\", domain=\"integrations\", component=\"vikunja-compat\"} |= \"compat.request.completed\" | json | status >= 400 [5m])) by (route, err_code)",
+          "legendFormat": "{{route}} [{{err_code}}]"
+        }
+      ]
+    },
+    {
+      "datasource": { "type": "loki", "uid": "meitheal-loki" },
+      "fieldConfig": { "defaults": {} },
+      "gridPos": { "h": 5, "w": 12, "x": 0, "y": 5 },
+      "id": 3,
+      "title": "Compat P95 Latency (ms)",
+      "type": "timeseries",
+      "targets": [
+        {
+          "expr": "quantile_over_time(0.95, {service=\"meitheal\", domain=\"integrations\", component=\"vikunja-compat\"} |= \"compat.request.completed\" | json | unwrap duration_ms [5m]) by (route)",
+          "legendFormat": "p95 {{route}}"
+        }
+      ]
+    },
+    {
+      "datasource": { "type": "loki", "uid": "meitheal-loki" },
+      "fieldConfig": { "defaults": {} },
+      "gridPos": { "h": 5, "w": 12, "x": 12, "y": 5 },
+      "id": 4,
+      "title": "Auth Failure Breakdown",
+      "type": "piechart",
+      "targets": [
+        {
+          "expr": "sum by (route) (count_over_time({service=\"meitheal\", domain=\"integrations\", component=\"vikunja-compat\"} |= \"compat.request.completed\" | json | err_code = \"auth_failed\" [1h]))",
+          "legendFormat": "{{route}}"
+        }
+      ]
+    },
+    {
+      "datasource": { "type": "loki", "uid": "meitheal-loki" },
+      "fieldConfig": { "defaults": {} },
+      "gridPos": { "h": 8, "w": 24, "x": 0, "y": 10 },
+      "id": 5,
+      "title": "Compat Request Log Stream",
+      "type": "logs",
+      "targets": [
+        {
+          "expr": "{service=\"meitheal\", domain=\"integrations\", component=\"vikunja-compat\"} |= \"compat.request.completed\" | json"
+        }
+      ]
+    }
+  ],
+  "schemaVersion": 39,
+  "tags": ["meitheal", "compatibility", "vikunja"],
+  "templating": { "list": [] },
+  "time": { "from": "now-6h", "to": "now" },
+  "title": "Meitheal — Compatibility API",
+  "uid": "meitheal-compat-api"
+}
