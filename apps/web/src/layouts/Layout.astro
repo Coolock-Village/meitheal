@@ -1095,33 +1095,26 @@ try {
             document.getElementById("td-toggle-done") as HTMLElement
           ).textContent = isDone ? "↩ Mark as Undone" : "✓ Mark as Done";
 
-          // RICE scoring — always show editable fields when RICE is enabled
+          // RICE scoring — display handled in sidebar, fields added after cfDiv cleared
+          // (settings + framework_payload cached for use after custom fields)
+          let _riceEnabled = false;
+          let _fp: Record<string, unknown> = {};
           try {
-            const fp = JSON.parse(String(t.framework_payload ?? "{}"));
-            const rice = document.getElementById("td-rice") as HTMLElement;
-
-            // Check if RICE scoring is enabled in settings
-            let riceEnabled = false;
-            try {
-              const riceRes = await fetch("/api/settings");
-              if (riceRes.ok) {
-                const allSettings = await riceRes.json();
-                const fw = allSettings["frameworks_enabled"];
-                riceEnabled = fw?.rice === true;
-              }
-            } catch { /* default to false */ }
-
-            if (fp.rice_score) {
-              rice.textContent = `RICE Score: ${fp.rice_score}`;
-            } else if (riceEnabled) {
-              rice.textContent = "RICE Score: —";
-            } else {
-              rice.textContent = "";
+            _fp = JSON.parse(String(t.framework_payload ?? "{}"));
+            const riceRes = await fetch("/api/settings");
+            if (riceRes.ok) {
+              const allSettings = await riceRes.json();
+              _riceEnabled = allSettings?.frameworks_enabled?.rice === true;
             }
-
-            // RICE fields will be added after custom fields below (to avoid cfDiv.innerHTML="" clearing them)
-          } catch {
-            /* skip */
+          } catch { /* default */ }
+          // RICE score text in sidebar
+          const rice = document.getElementById("td-rice") as HTMLElement;
+          if (_fp.rice_score) {
+            rice.textContent = `RICE Score: ${_fp.rice_score}`;
+          } else if (_riceEnabled) {
+            rice.textContent = "RICE Score: —";
+          } else {
+            rice.textContent = "";
           }
 
           // Labels (interactive chips)
@@ -1157,24 +1150,13 @@ try {
             /* skip */
           }
 
-          // RICE fields — add AFTER custom fields are populated (cfDiv.innerHTML cleared above)
-          try {
-            const fp2 = JSON.parse(String(t.framework_payload ?? "{}"));
-            let riceIsEnabled = false;
-            try {
-              const rRes = await fetch("/api/settings");
-              if (rRes.ok) {
-                const s = await rRes.json();
-                riceIsEnabled = s?.frameworks_enabled?.rice === true;
-              }
-            } catch { /* default */ }
-            if (riceIsEnabled || fp2.reach !== undefined || fp2.impact !== undefined || fp2.confidence !== undefined || fp2.effort !== undefined) {
-              addCFRow("Reach", String(fp2.reach ?? "0"));
-              addCFRow("Impact", String(fp2.impact ?? "0"));
-              addCFRow("Confidence", String(fp2.confidence ?? "0"));
-              addCFRow("Effort", String(fp2.effort ?? "0"));
-            }
-          } catch { /* skip */ }
+          // RICE fields — add AFTER custom fields (uses cached _riceEnabled and _fp)
+          if (_riceEnabled || _fp.reach !== undefined || _fp.impact !== undefined || _fp.confidence !== undefined || _fp.effort !== undefined) {
+            addCFRow("Reach", String(_fp.reach ?? "0"));
+            addCFRow("Impact", String(_fp.impact ?? "0"));
+            addCFRow("Confidence", String(_fp.confidence ?? "0"));
+            addCFRow("Effort", String(_fp.effort ?? "0"));
+          }
 
           // Timestamps
           const created = t.created_at
