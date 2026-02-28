@@ -38,3 +38,8 @@
 - `npx pnpm test`
 - `gsd doctor`
 - Outcome: checks and tests pass; browser UI specs requiring `E2E_BASE_URL` remain skipped by design.
+
+8. Branch and review flow
+- `git push -u origin feat/iteration-2-ha-vertical-slice`
+- `gh pr create --base main --head feat/iteration-2-ha-vertical-slice ...`
+- Outcome: PR opened at `https://github.com/Coolock-Village/meitheal/pull/1` with branch protection active on `main`.
