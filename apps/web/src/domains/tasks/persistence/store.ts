@@ -227,8 +227,17 @@ export async function ensureSchema(): Promise<void> {
     await client.execute("ALTER TABLE tasks ADD COLUMN labels TEXT NOT NULL DEFAULT '[]'");
   }
 
+  // Phase 14: Subtasks + Time tracking
+  if (!(await hasColumn(client, "tasks", "parent_id"))) {
+    await client.execute("ALTER TABLE tasks ADD COLUMN parent_id TEXT");
+  }
+  if (!(await hasColumn(client, "tasks", "time_tracked"))) {
+    await client.execute("ALTER TABLE tasks ADD COLUMN time_tracked INTEGER NOT NULL DEFAULT 0");
+  }
+
   await client.execute("CREATE INDEX IF NOT EXISTS tasks_status_idx ON tasks(status)");
   await client.execute("CREATE INDEX IF NOT EXISTS tasks_priority_idx ON tasks(priority)");
+  await client.execute("CREATE INDEX IF NOT EXISTS tasks_parent_id_idx ON tasks(parent_id)");
 
   ensured = true;
 

@@ -767,6 +767,18 @@ body {
 .task-duplicate:hover {
   color: var(--info);
 }
+.task-ask-ai {
+  background: none;
+  border: none;
+  cursor: pointer;
+  font-size: 14px;
+  padding: 2px 4px;
+  color: var(--text-muted);
+  transition: color 0.15s;
+}
+.task-ask-ai:hover {
+  color: var(--success);
+}
 
 /* Kanban lane management */
 .lane-mgmt {

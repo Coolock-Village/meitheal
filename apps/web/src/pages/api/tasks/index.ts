@@ -18,7 +18,8 @@ export const GET: APIRoute = async ({ url }) => {
   const sortCol = validSorts.includes(sort) ? sort : "created_at";
 
   let sql = `SELECT id, title, description, status, priority, due_date, labels,
-                    framework_payload, calendar_sync_state, created_at, updated_at
+                    framework_payload, calendar_sync_state, parent_id, time_tracked,
+                    created_at, updated_at
              FROM tasks`;
   let countSql = "SELECT COUNT(*) as cnt FROM tasks";
   const conditions: string[] = [];
@@ -57,6 +58,8 @@ export const GET: APIRoute = async ({ url }) => {
       labels: r.labels ? String(r.labels) : "[]",
       framework_payload: typeof r.framework_payload === "string" ? r.framework_payload : "{}",
       calendar_sync_state: r.calendar_sync_state ?? "pending",
+      parent_id: r.parent_id ?? null,
+      time_tracked: Number(r.time_tracked ?? 0),
       created_at: r.created_at,
       updated_at: r.updated_at,
     };
@@ -118,15 +121,19 @@ export const POST: APIRoute = async ({ request }) => {
     }
   }
 
+  // Validate parent_id (optional reference to another task)
+  const parent_id = typeof body.parent_id === "string" ? body.parent_id : null;
+
   await client.execute({
     sql: `INSERT INTO tasks (id, title, description, status, priority, due_date, labels,
-                             framework_payload, calendar_sync_state, idempotency_key, request_id, created_at, updated_at)
-          VALUES (?, ?, ?, ?, ?, ?, ?, ?, 'pending', ?, ?, ?, ?)`,
+                             framework_payload, calendar_sync_state, parent_id, time_tracked,
+                             idempotency_key, request_id, created_at, updated_at)
+          VALUES (?, ?, ?, ?, ?, ?, ?, ?, 'pending', ?, 0, ?, ?, ?, ?)`,
     args: [id, title, description, status, priority, due_date, labels, framework_payload,
-           crypto.randomUUID(), crypto.randomUUID(), now, now] as InValue[],
+      parent_id, crypto.randomUUID(), crypto.randomUUID(), now, now] as InValue[],
   });
 
-  return new Response(JSON.stringify({ id, title, description, status, priority, due_date, labels, created_at: now, updated_at: now }), {
+  return new Response(JSON.stringify({ id, title, description, status, priority, due_date, labels, parent_id, time_tracked: 0, created_at: now, updated_at: now }), {
     status: 201,
     headers: { "content-type": "application/json" },
   });

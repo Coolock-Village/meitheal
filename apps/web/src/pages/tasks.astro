@@ -189,6 +189,17 @@ const statusLabels: Record<string, string> = {
                 ⧉
               </button>
               <button
+                class="task-ask-ai"
+                data-title={String(task.title)}
+                data-description={task.description ? String(task.description) : ""}
+                data-status={String(task.status ?? "pending")}
+                data-priority={String(task.priority ?? 3)}
+                title="Ask AI about this task"
+                aria-label="Ask AI"
+              >
+                🤖
+              </button>
+              <button
                 class="task-delete"
                 data-id={String(task.id)}
                 title="Delete task"
@@ -692,6 +703,29 @@ const statusLabels: Record<string, string> = {
         } catch {
           showToast("Failed to duplicate", "error");
         }
+      });
+    });
+
+    // Ask AI handler — opens task context as a prompt in AI provider
+    document.querySelectorAll(".task-ask-ai").forEach((btn) => {
+      btn.addEventListener("click", (e) => {
+        e.stopPropagation();
+        const el = btn as HTMLElement;
+        const title = el.dataset.title ?? "";
+        const desc = el.dataset.description ?? "";
+        const status = el.dataset.status ?? "pending";
+        const priority = el.dataset.priority ?? "3";
+        const prompt = `I have a task in my task manager:
+
+Title: ${title}
+Status: ${status}
+Priority: ${priority}/5
+${desc ? `Description: ${desc}` : ""}
+
+Can you help me break this down, suggest next steps, estimate effort, or identify potential blockers?`;
+        // Default to ChatGPT — configurable via settings in future
+        const encodedPrompt = encodeURIComponent(prompt);
+        window.open(`https://chatgpt.com/?q=${encodedPrompt}`, "_blank");
       });
     });
 
