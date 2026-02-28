@@ -27,20 +27,31 @@ function fallbackCalendarDefaults(): CalendarDefaults {
 }
 
 async function loadCalendarDefaults(): Promise<CalendarDefaults> {
-  const configs = await getCollection("config");
-  const integrationsEntry = configs.find((entry: (typeof configs)[number]) => entry.id === "integrations");
-  const calendar = integrationsEntry?.data.integrations?.calendar;
+  try {
+    const configs = await getCollection("config");
+    const integrationsEntry = configs.find((entry: (typeof configs)[number]) => entry.id === "integrations");
+    const calendar = integrationsEntry?.data.integrations?.calendar;
 
-  if (!calendar) {
+    if (!calendar) {
+      return fallbackCalendarDefaults();
+    }
+
+    return {
+      enabled: calendar.enabled,
+      entityId: calendar.entity_id,
+      defaultDurationMinutes: calendar.default_duration_minutes,
+      timezone: calendar.timezone
+    };
+  } catch (error) {
+    logger.log("warn", {
+      event: "config.calendar.defaults.fallback",
+      domain: "observability",
+      component: "tasks-api",
+      request_id: crypto.randomUUID(),
+      message: `Falling back to calendar defaults: ${error instanceof Error ? error.message : "unknown error"}`
+    });
     return fallbackCalendarDefaults();
   }
-
-  return {
-    enabled: calendar.enabled,
-    entityId: calendar.entity_id,
-    defaultDurationMinutes: calendar.default_duration_minutes,
-    timezone: calendar.timezone
-  };
 }
 
 function createCalendarAdapter(): CalendarIntegrationAdapter {

@@ -1,12 +1,15 @@
 # ADR 0005: HA Calendar Sync and Idempotency
 
 ## Status
+
 Accepted
 
 ## Date
+
 2026-02-28
 
 ## Context
+
 Meitheal iteration 2 requires deterministic task->calendar integration with replay safety and persistent auditability.
 
 ## Decision
@@ -24,6 +27,7 @@ Meitheal iteration 2 requires deterministic task->calendar integration with repl
 5. Manual reconciliation endpoint (`/api/integrations/calendar/confirmation`) is idempotent on `taskId + confirmationId`.
 
 ## Consequences
+
 - Duplicate calendar calls are suppressed on retries.
 - Request/task traceability is auditable across DB and logs.
 - Integration behavior remains deterministic under transient failures.

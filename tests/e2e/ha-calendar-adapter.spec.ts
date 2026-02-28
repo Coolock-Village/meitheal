@@ -52,7 +52,6 @@ test("ha calendar adapter returns confirmed result on success", async () => {
     });
 
     const result = await adapter.createEvent({
-      taskId: "task-1",
       requestId: "req-1",
       idempotencyKey: "idem-1",
       entityId: "calendar.home",
@@ -84,7 +83,6 @@ test("ha calendar adapter maps unauthorized to terminal failure", async () => {
     });
 
     const result = await adapter.createEvent({
-      taskId: "task-2",
       requestId: "req-2",
       idempotencyKey: "idem-2",
       entityId: "calendar.home",
@@ -104,11 +102,16 @@ test("ha calendar adapter maps unauthorized to terminal failure", async () => {
 });
 
 test("ha calendar adapter maps timeout to retryable failure", async () => {
-  const harness = await startServer((_req: IncomingMessage, res: ServerResponse) => {
-    setTimeout(() => {
+  const harness = await startServer((req: IncomingMessage, res: ServerResponse) => {
+    const timeout = setTimeout(() => {
+      if (res.writableEnded || !res.writable) {
+        return;
+      }
       res.writeHead(200, { "content-type": "application/json" });
       res.end(JSON.stringify([{ uid: "delayed" }]));
     }, 250);
+    req.on("close", () => clearTimeout(timeout));
+    res.on("close", () => clearTimeout(timeout));
   });
 
   try {
@@ -119,7 +122,6 @@ test("ha calendar adapter maps timeout to retryable failure", async () => {
     });
 
     const result = await adapter.createEvent({
-      taskId: "task-3",
       requestId: "req-3",
       idempotencyKey: "idem-3",
       entityId: "calendar.home",

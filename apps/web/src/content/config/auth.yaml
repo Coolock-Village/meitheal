@@ -6,4 +6,3 @@ auth:
     required_headers:
       - x-ingress-path
       - hassio_token
-      - HASSIO_TOKEN

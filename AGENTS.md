@@ -16,6 +16,8 @@ This file defines mandatory behavior for human and AI contributors working in Me
 - Maintain strict DDD bounded contexts and ubiquitous language.
 - Maintain KCS artifacts in the same change set as code behavior updates.
 - Keep Home Assistant add-on compatibility as a first-class constraint.
+- Keep Home Assistant publishing compatibility aligned with https://developers.home-assistant.io/docs/apps/publishing.
+- Maintain `repository.yaml` and add-on `config.yaml` `image` contract (`...-{arch}`) for publish readiness.
 
 ## Required Files (CI Enforced)
 

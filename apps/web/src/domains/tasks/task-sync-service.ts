@@ -1,6 +1,7 @@
 import {
   createTaskWithFrameworkAndCalendarSync,
   type CalendarOverride,
+  type CreateTaskCommand,
   type CreateTaskPlan,
   type IntegrationOutcome
 } from "@meitheal/domain-tasks";
@@ -55,6 +56,16 @@ function mapStoredResponseToResult(stored: PersistedTaskResponse): CreateTaskAnd
   };
 }
 
+function isIdempotencyConflict(error: unknown): boolean {
+  if (!(error instanceof Error)) {
+    return false;
+  }
+  return (
+    /UNIQUE constraint failed:\s*tasks\.idempotency_key/i.test(error.message) ||
+    /tasks_idempotency_unique/i.test(error.message)
+  );
+}
+
 export async function createTaskAndSyncCalendar(
   input: CreateTaskAndSyncInput,
   adapter: CalendarIntegrationAdapter
@@ -66,10 +77,9 @@ export async function createTaskAndSyncCalendar(
     return mapStoredResponseToResult(existing);
   }
 
-  const plan = createTaskWithFrameworkAndCalendarSync({
-    ...(input.frameworkPayload
-      ? { title: input.title, frameworkPayload: input.frameworkPayload }
-      : { title: input.title }),
+  const command: CreateTaskCommand = {
+    title: input.title,
+    ...(input.frameworkPayload ? { frameworkPayload: input.frameworkPayload } : {}),
     requestId: input.requestId,
     idempotencyKey: input.idempotencyKey,
     calendar: {
@@ -77,9 +87,20 @@ export async function createTaskAndSyncCalendar(
       durationMinutes: input.calendarOverride?.durationMinutes ?? input.calendarDefaults.defaultDurationMinutes,
       timezone: input.calendarOverride?.timezone ?? input.calendarDefaults.timezone
     }
-  } as Parameters<typeof createTaskWithFrameworkAndCalendarSync>[0]);
+  };
+  const plan = createTaskWithFrameworkAndCalendarSync(command);
 
-  await persistInitialPlan(plan);
+  try {
+    await persistInitialPlan(plan);
+  } catch (error) {
+    if (isIdempotencyConflict(error)) {
+      const recovered = await findByIdempotencyKey(input.idempotencyKey);
+      if (recovered) {
+        return mapStoredResponseToResult(recovered);
+      }
+    }
+    throw error;
+  }
 
   if (!input.calendarDefaults.enabled) {
     const disabledResult = await persistCalendarIntegrationResult({
@@ -107,28 +128,16 @@ export async function createTaskAndSyncCalendar(
     };
   }
 
-  const calendarResult = await adapter.createEvent(
-    plan.calendarRequest.description
-      ? {
-          taskId: plan.calendarRequest.taskId,
-          requestId: input.requestId,
-          idempotencyKey: input.idempotencyKey,
-          entityId: input.calendarOverride?.entityId ?? input.calendarDefaults.entityId,
-          summary: plan.calendarRequest.summary,
-          description: plan.calendarRequest.description,
-          startDateTime: plan.calendarRequest.startDateTime,
-          endDateTime: plan.calendarRequest.endDateTime
-        }
-      : {
-          taskId: plan.calendarRequest.taskId,
-          requestId: input.requestId,
-          idempotencyKey: input.idempotencyKey,
-          entityId: input.calendarOverride?.entityId ?? input.calendarDefaults.entityId,
-          summary: plan.calendarRequest.summary,
-          startDateTime: plan.calendarRequest.startDateTime,
-          endDateTime: plan.calendarRequest.endDateTime
-        }
-  );
+  const calendarCreateInput = {
+    requestId: input.requestId,
+    idempotencyKey: input.idempotencyKey,
+    entityId: input.calendarOverride?.entityId ?? input.calendarDefaults.entityId,
+    summary: plan.calendarRequest.summary,
+    startDateTime: plan.calendarRequest.startDateTime,
+    endDateTime: plan.calendarRequest.endDateTime,
+    ...(plan.calendarRequest.description ? { description: plan.calendarRequest.description } : {})
+  };
+  const calendarResult = await adapter.createEvent(calendarCreateInput);
 
   const persisted = await persistCalendarIntegrationResult({
     taskId: plan.aggregate.task.id,

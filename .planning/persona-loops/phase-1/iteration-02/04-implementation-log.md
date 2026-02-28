@@ -29,7 +29,7 @@
 - Updated KCS runbooks for task->calendar traceability.
 
 6. Tooling/review
-- Added `.coderabbit.yaml` for CodeRabbitAI free-tier friendly review behavior.
+- Added `.coderabbit.yaml` for CodeRabbitAI free-tier-friendly review behavior.
 
 7. Verification
 - `npx pnpm install --frozen-lockfile=false`

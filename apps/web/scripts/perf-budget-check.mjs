@@ -1,0 +1,147 @@
+import fs from "node:fs/promises";
+import os from "node:os";
+import path from "node:path";
+import { spawn, execFile } from "node:child_process";
+import { fileURLToPath } from "node:url";
+import { promisify } from "node:util";
+import { performance } from "node:perf_hooks";
+
+const execFileAsync = promisify(execFile);
+
+const budgets = {
+  clientBytesMax: 80 * 1024,
+  rssKbMax: 220 * 1024,
+  p95MsMax: 250
+};
+
+async function sizeOfDirectoryBytes(dir) {
+  const entries = await fs.readdir(dir, { withFileTypes: true });
+  let total = 0;
+  for (const entry of entries) {
+    const full = path.join(dir, entry.name);
+    if (entry.isDirectory()) {
+      total += await sizeOfDirectoryBytes(full);
+      continue;
+    }
+    const stat = await fs.stat(full);
+    total += stat.size;
+  }
+  return total;
+}
+
+async function waitForHealth(url, maxAttempts = 30, delayMs = 500) {
+  for (let attempt = 1; attempt <= maxAttempts; attempt += 1) {
+    try {
+      const response = await fetch(url);
+      if (response.ok) {
+        return;
+      }
+    } catch {
+      // Continue polling.
+    }
+    await new Promise((resolve) => setTimeout(resolve, delayMs));
+  }
+  throw new Error(`Health check failed for ${url}`);
+}
+
+function p95(values) {
+  const sorted = [...values].sort((a, b) => a - b);
+  const index = Math.max(0, Math.ceil(sorted.length * 0.95) - 1);
+  return sorted[index] ?? 0;
+}
+
+async function getRssKb(pid) {
+  const { stdout } = await execFileAsync("ps", ["-o", "rss=", "-p", String(pid)]);
+  return Number.parseInt(stdout.trim(), 10);
+}
+
+async function main() {
+  const scriptDir = path.dirname(fileURLToPath(import.meta.url));
+  const appRoot = path.resolve(scriptDir, "..");
+  const entryFile = path.join(appRoot, "dist/server/entry.mjs");
+  await fs.access(entryFile);
+
+  const clientDir = path.join(appRoot, "dist/client");
+  const clientBytes = await sizeOfDirectoryBytes(clientDir);
+
+  const port = 4600 + Math.floor(Math.random() * 300);
+  const dbPath = path.join(os.tmpdir(), `meitheal-perf-${Date.now()}-${Math.random()}.db`);
+  const dbUrl = `file:${dbPath}`;
+  const baseUrl = `http://127.0.0.1:${port}`;
+
+  const server = spawn("node", ["--max-old-space-size=128", "dist/server/entry.mjs"], {
+    cwd: appRoot,
+    env: {
+      ...process.env,
+      HOST: "127.0.0.1",
+      PORT: String(port),
+      MEITHEAL_DB_URL: dbUrl
+    },
+    stdio: ["ignore", "pipe", "pipe"]
+  });
+
+  try {
+    await waitForHealth(`${baseUrl}/api/health`);
+    const rssKb = await getRssKb(server.pid);
+
+    const latenciesMs = [];
+    for (let index = 0; index < 20; index += 1) {
+      const start = performance.now();
+      const response = await fetch(`${baseUrl}/api/tasks/create`, {
+        method: "POST",
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify({ title: `perf-check-${index}` })
+      });
+      const end = performance.now();
+      if (!response.ok) {
+        const body = await response.text();
+        throw new Error(`Task create failed (${response.status}): ${body}`);
+      }
+      latenciesMs.push(end - start);
+    }
+
+    const p95Ms = p95(latenciesMs);
+    const failures = [];
+    if (clientBytes > budgets.clientBytesMax) {
+      failures.push(`Client bundle too large: ${clientBytes} bytes > ${budgets.clientBytesMax}`);
+    }
+    if (rssKb > budgets.rssKbMax) {
+      failures.push(`RSS too high: ${rssKb} KB > ${budgets.rssKbMax} KB`);
+    }
+    if (p95Ms > budgets.p95MsMax) {
+      failures.push(`Task create p95 too high: ${p95Ms.toFixed(1)} ms > ${budgets.p95MsMax} ms`);
+    }
+
+    console.log(
+      JSON.stringify(
+        {
+          budgets,
+          observed: {
+            clientBytes,
+            rssKb,
+            p95Ms: Number(p95Ms.toFixed(1))
+          }
+        },
+        null,
+        2
+      )
+    );
+
+    if (failures.length > 0) {
+      for (const failure of failures) {
+        console.error(failure);
+      }
+      process.exit(1);
+    }
+  } finally {
+    if (!server.killed) {
+      server.kill("SIGTERM");
+      await new Promise((resolve) => {
+        server.once("exit", resolve);
+        setTimeout(resolve, 2_000);
+      });
+    }
+  }
+}
+
+await main();

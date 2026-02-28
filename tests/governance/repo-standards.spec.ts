@@ -9,9 +9,13 @@ const requiredFiles = [
   "AGENTS.md",
   "SKILL.md",
   "WEBMCP.md",
+  "repository.yaml",
   ".coderabbit.yaml",
   ".zeroclaw/soul.md",
   ".skills/core-workflows/SKILL.md",
+  "addons/meitheal-hub/README.md",
+  "addons/meitheal-hub/DOCS.md",
+  "addons/meitheal-hub/config.yaml",
   "docs/decisions/0001-legal-and-naming-strategy.md",
   "docs/decisions/0002-target-architecture.md",
   "docs/kcs/operations-runbook.md",
@@ -30,4 +34,10 @@ test("readme enforces Astro and HA first principles", () => {
   expect(readme).toContain("Astro first/native");
   expect(readme).toContain("Home Assistant");
   expect(readme).toContain("DDD");
+});
+
+test("addon config includes publishing image contract", () => {
+  const addonConfig = readFileSync(join(repoRoot, "addons/meitheal-hub/config.yaml"), "utf8");
+  expect(addonConfig).toContain("image:");
+  expect(addonConfig).toContain("{arch}");
 });

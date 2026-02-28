@@ -1,0 +1,27 @@
+create_task:
+  name: Create Meitheal task
+  description: Create a task through Meitheal native API or Vikunja compatibility API.
+  fields:
+    title:
+      required: true
+      selector:
+        text:
+    description:
+      required: false
+      selector:
+        text:
+    mode:
+      required: false
+      default: native
+      selector:
+        select:
+          options:
+            - native
+            - vikunja_compat
+    project_id:
+      required: false
+      default: 1
+      selector:
+        number:
+          min: 1
+          mode: box

@@ -6,6 +6,7 @@ import { createTaskAndSyncCalendar } from "../../apps/web/src/domains/tasks/task
 import {
   ensureSchema,
   getDb,
+  getPersistenceClient,
   persistManualCalendarConfirmation,
   resetPersistenceForTests
 } from "../../apps/web/src/domains/tasks/persistence/store";
@@ -157,4 +158,19 @@ test("failed HA call marks task as failed_retryable and manual confirmation is i
   const db = getDb();
   const [taskRow] = await db.select().from(tasks).where(eq(tasks.id, created.task.id)).limit(1);
   expect(taskRow?.calendarSyncState).toBe("confirmed");
+});
+
+test("manual confirmation rejects unknown task ids", async () => {
+  await expect(
+    persistManualCalendarConfirmation({
+      taskId: "task-does-not-exist",
+      requestId: "req-missing-task",
+      confirmationId: "confirm-missing-task"
+    })
+  ).rejects.toThrow(/TASK_NOT_FOUND/);
+
+  const client = getPersistenceClient();
+  const result = await client.execute("SELECT COUNT(*) AS count FROM calendar_confirmations");
+  const count = Number((result.rows[0] as Record<string, unknown> | undefined)?.count ?? 0);
+  expect(count).toBe(0);
 });

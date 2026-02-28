@@ -8,9 +8,7 @@
   "scripts": {
     "check": "tsc --noEmit"
   },
-  "dependencies": {
-    "@meitheal/integration-core": "workspace:*"
-  },
+  "dependencies": {},
   "devDependencies": {
     "typescript": "^5.8.3"
   }

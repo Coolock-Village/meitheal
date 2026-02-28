@@ -33,6 +33,7 @@ CREATE TABLE IF NOT EXISTS integration_attempts (
   retry_after_seconds INTEGER,
   response_payload TEXT,
   created_at INTEGER NOT NULL,
+  updated_at INTEGER NOT NULL,
   UNIQUE(idempotency_key, integration)
 );
 
@@ -44,7 +45,7 @@ CREATE TABLE IF NOT EXISTS calendar_confirmations (
   source TEXT NOT NULL DEFAULT 'ha.create_event',
   payload TEXT,
   created_at INTEGER NOT NULL,
-  UNIQUE(task_id, confirmation_id)
+  UNIQUE(task_id, request_id)
 );
 
 CREATE TABLE IF NOT EXISTS audit_trail (

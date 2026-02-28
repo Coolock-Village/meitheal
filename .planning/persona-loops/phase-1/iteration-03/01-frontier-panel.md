@@ -1,6 +1,7 @@
 # Frontier Panel - Phase 1 Iteration 03
 
 ## Objective
+
 Close the highest-leverage optimization gaps from Iteration 02: production runtime startup, migration command path, and HA integration CI harness.
 
 | Persona | Recommendation | Impact (1-5) | Effort (1-5) | Risk (1-5) | Decision |

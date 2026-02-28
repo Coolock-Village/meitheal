@@ -39,7 +39,14 @@ function shouldLog(level: LogLevel, minLevel: LogLevel): boolean {
 function redact(value: string, patterns: RegExp[]): string {
   let redacted = value;
   for (const pattern of patterns) {
-    redacted = redacted.replace(pattern, "[REDACTED]");
+    redacted = redacted.replace(pattern, (...args: unknown[]) => {
+      const captures = args.slice(1, -2);
+      const firstCapture = captures[0];
+      if (typeof firstCapture === "string" && (firstCapture.endsWith("=") || firstCapture.endsWith(" "))) {
+        return `${firstCapture}[REDACTED]`;
+      }
+      return "[REDACTED]";
+    });
   }
   return redacted;
 }
@@ -76,8 +83,8 @@ export function createLogger(config: LoggerConfig) {
 }
 
 export const defaultRedactionPatterns: RegExp[] = [
-  /(bearer\s+[a-z0-9\-._~+/]+=*)/gi,
-  /(authorization:\s*[^\s]+)/gi,
+  /(bearer\s+)[a-z0-9\-._~+/]+=*/gi,
+  /(authorization:\s*)[^\s]+/gi,
   /(hassio_token=)[^&\s]+/gi,
   /(ha_token=)[^&\s]+/gi,
   /(supervisor_token=)[^&\s]+/gi,

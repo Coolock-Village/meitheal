@@ -1,5 +1,12 @@
-import type { CalendarResult, DomainEvent } from "@meitheal/integration-core";
 import { createTask, type Task } from "./task";
+
+export interface DomainEvent<TPayload = Record<string, unknown>> {
+  eventId: string;
+  eventType: string;
+  occurredAt: string;
+  requestId: string;
+  payload: TPayload;
+}
 
 export type CalendarSyncState = "pending" | "confirmed" | "failed_retryable" | "failed_terminal";
 
@@ -50,11 +57,26 @@ export interface IntegrationOutcome {
   confirmationId?: string;
 }
 
+export type CalendarSyncResult =
+  | {
+      ok: true;
+      confirmationId: string;
+    }
+  | {
+      ok: false;
+      errorCode: string;
+      retryable: boolean;
+      retryAfterSeconds?: number;
+    };
+
 function toIsoDateTime(date: Date): string {
   return date.toISOString();
 }
 
-function computeCalendarWindow(command: CreateTaskCommand): { startDateTime: string; endDateTime: string } {
+function computeCalendarWindow(
+  command: CreateTaskCommand,
+  now: Date = new Date()
+): { startDateTime: string; endDateTime: string } {
   if (command.calendar?.startDateTime && command.calendar?.endDateTime) {
     return {
       startDateTime: command.calendar.startDateTime,
@@ -62,7 +84,6 @@ function computeCalendarWindow(command: CreateTaskCommand): { startDateTime: str
     };
   }
 
-  const now = new Date();
   const durationMinutes = command.calendar?.durationMinutes ?? 30;
   const end = new Date(now.getTime() + durationMinutes * 60_000);
   return {
@@ -133,7 +154,7 @@ export function createTaskWithFrameworkAndCalendarSync(command: CreateTaskComman
   };
 }
 
-export function resolveIntegrationOutcome(result: CalendarResult): IntegrationOutcome {
+export function resolveIntegrationOutcome(result: CalendarSyncResult): IntegrationOutcome {
   if (result.ok) {
     return {
       calendarSyncState: "confirmed",

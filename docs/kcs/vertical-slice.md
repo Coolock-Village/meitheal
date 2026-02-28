@@ -1,4 +1,4 @@
-# Vertical Slice Runbook (Iteration 1)
+# Vertical Slice Runbook (Iteration 2+)
 
 ## Flow
 
@@ -11,9 +11,14 @@
 2. `POST /api/integrations/calendar/confirmation`
 - Records calendar confirmation for a task.
 - Emits integration audit log events.
-- Uses idempotent persistence (`taskId + confirmationId`) for replay-safe callbacks.
+- Uses idempotent persistence (`taskId + requestId`) for replay-safe callbacks.
 
-3. Observability
+3. `PUT /api/v1/projects/{id}/tasks` (compat mode)
+- Token-gated Vikunja-compatible create route for voice assistant interoperability.
+- Honors `compatibility.vikunja_api.calendar_sync_mode` (`disabled` default, `enabled` optional).
+- Persists compatibility metadata for labels/assignees/project mapping.
+
+4. Observability
 - JSON log lines written to stdout for Alloy/Loki ingestion.
 
 ## Notes

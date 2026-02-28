@@ -24,7 +24,6 @@ export class IntegrationBus {
 }
 
 export interface CalendarCreateEventInput {
-  taskId: string;
   requestId: string;
   idempotencyKey: string;
   entityId: string;

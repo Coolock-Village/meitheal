@@ -1,6 +1,6 @@
 import type { APIRoute } from "astro";
 import { createLogger, defaultRedactionPatterns } from "@meitheal/domain-observability";
-import { ensureSchema, persistManualCalendarConfirmation } from "@domains/tasks/persistence/store";
+import { ensureSchema, findTaskById, persistManualCalendarConfirmation } from "@domains/tasks/persistence/store";
 
 const logger = createLogger({
   service: "meitheal-web",
@@ -31,6 +31,14 @@ export const POST: APIRoute = async ({ request }) => {
   const confirmationId = body.confirmationId ?? crypto.randomUUID();
 
   await ensureSchema();
+  const task = await findTaskById(body.taskId);
+  if (!task) {
+    return new Response(JSON.stringify({ error: "Task not found", taskId: body.taskId }), {
+      status: 404,
+      headers: { "content-type": "application/json" }
+    });
+  }
+
   const persisted = await persistManualCalendarConfirmation({
     taskId: body.taskId,
     requestId,

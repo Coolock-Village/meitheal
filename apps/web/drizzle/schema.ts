@@ -53,7 +53,8 @@ export const integrationAttempts = sqliteTable(
     errorCode: text("error_code"),
     retryAfterSeconds: integer("retry_after_seconds"),
     responsePayload: text("response_payload", { mode: "json" }),
-    createdAt: integer("created_at").notNull()
+    createdAt: integer("created_at").notNull(),
+    updatedAt: integer("updated_at").notNull()
   },
   (table) => ({
     taskIdx: index("integration_attempts_task_idx").on(table.taskId),
@@ -79,9 +80,9 @@ export const calendarConfirmations = sqliteTable(
   (table) => ({
     taskIdx: index("calendar_confirmations_task_idx").on(table.taskId),
     requestIdx: index("calendar_confirmations_request_idx").on(table.requestId),
-    taskConfirmationUnique: uniqueIndex("calendar_confirmations_task_confirmation_unique").on(
+    taskRequestUnique: uniqueIndex("calendar_confirmations_task_request_unique").on(
       table.taskId,
-      table.confirmationId
+      table.requestId
     )
   })
 );

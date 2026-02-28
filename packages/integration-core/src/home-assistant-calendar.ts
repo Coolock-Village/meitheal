@@ -114,7 +114,14 @@ export class HomeAssistantCalendarAdapter implements CalendarIntegrationAdapter 
       });
 
       const rawText = await response.text();
-      const raw = rawText ? JSON.parse(rawText) : undefined;
+      let raw: unknown;
+      if (rawText) {
+        try {
+          raw = JSON.parse(rawText);
+        } catch {
+          raw = rawText;
+        }
+      }
 
       if (!response.ok) {
         const classification = classifyError(response.status);

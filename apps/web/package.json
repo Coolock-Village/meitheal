@@ -9,7 +9,9 @@
     "preview": "astro preview",
     "check": "astro check",
     "db:migrate": "node ./scripts/migrate.mjs",
-    "db:migrate:check": "node ./scripts/migrate.mjs --check"
+    "db:migrate:check": "node ./scripts/migrate.mjs --check",
+    "schema:drift": "node ./scripts/schema-drift-check.mjs",
+    "perf:budget": "node ./scripts/perf-budget-check.mjs"
   },
   "dependencies": {
     "@libsql/client": "^0.15.15",
@@ -22,6 +24,7 @@
     "@meitheal/domain-tasks": "workspace:*",
     "astro": "^5.18.0",
     "drizzle-orm": "^0.45.1",
+    "undici": "^7.16.0",
     "zod": "^3.24.3"
   },
   "devDependencies": {

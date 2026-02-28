@@ -11,4 +11,5 @@
 | HA realism in CI | Harness validates adapter behavior; full live HA service orchestration in CI remains pending. | 4 | 3 | 4 |
 
 ## Summary
+
 Iteration 03 closed three high-impact open items from iteration 02. Remaining work is focused on production hardening and measurable SLO gates.

@@ -1,0 +1,4 @@
+compatibility:
+  vikunja_api:
+    enabled: false
+    calendar_sync_mode: disabled

@@ -29,6 +29,16 @@ Recommended Loki filter sequence:
 2. Check middleware rejection reason in auth logs.
 3. Validate add-on ingress settings in `addons/meitheal-hub/config.yaml`.
 
+## Startup Health and Diagnostics
+
+1. Query `GET /api/health` to validate runtime + DB readiness.
+2. Inspect add-on logs for:
+- `Database migration failed` errors from `run.sh`.
+- startup healthcheck pass/fail diagnostics.
+3. If health is failing:
+- verify `MEITHEAL_DB_URL` and add-on write permissions.
+- run migration commands manually in add-on shell.
+
 ## Database Migrations
 
 Primary command path:
@@ -41,3 +51,22 @@ CI gate:
 
 1. `migration-check` job runs `db:migrate:check`.
 2. If pending migrations exist, CI fails closed.
+
+## Vikunja Compatibility Mode
+
+1. Configure one of:
+- `MEITHEAL_VIKUNJA_API_TOKEN`
+- `MEITHEAL_VIKUNJA_API_TOKENS`
+2. Use `/api/v1/*` routes for voice assistant interop.
+3. Calendar behavior for compat task create:
+- `compatibility.vikunja_api.calendar_sync_mode: disabled` (default)
+- `compatibility.vikunja_api.calendar_sync_mode: enabled` (optional)
+
+## Performance and Drift Gates
+
+1. `schema-drift` CI job validates migration SQL against runtime schema expectations.
+2. `perf-budgets` CI job enforces:
+- client bundle total <= 80 KB
+- web process RSS <= 220 MB after warm start
+- task create p95 <= 250 ms in harness
+3. Home Assistant publishing readiness checklist: `docs/kcs/ha-publishing-checklist.md`.

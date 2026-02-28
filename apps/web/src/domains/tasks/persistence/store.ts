@@ -63,6 +63,10 @@ export function getDb() {
   return dbSingleton;
 }
 
+export function getPersistenceClient(): Client {
+  return getClient();
+}
+
 function toTask(row: Record<string, unknown>): PersistedTask {
   return {
     id: String(row.id),
@@ -107,6 +111,11 @@ async function withTransaction<T>(fn: (client: Client) => Promise<T>): Promise<T
     await client.execute("ROLLBACK");
     throw error;
   }
+}
+
+async function hasColumn(client: Client, tableName: string, columnName: string): Promise<boolean> {
+  const result = await client.execute(`PRAGMA table_info(${tableName})`);
+  return result.rows.some((row) => String((row as Record<string, unknown>).name) === columnName);
 }
 
 export async function ensureSchema(): Promise<void> {
@@ -156,6 +165,7 @@ export async function ensureSchema(): Promise<void> {
       retry_after_seconds INTEGER,
       response_payload TEXT,
       created_at INTEGER NOT NULL,
+      updated_at INTEGER NOT NULL,
       UNIQUE(idempotency_key, integration)
     )
   `);
@@ -169,7 +179,7 @@ export async function ensureSchema(): Promise<void> {
       source TEXT NOT NULL DEFAULT 'ha.create_event',
       payload TEXT,
       created_at INTEGER NOT NULL,
-      UNIQUE(task_id, confirmation_id)
+      UNIQUE(task_id, request_id)
     )
   `);
 
@@ -200,6 +210,11 @@ export async function ensureSchema(): Promise<void> {
   await client.execute("CREATE INDEX IF NOT EXISTS audit_trail_request_idx ON audit_trail(request_id)");
   await client.execute("CREATE INDEX IF NOT EXISTS audit_trail_task_idx ON audit_trail(task_id)");
   await client.execute("CREATE INDEX IF NOT EXISTS audit_trail_created_idx ON audit_trail(created_at)");
+
+  if (!(await hasColumn(client, "integration_attempts", "updated_at"))) {
+    await client.execute("ALTER TABLE integration_attempts ADD COLUMN updated_at INTEGER NOT NULL DEFAULT 0");
+    await client.execute("UPDATE integration_attempts SET updated_at = created_at WHERE updated_at = 0");
+  }
 
   ensured = true;
 }
@@ -263,6 +278,25 @@ export async function findByIdempotencyKey(idempotencyKey: string): Promise<Pers
   };
 }
 
+export async function findTaskById(taskId: string): Promise<PersistedTask | null> {
+  const client = getClient();
+  const taskResult = await client.execute({
+    sql: `
+      SELECT id, title, status, framework_payload, calendar_sync_state, idempotency_key, request_id, created_at, updated_at
+      FROM tasks
+      WHERE id = ?
+      LIMIT 1
+    `,
+    args: [taskId]
+  });
+
+  const taskRow = taskResult.rows[0] as Record<string, unknown> | undefined;
+  if (!taskRow) {
+    return null;
+  }
+  return toTask(taskRow);
+}
+
 export async function persistInitialPlan(plan: CreateTaskPlan): Promise<void> {
   const now = Date.now();
 
@@ -308,10 +342,10 @@ export async function persistInitialPlan(plan: CreateTaskPlan): Promise<void> {
     await client.execute({
       sql: `
         INSERT INTO integration_attempts(
-          attempt_id, task_id, integration, request_id, idempotency_key, status, created_at
-        ) VALUES (?, ?, 'calendar', ?, ?, 'pending', ?)
+          attempt_id, task_id, integration, request_id, idempotency_key, status, created_at, updated_at
+        ) VALUES (?, ?, 'calendar', ?, ?, 'pending', ?, ?)
       `,
-      args: [crypto.randomUUID(), plan.aggregate.task.id, plan.aggregate.requestId, plan.aggregate.idempotencyKey, now]
+      args: [crypto.randomUUID(), plan.aggregate.task.id, plan.aggregate.requestId, plan.aggregate.idempotencyKey, now, now]
     });
 
     await client.execute({
@@ -352,7 +386,7 @@ export async function persistCalendarIntegrationResult(params: {
       await client.execute({
         sql: `
           UPDATE integration_attempts
-          SET status = 'succeeded', response_payload = ?, created_at = ?
+          SET status = 'succeeded', response_payload = ?, updated_at = ?
           WHERE task_id = ? AND integration = 'calendar'
         `,
         args: [JSON.stringify(params.result.raw ?? null), now, params.taskId]
@@ -419,7 +453,7 @@ export async function persistCalendarIntegrationResult(params: {
     await client.execute({
       sql: `
         UPDATE integration_attempts
-        SET status = 'failed', error_code = ?, retry_after_seconds = ?, response_payload = ?, created_at = ?
+        SET status = 'failed', error_code = ?, retry_after_seconds = ?, response_payload = ?, updated_at = ?
         WHERE task_id = ? AND integration = 'calendar'
       `,
       args: [
@@ -466,6 +500,10 @@ export async function persistManualCalendarConfirmation(params: {
   payload?: unknown;
 }): Promise<{ confirmationId: string; alreadyExisted: boolean }> {
   const client = getClient();
+  const task = await findTaskById(params.taskId);
+  if (!task) {
+    throw new Error(`TASK_NOT_FOUND:${params.taskId}`);
+  }
 
   const existingResult = await client.execute({
     sql: `

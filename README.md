@@ -26,6 +26,7 @@ Source context for the term and community model:
 - Favor OSS Astro integrations from https://astro.build/integrations/ when suitable.
 - DDD boundaries, extensibility, and framework-driven behavior are core constraints.
 - Released as a Home Assistant app/add-on and aligned with Home Assistant app ecosystem expectations: https://www.home-assistant.io/apps/
+- Publishing posture remains aligned with Home Assistant developer guidance: https://developers.home-assistant.io/docs/apps/publishing
 
 ## Ubiquitous Language
 
@@ -82,10 +83,10 @@ Interop design is informed by existing HA/Vikunja integration patterns, includin
 
 ## Status
 
-Repository is now at Iteration 3 baseline with:
+Repository is now at an Iteration 2 baseline (with Iteration 3 hardening active on the feature branch) with:
 
 - Public GitHub publication at `Coolock-Village/meitheal`
-- Protected `main` branch with required checks (`governance`, `typecheck-and-tests`, `ha-harness`, `migration-check`)
+- Protected `main` branch with required checks (see `.github/workflows/ci.yml` and governance docs for the canonical list)
 - Persistent SQLite-backed vertical slice for task->calendar sync
 - Direct Home Assistant calendar service integration
 - Idempotent replay handling and persistent audit trail

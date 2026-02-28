@@ -1,0 +1,44 @@
+name: Live HA Integration
+
+on:
+  workflow_dispatch:
+    inputs:
+      ha_base_url:
+        description: "Home Assistant base URL (for example https://ha.example.com)"
+        required: true
+        type: string
+      calendar_entity_id:
+        description: "Calendar entity id to use for create_event test"
+        required: true
+        type: string
+
+jobs:
+  live-ha-check:
+    runs-on: ubuntu-latest
+    env:
+      HA_BASE_URL: ${{ inputs.ha_base_url }}
+      CALENDAR_ENTITY_ID: ${{ inputs.calendar_entity_id }}
+      HA_TOKEN: ${{ secrets.HA_TOKEN }}
+    steps:
+      - uses: actions/checkout@v4
+      - name: Validate secret presence
+        run: |
+          if [ -z "${HA_TOKEN}" ]; then
+            echo "HA_TOKEN secret is required"
+            exit 1
+          fi
+
+      - name: Probe Home Assistant API
+        run: |
+          curl -fsS "${HA_BASE_URL}/api/" \
+            -H "Authorization: Bearer ${HA_TOKEN}" \
+            -H "Content-Type: application/json" >/dev/null
+
+      - name: Dry-run calendar service call
+        run: |
+          now="$(date -u +"%Y-%m-%dT%H:%M:%SZ")"
+          later="$(date -u -d "+30 minutes" +"%Y-%m-%dT%H:%M:%SZ")"
+          curl -fsS -X POST "${HA_BASE_URL}/api/services/calendar/create_event" \
+            -H "Authorization: Bearer ${HA_TOKEN}" \
+            -H "Content-Type: application/json" \
+            -d "{\"entity_id\":\"${CALENDAR_ENTITY_ID}\",\"summary\":\"Meitheal CI probe\",\"start_date_time\":\"${now}\",\"end_date_time\":\"${later}\"}" >/dev/null

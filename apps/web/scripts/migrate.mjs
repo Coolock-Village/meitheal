@@ -15,67 +15,221 @@ if (dbUrl.startsWith("file:")) {
 }
 
 function splitSqlStatements(sql) {
-  return sql
-    .split(/;\s*(?:\r?\n|$)/g)
-    .map((statement) => statement.trim())
-    .filter((statement) => statement.length > 0 && !statement.startsWith("--"));
+  const statements = [];
+  let buffer = "";
+  let inSingleQuote = false;
+  let inDoubleQuote = false;
+  let inLineComment = false;
+  let inBlockComment = false;
+  let dollarQuoteTag = null;
+
+  for (let index = 0; index < sql.length; index += 1) {
+    const char = sql[index];
+    const next = sql[index + 1] ?? "";
+
+    if (inLineComment) {
+      buffer += char;
+      if (char === "\n") {
+        inLineComment = false;
+      }
+      continue;
+    }
+
+    if (inBlockComment) {
+      buffer += char;
+      if (char === "*" && next === "/") {
+        buffer += next;
+        index += 1;
+        inBlockComment = false;
+      }
+      continue;
+    }
+
+    if (dollarQuoteTag) {
+      if (sql.startsWith(dollarQuoteTag, index)) {
+        buffer += dollarQuoteTag;
+        index += dollarQuoteTag.length - 1;
+        dollarQuoteTag = null;
+        continue;
+      }
+      buffer += char;
+      continue;
+    }
+
+    if (inSingleQuote) {
+      buffer += char;
+      if (char === "'" && next === "'") {
+        buffer += next;
+        index += 1;
+        continue;
+      }
+      if (char === "'" && next !== "'") {
+        inSingleQuote = false;
+        continue;
+      }
+      if (char === "\\" && next) {
+        buffer += next;
+        index += 1;
+      }
+      continue;
+    }
+
+    if (inDoubleQuote) {
+      buffer += char;
+      if (char === "\"" && next === "\"") {
+        buffer += next;
+        index += 1;
+        continue;
+      }
+      if (char === "\"" && next !== "\"") {
+        inDoubleQuote = false;
+        continue;
+      }
+      if (char === "\\" && next) {
+        buffer += next;
+        index += 1;
+      }
+      continue;
+    }
+
+    if (char === "-" && next === "-") {
+      buffer += char + next;
+      index += 1;
+      inLineComment = true;
+      continue;
+    }
+
+    if (char === "/" && next === "*") {
+      buffer += char + next;
+      index += 1;
+      inBlockComment = true;
+      continue;
+    }
+
+    if (char === "'") {
+      inSingleQuote = true;
+      buffer += char;
+      continue;
+    }
+
+    if (char === "\"") {
+      inDoubleQuote = true;
+      buffer += char;
+      continue;
+    }
+
+    if (char === "$") {
+      const tail = sql.slice(index);
+      const dollarTagMatch = tail.match(/^\$\$/) ?? tail.match(/^\$[A-Za-z_][A-Za-z0-9_]*\$/);
+      if (dollarTagMatch) {
+        dollarQuoteTag = dollarTagMatch[0];
+        buffer += dollarQuoteTag;
+        index += dollarQuoteTag.length - 1;
+        continue;
+      }
+    }
+
+    if (char === ";") {
+      const statement = buffer.trim();
+      if (statement.length > 0) {
+        statements.push(statement);
+      }
+      buffer = "";
+      continue;
+    }
+
+    buffer += char;
+  }
+
+  const tail = buffer.trim();
+  if (tail.length > 0) {
+    statements.push(tail);
+  }
+
+  return statements;
 }
 
 const client = createClient({ url: dbUrl });
 
-await client.execute(`
-  CREATE TABLE IF NOT EXISTS __meitheal_migrations (
-    name TEXT PRIMARY KEY,
-    applied_at INTEGER NOT NULL
-  )
-`);
+async function main() {
+  await client.execute(`
+    CREATE TABLE IF NOT EXISTS __meitheal_migrations (
+      name TEXT PRIMARY KEY,
+      applied_at INTEGER NOT NULL
+    )
+  `);
 
-const files = (await readdir(migrationsDir)).filter((name) => name.endsWith(".sql")).sort();
-const pending = [];
+  const files = (await readdir(migrationsDir)).filter((name) => name.endsWith(".sql")).sort();
+  const pending = [];
 
-for (const file of files) {
-  const existing = await client.execute({
-    sql: "SELECT name FROM __meitheal_migrations WHERE name = ? LIMIT 1",
-    args: [file]
-  });
-  if (existing.rows.length === 0) {
-    pending.push(file);
-  }
-}
-
-if (checkOnly) {
-  if (pending.length > 0) {
-    console.error(`Pending migrations: ${pending.join(", ")}`);
-    process.exit(1);
-  }
-  console.log("Migration check passed (no pending migrations).");
-  process.exit(0);
-}
-
-for (const file of pending) {
-  const sql = await readFile(path.join(migrationsDir, file), "utf8");
-  const statements = splitSqlStatements(sql);
-
-  await client.execute("BEGIN");
-  try {
-    for (const statement of statements) {
-      await client.execute(statement);
-    }
-
-    await client.execute({
-      sql: "INSERT INTO __meitheal_migrations(name, applied_at) VALUES(?, ?)",
-      args: [file, Date.now()]
+  for (const file of files) {
+    const existing = await client.execute({
+      sql: "SELECT name FROM __meitheal_migrations WHERE name = ? LIMIT 1",
+      args: [file]
     });
-
-    await client.execute("COMMIT");
-    console.log(`Applied migration: ${file}`);
-  } catch (error) {
-    await client.execute("ROLLBACK");
-    console.error(`Failed migration: ${file}`);
-    throw error;
+    if (existing.rows.length === 0) {
+      pending.push(file);
+    }
   }
+
+  if (checkOnly) {
+    if (pending.length > 0) {
+      console.error(`Pending migrations: ${pending.join(", ")}`);
+      return 1;
+    }
+    console.log("Migration check passed (no pending migrations).");
+    return 0;
+  }
+
+  for (const file of pending) {
+    const sql = await readFile(path.join(migrationsDir, file), "utf8");
+    const statements = splitSqlStatements(sql);
+
+    const tx = await client.transaction("write");
+    try {
+      for (const statement of statements) {
+        await tx.execute(statement);
+      }
+
+      await tx.execute({
+        sql: "INSERT INTO __meitheal_migrations(name, applied_at) VALUES(?, ?)",
+        args: [file, Date.now()]
+      });
+
+      await tx.commit();
+      console.log(`Applied migration: ${file}`);
+    } catch (error) {
+      await tx.rollback();
+      console.error(`Failed migration: ${file}`);
+      throw error;
+    } finally {
+      tx.close();
+    }
+  }
+
+  if (pending.length === 0) {
+    console.log("No migrations to apply.");
+  }
+
+  return 0;
 }
 
-if (pending.length === 0) {
-  console.log("No migrations to apply.");
+let exitCode = 0;
+let fatalError = null;
+try {
+  exitCode = await main();
+} catch (error) {
+  exitCode = 1;
+  fatalError = error;
+} finally {
+  await client.close();
+}
+
+if (fatalError) {
+  console.error(fatalError);
+  process.exit(1);
+}
+
+if (exitCode !== 0) {
+  process.exit(exitCode);
 }
