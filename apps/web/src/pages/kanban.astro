@@ -10,7 +10,7 @@ try {
   await ensureSchema();
   const client = getPersistenceClient();
   const result = await client.execute(
-    "SELECT id, title, description, status, priority, due_date, labels, framework_payload, calendar_sync_state, created_at FROM tasks ORDER BY priority ASC, created_at DESC",
+    "SELECT id, title, description, status, priority, due_date, labels, framework_payload, calendar_sync_state, board_id, custom_fields, created_at FROM tasks ORDER BY priority ASC, created_at DESC",
   );
   tasks = result.rows as Record<string, unknown>[];
 } catch (e) {
@@ -149,6 +149,7 @@ const priorityColors: Record<number, string> = {
                     data-desc={task.description ? String(task.description).slice(0, 200) : ""}
                     data-priority={String(p)}
                     data-status={String(task.status)}
+                    data-board={String(task.board_id ?? "default")}
                     ondragstart="event.dataTransfer.setData('text/plain', this.dataset.id); this.classList.add('dragging');"
                     ondragend="this.classList.remove('dragging');"
                     style={`border-left: 3px solid ${priorityColors[p]};`}

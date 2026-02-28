@@ -144,6 +144,7 @@ const statusLabels: Record<string, string> = {
               data-status={s}
               data-priority={String(p)}
               data-rice={rice !== null ? String(rice) : ""}
+              data-board={String(task.board_id ?? "default")}
               data-title={String(task.title).toLowerCase()}
             >
               <input
@@ -183,6 +184,26 @@ const statusLabels: Record<string, string> = {
                   } catch {
                     /* skip */
                   }
+                  return null;
+                })()}
+                {(() => {
+                  try {
+                    const cf = typeof task.custom_fields === "string"
+                      ? JSON.parse(String(task.custom_fields))
+                      : {};
+                    const entries = Object.entries(cf).filter(([, v]) => v !== "" && v !== null && v !== undefined);
+                    if (entries.length > 0) {
+                      return (
+                        <div class="task-custom-fields" style="display: flex; gap: 6px; flex-wrap: wrap; margin-top: 4px;">
+                          {entries.map(([key, val]) => (
+                            <span class="custom-field-chip" style="font-size: 11px; padding: 2px 8px; border-radius: 10px; background: rgba(16,185,129,0.1); color: var(--accent); border: 1px solid rgba(16,185,129,0.2);">
+                              {key}: {String(val)}
+                            </span>
+                          ))}
+                        </div>
+                      );
+                    }
+                  } catch { /* skip */ }
                   return null;
                 })()}
               </div>

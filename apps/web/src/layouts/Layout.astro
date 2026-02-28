@@ -341,6 +341,11 @@ try {
             const data = await res.json();
             const boards = data.boards ?? [];
             select.innerHTML = "";
+            // "All Boards" option first
+            const allOpt = document.createElement("option");
+            allOpt.value = "all";
+            allOpt.textContent = "🗂 All Boards";
+            select.appendChild(allOpt);
             boards.forEach((b: { id: string; title: string; icon: string }) => {
               const opt = document.createElement("option");
               opt.value = b.id;
@@ -351,18 +356,42 @@ try {
         } catch { /* fallback to default option */ }
 
         // Restore active board from localStorage
-        const saved = localStorage.getItem("meitheal_active_board");
-        if (saved && select.querySelector(`option[value="${saved}"]`)) {
+        const saved = localStorage.getItem("meitheal_active_board") ?? "all";
+        if (select.querySelector(`option[value="${saved}"]`)) {
           select.value = saved;
         }
 
         // Expose active board globally for page scripts
         (window as any).__activeBoard = select.value;
 
-        // Switch board → save + reload
+        // Apply board filter to visible items
+        function applyBoardFilter() {
+          const board = select!.value;
+          (window as any).__activeBoard = board;
+          // Filter task items (tasks page)
+          document.querySelectorAll(".task-item[data-board]").forEach((el) => {
+            const item = el as HTMLElement;
+            item.style.display = (board === "all" || item.dataset.board === board) ? "" : "none";
+          });
+          // Filter kanban cards
+          document.querySelectorAll(".kanban-card[data-board]").forEach((el) => {
+            const card = el as HTMLElement;
+            card.style.display = (board === "all" || card.dataset.board === board) ? "" : "none";
+          });
+          // Filter table rows
+          document.querySelectorAll("#task-table tbody tr[data-board]").forEach((el) => {
+            const row = el as HTMLElement;
+            row.style.display = (board === "all" || row.dataset.board === board) ? "" : "none";
+          });
+        }
+
+        // Apply on load
+        applyBoardFilter();
+
+        // Switch board → save + filter
         select.addEventListener("change", () => {
           localStorage.setItem("meitheal_active_board", select.value);
-          window.location.reload();
+          applyBoardFilter();
         });
 
         // Add new board

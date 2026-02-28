@@ -120,7 +120,7 @@ const priorityColors: Record<number, string> = {
                   !["reach", "impact", "confidence", "effort"].includes(k),
               );
               return (
-                <tr data-id={String(task.id)} data-rice={rice !== null ? String(rice) : ""} class={isDone ? "row-done" : ""}>
+                <tr data-id={String(task.id)} data-rice={rice !== null ? String(rice) : ""} data-board={String(task.board_id ?? "default")} class={isDone ? "row-done" : ""}>
                   <td>
                     <input
                       type="checkbox"
