@@ -10,6 +10,13 @@
 | 4 | Cloud Runtime | 📋 Not started | — |
 | 5 | Market Parity | 📋 Not started | — |
 
+## Analysis Baseline
+
+- Canonical competitor/gap package: `docs/analysis/`
+- Cross-tool matrix: `docs/analysis/gap-matrix.md`
+- Parity contract: `docs/analysis/parity-spec.md`
+- Per-competitor details: `docs/analysis/competitors/*.md`
+
 ## Phase 1: Foundation & Vertical Slice ✅
 
 **Goal:** Architecture docs, monorepo scaffold, CI/governance, one end-to-end vertical slice.
@@ -55,6 +62,13 @@
 ## Phase 5: Market Parity 📋
 
 **Goal:** Match Super Productivity + Vikunja core workflows. Passkeys/WebAuthn, rich links, Obsidian sync.
+
+**Parity-driven deliverables:**
+- Rich custom fields + forms logic with conditional UI.
+- Portfolio/workload/priority workflow (RICE/DRICE/HEART overlays).
+- Mobile/offline/collaboration parity improvements from PWA foundation.
+- Integration ecosystem depth (Grocy, n8n, Node-RED, calendars, knowledge links).
+- Parity verification against `docs/analysis/parity-spec.md`.
 
 ---
 *Last updated: 2026-02-28 after brownfield initialization*

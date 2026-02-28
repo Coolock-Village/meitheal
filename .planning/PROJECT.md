@@ -36,6 +36,8 @@ A clean-room OSS Life OS built on Astro SSR for households, homelabs, and commun
 - [ ] Cloudflare Workers + D1 runtime path
 - [ ] Rich link unfurl with SSRF hardening
 - [ ] Market parity with Super Productivity + Vikunja core workflows
+- [ ] Maintain competitor analysis package and gap matrix as a roadmap input (`docs/analysis/`)
+- [ ] Enforce parity floor/exceed targets from `docs/analysis/parity-spec.md`
 
 ### Out of Scope
 
@@ -54,6 +56,7 @@ A clean-room OSS Life OS built on Astro SSR for households, homelabs, and commun
 | ADR-004 | Threat model | Auth, sync, integrations, unfurl risks | Established |
 | ADR-005 | Calendar sync design | Idempotency keys + confirmation flow | Established |
 | ADR-006 | Iteration-05 RFC | Webhooks, Grocy, n8n/Node-RED adapters | Draft |
+| ADR-007 | Competitor gap matrix and parity contract | Canonicalize parity/gap analysis + planning traceability | Established |
 
 ## Constraints
 
@@ -63,6 +66,7 @@ A clean-room OSS Life OS built on Astro SSR for households, homelabs, and commun
 - DDD boundaries: domain packages are infrastructure-agnostic
 - KCS culture: every behavior change updates docs in same commit
 - AGPL-3.0 obligations for any Vikunja-derived code
+- Roadmap changes must reference `docs/analysis/gap-matrix.md` and `docs/analysis/parity-spec.md`
 
 ## Source Artifacts
 
@@ -70,6 +74,7 @@ Synthesized from:
 - `.planning/codebase/STACK.md`, `ARCHITECTURE.md`, `STRUCTURE.md`, `CONVENTIONS.md`, `TESTING.md`, `INTEGRATIONS.md`, `CONCERNS.md`
 - `.planning/persona-loops/phase-1/iteration-01..04/`
 - `README.md`, `docs/decisions/0001..0006`, `docs/kcs/*`
+- `docs/analysis/gap-matrix.md`, `docs/analysis/parity-spec.md`, `docs/analysis/competitors/*.md`
 
 ---
 *Last updated: 2026-02-28 after brownfield initialization*
