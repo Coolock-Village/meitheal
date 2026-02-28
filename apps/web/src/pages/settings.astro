@@ -402,6 +402,26 @@ import Layout from "../layouts/Layout.astro";
       </div>
     </div>
 
+    <!-- Data Portability -->
+    <div class="card">
+      <div class="card-header">
+        <div>
+          <div class="card-title">💾 Data Portability</div>
+          <div class="card-subtitle">Meitheal is local-first. You own your data.</div>
+        </div>
+      </div>
+      <div class="form-group" style="margin-top: 12px;">
+        <label class="form-label" style="margin-bottom: 8px;">Export Tasks</label>
+        <div style="display: flex; gap: 8px;">
+          <button class="btn btn-primary" id="export-json-btn" style="flex: 1;">📥 Download JSON</button>
+          <button class="btn btn-secondary" id="export-csv-btn" style="flex: 1;">📊 Download CSV</button>
+        </div>
+        <small style="color: var(--text-muted); font-size: 11px; display: block; margin-top: 6px;">
+          Exports all tasks from your local IndexedDB to your device.
+        </small>
+      </div>
+    </div>
+
     <!-- About -->
     <div class="card">
       <div class="card-header">
@@ -430,6 +450,29 @@ import Layout from "../layouts/Layout.astro";
   <div id="toast-container" class="toast-container"></div>
 
   <script>
+    import { exportTasksAsJson, exportTasksAsCsv } from "../domains/offline/export-service";
+
+    // Export Binding
+    document.getElementById("export-json-btn")?.addEventListener("click", async () => {
+      try {
+        await exportTasksAsJson();
+        showToast("JSON export generated successfully.");
+      } catch (err) {
+        console.error("Export error:", err);
+        showToast("JSON export failed. Check console.", "error");
+      }
+    });
+
+    document.getElementById("export-csv-btn")?.addEventListener("click", async () => {
+      try {
+        await exportTasksAsCsv();
+        showToast("CSV export generated successfully.");
+      } catch (err) {
+        console.error("Export error:", err);
+        showToast("CSV export failed. Check console.", "error");
+      }
+    });
+
     function showToast(message: string, type: "success" | "error" = "success") {
       const container = document.getElementById("toast-container");
       if (!container) return;
