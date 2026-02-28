@@ -1,0 +1,585 @@
+---
+import Layout from "../layouts/Layout.astro";
+import {
+  ensureSchema,
+  getPersistenceClient,
+} from "@domains/tasks/persistence/store";
+
+let tasks: Record<string, unknown>[] = [];
+try {
+  await ensureSchema();
+  const client = getPersistenceClient();
+  const result = await client.execute(
+    "SELECT id, title, description, status, priority, due_date, labels, framework_payload, calendar_sync_state, created_at, updated_at FROM tasks ORDER BY created_at DESC",
+  );
+  tasks = result.rows as Record<string, unknown>[];
+} catch (e) {
+  /* DB not available */
+}
+
+const priorityLabels: Record<number, string> = {
+  1: "Critical",
+  2: "High",
+  3: "Medium",
+  4: "Low",
+  5: "Minimal",
+};
+const priorityColors: Record<number, string> = {
+  1: "#ef4444",
+  2: "#f59e0b",
+  3: "#3b82f6",
+  4: "#10b981",
+  5: "#6b7280",
+};
+const statusLabels: Record<string, string> = {
+  pending: "Pending",
+  active: "Active",
+  in_progress: "Active",
+  complete: "Complete",
+  done: "Complete",
+  todo: "Pending",
+};
+---
+
+<Layout title="Meitheal — Table">
+  <span slot="page-title">Table View</span>
+  <div slot="actions" style="display: flex; gap: 8px; align-items: center;">
+    <div class="view-switcher">
+      <a href="/tasks" class="view-btn" title="List view">☰</a>
+      <a href="/kanban" class="view-btn" title="Kanban board">▦</a>
+      <a href="/table" class="view-btn active" title="Table view">⊞</a>
+    </div>
+  </div>
+
+  <div class="table-container">
+    <table class="data-table" id="task-table">
+      <thead>
+        <tr>
+          <th style="width: 40px;"><input type="checkbox" id="select-all" /></th
+          >
+          <th class="sortable" data-col="title">Title</th>
+          <th class="sortable" data-col="status" style="width: 100px;"
+            >Status</th
+          >
+          <th class="sortable" data-col="priority" style="width: 100px;"
+            >Priority</th
+          >
+          <th class="sortable" data-col="due_date" style="width: 120px;"
+            >Due Date</th
+          >
+          <th style="width: 80px;">RICE</th>
+          <th style="width: 70px;">Cal</th>
+          <th style="width: 100px;">Custom Fields</th>
+          <th style="width: 80px;">Actions</th>
+        </tr>
+      </thead>
+      <tbody>
+        {
+          tasks.length === 0 ? (
+            <tr>
+              <td
+                colspan="9"
+                style="text-align: center; padding: 40px; color: var(--text-muted);"
+              >
+                No tasks yet — create one to get started
+              </td>
+            </tr>
+          ) : (
+            tasks.map((task) => {
+              const p = Number(task.priority ?? 3);
+              const s = String(task.status);
+              const isDone = s === "complete" || s === "done";
+              const fp =
+                typeof task.framework_payload === "string"
+                  ? JSON.parse(String(task.framework_payload))
+                  : {};
+              const rice =
+                fp.reach && fp.impact && fp.confidence && fp.effort
+                  ? Math.round(
+                      (Number(fp.reach) *
+                        Number(fp.impact) *
+                        Number(fp.confidence)) /
+                        Number(fp.effort),
+                    )
+                  : null;
+              const customFields = Object.entries(fp).filter(
+                ([k]) =>
+                  !["reach", "impact", "confidence", "effort"].includes(k),
+              );
+              return (
+                <tr data-id={String(task.id)} class={isDone ? "row-done" : ""}>
+                  <td>
+                    <input
+                      type="checkbox"
+                      class="row-check"
+                      data-id={String(task.id)}
+                    />
+                  </td>
+                  <td>
+                    <span
+                      class="editable-cell"
+                      contenteditable="true"
+                      data-field="title"
+                      data-id={String(task.id)}
+                    >
+                      {String(task.title)}
+                    </span>
+                    {task.description && (
+                      <div style="font-size: 11px; color: var(--text-muted); margin-top: 2px;">
+                        {String(task.description).slice(0, 60)}
+                      </div>
+                    )}
+                  </td>
+                  <td>
+                    <select
+                      class="inline-select"
+                      data-field="status"
+                      data-id={String(task.id)}
+                    >
+                      <option
+                        value="pending"
+                        selected={s === "pending" || s === "todo"}
+                      >
+                        Pending
+                      </option>
+                      <option
+                        value="active"
+                        selected={s === "active" || s === "in_progress"}
+                      >
+                        Active
+                      </option>
+                      <option value="complete" selected={isDone}>
+                        Complete
+                      </option>
+                    </select>
+                  </td>
+                  <td>
+                    <span
+                      class="priority-indicator"
+                      style={`color: ${priorityColors[p]}`}
+                    >
+                      {priorityLabels[p]}
+                    </span>
+                  </td>
+                  <td style="font-size: 13px; color: var(--text-secondary);">
+                    {task.due_date ? String(task.due_date).split("T")[0] : "—"}
+                  </td>
+                  <td>
+                    {rice ? (
+                      <span
+                        class={`rice-badge ${rice >= 50 ? "rice-high" : rice >= 20 ? "rice-med" : "rice-low"}`}
+                      >
+                        {rice}
+                      </span>
+                    ) : (
+                      <span style="color: var(--text-muted);">—</span>
+                    )}
+                  </td>
+                  <td>
+                    {String(task.calendar_sync_state) === "confirmed" ? (
+                      <span
+                        title="Calendar synced"
+                        style="color: var(--accent);"
+                      >
+                        ✅
+                      </span>
+                    ) : String(task.calendar_sync_state) === "pending" ? (
+                      <span title="Sync pending" style="color: var(--warning);">
+                        ⏳
+                      </span>
+                    ) : (
+                      <span
+                        title="Not synced"
+                        style="color: var(--text-muted);"
+                      >
+                        —
+                      </span>
+                    )}
+                  </td>
+                  <td style="font-size: 11px; color: var(--text-muted);">
+                    {customFields.length > 0
+                      ? customFields.map(([k, v]) => `${k}: ${v}`).join(", ")
+                      : "—"}
+                  </td>
+                  <td>
+                    <button
+                      class="btn-icon delete-row"
+                      data-id={String(task.id)}
+                      title="Delete"
+                    >
+                      🗑
+                    </button>
+                  </td>
+                </tr>
+              );
+            })
+          )
+        }
+      </tbody>
+    </table>
+  </div>
+
+  <div class="bulk-bar" id="bulk-bar" style="display: none;">
+    <span id="selected-count">0 selected</span>
+    <select class="form-select" id="bulk-status" style="max-width: 140px;">
+      <option value="">Change status...</option>
+      <option value="pending">Pending</option>
+      <option value="active">Active</option>
+      <option value="complete">Complete</option>
+    </select>
+    <button
+      class="btn btn-danger"
+      id="bulk-delete"
+      style="padding: 6px 12px; font-size: 13px;">Delete Selected</button
+    >
+  </div>
+
+  <div id="toast-container" class="toast-container"></div>
+
+  <script>
+    function showToast(message: string, type: "success" | "error" = "success") {
+      const container = document.getElementById("toast-container");
+      if (!container) return;
+      const toast = document.createElement("div");
+      toast.className = `toast ${type}`;
+      toast.textContent = message;
+      container.appendChild(toast);
+      setTimeout(() => toast.remove(), 3000);
+    }
+
+    // Inline editing on blur
+    document.querySelectorAll(".editable-cell").forEach((cell) => {
+      cell.addEventListener("blur", async () => {
+        const el = cell as HTMLElement;
+        const id = el.dataset.id;
+        const field = el.dataset.field;
+        const value = el.textContent?.trim();
+        if (!id || !field || !value) return;
+        try {
+          await fetch(`/api/tasks/${id}`, {
+            method: "PUT",
+            headers: { "content-type": "application/json" },
+            body: JSON.stringify({ [field]: value }),
+          });
+          showToast("Updated");
+        } catch {
+          showToast("Failed", "error");
+        }
+      });
+      cell.addEventListener("keydown", (e: Event) => {
+        if ((e as KeyboardEvent).key === "Enter") {
+          (e as KeyboardEvent).preventDefault();
+          (cell as HTMLElement).blur();
+        }
+      });
+    });
+
+    // Inline select change
+    document.querySelectorAll(".inline-select").forEach((sel) => {
+      sel.addEventListener("change", async (e) => {
+        const el = e.target as HTMLSelectElement;
+        const id = el.dataset.id;
+        const field = el.dataset.field;
+        try {
+          await fetch(`/api/tasks/${id}`, {
+            method: "PUT",
+            headers: { "content-type": "application/json" },
+            body: JSON.stringify({ [field!]: el.value }),
+          });
+          showToast("Status updated");
+          setTimeout(() => window.location.reload(), 500);
+        } catch {
+          showToast("Failed", "error");
+        }
+      });
+    });
+
+    // Delete rows
+    document.querySelectorAll(".delete-row").forEach((btn) => {
+      btn.addEventListener("click", async () => {
+        const id = (btn as HTMLElement).dataset.id;
+        if (!confirm("Delete this task?")) return;
+        try {
+          await fetch(`/api/tasks/${id}`, { method: "DELETE" });
+          showToast("Deleted");
+          (btn as HTMLElement).closest("tr")?.remove();
+        } catch {
+          showToast("Failed", "error");
+        }
+      });
+    });
+
+    // Select all / bulk actions
+    const selectAll = document.getElementById("select-all") as HTMLInputElement;
+    const bulkBar = document.getElementById("bulk-bar")!;
+    const selectedCount = document.getElementById("selected-count")!;
+
+    function updateBulkBar() {
+      const checked = document.querySelectorAll(".row-check:checked");
+      if (checked.length > 0) {
+        bulkBar.style.display = "flex";
+        selectedCount.textContent = `${checked.length} selected`;
+      } else {
+        bulkBar.style.display = "none";
+      }
+    }
+
+    selectAll?.addEventListener("change", () => {
+      document.querySelectorAll(".row-check").forEach((cb) => {
+        (cb as HTMLInputElement).checked = selectAll.checked;
+      });
+      updateBulkBar();
+    });
+
+    document.querySelectorAll(".row-check").forEach((cb) => {
+      cb.addEventListener("change", updateBulkBar);
+    });
+
+    // Bulk status change
+    document
+      .getElementById("bulk-status")
+      ?.addEventListener("change", async (e) => {
+        const newStatus = (e.target as HTMLSelectElement).value;
+        if (!newStatus) return;
+        const checked = document.querySelectorAll(".row-check:checked");
+        const promises = Array.from(checked).map((cb) =>
+          fetch(`/api/tasks/${(cb as HTMLElement).dataset.id}`, {
+            method: "PUT",
+            headers: { "content-type": "application/json" },
+            body: JSON.stringify({ status: newStatus }),
+          }),
+        );
+        await Promise.all(promises);
+        showToast(`${checked.length} tasks updated`);
+        setTimeout(() => window.location.reload(), 500);
+      });
+
+    // Bulk delete
+    document
+      .getElementById("bulk-delete")
+      ?.addEventListener("click", async () => {
+        const checked = document.querySelectorAll(".row-check:checked");
+        if (!confirm(`Delete ${checked.length} tasks?`)) return;
+        const promises = Array.from(checked).map((cb) =>
+          fetch(`/api/tasks/${(cb as HTMLElement).dataset.id}`, {
+            method: "DELETE",
+          }),
+        );
+        await Promise.all(promises);
+        showToast(`${checked.length} tasks deleted`);
+        setTimeout(() => window.location.reload(), 500);
+      });
+
+    // Column sorting
+    document.querySelectorAll(".sortable").forEach((th) => {
+      th.addEventListener("click", () => {
+        const col = (th as HTMLElement).dataset.col;
+        const tbody = document.querySelector("#task-table tbody");
+        if (!tbody || !col) return;
+        const rows = Array.from(tbody.querySelectorAll("tr"));
+        const asc = !(th as HTMLElement).classList.contains("sort-asc");
+        document
+          .querySelectorAll(".sortable")
+          .forEach((h) => h.classList.remove("sort-asc", "sort-desc"));
+        (th as HTMLElement).classList.add(asc ? "sort-asc" : "sort-desc");
+        rows.sort((a, b) => {
+          const aVal =
+            a.querySelector(`[data-field="${col}"]`)?.textContent ??
+            a.children[
+              col === "status"
+                ? 2
+                : col === "priority"
+                  ? 3
+                  : col === "due_date"
+                    ? 4
+                    : 1
+            ]?.textContent ??
+            "";
+          const bVal =
+            b.querySelector(`[data-field="${col}"]`)?.textContent ??
+            b.children[
+              col === "status"
+                ? 2
+                : col === "priority"
+                  ? 3
+                  : col === "due_date"
+                    ? 4
+                    : 1
+            ]?.textContent ??
+            "";
+          return asc ? aVal.localeCompare(bVal) : bVal.localeCompare(aVal);
+        });
+        rows.forEach((r) => tbody.appendChild(r));
+      });
+    });
+
+    // Keyboard shortcuts
+    document.addEventListener("keydown", (e) => {
+      if (
+        ["INPUT", "TEXTAREA", "SELECT"].includes(
+          (e.target as HTMLElement)?.tagName,
+        )
+      )
+        return;
+      if ((e.target as HTMLElement)?.contentEditable === "true") return;
+      if (e.key === "l") window.location.href = "/tasks";
+      if (e.key === "k") window.location.href = "/kanban";
+    });
+  </script>
+</Layout>
+
+<style>
+  .table-container {
+    overflow-x: auto;
+    border-radius: var(--radius-lg);
+    border: 1px solid var(--border);
+  }
+  .data-table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 14px;
+  }
+  .data-table th {
+    text-align: left;
+    padding: 12px 14px;
+    font-weight: 600;
+    font-size: 13px;
+    color: var(--text-secondary);
+    background: var(--bg-secondary);
+    border-bottom: 1px solid var(--border);
+    position: sticky;
+    top: 0;
+    cursor: default;
+    user-select: none;
+  }
+  .data-table td {
+    padding: 10px 14px;
+    border-bottom: 1px solid var(--border);
+  }
+  .data-table tr:hover td {
+    background: var(--bg-hover);
+  }
+  .data-table .row-done td {
+    opacity: 0.5;
+  }
+  .sortable {
+    cursor: pointer;
+  }
+  .sortable:hover {
+    color: var(--text-primary);
+  }
+  .sortable.sort-asc::after {
+    content: " ↑";
+    color: var(--accent);
+  }
+  .sortable.sort-desc::after {
+    content: " ↓";
+    color: var(--accent);
+  }
+  .editable-cell {
+    cursor: text;
+    padding: 2px 4px;
+    border-radius: 3px;
+    display: inline-block;
+    min-width: 100px;
+    transition: background 200ms;
+  }
+  .editable-cell:hover {
+    background: var(--bg-hover);
+  }
+  .editable-cell:focus {
+    background: var(--bg-input);
+    outline: 1px solid var(--border-focus);
+  }
+  .inline-select {
+    background: transparent;
+    border: 1px solid transparent;
+    color: var(--text-primary);
+    font-size: 13px;
+    padding: 4px;
+    border-radius: var(--radius-sm);
+    cursor: pointer;
+  }
+  .inline-select:hover {
+    border-color: var(--border);
+  }
+  .inline-select:focus {
+    border-color: var(--accent);
+    outline: none;
+  }
+  .priority-indicator {
+    font-size: 13px;
+    font-weight: 500;
+  }
+  .rice-badge {
+    display: inline-block;
+    padding: 2px 8px;
+    border-radius: 10px;
+    font-size: 12px;
+    font-weight: 600;
+  }
+  .rice-high {
+    background: rgba(16, 185, 129, 0.15);
+    color: var(--accent);
+  }
+  .rice-med {
+    background: rgba(59, 130, 246, 0.15);
+    color: var(--info);
+  }
+  .rice-low {
+    background: rgba(107, 114, 128, 0.15);
+    color: var(--text-muted);
+  }
+  .btn-icon {
+    background: none;
+    border: none;
+    cursor: pointer;
+    font-size: 14px;
+    padding: 4px;
+    opacity: 0.5;
+    transition: opacity 200ms;
+  }
+  .btn-icon:hover {
+    opacity: 1;
+  }
+  .bulk-bar {
+    position: fixed;
+    bottom: 20px;
+    left: 50%;
+    transform: translateX(-50%);
+    background: var(--bg-secondary);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-lg);
+    padding: 12px 20px;
+    display: flex;
+    gap: 12px;
+    align-items: center;
+    box-shadow: var(--shadow-lg);
+    z-index: 50;
+  }
+  .view-switcher {
+    display: flex;
+    border: 1px solid var(--border);
+    border-radius: var(--radius-sm);
+    overflow: hidden;
+  }
+  .view-btn {
+    padding: 6px 12px;
+    text-decoration: none;
+    color: var(--text-secondary);
+    font-size: 16px;
+    transition: all 200ms;
+    border-right: 1px solid var(--border);
+  }
+  .view-btn:last-child {
+    border-right: none;
+  }
+  .view-btn:hover {
+    background: var(--bg-hover);
+    color: var(--text-primary);
+  }
+  .view-btn.active {
+    background: var(--accent-light);
+    color: var(--accent);
+  }
+</style>

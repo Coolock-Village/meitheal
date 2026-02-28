@@ -1,20 +1,251 @@
 ---
-const tagline = "The cooperative task and life engine for your home.";
+import Layout from "../layouts/Layout.astro";
+import {
+  ensureSchema,
+  getPersistenceClient,
+} from "@domains/tasks/persistence/store";
+
+let tasks: Record<string, unknown>[] = [];
+let stats = { total: 0, active: 0, completed: 0, overdue: 0 };
+
+try {
+  await ensureSchema();
+  const client = getPersistenceClient();
+  const result = await client.execute(
+    "SELECT id, title, description, status, priority, due_date, labels, calendar_sync_state, created_at, updated_at FROM tasks ORDER BY created_at DESC LIMIT 10",
+  );
+  tasks = result.rows as Record<string, unknown>[];
+
+  const countResult = await client.execute(
+    "SELECT status, COUNT(*) as cnt FROM tasks GROUP BY status",
+  );
+  for (const row of countResult.rows) {
+    const r = row as Record<string, unknown>;
+    const s = String(r.status);
+    const c = Number(r.cnt);
+    stats.total += c;
+    if (s === "active" || s === "in_progress") stats.active += c;
+    if (s === "complete" || s === "done") stats.completed += c;
+  }
+
+  const overdueResult = await client.execute({
+    sql: "SELECT COUNT(*) as cnt FROM tasks WHERE due_date IS NOT NULL AND due_date < ? AND status != 'complete' AND status != 'done'",
+    args: [new Date().toISOString()],
+  });
+  stats.overdue = Number(
+    (overdueResult.rows[0] as Record<string, unknown>)?.cnt ?? 0,
+  );
+} catch (e) {
+  // DB not available — show empty state
+}
+
+const priorityLabels: Record<number, string> = {
+  1: "Critical",
+  2: "High",
+  3: "Medium",
+  4: "Low",
+  5: "Minimal",
+};
+const statusLabels: Record<string, string> = {
+  pending: "Pending",
+  active: "Active",
+  in_progress: "Active",
+  complete: "Complete",
+  done: "Complete",
+  todo: "Pending",
+};
 ---
 
-<html lang="en">
-  <head>
-    <meta charset="utf-8" />
-    <meta name="viewport" content="width=device-width" />
-    <title>Meitheal</title>
-    <meta name="description" content={tagline} />
-    <link rel="manifest" href="/manifest.webmanifest" />
-  </head>
-  <body>
-    <main>
-      <h1>Meitheal</h1>
-      <p>{tagline}</p>
-      <p>Astro-first, Home Assistant-native, local-first.</p>
-    </main>
-  </body>
-</html>
+<Layout title="Meitheal — Dashboard">
+  <span slot="page-title">Dashboard</span>
+  <button slot="actions" class="btn btn-primary" id="quick-add-btn"
+    >+ New Task</button
+  >
+
+  <div class="stats-grid">
+    <div class="stat-card">
+      <span class="stat-icon">📋</span>
+      <div>
+        <div class="stat-value">{stats.total}</div>
+        <div class="stat-label">Total Tasks</div>
+      </div>
+    </div>
+    <div class="stat-card">
+      <span class="stat-icon">⚡</span>
+      <div>
+        <div class="stat-value">{stats.active}</div>
+        <div class="stat-label">Active</div>
+      </div>
+    </div>
+    <div class="stat-card">
+      <span class="stat-icon">✅</span>
+      <div>
+        <div class="stat-value">{stats.completed}</div>
+        <div class="stat-label">Completed</div>
+      </div>
+    </div>
+    <div class="stat-card">
+      <span class="stat-icon">⏰</span>
+      <div>
+        <div
+          class="stat-value"
+          style={stats.overdue > 0 ? "color: var(--danger)" : ""}
+        >
+          {stats.overdue}
+        </div>
+        <div class="stat-label">Overdue</div>
+      </div>
+    </div>
+  </div>
+
+  <div class="card" style="margin-bottom: 20px;">
+    <div class="card-header">
+      <div>
+        <div class="card-title">Quick Add</div>
+        <div class="card-subtitle">Press Enter to create a task instantly</div>
+      </div>
+    </div>
+    <form id="quick-add-form" style="display: flex; gap: 10px;">
+      <input
+        type="text"
+        class="form-input"
+        id="quick-title"
+        placeholder="What needs to be done?"
+        autocomplete="off"
+      />
+      <button type="submit" class="btn btn-primary">Add</button>
+    </form>
+  </div>
+
+  <div class="card">
+    <div class="card-header">
+      <div>
+        <div class="card-title">Recent Tasks</div>
+        <div class="card-subtitle">{tasks.length} of {stats.total} tasks</div>
+      </div>
+      <a href="/tasks" class="btn btn-ghost">View All →</a>
+    </div>
+    <div class="task-list" id="task-list">
+      {
+        tasks.length === 0 ? (
+          <div class="empty-state">
+            <div class="empty-icon">☘</div>
+            <div class="empty-text">No tasks yet</div>
+            <div class="empty-sub">Create your first task to get started</div>
+          </div>
+        ) : (
+          tasks.map((task) => (
+            <div class="task-item" data-id={String(task.id)}>
+              <input
+                type="checkbox"
+                class="task-checkbox"
+                checked={
+                  String(task.status) === "complete" ||
+                  String(task.status) === "done"
+                }
+                data-id={String(task.id)}
+              />
+              <div class="task-content">
+                <div
+                  class={`task-title ${String(task.status) === "complete" || String(task.status) === "done" ? "done" : ""}`}
+                >
+                  {String(task.title)}
+                </div>
+                <div class="task-meta">
+                  {priorityLabels[Number(task.priority ?? 3)] ?? "Medium"} ·
+                  {statusLabels[String(task.status)] ?? String(task.status)}
+                  {task.due_date
+                    ? ` · Due ${String(task.due_date).split("T")[0]}`
+                    : ""}
+                  {String(task.calendar_sync_state) === "confirmed"
+                    ? " · 📅 Synced"
+                    : ""}
+                </div>
+              </div>
+              <span
+                class={`task-badge badge-${String(task.status) === "complete" || String(task.status) === "done" ? "done" : String(task.status)}`}
+              >
+                {statusLabels[String(task.status)] ?? String(task.status)}
+              </span>
+            </div>
+          ))
+        )
+      }
+    </div>
+  </div>
+
+  <div id="toast-container" class="toast-container"></div>
+
+  <script>
+    function showToast(message: string, type: "success" | "error" = "success") {
+      const container = document.getElementById("toast-container");
+      if (!container) return;
+      const toast = document.createElement("div");
+      toast.className = `toast ${type}`;
+      toast.textContent = message;
+      container.appendChild(toast);
+      setTimeout(() => toast.remove(), 3000);
+    }
+
+    // Quick add form
+    document
+      .getElementById("quick-add-form")
+      ?.addEventListener("submit", async (e) => {
+        e.preventDefault();
+        const input = document.getElementById(
+          "quick-title",
+        ) as HTMLInputElement;
+        const title = input.value.trim();
+        if (!title) return;
+
+        try {
+          const res = await fetch("/api/tasks", {
+            method: "POST",
+            headers: { "content-type": "application/json" },
+            body: JSON.stringify({ title }),
+          });
+          if (res.ok) {
+            showToast("Task created!");
+            input.value = "";
+            window.location.reload();
+          } else {
+            const data = await res.json();
+            showToast(data.error || "Failed to create task", "error");
+          }
+        } catch {
+          showToast("Network error", "error");
+        }
+      });
+
+    // Checkbox toggles
+    document.querySelectorAll(".task-checkbox").forEach((cb) => {
+      cb.addEventListener("change", async (e) => {
+        const target = e.target as HTMLInputElement;
+        const id = target.dataset.id;
+        const newStatus = target.checked ? "complete" : "pending";
+        try {
+          await fetch(`/api/tasks/${id}`, {
+            method: "PUT",
+            headers: { "content-type": "application/json" },
+            body: JSON.stringify({ status: newStatus }),
+          });
+          showToast(target.checked ? "Task completed!" : "Task reopened");
+          setTimeout(() => window.location.reload(), 500);
+        } catch {
+          showToast("Failed to update", "error");
+        }
+      });
+    });
+
+    // Keyboard shortcut: n -> focus quick add
+    document.addEventListener("keydown", (e) => {
+      if (
+        e.key === "n" &&
+        !["INPUT", "TEXTAREA"].includes((e.target as HTMLElement)?.tagName)
+      ) {
+        e.preventDefault();
+        (document.getElementById("quick-title") as HTMLInputElement)?.focus();
+      }
+    });
+  </script>
+</Layout>

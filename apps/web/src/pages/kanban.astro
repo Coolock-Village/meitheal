@@ -1,0 +1,341 @@
+---
+import Layout from "../layouts/Layout.astro";
+import {
+  ensureSchema,
+  getPersistenceClient,
+} from "@domains/tasks/persistence/store";
+
+let tasks: Record<string, unknown>[] = [];
+try {
+  await ensureSchema();
+  const client = getPersistenceClient();
+  const result = await client.execute(
+    "SELECT id, title, description, status, priority, due_date, labels, framework_payload, calendar_sync_state, created_at FROM tasks ORDER BY priority ASC, created_at DESC",
+  );
+  tasks = result.rows as Record<string, unknown>[];
+} catch (e) {
+  /* DB not available */
+}
+
+const columns = [
+  {
+    key: "pending",
+    label: "Pending",
+    icon: "📋",
+    includes: ["pending", "todo"],
+  },
+  {
+    key: "active",
+    label: "Active",
+    icon: "⚡",
+    includes: ["active", "in_progress"],
+  },
+  {
+    key: "complete",
+    label: "Complete",
+    icon: "✅",
+    includes: ["complete", "done"],
+  },
+];
+
+const priorityLabels: Record<number, string> = {
+  1: "Critical",
+  2: "High",
+  3: "Medium",
+  4: "Low",
+  5: "Minimal",
+};
+const priorityColors: Record<number, string> = {
+  1: "#ef4444",
+  2: "#f59e0b",
+  3: "#3b82f6",
+  4: "#10b981",
+  5: "#6b7280",
+};
+---
+
+<Layout title="Meitheal — Kanban">
+  <span slot="page-title">Kanban Board</span>
+  <div slot="actions" style="display: flex; gap: 8px; align-items: center;">
+    <div class="view-switcher">
+      <a href="/tasks" class="view-btn" title="List view">☰</a>
+      <a href="/kanban" class="view-btn active" title="Kanban board">▦</a>
+      <a href="/table" class="view-btn" title="Table view">⊞</a>
+    </div>
+  </div>
+
+  <div class="kanban-board">
+    {
+      columns.map((col) => {
+        const colTasks = tasks.filter((t) =>
+          col.includes.includes(String(t.status)),
+        );
+        return (
+          <div
+            class="kanban-column"
+            data-status={col.key}
+            ondrop="handleDrop(event)"
+            ondragover="event.preventDefault(); this.classList.add('drag-over')"
+            ondragleave="this.classList.remove('drag-over')"
+          >
+            <div class="kanban-column-header">
+              <span>
+                {col.icon} {col.label}
+              </span>
+              <span class="kanban-count">{colTasks.length}</span>
+            </div>
+            <div class="kanban-cards">
+              {colTasks.map((task) => {
+                const p = Number(task.priority ?? 3);
+                const fp =
+                  typeof task.framework_payload === "string"
+                    ? JSON.parse(String(task.framework_payload))
+                    : {};
+                const rice =
+                  fp.reach && fp.impact && fp.confidence && fp.effort
+                    ? Math.round(
+                        (Number(fp.reach) *
+                          Number(fp.impact) *
+                          Number(fp.confidence)) /
+                          Number(fp.effort),
+                      )
+                    : null;
+                return (
+                  <div
+                    class="kanban-card"
+                    draggable="true"
+                    data-id={String(task.id)}
+                    ondragstart="event.dataTransfer.setData('text/plain', this.dataset.id); this.classList.add('dragging');"
+                    ondragend="this.classList.remove('dragging');"
+                  >
+                    <div class="kanban-card-title">{String(task.title)}</div>
+                    <div class="kanban-card-meta">
+                      <span
+                        class="priority-dot"
+                        style={`background: ${priorityColors[p]}`}
+                        title={priorityLabels[p]}
+                      />
+                      <span
+                        style={`color: ${priorityColors[p]}; font-size: 11px;`}
+                      >
+                        {priorityLabels[p]}
+                      </span>
+                      {task.due_date ? (
+                        <span style="font-size: 11px; color: var(--text-muted);">
+                          📅 {String(task.due_date).split("T")[0]}
+                        </span>
+                      ) : null}
+                      {rice ? (
+                        <span style="font-size: 11px; color: var(--accent);">
+                          RICE: {rice}
+                        </span>
+                      ) : null}
+                      {String(task.calendar_sync_state) === "confirmed" ? (
+                        <span style="font-size: 11px;">✅</span>
+                      ) : null}
+                    </div>
+                  </div>
+                );
+              })}
+              {colTasks.length === 0 && (
+                <div class="kanban-empty">Drop tasks here</div>
+              )}
+            </div>
+            <button class="kanban-add-btn" data-status={col.key}>
+              + Add Task
+            </button>
+          </div>
+        );
+      })
+    }
+  </div>
+
+  <div id="toast-container" class="toast-container"></div>
+
+  <script is:inline>
+    async function handleDrop(e) {
+      e.preventDefault();
+      e.currentTarget.classList.remove("drag-over");
+      const taskId = e.dataTransfer.getData("text/plain");
+      const newStatus = e.currentTarget.dataset.status;
+      if (!taskId || !newStatus) return;
+
+      try {
+        const res = await fetch(`/api/tasks/${taskId}`, {
+          method: "PUT",
+          headers: { "content-type": "application/json" },
+          body: JSON.stringify({ status: newStatus }),
+        });
+        if (res.ok) {
+          const container = document.getElementById("toast-container");
+          const toast = document.createElement("div");
+          toast.className = "toast success";
+          toast.textContent = `Moved to ${newStatus}`;
+          container?.appendChild(toast);
+          setTimeout(() => toast.remove(), 2000);
+          setTimeout(() => window.location.reload(), 300);
+        }
+      } catch {
+        /* ignore */
+      }
+    }
+
+    // Quick add from kanban column
+    document.querySelectorAll(".kanban-add-btn").forEach((btn) => {
+      btn.addEventListener("click", async () => {
+        const status = btn.dataset.status;
+        const title = prompt("Task title:");
+        if (!title?.trim()) return;
+        try {
+          const res = await fetch("/api/tasks", {
+            method: "POST",
+            headers: { "content-type": "application/json" },
+            body: JSON.stringify({ title: title.trim(), status }),
+          });
+          if (res.ok) window.location.reload();
+        } catch {
+          /* ignore */
+        }
+      });
+    });
+
+    // Keyboard shortcuts
+    document.addEventListener("keydown", (e) => {
+      if (["INPUT", "TEXTAREA", "SELECT"].includes(e.target?.tagName)) return;
+      if (e.key === "l") window.location.href = "/tasks";
+      if (e.key === "t") window.location.href = "/table";
+    });
+  </script>
+</Layout>
+
+<style>
+  .kanban-board {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 16px;
+    min-height: calc(100vh - 140px);
+  }
+  .kanban-column {
+    background: var(--bg-secondary);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-lg);
+    padding: 16px;
+    display: flex;
+    flex-direction: column;
+    transition: border-color 200ms;
+  }
+  .kanban-column.drag-over {
+    border-color: var(--accent);
+    background: rgba(16, 185, 129, 0.05);
+  }
+  .kanban-column-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    font-weight: 600;
+    font-size: 14px;
+    padding-bottom: 12px;
+    border-bottom: 1px solid var(--border);
+    margin-bottom: 12px;
+  }
+  .kanban-count {
+    background: var(--bg-hover);
+    padding: 2px 8px;
+    border-radius: 12px;
+    font-size: 12px;
+    color: var(--text-secondary);
+  }
+  .kanban-cards {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    min-height: 100px;
+  }
+  .kanban-card {
+    background: var(--bg-card);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-md);
+    padding: 14px;
+    cursor: grab;
+    transition: all 200ms;
+  }
+  .kanban-card:hover {
+    border-color: var(--accent);
+    transform: translateY(-2px);
+    box-shadow: var(--shadow-sm);
+  }
+  .kanban-card.dragging {
+    opacity: 0.5;
+  }
+  .kanban-card-title {
+    font-size: 14px;
+    font-weight: 500;
+    margin-bottom: 8px;
+  }
+  .kanban-card-meta {
+    display: flex;
+    gap: 8px;
+    flex-wrap: wrap;
+    align-items: center;
+  }
+  .priority-dot {
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    flex-shrink: 0;
+  }
+  .kanban-empty {
+    text-align: center;
+    padding: 30px;
+    color: var(--text-muted);
+    font-size: 13px;
+    border: 2px dashed var(--border);
+    border-radius: var(--radius-md);
+  }
+  .kanban-add-btn {
+    margin-top: 8px;
+    padding: 8px;
+    background: none;
+    border: 1px dashed var(--border);
+    border-radius: var(--radius-sm);
+    color: var(--text-muted);
+    cursor: pointer;
+    font-size: 13px;
+    transition: all 200ms;
+  }
+  .kanban-add-btn:hover {
+    border-color: var(--accent);
+    color: var(--accent);
+  }
+  .view-switcher {
+    display: flex;
+    border: 1px solid var(--border);
+    border-radius: var(--radius-sm);
+    overflow: hidden;
+  }
+  .view-btn {
+    padding: 6px 12px;
+    text-decoration: none;
+    color: var(--text-secondary);
+    font-size: 16px;
+    transition: all 200ms;
+    border-right: 1px solid var(--border);
+  }
+  .view-btn:last-child {
+    border-right: none;
+  }
+  .view-btn:hover {
+    background: var(--bg-hover);
+    color: var(--text-primary);
+  }
+  .view-btn.active {
+    background: var(--accent-light);
+    color: var(--accent);
+  }
+  @media (max-width: 768px) {
+    .kanban-board {
+      grid-template-columns: 1fr;
+    }
+  }
+</style>

@@ -81,16 +81,42 @@ Meitheal ships both:
 Interop design is informed by existing HA/Vikunja integration patterns, including:
 - https://github.com/joeShuff/vikunja-homeassistant
 
+## Screenshots
+
+![Meitheal Hub running in HA container](docs/images/meitheal-hub-home.png)
+
+*Meitheal Hub running in Home Assistant container via podman (amd64-base:3.20)*
+
+## Local Container Testing
+
+```bash
+# Pull HA base image
+podman pull ghcr.io/home-assistant/amd64-base:3.20
+
+# Build from repo root
+podman build --build-arg BUILD_FROM="ghcr.io/home-assistant/amd64-base:3.20" \
+  -f addons/meitheal-hub/Dockerfile -t local/meitheal-hub .
+
+# Run standalone (no HA Supervisor)
+podman run --rm --network=slirp4netns:port_handler=slirp4netns \
+  -p 3333:3000 -v /tmp/meitheal-data:/data \
+  local/meitheal-hub /run-local.sh
+
+# Test health endpoint
+curl http://localhost:3333/api/health
+```
+
 ## Status
 
-Repository is now at an Iteration 2 baseline (with Iteration 3 hardening active on the feature branch) with:
+All 5 phases complete and container-verified:
 
-- Public GitHub publication at `Coolock-Village/meitheal`
-- Protected `main` branch with required checks (see `.github/workflows/ci.yml` and governance docs for the canonical list)
-- Persistent SQLite-backed vertical slice for task->calendar sync
-- Direct Home Assistant calendar service integration
-- Idempotent replay handling and persistent audit trail
-- Production add-on startup path (`db:migrate` + `node dist/server/entry.mjs`)
-- Migration command path and migration SQL under `apps/web/drizzle/migrations`
-- Playwright harness including HA adapter integration tests
-- Persona optimization loop artifacts under `.planning/persona-loops/`
+1. ✅ Foundation & Vertical Slice — task→calendar sync, Vikunja compat
+2. ✅ Integration Deepening — webhooks, Grocy, n8n
+3. ✅ PWA & Offline-First — service worker, IndexedDB, background sync
+4. ✅ Cloud Runtime — D1 adapter, dual-runtime detection
+5. ✅ Market Parity — security hardening, domain events, GDPR, OpenAPI
+
+- 97 tests passing, 0 typecheck errors across 9 packages
+- Container-tested on `ghcr.io/home-assistant/amd64-base:3.20`
+- Persona loop: 3 iterations → 0 findings
+

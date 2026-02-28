@@ -1,0 +1,602 @@
+---
+import Layout from "../layouts/Layout.astro";
+import {
+  ensureSchema,
+  getPersistenceClient,
+} from "@domains/tasks/persistence/store";
+
+let tasks: Record<string, unknown>[] = [];
+try {
+  await ensureSchema();
+  const client = getPersistenceClient();
+  const result = await client.execute(
+    "SELECT id, title, description, status, priority, due_date, labels, framework_payload, calendar_sync_state, created_at, updated_at FROM tasks ORDER BY created_at DESC",
+  );
+  tasks = result.rows as Record<string, unknown>[];
+} catch (e) {
+  // DB not available
+}
+
+const priorityLabels: Record<number, string> = {
+  1: "Critical",
+  2: "High",
+  3: "Medium",
+  4: "Low",
+  5: "Minimal",
+};
+const priorityColors: Record<number, string> = {
+  1: "#ef4444",
+  2: "#f59e0b",
+  3: "#3b82f6",
+  4: "#10b981",
+  5: "#6b7280",
+};
+const statusLabels: Record<string, string> = {
+  pending: "Pending",
+  active: "Active",
+  in_progress: "Active",
+  complete: "Complete",
+  done: "Complete",
+  todo: "Pending",
+};
+---
+
+<Layout title="Meitheal — Tasks">
+  <span slot="page-title">Tasks</span>
+  <div slot="actions" style="display: flex; gap: 8px; align-items: center;">
+    <div class="view-switcher">
+      <a href="/tasks" class="view-btn active" title="List view">☰</a>
+      <a href="/kanban" class="view-btn" title="Kanban board">▦</a>
+      <a href="/table" class="view-btn" title="Table view">⊞</a>
+    </div>
+    <button class="btn btn-primary" id="create-task-btn">+ New Task</button>
+  </div>
+
+  <!-- Filters -->
+  <div class="filter-bar" id="filter-bar">
+    <input
+      type="text"
+      class="form-input"
+      id="search-input"
+      placeholder="Search tasks... (press /)"
+      style="max-width: 300px;"
+    />
+    <select class="form-select" id="filter-status" style="max-width: 150px;">
+      <option value="">All Statuses</option>
+      <option value="pending">Pending</option>
+      <option value="active">Active</option>
+      <option value="complete">Complete</option>
+    </select>
+    <select class="form-select" id="filter-priority" style="max-width: 150px;">
+      <option value="">All Priorities</option>
+      <option value="1">Critical</option>
+      <option value="2">High</option>
+      <option value="3">Medium</option>
+      <option value="4">Low</option>
+      <option value="5">Minimal</option>
+    </select>
+    <select class="form-select" id="sort-select" style="max-width: 160px;">
+      <option value="created_at-desc">Newest First</option>
+      <option value="created_at-asc">Oldest First</option>
+      <option value="priority-asc">Priority ↑</option>
+      <option value="priority-desc">Priority ↓</option>
+      <option value="title-asc">Title A-Z</option>
+      <option value="due_date-asc">Due Soonest</option>
+    </select>
+  </div>
+
+  <!-- Task List -->
+  <div class="task-list" id="task-list">
+    {
+      tasks.length === 0 ? (
+        <div class="empty-state">
+          <div class="empty-icon">☘</div>
+          <div class="empty-text">No tasks yet</div>
+          <div class="empty-sub">
+            Create your first task to start managing your life
+          </div>
+        </div>
+      ) : (
+        tasks.map((task) => {
+          const p = Number(task.priority ?? 3);
+          const s = String(task.status);
+          const isDone = s === "complete" || s === "done";
+          const fp =
+            typeof task.framework_payload === "string"
+              ? JSON.parse(String(task.framework_payload))
+              : {};
+          const rice =
+            fp.reach && fp.impact && fp.confidence && fp.effort
+              ? Math.round(
+                  (Number(fp.reach) *
+                    Number(fp.impact) *
+                    Number(fp.confidence)) /
+                    Number(fp.effort),
+                )
+              : null;
+          return (
+            <div
+              class={`task-item ${isDone ? "task-done" : ""}`}
+              data-id={String(task.id)}
+              data-status={s}
+              data-priority={String(p)}
+              data-title={String(task.title).toLowerCase()}
+            >
+              <input
+                type="checkbox"
+                class="task-checkbox"
+                checked={isDone}
+                data-id={String(task.id)}
+              />
+              <div class="task-content">
+                <div class={`task-title ${isDone ? "done" : ""}`}>
+                  {String(task.title)}
+                </div>
+                <div class="task-meta">
+                  <span style={`color: ${priorityColors[p] ?? "#6b7280"}`}>
+                    {priorityLabels[p] ?? "Medium"}
+                  </span>
+                  {task.due_date
+                    ? ` · Due ${String(task.due_date).split("T")[0]}`
+                    : ""}
+                  {String(task.calendar_sync_state) === "confirmed"
+                    ? " · 📅"
+                    : ""}
+                  {rice ? ` · RICE: ${rice}` : ""}
+                </div>
+              </div>
+              <span class={`task-badge badge-${isDone ? "done" : s}`}>
+                {statusLabels[s] ?? s}
+              </span>
+              <button
+                class="task-delete"
+                data-id={String(task.id)}
+                title="Delete task"
+              >
+                ×
+              </button>
+            </div>
+          );
+        })
+      )
+    }
+  </div>
+
+  <!-- Create/Edit Modal -->
+  <div class="modal-overlay" id="task-modal">
+    <div class="modal">
+      <div class="modal-title" id="modal-title">New Task</div>
+      <form id="task-form">
+        <input type="hidden" id="task-id" />
+        <div class="form-group">
+          <label class="form-label" for="task-title-input">Title</label>
+          <input
+            type="text"
+            class="form-input"
+            id="task-title-input"
+            required
+            autocomplete="off"
+          />
+        </div>
+        <div class="form-group">
+          <label class="form-label" for="task-desc-input">Description</label>
+          <textarea
+            class="form-input"
+            id="task-desc-input"
+            rows="3"
+            placeholder="Optional description (Markdown supported)"></textarea>
+        </div>
+        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 12px;">
+          <div class="form-group">
+            <label class="form-label" for="task-priority-input">Priority</label>
+            <select class="form-select" id="task-priority-input">
+              <option value="1">🔴 Critical</option>
+              <option value="2">🟠 High</option>
+              <option value="3" selected>🔵 Medium</option>
+              <option value="4">🟢 Low</option>
+              <option value="5">⚪ Minimal</option>
+            </select>
+          </div>
+          <div class="form-group">
+            <label class="form-label" for="task-status-input">Status</label>
+            <select class="form-select" id="task-status-input">
+              <option value="pending">Pending</option>
+              <option value="active">Active</option>
+              <option value="complete">Complete</option>
+            </select>
+          </div>
+        </div>
+        <div class="form-group">
+          <label class="form-label" for="task-due-input">Due Date</label>
+          <input type="datetime-local" class="form-input" id="task-due-input" />
+        </div>
+        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 12px;">
+          <div class="form-group">
+            <label class="form-label" for="rice-reach">RICE — Reach</label>
+            <input
+              type="number"
+              class="form-input"
+              id="rice-reach"
+              min="0"
+              max="100"
+              placeholder="0-100"
+            />
+          </div>
+          <div class="form-group">
+            <label class="form-label" for="rice-impact">Impact</label>
+            <select class="form-select" id="rice-impact">
+              <option value="">—</option>
+              <option value="3">Massive (3)</option>
+              <option value="2">High (2)</option>
+              <option value="1">Medium (1)</option>
+              <option value="0.5">Low (0.5)</option>
+              <option value="0.25">Minimal (0.25)</option>
+            </select>
+          </div>
+        </div>
+        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 12px;">
+          <div class="form-group">
+            <label class="form-label" for="rice-confidence">Confidence</label>
+            <select class="form-select" id="rice-confidence">
+              <option value="">—</option>
+              <option value="100">High (100%)</option>
+              <option value="80">Medium (80%)</option>
+              <option value="50">Low (50%)</option>
+            </select>
+          </div>
+          <div class="form-group">
+            <label class="form-label" for="rice-effort"
+              >Effort (person-months)</label
+            >
+            <input
+              type="number"
+              class="form-input"
+              id="rice-effort"
+              min="0.1"
+              step="0.1"
+              placeholder="0.5"
+            />
+          </div>
+        </div>
+        <div class="modal-actions">
+          <button type="button" class="btn btn-ghost" id="cancel-modal"
+            >Cancel</button
+          >
+          <button type="submit" class="btn btn-primary" id="save-task-btn"
+            >Create Task</button
+          >
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- Delete Confirmation -->
+  <div class="modal-overlay" id="delete-modal">
+    <div class="modal">
+      <div class="modal-title">Delete Task?</div>
+      <p style="color: var(--text-secondary); margin-bottom: 16px;">
+        This action cannot be undone.
+      </p>
+      <div class="modal-actions">
+        <button class="btn btn-ghost" id="cancel-delete">Cancel</button>
+        <button class="btn btn-danger" id="confirm-delete">Delete</button>
+      </div>
+    </div>
+  </div>
+
+  <div id="toast-container" class="toast-container"></div>
+
+  <script>
+    function showToast(message: string, type: "success" | "error" = "success") {
+      const container = document.getElementById("toast-container");
+      if (!container) return;
+      const toast = document.createElement("div");
+      toast.className = `toast ${type}`;
+      toast.textContent = message;
+      container.appendChild(toast);
+      setTimeout(() => toast.remove(), 3000);
+    }
+
+    // Modal controls
+    const modal = document.getElementById("task-modal")!;
+    const deleteModal = document.getElementById("delete-modal")!;
+    let editingId: string | null = null;
+    let deletingId: string | null = null;
+
+    document
+      .getElementById("create-task-btn")
+      ?.addEventListener("click", () => {
+        editingId = null;
+        (document.getElementById("modal-title") as HTMLElement).textContent =
+          "New Task";
+        (document.getElementById("save-task-btn") as HTMLElement).textContent =
+          "Create Task";
+        (document.getElementById("task-form") as HTMLFormElement).reset();
+        modal.classList.add("open");
+        (
+          document.getElementById("task-title-input") as HTMLInputElement
+        ).focus();
+      });
+
+    document
+      .getElementById("cancel-modal")
+      ?.addEventListener("click", () => modal.classList.remove("open"));
+    modal.addEventListener("click", (e) => {
+      if (e.target === modal) modal.classList.remove("open");
+    });
+
+    // Edit task on click
+    document.querySelectorAll(".task-item").forEach((item) => {
+      item.addEventListener("click", async (e) => {
+        const target = e.target as HTMLElement;
+        if (
+          target.classList.contains("task-checkbox") ||
+          target.classList.contains("task-delete")
+        )
+          return;
+        const id = (item as HTMLElement).dataset.id;
+        if (!id) return;
+        try {
+          const res = await fetch(`/api/tasks/${id}`);
+          if (!res.ok) return;
+          const task = await res.json();
+          editingId = id;
+          (document.getElementById("modal-title") as HTMLElement).textContent =
+            "Edit Task";
+          (
+            document.getElementById("save-task-btn") as HTMLElement
+          ).textContent = "Save Changes";
+          (
+            document.getElementById("task-title-input") as HTMLInputElement
+          ).value = task.title ?? "";
+          (
+            document.getElementById("task-desc-input") as HTMLTextAreaElement
+          ).value = task.description ?? "";
+          (
+            document.getElementById("task-priority-input") as HTMLSelectElement
+          ).value = String(task.priority ?? 3);
+          (
+            document.getElementById("task-status-input") as HTMLSelectElement
+          ).value = task.status ?? "pending";
+          (
+            document.getElementById("task-due-input") as HTMLInputElement
+          ).value = task.due_date ?? "";
+          // RICE fields
+          const fp =
+            typeof task.framework_payload === "string"
+              ? JSON.parse(task.framework_payload)
+              : (task.framework_payload ?? {});
+          (document.getElementById("rice-reach") as HTMLInputElement).value =
+            fp.reach ?? "";
+          (document.getElementById("rice-impact") as HTMLSelectElement).value =
+            fp.impact ?? "";
+          (
+            document.getElementById("rice-confidence") as HTMLSelectElement
+          ).value = fp.confidence ?? "";
+          (document.getElementById("rice-effort") as HTMLInputElement).value =
+            fp.effort ?? "";
+          modal.classList.add("open");
+        } catch {
+          /* ignore */
+        }
+      });
+    });
+
+    // Save task
+    document
+      .getElementById("task-form")
+      ?.addEventListener("submit", async (e) => {
+        e.preventDefault();
+        const title = (
+          document.getElementById("task-title-input") as HTMLInputElement
+        ).value.trim();
+        if (!title) return;
+
+        const fp: Record<string, unknown> = {};
+        const reach = (
+          document.getElementById("rice-reach") as HTMLInputElement
+        ).value;
+        const impact = (
+          document.getElementById("rice-impact") as HTMLSelectElement
+        ).value;
+        const confidence = (
+          document.getElementById("rice-confidence") as HTMLSelectElement
+        ).value;
+        const effort = (
+          document.getElementById("rice-effort") as HTMLInputElement
+        ).value;
+        if (reach) fp.reach = Number(reach);
+        if (impact) fp.impact = Number(impact);
+        if (confidence) fp.confidence = Number(confidence);
+        if (effort) fp.effort = Number(effort);
+
+        const body: Record<string, unknown> = {
+          title,
+          description: (
+            document.getElementById("task-desc-input") as HTMLTextAreaElement
+          ).value,
+          priority: Number(
+            (
+              document.getElementById(
+                "task-priority-input",
+              ) as HTMLSelectElement
+            ).value,
+          ),
+          status: (
+            document.getElementById("task-status-input") as HTMLSelectElement
+          ).value,
+          due_date:
+            (document.getElementById("task-due-input") as HTMLInputElement)
+              .value || null,
+          framework_payload: JSON.stringify(fp),
+        };
+
+        try {
+          const url = editingId ? `/api/tasks/${editingId}` : "/api/tasks";
+          const method = editingId ? "PUT" : "POST";
+          const res = await fetch(url, {
+            method,
+            headers: { "content-type": "application/json" },
+            body: JSON.stringify(body),
+          });
+          if (res.ok) {
+            showToast(editingId ? "Task updated!" : "Task created!");
+            modal.classList.remove("open");
+            window.location.reload();
+          } else {
+            const data = await res.json();
+            showToast(data.error || "Failed", "error");
+          }
+        } catch {
+          showToast("Network error", "error");
+        }
+      });
+
+    // Delete
+    document.querySelectorAll(".task-delete").forEach((btn) => {
+      btn.addEventListener("click", (e) => {
+        e.stopPropagation();
+        deletingId = (btn as HTMLElement).dataset.id ?? null;
+        deleteModal.classList.add("open");
+      });
+    });
+    document
+      .getElementById("cancel-delete")
+      ?.addEventListener("click", () => deleteModal.classList.remove("open"));
+    document
+      .getElementById("confirm-delete")
+      ?.addEventListener("click", async () => {
+        if (!deletingId) return;
+        try {
+          await fetch(`/api/tasks/${deletingId}`, { method: "DELETE" });
+          showToast("Task deleted");
+          deleteModal.classList.remove("open");
+          document
+            .querySelector(`.task-item[data-id="${deletingId}"]`)
+            ?.remove();
+        } catch {
+          showToast("Failed to delete", "error");
+        }
+      });
+
+    // Checkbox toggle
+    document.querySelectorAll(".task-checkbox").forEach((cb) => {
+      cb.addEventListener("change", async (e) => {
+        e.stopPropagation();
+        const target = e.target as HTMLInputElement;
+        const id = target.dataset.id;
+        const newStatus = target.checked ? "complete" : "pending";
+        try {
+          await fetch(`/api/tasks/${id}`, {
+            method: "PUT",
+            headers: { "content-type": "application/json" },
+            body: JSON.stringify({ status: newStatus }),
+          });
+          showToast(target.checked ? "Task completed!" : "Task reopened");
+          setTimeout(() => window.location.reload(), 500);
+        } catch {
+          showToast("Failed to update", "error");
+        }
+      });
+    });
+
+    // Client-side filtering + sorting
+    function applyFilters() {
+      const search = (
+        document.getElementById("search-input") as HTMLInputElement
+      ).value.toLowerCase();
+      const statusFilter = (
+        document.getElementById("filter-status") as HTMLSelectElement
+      ).value;
+      const priorityFilter = (
+        document.getElementById("filter-priority") as HTMLSelectElement
+      ).value;
+
+      document.querySelectorAll(".task-item").forEach((item) => {
+        const el = item as HTMLElement;
+        const matchTitle = !search || (el.dataset.title ?? "").includes(search);
+        const matchStatus =
+          !statusFilter ||
+          el.dataset.status === statusFilter ||
+          (statusFilter === "complete" &&
+            (el.dataset.status === "done" || el.dataset.status === "complete"));
+        const matchPriority =
+          !priorityFilter || el.dataset.priority === priorityFilter;
+        el.style.display =
+          matchTitle && matchStatus && matchPriority ? "" : "none";
+      });
+    }
+
+    document
+      .getElementById("search-input")
+      ?.addEventListener("input", applyFilters);
+    document
+      .getElementById("filter-status")
+      ?.addEventListener("change", applyFilters);
+    document
+      .getElementById("filter-priority")
+      ?.addEventListener("change", applyFilters);
+
+    // Keyboard shortcuts
+    document.addEventListener("keydown", (e) => {
+      const tag = (e.target as HTMLElement)?.tagName;
+      if (["INPUT", "TEXTAREA", "SELECT"].includes(tag)) return;
+      if (e.key === "n") {
+        e.preventDefault();
+        document.getElementById("create-task-btn")?.click();
+      }
+      if (e.key === "/") {
+        e.preventDefault();
+        (document.getElementById("search-input") as HTMLInputElement)?.focus();
+      }
+      if (e.key === "Escape") {
+        modal.classList.remove("open");
+        deleteModal.classList.remove("open");
+      }
+      if (e.key === "k") {
+        window.location.href = "/kanban";
+      }
+      if (e.key === "t") {
+        window.location.href = "/table";
+      }
+    });
+  </script>
+</Layout>
+
+<style>
+  .filter-bar {
+    display: flex;
+    gap: 10px;
+    margin-bottom: 16px;
+    flex-wrap: wrap;
+    align-items: center;
+  }
+  .view-switcher {
+    display: flex;
+    border: 1px solid var(--border);
+    border-radius: var(--radius-sm);
+    overflow: hidden;
+  }
+  .view-btn {
+    padding: 6px 12px;
+    text-decoration: none;
+    color: var(--text-secondary);
+    font-size: 16px;
+    transition: all 200ms;
+    border-right: 1px solid var(--border);
+  }
+  .view-btn:last-child {
+    border-right: none;
+  }
+  .view-btn:hover {
+    background: var(--bg-hover);
+    color: var(--text-primary);
+  }
+  .view-btn.active {
+    background: var(--accent-light);
+    color: var(--accent);
+  }
+  .task-done {
+    opacity: 0.6;
+  }
+</style>

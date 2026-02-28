@@ -216,7 +216,22 @@ export async function ensureSchema(): Promise<void> {
     await client.execute("UPDATE integration_attempts SET updated_at = created_at WHERE updated_at = 0");
   }
 
+  // Phase 6: UI columns
+  if (!(await hasColumn(client, "tasks", "priority"))) {
+    await client.execute("ALTER TABLE tasks ADD COLUMN priority INTEGER NOT NULL DEFAULT 3");
+  }
+  if (!(await hasColumn(client, "tasks", "due_date"))) {
+    await client.execute("ALTER TABLE tasks ADD COLUMN due_date TEXT");
+  }
+  if (!(await hasColumn(client, "tasks", "labels"))) {
+    await client.execute("ALTER TABLE tasks ADD COLUMN labels TEXT NOT NULL DEFAULT '[]'");
+  }
+
+  await client.execute("CREATE INDEX IF NOT EXISTS tasks_status_idx ON tasks(status)");
+  await client.execute("CREATE INDEX IF NOT EXISTS tasks_priority_idx ON tasks(priority)");
+
   ensured = true;
+
 }
 
 export async function findByIdempotencyKey(idempotencyKey: string): Promise<PersistedTaskResponse | null> {
