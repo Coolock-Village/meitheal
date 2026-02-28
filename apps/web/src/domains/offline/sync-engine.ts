@@ -106,12 +106,18 @@ export async function processSyncQueue(
         // Server wins — update local with server data
         await putTask({ ...serverVersion, syncedAt: new Date().toISOString() })
         await removeSyncOp(op.id)
-      } else if (op.retryCount < MAX_RETRIES) {
         await incrementRetryCount(op.id)
         result.failed++
-        // Wait before continuing (don't block entire queue)
+        // Wait using exponential backoff based on retry count
         const delay = RETRY_DELAYS_MS[op.retryCount] ?? RETRY_DELAYS_MS[RETRY_DELAYS_MS.length - 1]!
+        console.warn(`[sync-engine] op ${op.id} failed, retrying in ${delay}ms...`)
+        emitSyncEvent({
+          type: "sync-error",
+          error: `Network unstable. Retrying in ${delay / 1000}s...`,
+        })
         await new Promise((r) => setTimeout(r, delay))
+        // Break out of the current queue processing so we don't hammer the offline network
+        break;
       } else {
         // Max retries exceeded — dead letter
         console.error(`[sync-engine] Max retries exceeded for ${op.id}, removing from queue`)
@@ -122,8 +128,19 @@ export async function processSyncQueue(
       result.failed++
       if (op.retryCount < MAX_RETRIES) {
         await incrementRetryCount(op.id)
+        const delay = RETRY_DELAYS_MS[op.retryCount] ?? RETRY_DELAYS_MS[RETRY_DELAYS_MS.length - 1]!
+        emitSyncEvent({
+          type: "sync-error",
+          error: `Offline. Retrying sync in ${delay / 1000}s...`,
+        })
+        await new Promise((r) => setTimeout(r, delay))
+        break; // Break queue if the network is completely down
       } else {
         await removeSyncOp(op.id)
+        emitSyncEvent({
+          type: "sync-error",
+          error: `Sync failed permanently for operation ${op.id}.`,
+        })
       }
       console.error(`[sync-engine] Operation ${op.id} failed:`, error)
     }
