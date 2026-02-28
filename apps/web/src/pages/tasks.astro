@@ -144,6 +144,23 @@ const statusLabels: Record<string, string> = {
                     : ""}
                   {rice ? ` · RICE: ${rice}` : ""}
                 </div>
+                {(() => {
+                  try {
+                    const lbls = JSON.parse(String(task.labels ?? "[]"));
+                    if (Array.isArray(lbls) && lbls.length > 0) {
+                      return (
+                        <div class="task-labels">
+                          {lbls.map((l: string) => (
+                            <span class="label-chip">{l}</span>
+                          ))}
+                        </div>
+                      );
+                    }
+                  } catch {
+                    /* skip */
+                  }
+                  return null;
+                })()}
               </div>
               <span class={`task-badge badge-${isDone ? "done" : s}`}>
                 {statusLabels[s] ?? s}
@@ -209,6 +226,20 @@ const statusLabels: Record<string, string> = {
         <div class="form-group">
           <label class="form-label" for="task-due-input">Due Date</label>
           <input type="datetime-local" class="form-input" id="task-due-input" />
+        </div>
+        <div class="form-group">
+          <label class="form-label" for="task-labels-input"
+            >Labels <span style="color: var(--text-muted); font-weight: 400;"
+              >(comma-separated, or use #tag in title)</span
+            ></label
+          >
+          <input
+            type="text"
+            class="form-input"
+            id="task-labels-input"
+            placeholder="bug, feature, urgent"
+            autocomplete="off"
+          />
         </div>
         <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 12px;">
           <div class="form-group">
@@ -427,6 +458,67 @@ const statusLabels: Record<string, string> = {
         ).value.trim();
         if (!title) return;
 
+        // ✨ Quick Add Magic — parse #labels and date keywords from title
+        let parsedTitle = title;
+        const extractedLabels: string[] = [];
+        let extractedDue: string | null = null;
+
+        // Extract #labels
+        parsedTitle = parsedTitle
+          .replace(/#(\w+)/g, (_match, label) => {
+            extractedLabels.push(label);
+            return "";
+          })
+          .trim();
+
+        // Extract date keywords
+        const dateKeywords: Record<string, () => Date> = {
+          today: () => new Date(),
+          tomorrow: () => {
+            const d = new Date();
+            d.setDate(d.getDate() + 1);
+            return d;
+          },
+          "next week": () => {
+            const d = new Date();
+            d.setDate(d.getDate() + 7);
+            return d;
+          },
+          monday: () => nextWeekday(1),
+          tuesday: () => nextWeekday(2),
+          wednesday: () => nextWeekday(3),
+          thursday: () => nextWeekday(4),
+          friday: () => nextWeekday(5),
+        };
+
+        function nextWeekday(day: number): Date {
+          const d = new Date();
+          const diff = (day - d.getDay() + 7) % 7 || 7;
+          d.setDate(d.getDate() + diff);
+          return d;
+        }
+
+        for (const [keyword, getDate] of Object.entries(dateKeywords)) {
+          const regex = new RegExp(`\\b${keyword}\\b`, "i");
+          if (regex.test(parsedTitle)) {
+            extractedDue = getDate().toISOString().slice(0, 16);
+            parsedTitle = parsedTitle.replace(regex, "").trim();
+            break;
+          }
+        }
+
+        // Merge manual labels with extracted labels
+        const manualLabels = (
+          document.getElementById("task-labels-input") as HTMLInputElement
+        ).value
+          .split(",")
+          .map((l) => l.trim())
+          .filter((l) => l.length > 0);
+        const allLabels = [...new Set([...manualLabels, ...extractedLabels])];
+
+        // Use parsed title (without #tags and date keywords)
+        const finalTitle = parsedTitle || title;
+
         const fp: Record<string, unknown> = {};
         const reach = (
           document.getElementById("rice-reach") as HTMLInputElement
@@ -446,7 +538,7 @@ const statusLabels: Record<string, string> = {
         if (effort) fp.effort = Number(effort);
 
         const body: Record<string, unknown> = {
-          title,
+          title: finalTitle,
           description: (
             document.getElementById("task-desc-input") as HTMLTextAreaElement
           ).value,
@@ -461,8 +553,11 @@ const statusLabels: Record<string, string> = {
             document.getElementById("task-status-input") as HTMLSelectElement
           ).value,
           due_date:
+            extractedDue ||
             (document.getElementById("task-due-input") as HTMLInputElement)
-              .value || null,
+              .value ||
+            null,
+          labels: JSON.stringify(allLabels),
           framework_payload: JSON.stringify(fp),
         };
 
