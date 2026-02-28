@@ -140,6 +140,19 @@ const priorityColors: Record<number, string> = {
                           Number(fp.effort),
                       )
                     : null;
+                // T-1911: Due-date status computation
+                const dueDate = task.due_date
+                  ? new Date(String(task.due_date))
+                  : null;
+                const today = new Date();
+                today.setHours(0, 0, 0, 0);
+                const dueStatus = dueDate
+                  ? dueDate < today
+                    ? "overdue"
+                    : dueDate.toDateString() === new Date().toDateString()
+                      ? "today"
+                      : "upcoming"
+                  : null;
                 return (
                   <div
                     class="kanban-card"
@@ -184,8 +197,15 @@ const priorityColors: Record<number, string> = {
                         {priorityLabels[p]}
                       </span>
                       {task.due_date ? (
-                        <span class="kanban-card-due">
-                          📅 {String(task.due_date).split("T")[0]}
+                        <span
+                          class={`kanban-card-due ${dueStatus ? `due-${dueStatus}` : ""}`}
+                        >
+                          {dueStatus === "overdue"
+                            ? "🔴"
+                            : dueStatus === "today"
+                              ? "🟡"
+                              : "🟢"}{" "}
+                          {String(task.due_date).split("T")[0]}
                         </span>
                       ) : null}
                       {rice ? (
@@ -220,12 +240,33 @@ const priorityColors: Record<number, string> = {
                             <div class="kanban-labels">
                               {lbls.map(
                                 (
-                                  l: string | { name: string; color?: string },
-                                ) => (
-                                  <span class="label-chip">
-                                    {typeof l === "string" ? l : l.name}
-                                  </span>
-                                ),
+                                  l:
+                                    | string
+                                    | {
+                                        name: string;
+                                        color?: string;
+                                        hex_color?: string;
+                                      },
+                                ) => {
+                                  const labelName =
+                                    typeof l === "string" ? l : l.name;
+                                  const labelColor =
+                                    typeof l === "object"
+                                      ? l.hex_color || l.color || ""
+                                      : "";
+                                  return (
+                                    <span
+                                      class="label-chip"
+                                      style={
+                                        labelColor
+                                          ? `background: ${labelColor}20; color: ${labelColor}; border-color: ${labelColor}40;`
+                                          : ""
+                                      }
+                                    >
+                                      {labelName}
+                                    </span>
+                                  );
+                                },
                               )}
                             </div>
                           );
@@ -860,6 +901,120 @@ const priorityColors: Record<number, string> = {
         });
       });
     })();
+
+    // T-1914: Keyboard navigation for kanban board
+    (() => {
+      const board = document.querySelector(".kanban-board");
+      if (!board) return;
+
+      let focusedCard = null;
+
+      board.addEventListener("keydown", (e) => {
+        const cards = Array.from(board.querySelectorAll(".kanban-card"));
+        if (!cards.length) return;
+
+        if (!focusedCard || !document.contains(focusedCard)) {
+          focusedCard = cards[0];
+        }
+
+        const currentCol = focusedCard.closest(".kanban-column");
+        const colCards = Array.from(
+          currentCol.querySelectorAll(".kanban-card"),
+        );
+        const colIdx = colCards.indexOf(focusedCard);
+        const columns = Array.from(board.querySelectorAll(".kanban-column"));
+        const colPos = columns.indexOf(currentCol);
+
+        let nextCard = null;
+
+        switch (e.key) {
+          case "ArrowDown":
+            e.preventDefault();
+            nextCard = colCards[colIdx + 1] || colCards[0];
+            break;
+          case "ArrowUp":
+            e.preventDefault();
+            nextCard = colCards[colIdx - 1] || colCards[colCards.length - 1];
+            break;
+          case "ArrowRight":
+            e.preventDefault();
+            const nextCol = columns[colPos + 1] || columns[0];
+            const nextColCards = nextCol.querySelectorAll(".kanban-card");
+            nextCard = nextColCards[0] || null;
+            break;
+          case "ArrowLeft":
+            e.preventDefault();
+            const prevCol = columns[colPos - 1] || columns[columns.length - 1];
+            const prevColCards = prevCol.querySelectorAll(".kanban-card");
+            nextCard = prevColCards[0] || null;
+            break;
+          case "Enter":
+            e.preventDefault();
+            const id = focusedCard.dataset.id;
+            if (id && typeof window.openTaskDetail === "function") {
+              window.openTaskDetail(id);
+            }
+            return;
+        }
+
+        if (nextCard) {
+          focusedCard.classList.remove("kb-focused");
+          focusedCard = nextCard;
+          focusedCard.classList.add("kb-focused");
+          focusedCard.scrollIntoView({ block: "nearest" });
+        }
+      });
+
+      // Make board focusable for keyboard events
+      board.setAttribute("tabindex", "0");
+
+      // Focus first card when board gets focus
+      board.addEventListener("focus", () => {
+        const firstCard = board.querySelector(".kanban-card");
+        if (firstCard) {
+          focusedCard = firstCard;
+          focusedCard.classList.add("kb-focused");
+        }
+      });
+
+      board.addEventListener("blur", () => {
+        if (focusedCard) focusedCard.classList.remove("kb-focused");
+      });
+    })();
+
+    // T-1915: Column collapse toggle
+    (() => {
+      document.querySelectorAll(".kanban-column-header").forEach((header) => {
+        header.style.cursor = "pointer";
+        header.title = "Click to collapse/expand";
+
+        header.addEventListener("click", (e) => {
+          // Don't collapse if clicking the count badge
+          if (e.target.classList.contains("kanban-count")) return;
+
+          const col = header.closest(".kanban-column");
+          const cards = col.querySelector(".kanban-cards");
+          const addBtn = col.querySelector(".kanban-add-btn");
+
+          col.classList.toggle("collapsed");
+
+          if (col.classList.contains("collapsed")) {
+            cards.style.display = "none";
+            if (addBtn) addBtn.style.display = "none";
+            col.style.minWidth = "48px";
+            col.style.maxWidth = "48px";
+            header.querySelector("span:first-child").style.writingMode =
+              "vertical-rl";
+          } else {
+            cards.style.display = "";
+            if (addBtn) addBtn.style.display = "";
+            col.style.minWidth = "";
+            col.style.maxWidth = "";
+            header.querySelector("span:first-child").style.writingMode = "";
+          }
+        });
+      });
+    })();
   </script>
 </Layout>
 
@@ -1126,5 +1281,40 @@ const priorityColors: Record<number, string> = {
     max-width: 120px;
     overflow: hidden;
     text-overflow: ellipsis;
+  }
+</style>
+
+<style is:global>
+  /* T-1914: Keyboard focus ring */
+  .kanban-card.kb-focused {
+    outline: 2px solid var(--accent);
+    outline-offset: 2px;
+    box-shadow: 0 0 12px rgba(16, 185, 129, 0.3);
+  }
+
+  /* T-1911: Due-date color badges */
+  .kanban-card-due.due-overdue {
+    color: var(--danger);
+    font-weight: 600;
+  }
+  .kanban-card-due.due-today {
+    color: var(--warning);
+    font-weight: 600;
+  }
+  .kanban-card-due.due-upcoming {
+    color: var(--accent);
+  }
+
+  /* T-1915: Collapsed column state */
+  .kanban-column.collapsed {
+    min-width: 48px !important;
+    max-width: 48px !important;
+    padding: 8px 4px;
+    transition: all 200ms ease;
+  }
+  .kanban-column.collapsed .kanban-column-header {
+    border-bottom: none;
+    margin-bottom: 0;
+    padding-bottom: 0;
   }
 </style>
