@@ -1,0 +1,460 @@
+openapi: "3.0.3"
+info:
+  title: Meitheal Task & Life Engine API
+  description: |
+    Local-first task and life management API for Home Assistant.
+
+    Meitheal is an Astro-native task engine designed to run as a
+    Home Assistant add-on while also supporting Cloudflare deployment.
+
+    ## Authentication
+    - Home Assistant ingress: `hassio_token` header (validated by Supervisor)
+    - Standalone mode: No auth required (local network only)
+
+    ## Rate Limits
+    All POST/PUT/DELETE endpoints: 60 requests per minute per client.
+
+    ## Input Sanitization
+    All text inputs are HTML-stripped and length-capped.
+  version: "1.0.0"
+  contact:
+    name: Coolock Village
+    url: https://github.com/Coolock-Village/meitheal
+  license:
+    name: AGPL-3.0
+    url: https://github.com/Coolock-Village/meitheal/blob/main/LICENSE
+
+servers:
+  - url: http://localhost:4321
+    description: Local development (Astro dev server)
+  - url: http://localhost:3000
+    description: Home Assistant add-on runtime
+
+tags:
+  - name: Tasks
+    description: Task CRUD operations
+  - name: Health
+    description: System health and connectivity
+  - name: Settings
+    description: User preferences and configuration
+  - name: Labels
+    description: Task label management
+  - name: Integrations
+    description: Home Assistant and external service integration
+  - name: Unfurl
+    description: URL metadata extraction
+
+paths:
+  /api/health:
+    get:
+      tags: [Health]
+      summary: System health check
+      operationId: getHealth
+      description: |
+        Returns database connectivity status and system metadata.
+        Used by the sidebar connection indicator.
+      responses:
+        "200":
+          description: Health status
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  status:
+                    type: string
+                    enum: [ok, error]
+                  timestamp:
+                    type: string
+                    format: date-time
+
+  /api/tasks:
+    get:
+      tags: [Tasks]
+      summary: List tasks with optional filtering
+      operationId: listTasks
+      parameters:
+        - name: q
+          in: query
+          schema:
+            type: string
+          description: Free-text search across title and description
+        - name: status
+          in: query
+          schema:
+            type: string
+            enum: [pending, active, in_progress, complete, done]
+        - name: priority
+          in: query
+          schema:
+            type: integer
+            minimum: 1
+            maximum: 5
+        - name: limit
+          in: query
+          schema:
+            type: integer
+            default: 50
+        - name: offset
+          in: query
+          schema:
+            type: integer
+            default: 0
+      responses:
+        "200":
+          description: Task list
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  tasks:
+                    type: array
+                    items:
+                      $ref: "#/components/schemas/Task"
+                  total:
+                    type: integer
+    post:
+      tags: [Tasks]
+      summary: Create a new task
+      operationId: createTask
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/TaskCreate"
+      responses:
+        "200":
+          description: Task created
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Task"
+        "400":
+          description: Validation error
+
+  /api/tasks/{id}:
+    get:
+      tags: [Tasks]
+      summary: Get a single task
+      operationId: getTask
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        "200":
+          description: Task details
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Task"
+        "404":
+          description: Task not found
+    put:
+      tags: [Tasks]
+      summary: Update a task
+      operationId: updateTask
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/TaskUpdate"
+      responses:
+        "200":
+          description: Task updated
+        "404":
+          description: Task not found
+    delete:
+      tags: [Tasks]
+      summary: Delete a task
+      operationId: deleteTask
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        "200":
+          description: Task deleted
+        "404":
+          description: Task not found
+
+  /api/labels:
+    get:
+      tags: [Labels]
+      summary: List all labels
+      operationId: listLabels
+      responses:
+        "200":
+          description: Label list
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/Label"
+    post:
+      tags: [Labels]
+      summary: Create a label
+      operationId: createLabel
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [title]
+              properties:
+                title:
+                  type: string
+                  maxLength: 100
+                hex_color:
+                  type: string
+                  pattern: "^#[0-9a-fA-F]{6}$"
+      responses:
+        "200":
+          description: Label created
+
+  /api/settings:
+    get:
+      tags: [Settings]
+      summary: Get all user settings
+      operationId: getSettings
+      responses:
+        "200":
+          description: Settings object
+          content:
+            application/json:
+              schema:
+                type: object
+                additionalProperties: true
+    put:
+      tags: [Settings]
+      summary: Update a setting
+      operationId: updateSetting
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [key, value]
+              properties:
+                key:
+                  type: string
+                  maxLength: 100
+                value:
+                  type: string
+                  maxLength: 10000
+      responses:
+        "200":
+          description: Setting updated
+
+  /api/unfurl:
+    get:
+      tags: [Unfurl]
+      summary: Extract metadata from a URL
+      operationId: unfurlUrl
+      parameters:
+        - name: url
+          in: query
+          required: true
+          schema:
+            type: string
+            format: uri
+      responses:
+        "200":
+          description: URL metadata
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  title:
+                    type: string
+                  description:
+                    type: string
+                  image:
+                    type: string
+                  url:
+                    type: string
+
+  /api/ha/entities:
+    get:
+      tags: [Integrations]
+      summary: List Home Assistant entities
+      operationId: listHaEntities
+      description: |
+        Proxies to the HA Supervisor API to list all entities.
+        Only available when running as an HA add-on.
+      responses:
+        "200":
+          description: Entity list
+        "502":
+          description: HA Supervisor not available
+
+  /api/ha/services:
+    get:
+      tags: [Integrations]
+      summary: List Home Assistant services
+      operationId: listHaServices
+      responses:
+        "200":
+          description: Service list
+        "502":
+          description: HA Supervisor not available
+
+  /api/ha/call:
+    post:
+      tags: [Integrations]
+      summary: Call a Home Assistant service
+      operationId: callHaService
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [domain, service]
+              properties:
+                domain:
+                  type: string
+                service:
+                  type: string
+                target:
+                  type: object
+                data:
+                  type: object
+      responses:
+        "200":
+          description: Service called
+        "502":
+          description: HA Supervisor not available
+
+  /api/v1/calendar/sync:
+    post:
+      tags: [Integrations]
+      summary: Sync task to HA calendar
+      operationId: syncTaskToCalendar
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [task_id]
+              properties:
+                task_id:
+                  type: string
+      responses:
+        "200":
+          description: Sync result
+        "404":
+          description: Task not found
+
+  /api/integrations/vikunja/tasks:
+    get:
+      tags: [Integrations]
+      summary: List tasks via Vikunja compatibility layer
+      operationId: listVikunjaTasks
+      responses:
+        "200":
+          description: Vikunja-format task list
+
+components:
+  schemas:
+    Task:
+      type: object
+      properties:
+        id:
+          type: integer
+        title:
+          type: string
+        description:
+          type: string
+        status:
+          type: string
+          enum: [pending, active, in_progress, complete, done]
+        priority:
+          type: integer
+          minimum: 1
+          maximum: 5
+        due_date:
+          type: string
+          format: date-time
+          nullable: true
+        labels:
+          type: string
+          description: JSON-encoded array of label names
+        framework_payload:
+          type: string
+          description: JSON-encoded framework scoring data (RICE, HEART, etc.)
+        calendar_sync_state:
+          type: string
+          enum: [none, pending, synced, error]
+        created_at:
+          type: string
+          format: date-time
+        updated_at:
+          type: string
+          format: date-time
+
+    TaskCreate:
+      type: object
+      required: [title]
+      properties:
+        title:
+          type: string
+          maxLength: 500
+        description:
+          type: string
+          maxLength: 10000
+        status:
+          type: string
+          default: pending
+        priority:
+          type: integer
+          default: 3
+        due_date:
+          type: string
+          format: date-time
+          nullable: true
+        labels:
+          type: string
+        framework_payload:
+          type: string
+
+    TaskUpdate:
+      type: object
+      properties:
+        title:
+          type: string
+        description:
+          type: string
+        status:
+          type: string
+        priority:
+          type: integer
+        due_date:
+          type: string
+          nullable: true
+
+    Label:
+      type: object
+      properties:
+        id:
+          type: integer
+        title:
+          type: string
+        hex_color:
+          type: string
+        created_at:
+          type: string
+          format: date-time
