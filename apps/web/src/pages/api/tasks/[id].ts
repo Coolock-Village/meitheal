@@ -44,7 +44,7 @@ export const PUT: APIRoute = async ({ params, request }) => {
 
   // Check task exists
   const existing = await client.execute({
-    sql: "SELECT id FROM tasks WHERE id = ? LIMIT 1",
+    sql: "SELECT id, updated_at FROM tasks WHERE id = ? LIMIT 1",
     args: [params.id!],
   });
   if (existing.rows.length === 0) {
@@ -52,6 +52,21 @@ export const PUT: APIRoute = async ({ params, request }) => {
       status: 404,
       headers: { "content-type": "application/json" },
     });
+  }
+
+  // Optimistic locking: reject stale updates (Persona #7)
+  if (typeof body.updated_at === "number") {
+    const stored = Number((existing.rows[0] as Record<string, unknown>).updated_at ?? 0);
+    if (body.updated_at < stored) {
+      return new Response(JSON.stringify({
+        error: "Conflict: task was modified since your last read",
+        server_updated_at: stored,
+        client_updated_at: body.updated_at,
+      }), {
+        status: 409,
+        headers: { "content-type": "application/json" },
+      });
+    }
   }
 
   // Input sanitization — same rules as POST

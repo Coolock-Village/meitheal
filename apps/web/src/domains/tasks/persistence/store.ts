@@ -303,6 +303,20 @@ export async function ensureSchema(): Promise<void> {
     await client.execute("ALTER TABLE tasks ADD COLUMN summary TEXT");
   }
 
+  // Phase 29: Task activity log — audit trail (competitive parity: Jira/Asana/Linear)
+  await client.execute(`
+    CREATE TABLE IF NOT EXISTS task_activity_log (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      task_id TEXT NOT NULL,
+      field TEXT NOT NULL,
+      old_value TEXT,
+      new_value TEXT,
+      actor TEXT NOT NULL DEFAULT 'user',
+      created_at INTEGER NOT NULL DEFAULT (strftime('%s', 'now') * 1000),
+      FOREIGN KEY (task_id) REFERENCES tasks(id) ON DELETE CASCADE
+    )
+  `);
+  await client.execute("CREATE INDEX IF NOT EXISTS activity_log_task_id_idx ON task_activity_log(task_id)");
 
   // Phase 18: Comments table
   await client.execute(`

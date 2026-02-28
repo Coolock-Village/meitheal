@@ -17,7 +17,7 @@ export const GET: APIRoute = async () => {
 
         if (allTasks.length === 0) {
             // Return CSV with headers only (204 should not have a body)
-            return new Response("id,parent_id,title,description,status,priority,task_type,due_date,created_at,updated_at\n", {
+            return new Response("id,parent_id,title,description,status,priority,task_type,board_id,labels,due_date,created_at,updated_at\n", {
                 status: 200,
                 headers: {
                     "Content-Type": "text/csv; charset=utf-8",
@@ -28,7 +28,7 @@ export const GET: APIRoute = async () => {
 
         const headers = [
             "id", "parent_id", "title", "description", "status", "priority",
-            "task_type", "due_date", "created_at", "updated_at"
+            "task_type", "board_id", "labels", "due_date", "created_at", "updated_at"
         ];
 
         const escapeCsv = (val: unknown) => {
@@ -48,6 +48,8 @@ export const GET: APIRoute = async () => {
             escapeCsv(t.status),
             escapeCsv(t.priority),
             escapeCsv(t.task_type),
+            escapeCsv(t.board_id),
+            escapeCsv(t.labels),
             escapeCsv(t.due_date),
             escapeCsv(t.created_at),
             escapeCsv(t.updated_at)
