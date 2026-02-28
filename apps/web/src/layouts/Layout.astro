@@ -404,7 +404,12 @@ try {
               <span id="td-rice" class="text-xs text-text-muted"></span>
             </div>
 
-            <div class="border-t border-border pt-3">
+            <div class="border-t border-border pt-3 space-y-2">
+              <button
+                id="td-ask-ai"
+                class="w-full text-left px-3 py-2 text-sm text-primary rounded-md hover:bg-primary/10 transition-colors"
+                >🤖 Ask AI</button
+              >
               <button
                 id="td-delete"
                 class="w-full text-left px-3 py-2 text-sm text-danger rounded-md hover:bg-danger/10 transition-colors"
@@ -800,6 +805,8 @@ try {
     </script>
 
     <script>
+      import { askAIForTask } from "../domains/ai/ai-context-service";
+
       // === Task Detail Panel ===
       const tdOverlay = document.getElementById(
         "task-detail-overlay",
@@ -1167,6 +1174,24 @@ try {
           const isFav = btn.textContent?.startsWith("★");
           await saveTD("is_favorite", isFav ? 0 : 1);
           btn.textContent = isFav ? "⭐ Add to Favorites" : "★ Favorited";
+        });
+
+      // Ask AI
+      document
+        .getElementById("td-ask-ai")
+        ?.addEventListener("click", async () => {
+          if (!currentTaskId) return;
+          try {
+            const btn = document.getElementById("td-ask-ai") as HTMLElement;
+            const originalText = btn.innerHTML;
+            btn.innerHTML = "⏳ Generating...";
+            await askAIForTask(currentTaskId);
+            btn.innerHTML = "✅ Copied!";
+            setTimeout(() => (btn.innerHTML = originalText), 2000);
+          } catch (err) {
+            console.error("AI Context error:", err);
+            alert("Failed to generate AI context.");
+          }
         });
 
       // Delete
