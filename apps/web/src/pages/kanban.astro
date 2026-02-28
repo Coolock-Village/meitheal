@@ -200,10 +200,12 @@ const priorityColors: Record<number, string> = {
                     {/* Progress bar */}
                     {Number(task.progress ?? 0) > 0 && (
                       <div class="kanban-progress">
-                        <div
-                          class="kanban-progress-bar"
-                          style={`width: ${Number(task.progress)}%`}
-                        />
+                        <div class="kanban-progress-track">
+                          <div
+                            class="kanban-progress-bar"
+                            style={`width: ${Number(task.progress)}%`}
+                          />
+                        </div>
                         <span class="kanban-progress-text">
                           {Number(task.progress)}%
                         </span>
@@ -318,38 +320,80 @@ const priorityColors: Record<number, string> = {
   <script is:inline>
     async function handleDrop(e) {
       e.preventDefault();
-      e.currentTarget.classList.remove("drag-over");
+      const col = e.currentTarget;
+      col.classList.remove("drag-over");
       const taskId = e.dataTransfer.getData("text/plain");
-      const newStatus = e.currentTarget.dataset.status;
+      const newStatus = col.dataset.status;
       if (!taskId || !newStatus) return;
 
+      // T-1902: Optimistic DOM update — no page reload
+      const card = document.querySelector(`.kanban-card[data-id="${taskId}"]`);
+      if (!card) return;
+
+      // Move card to target column's card container
+      const oldCol = card.closest(".kanban-column");
+      const targetCards = col.querySelector(".kanban-cards");
+      if (targetCards) {
+        // Remove empty state if present
+        const empty = targetCards.querySelector(".kanban-empty");
+        if (empty) empty.remove();
+        targetCards.appendChild(card);
+        card.dataset.status = newStatus;
+      }
+
+      // Update column counts
+      [oldCol, col].forEach((c) => {
+        if (!c) return;
+        const count = c.querySelector(".kanban-count");
+        const cards = c.querySelectorAll(".kanban-card");
+        if (count) count.textContent = cards.length;
+        // Show empty state if column is now empty
+        if (cards.length === 0) {
+          const cardsContainer = c.querySelector(".kanban-cards");
+          if (
+            cardsContainer &&
+            !cardsContainer.querySelector(".kanban-empty")
+          ) {
+            const emptyDiv = document.createElement("div");
+            emptyDiv.className = "kanban-empty";
+            emptyDiv.textContent = "Drop tasks here";
+            cardsContainer.appendChild(emptyDiv);
+          }
+        }
+      });
+
+      // Toast feedback
+      const container = document.getElementById("toast-container");
+      const toast = document.createElement("div");
+      toast.className = "toast success";
+      toast.textContent = `Moved to ${newStatus}`;
+      container?.appendChild(toast);
+      setTimeout(() => toast.remove(), 2000);
+
+      // Persist to API (background, no reload)
       try {
-        const res = await fetch(`/api/tasks/${taskId}`, {
+        await fetch(`/api/tasks/${taskId}`, {
           method: "PUT",
           headers: { "content-type": "application/json" },
           body: JSON.stringify({ status: newStatus }),
         });
-        if (res.ok) {
-          const container = document.getElementById("toast-container");
-          const toast = document.createElement("div");
-          toast.className = "toast success";
-          toast.textContent = `Moved to ${newStatus}`;
-          container?.appendChild(toast);
-          setTimeout(() => toast.remove(), 2000);
-          setTimeout(() => window.location.reload(), 300);
-        }
       } catch {
-        /* ignore */
+        // Revert on failure — reload to get server state
+        window.location.reload();
       }
     }
 
     // Kanban card action handlers
-    // Edit: navigate to tasks page with task ID as hash
+    // T-1903: Edit button opens inline task detail panel (not redirect)
     document.querySelectorAll(".card-edit-btn").forEach((btn) => {
       btn.addEventListener("click", (e) => {
         e.stopPropagation();
         const id = btn.dataset.id;
-        if (id) window.location.href = `/tasks#edit-${id}`;
+        if (id && typeof window.openTaskDetail === "function") {
+          window.openTaskDetail(id);
+        } else if (id) {
+          window.location.href = `/tasks#edit-${id}`;
+        }
       });
     });
 
@@ -398,13 +442,17 @@ const priorityColors: Record<number, string> = {
       });
     });
 
-    // Click anywhere on kanban card → navigate to edit
+    // T-1903: Click anywhere on kanban card → open inline detail panel
     document.querySelectorAll(".kanban-card").forEach((card) => {
       card.addEventListener("click", (e) => {
-        // Don't navigate if clicking action buttons or dragging
+        // Don't open if clicking action buttons or dragging
         if (e.target.closest(".card-action-btn")) return;
         const id = card.dataset.id;
-        if (id) window.location.href = `/tasks#edit-${id}`;
+        if (id && typeof window.openTaskDetail === "function") {
+          window.openTaskDetail(id);
+        } else if (id) {
+          window.location.href = `/tasks#edit-${id}`;
+        }
       });
     });
 
@@ -548,15 +596,21 @@ const priorityColors: Record<number, string> = {
       });
     }
 
+    // T-1904: Toggle lanes panel — use 'flex' to preserve centered layout
     manageLanesBtn?.addEventListener("click", () => {
       const isOpen = laneMgmt.style.display !== "none";
-      laneMgmt.style.display = isOpen ? "none" : "block";
+      laneMgmt.style.display = isOpen ? "none" : "flex";
       if (!isOpen) renderLaneList();
     });
 
+    // T-1905: Lane creation with validation (1-50 chars, strip HTML)
     addLaneBtn?.addEventListener("click", () => {
-      const name = newLaneInput.value.trim();
-      if (!name) return;
+      const raw = newLaneInput.value.trim();
+      const name = raw.replace(/<[^>]*>/g, "");
+      if (!name || name.length < 1 || name.length > 50) {
+        alert("Lane name must be 1-50 characters");
+        return;
+      }
       const key = name.toLowerCase().replace(/[^a-z0-9]+/g, "_");
       const lanes = getCustomLanes();
       if (lanes.some((l) => l.key === key)) {
@@ -630,12 +684,74 @@ const priorityColors: Record<number, string> = {
                 };
                 return `
                 <div class="kanban-card" draggable="true" data-id="${task.id}"
+                  data-title="${(task.title || "").replace(/"/g, "&quot;")}"
+                  data-desc="${(task.description || "").slice(0, 200).replace(/"/g, "&quot;")}"
+                  data-priority="${p}"
+                  data-status="${task.status || "pending"}"
                   ondragstart="event.dataTransfer.setData('text/plain', this.dataset.id); this.classList.add('dragging');"
-                  ondragend="this.classList.remove('dragging');">
-                  <div class="kanban-card-title">${task.title}</div>
+                  ondragend="this.classList.remove('dragging');"
+                  style="border-left: 3px solid ${task.color || pColors[p]};">
+                  <div class="kanban-card-header">
+                    <div class="kanban-card-title">${task.title}</div>
+                    ${Number(task.is_favorite) === 1 ? '<span class="kanban-fav" title="Favorite">★</span>' : ""}
+                  </div>
+                  ${task.description ? `<div class="kanban-card-desc">${task.description.slice(0, 80)}${task.description.length > 80 ? "…" : ""}</div>` : ""}
                   <div class="kanban-card-meta">
                     <span class="priority-dot" style="background: ${pColors[p]}" title="${pLabels[p]}"></span>
                     <span style="color: ${pColors[p]}; font-size: 11px;">${pLabels[p]}</span>
+                    ${task.due_date ? `<span class="kanban-card-due">📅 ${String(task.due_date).split("T")[0]}</span>` : ""}
+                    ${(() => {
+                      try {
+                        const fp = JSON.parse(task.framework_payload || "{}");
+                        const rice =
+                          fp.reach && fp.impact && fp.confidence && fp.effort
+                            ? Math.round(
+                                (fp.reach * fp.impact * fp.confidence) /
+                                  fp.effort,
+                              )
+                            : null;
+                        return rice
+                          ? `<span class="kanban-rice-badge">RICE: ${rice}</span>`
+                          : "";
+                      } catch {
+                        return "";
+                      }
+                    })()}
+                  </div>
+                  ${Number(task.progress || 0) > 0 ? `<div class="kanban-progress"><div class="kanban-progress-track"><div class="kanban-progress-bar" style="width: ${task.progress}%"></div></div><span class="kanban-progress-text">${task.progress}%</span></div>` : ""}
+                  ${(() => {
+                    try {
+                      const lbls = JSON.parse(task.labels || "[]");
+                      return Array.isArray(lbls) && lbls.length > 0
+                        ? `<div class="kanban-labels">${lbls.map((l) => `<span class="label-chip">${typeof l === "string" ? l : l.name}</span>`).join("")}</div>`
+                        : "";
+                    } catch {
+                      return "";
+                    }
+                  })()}
+                  ${(() => {
+                    try {
+                      const cf = JSON.parse(task.custom_fields || "{}");
+                      const keys = Object.keys(cf);
+                      return keys.length > 0
+                        ? `<div class="kanban-custom-fields">${keys
+                            .slice(0, 4)
+                            .map(
+                              (k) =>
+                                `<span class="kanban-cf-chip" title="${k}: ${cf[k]}">${k}: ${String(cf[k]).slice(0, 20)}</span>`,
+                            )
+                            .join(
+                              "",
+                            )}${keys.length > 4 ? `<span class="kanban-cf-chip">+${keys.length - 4} more</span>` : ""}</div>`
+                        : "";
+                    } catch {
+                      return "";
+                    }
+                  })()}
+                  <div class="kanban-card-actions">
+                    <button class="card-action-btn card-edit-btn" data-id="${task.id}" title="Edit task">✏️</button>
+                    <button class="card-action-btn card-ai-btn" data-title="${(task.title || "").replace(/"/g, "&quot;")}" data-desc="${(task.description || "").replace(/"/g, "&quot;")}" data-status="${task.status || "pending"}" data-priority="${p}" title="Ask AI">🤖</button>
+                    <button class="card-action-btn card-dup-btn" data-id="${task.id}" title="Duplicate">⧉</button>
                   </div>
                 </div>`;
               })
@@ -901,5 +1017,87 @@ const priorityColors: Record<number, string> = {
     .kanban-board {
       grid-template-columns: 1fr;
     }
+  }
+
+  /* Card header with favorite */
+  .kanban-card-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    gap: 4px;
+  }
+  .kanban-fav {
+    color: #f59e0b;
+    font-size: 14px;
+    flex-shrink: 0;
+  }
+
+  /* Progress bar */
+  .kanban-progress {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    margin-top: 8px;
+  }
+  .kanban-progress-track {
+    flex: 1;
+    height: 4px;
+    background: var(--bg-hover);
+    border-radius: 2px;
+    overflow: hidden;
+  }
+  .kanban-progress-bar {
+    height: 100%;
+    background: var(--accent);
+    border-radius: 2px;
+    transition: width 300ms ease;
+  }
+  .kanban-progress-text {
+    font-size: 10px;
+    color: var(--text-muted);
+    flex-shrink: 0;
+    min-width: 28px;
+    text-align: right;
+  }
+
+  /* RICE + sync badges */
+  .kanban-rice-badge {
+    font-size: 11px;
+    color: var(--accent);
+    background: rgba(16, 185, 129, 0.1);
+    padding: 1px 6px;
+    border-radius: 4px;
+  }
+  .kanban-sync-badge {
+    font-size: 11px;
+    color: var(--info);
+  }
+
+  /* Labels on cards */
+  .kanban-labels {
+    display: flex;
+    gap: 4px;
+    flex-wrap: wrap;
+    margin-top: 6px;
+  }
+
+  /* Custom fields on cards */
+  .kanban-custom-fields {
+    display: flex;
+    gap: 4px;
+    flex-wrap: wrap;
+    margin-top: 6px;
+  }
+  .kanban-cf-chip {
+    font-size: 10px;
+    padding: 1px 6px;
+    border-radius: 4px;
+    background: rgba(59, 130, 246, 0.1);
+    color: var(--info);
+    border: 1px solid rgba(59, 130, 246, 0.2);
+    white-space: nowrap;
+    max-width: 120px;
+    overflow: hidden;
+    text-overflow: ellipsis;
   }
 </style>

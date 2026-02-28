@@ -758,11 +758,13 @@
   }
 
   .kanban-board {
-    @apply flex-col;
+    flex-direction: column;
+    overflow-x: visible;
   }
 
   .kanban-column {
-    @apply min-w-full max-w-full;
+    min-width: 100%;
+    max-width: 100%;
   }
 }
 
