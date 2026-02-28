@@ -5,7 +5,7 @@
 1. `sed -n '1,300p' .planning/phases/17-full-persona-audit/17-CONTEXT.md`
 - Outcome: captured audit domain scope and persona composition baseline.
 
-2. `sed -n '1,320p' .planning/phases/17-full-persona-audit/17-PLAN.md`
+2. `sed -n '1,320p' .planning/phases/17-full-persona-audit/17-01-PLAN.md`
 - Outcome: reviewed pre-existing untracked phase-17 plan content and used it as planning input.
 
 3. `rg --files apps/web/src/pages/api | sort`
@@ -17,6 +17,18 @@
 5. Artifact generation
 - Created complete phase-17 iteration-01 loop files (`01..07`) with accepted recommendations and mapped setup tasks.
 
-## Notes
+## Continuation Execution Evidence
 
-No runtime/product code changes were performed in this iteration.
+6. Execution commit (Wave 1+2 fixes)
+- `git show --name-only 3434bd7`
+- Outcome: backend/frontend audit fixes applied across middleware, boards/tasks APIs, and tasks/kanban/table pages.
+
+7. Phase closure docs
+- `git show --name-only e83eab8`
+- Outcome: roadmap/state updated to reflect phase-17 completion claim.
+
+8. Validation status (as recorded in state docs)
+- `pnpm check` pass
+- tests pass
+- `perf:budget` pass under local profile
+- `schema:drift` pass

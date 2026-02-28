@@ -7,7 +7,7 @@ This roadmap uses the dual-track model defined in `.planning/README.md`:
 1. **Primary Delivery**: phases `01-06` (core release progression)
 2. **Extension Track**: phases `15-18` (parallel expansion workstreams)
 
-Primary Delivery drives completion math and merge/release readiness.
+Primary Delivery drives completion math and release readiness.
 
 ## Analysis Baseline
 
@@ -33,83 +33,90 @@ Primary Delivery drives completion math and merge/release readiness.
 
 | Phase | Name | Status | Evidence |
 |------|------|--------|----------|
-| 15 | UX Parity & Board Domain Separation | 📋 Planned | `15-CONTEXT.md` |
-| 16 | Astro Optimizations & UX | 📋 Planned | `16-CONTEXT.md` |
-| 17 | Full 50-Persona Audit | ✅ Complete | 18 findings, all fixed — input validation, CSP, a11y, SSR queries |
-| 18 | Vikunja Card Parity + E2E | 📋 Planned | `18-CONTEXT.md` |
+| 15 | UX Parity & Board Domain Separation | ✅ Complete | `15-01-PLAN.md`, `15-01-SUMMARY.md` |
+| 16 | Astro Optimizations & UX | ✅ Complete | `16-01-PLAN.md`, `16-01-SUMMARY.md` |
+| 17 | Full 50-Persona Audit | ✅ Complete | `17-01-PLAN.md`, `17-01-SUMMARY.md` |
+| 18 | Vikunja Card Parity + E2E | ✅ Complete | `18-01-PLAN.md`, `18-01-SUMMARY.md` |
 
 ## Primary Delivery Details
 
 ## Phase 01: Foundation & Vertical Slice ✅
 
-Goal: establish Astro-first monorepo, DDD package boundaries, HA add-on runtime, observability baseline, and first end-to-end vertical slice.
-
 Execution artifacts:
-
 - `.planning/phases/01-foundation-vertical-slice/01-CONTEXT.md`
 - `.planning/phases/01-foundation-vertical-slice/01-01-PLAN.md`
 - `.planning/phases/01-foundation-vertical-slice/01-01-SUMMARY.md`
 
 ## Phase 02: Integration Deepening ✅
 
-Goal: integration primitives (webhooks/rate limiting/Grocy/KCS integration docs).
-
 Execution artifacts:
-
 - `.planning/phases/02-integration-deepening/02-CONTEXT.md`
 - `.planning/phases/02-integration-deepening/02-01..02-04-PLAN.md`
 - `.planning/phases/02-integration-deepening/02-01..02-04-SUMMARY.md`
 
 ## Phase 03: PWA & Offline-First ✅
 
-Goal: PWA shell, offline store/sync foundations, and operator guidance.
-
 Execution artifacts:
-
 - `.planning/phases/03-pwa-offline-first/03-CONTEXT.md`
 - `.planning/phases/03-pwa-offline-first/03-01..03-03-PLAN.md`
 - `.planning/phases/03-pwa-offline-first/03-01..03-03-SUMMARY.md`
 
 ## Phase 04: Cloud Runtime ✅
 
-Goal: Cloudflare Worker + D1 runtime path and deployment/runbook baseline.
-
 Execution artifacts:
-
 - `.planning/phases/04-cloud-runtime/04-CONTEXT.md`
 - `.planning/phases/04-cloud-runtime/04-01..04-02-PLAN.md`
 - `.planning/phases/04-cloud-runtime/04-01..04-02-SUMMARY.md`
 
 ## Phase 05: Market Parity ✅
 
-Goal: security/auth hardening, worker API maturity, governance/docs closure.
-
 Execution artifacts:
-
 - `.planning/phases/05-market-parity/05-CONTEXT.md`
 - `.planning/phases/05-market-parity/05-01..05-04-PLAN.md`
 - `.planning/phases/05-market-parity/05-01..05-04-SUMMARY.md`
 
 ## Phase 06: Functional UI & Feature Parity 📋
 
-Goal: functional UI completion across dashboard/list/kanban/table/labels/projects and polish.
-
 Current state:
-
 - `06-01..06-04-PLAN.md` exist as draft/pre-execution plans.
 - No summary files by design until execution starts.
-- `gsd-tools init progress` reports this phase as `in_progress` heuristically because plans exist; canonical roadmap status remains `planned` under the draft-plan exception in `.planning/README.md`.
+- `gsd-tools init progress` reports phase `06` as `in_progress` heuristically because plan files exist; canonical status remains `planned` under the draft-plan exception in `.planning/README.md`.
 
 ## Extension Track Details
 
-Phases `15-18` remain context-only planning artifacts and are not counted as complete.
-They can be promoted into active execution by creating phase plans and summaries per `.planning/README.md` rules.
+## Phase 15: UX Parity & Board Domain Separation ✅
+
+Execution artifacts:
+- `.planning/phases/15-ux-parity-boards/15-CONTEXT.md`
+- `.planning/phases/15-ux-parity-boards/15-01-PLAN.md`
+- `.planning/phases/15-ux-parity-boards/15-01-SUMMARY.md`
+
+## Phase 16: Astro Optimizations & UX ✅
+
+Execution artifacts:
+- `.planning/phases/16-astro-optimizations-ux/16-CONTEXT.md`
+- `.planning/phases/16-astro-optimizations-ux/16-01-PLAN.md`
+- `.planning/phases/16-astro-optimizations-ux/16-01-SUMMARY.md`
+
+## Phase 17: Full Persona Audit ✅
+
+Execution artifacts:
+- `.planning/phases/17-full-persona-audit/17-CONTEXT.md`
+- `.planning/phases/17-full-persona-audit/17-01-PLAN.md`
+- `.planning/phases/17-full-persona-audit/17-01-SUMMARY.md`
+
+## Phase 18: Vikunja Card Parity + E2E ✅
+
+Execution artifacts:
+- `.planning/phases/18-vikunja-card-parity/18-CONTEXT.md`
+- `.planning/phases/18-vikunja-card-parity/18-01-PLAN.md`
+- `.planning/phases/18-vikunja-card-parity/18-01-SUMMARY.md`
 
 ## Open Blockers (Roadmap-Level)
 
-1. PR #1 has failing required checks to clear before merge.
-2. `perf-budgets` exceeded the current client bundle threshold (`81416 > 65536`) in CI runs `22519148342` and `22519149376`.
-3. CodeQL status needs check-suite reconciliation due stale failure reporting vs newer successful dynamic runs.
+1. PR #1 still has failing required checks.
+2. `perf-budgets` fails on CI runs `22519500812` and `22519501663` (`clientBytes=81700` vs `65536`).
+3. CodeQL check-suite reports a failing entry even though newer dynamic analysis runs have succeeded; required-check reconciliation is still needed.
 
 ---
-*Last updated: 2026-02-28 during GSD recovery normalization pass*
+*Last updated: 2026-02-28 during extension-track reconciliation pass*

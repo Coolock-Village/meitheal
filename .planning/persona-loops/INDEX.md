@@ -32,6 +32,8 @@ This index normalizes existing persona-loop artifacts without deleting historica
 | `phase-13-security/` | historical import | Imported security audit memo style. |
 | `phase-14-extensibility/` | historical import | Imported audit memo style. |
 | `phase-14-gap-analysis/` | historical import | Imported competitor-matrix snapshot. |
+| `phase-15/` | execution-linked | Canonical 7-file iteration created for UX parity and board-domain execution planning. |
+| `phase-17/` | execution-linked | Canonical 7-file iteration tied to full persona-audit execution setup and findings closure. |
 
 ## Cross-Links (Analysis Baseline)
 

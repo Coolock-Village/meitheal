@@ -2,13 +2,13 @@
 
 ## Evaluation
 
-- Open high-leverage work: 5
-- Open high-risk work: 3
-- Stable loops: 0
+- Open high-leverage work: 0
+- Open high-risk work: 0
+- Stable loops: 1 (post-execution closure check)
 
 ## Decision
 
-**CONTINUE**
+**COMPLETE**
 
-Phase 17 remains in active planning/execution setup mode.
-Next step is to execute `P17-I01-T1..T6`, then start domain-wave audit implementation with findings tracking.
+Phase 17 planning and execution tasks are closed for this iteration cycle.
+Further findings should open a new iteration (`phase-17/iteration-02`) rather than reopening iteration 01.

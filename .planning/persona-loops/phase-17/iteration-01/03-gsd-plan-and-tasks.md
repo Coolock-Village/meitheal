@@ -15,7 +15,7 @@
 - Trace: ADHD Focus Optimizer + Knowledge Coach.
 
 4. `P17-I01-T4` (P1)
-- Convert `17-PLAN.md` domains into wave schedule with WIP limit and per-wave acceptance criteria.
+- Convert `17-01-PLAN.md` domains into wave schedule with WIP limit and per-wave acceptance criteria.
 - Trace: Frontier Delivery Manager.
 
 5. `P17-I01-T5` (P1)
