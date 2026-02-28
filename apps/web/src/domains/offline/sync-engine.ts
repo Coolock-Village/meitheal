@@ -1,0 +1,205 @@
+/**
+ * Sync Engine — Background sync for offline operations
+ *
+ * Processes pending_sync queue FIFO, one-at-a-time.
+ * Conflict resolution: last-write-wins based on server updatedAt.
+ * SyncManager registration for reliable background delivery.
+ * Fallback: 30s periodic sync when SyncManager unavailable.
+ *
+ * Bounded context: offline domain
+ */
+
+import {
+  getSyncQueue,
+  removeSyncOp,
+  incrementRetryCount,
+  putTask,
+  type PendingSyncOperation,
+  type OfflineTask,
+} from "./offline-store"
+
+// --- Types ---
+
+export type SyncState = "idle" | "syncing" | "error"
+
+export interface SyncResult {
+  processed: number
+  succeeded: number
+  failed: number
+  conflicts: number
+}
+
+export interface SyncEventDetail {
+  type: "sync-start" | "sync-complete" | "sync-error" | "conflict-resolved"
+  result?: SyncResult | undefined
+  conflict?: { entityId: string; localUpdatedAt: string; serverUpdatedAt: string } | undefined
+  error?: string | undefined
+}
+
+// --- Configuration ---
+
+const SYNC_TAG = "meitheal-background-sync"
+const MAX_RETRIES = 3
+const RETRY_DELAYS_MS = [1_000, 4_000, 16_000]
+const PERIODIC_SYNC_MS = 30_000
+
+// --- Sync Engine ---
+
+let syncState: SyncState = "idle"
+let periodicTimer: ReturnType<typeof setInterval> | null = null
+
+function emitSyncEvent(detail: SyncEventDetail): void {
+  if (typeof window !== "undefined") {
+    window.dispatchEvent(new CustomEvent("meitheal-sync", { detail }))
+  }
+}
+
+export function getSyncState(): SyncState {
+  return syncState
+}
+
+/**
+ * Process the sync queue — call this from SW sync event or periodic timer.
+ */
+export async function processSyncQueue(
+  baseUrl: string = ""
+): Promise<SyncResult> {
+  if (syncState === "syncing") {
+    return { processed: 0, succeeded: 0, failed: 0, conflicts: 0 }
+  }
+
+  syncState = "syncing"
+  emitSyncEvent({ type: "sync-start" })
+
+  const queue = await getSyncQueue()
+  const result: SyncResult = { processed: 0, succeeded: 0, failed: 0, conflicts: 0 }
+
+  for (const op of queue) {
+    result.processed++
+
+    try {
+      const response = await executeOperation(op, baseUrl)
+
+      if (response.ok) {
+        await removeSyncOp(op.id)
+        result.succeeded++
+
+        // Update local store with server response (authoritative timestamps)
+        if (op.operation !== "delete") {
+          const serverData = await response.json() as OfflineTask
+          await putTask({ ...serverData, syncedAt: new Date().toISOString() })
+        }
+      } else if (response.status === 409) {
+        // Conflict: last-write-wins
+        result.conflicts++
+        const serverVersion = await response.json() as OfflineTask
+
+        emitSyncEvent({
+          type: "conflict-resolved",
+          conflict: {
+            entityId: op.entityId,
+            localUpdatedAt: JSON.parse(op.payload).updatedAt as string,
+            serverUpdatedAt: serverVersion.updatedAt,
+          },
+        })
+
+        // Server wins — update local with server data
+        await putTask({ ...serverVersion, syncedAt: new Date().toISOString() })
+        await removeSyncOp(op.id)
+      } else if (op.retryCount < MAX_RETRIES) {
+        await incrementRetryCount(op.id)
+        result.failed++
+        // Wait before continuing (don't block entire queue)
+        const delay = RETRY_DELAYS_MS[op.retryCount] ?? RETRY_DELAYS_MS[RETRY_DELAYS_MS.length - 1]!
+        await new Promise((r) => setTimeout(r, delay))
+      } else {
+        // Max retries exceeded — dead letter
+        console.error(`[sync-engine] Max retries exceeded for ${op.id}, removing from queue`)
+        await removeSyncOp(op.id)
+        result.failed++
+      }
+    } catch (error) {
+      result.failed++
+      if (op.retryCount < MAX_RETRIES) {
+        await incrementRetryCount(op.id)
+      } else {
+        await removeSyncOp(op.id)
+      }
+      console.error(`[sync-engine] Operation ${op.id} failed:`, error)
+    }
+  }
+
+  syncState = result.failed > 0 ? "error" : "idle"
+  emitSyncEvent({ type: "sync-complete", result })
+  return result
+}
+
+/**
+ * Execute a single sync operation against the server API.
+ */
+async function executeOperation(
+  op: PendingSyncOperation,
+  baseUrl: string
+): Promise<Response> {
+  const url = `${baseUrl}/api/v1/${op.table}`
+  const payload = JSON.parse(op.payload) as Record<string, unknown>
+
+  switch (op.operation) {
+    case "create":
+      return fetch(url, {
+        method: "POST",
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify(payload),
+      })
+    case "update":
+      return fetch(`${url}/${op.entityId}`, {
+        method: "PUT",
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify(payload),
+      })
+    case "delete":
+      return fetch(`${url}/${op.entityId}`, { method: "DELETE" })
+  }
+}
+
+// --- Background Sync Registration ---
+
+export async function registerBackgroundSync(): Promise<void> {
+  if (!("serviceWorker" in navigator)) return
+
+  try {
+    const registration = await navigator.serviceWorker.ready
+    if ("sync" in registration) {
+      await (registration as ServiceWorkerRegistration & { sync: { register: (tag: string) => Promise<void> } }).sync.register(SYNC_TAG)
+    } else {
+      // Fallback: periodic sync
+      startPeriodicSync()
+    }
+  } catch {
+    // SyncManager not available — use periodic fallback
+    startPeriodicSync()
+  }
+}
+
+/**
+ * Start periodic sync as fallback when SyncManager unavailable.
+ */
+export function startPeriodicSync(intervalMs: number = PERIODIC_SYNC_MS): void {
+  if (periodicTimer) return
+  periodicTimer = setInterval(() => {
+    if (navigator.onLine) {
+      processSyncQueue().catch((err) => console.error("[sync-engine] Periodic sync failed:", err))
+    }
+  }, intervalMs)
+}
+
+export function stopPeriodicSync(): void {
+  if (periodicTimer) {
+    clearInterval(periodicTimer)
+    periodicTimer = null
+  }
+}
+
+export function getSyncTag(): string {
+  return SYNC_TAG
+}

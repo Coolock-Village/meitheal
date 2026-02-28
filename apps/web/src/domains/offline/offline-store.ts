@@ -1,0 +1,251 @@
+/**
+ * Offline Store — IndexedDB schema and CRUD operations
+ *
+ * Uses idb (lightweight promise-based wrapper) for type-safe IndexedDB access.
+ * Schema version 1 — explicit upgrade handler for future migrations (FR-303).
+ * All writes use explicit error handling (FR-304).
+ *
+ * Bounded context: offline domain
+ */
+
+// --- Types ---
+
+export interface OfflineTask {
+  id: string
+  title: string
+  description: string
+  status: "pending" | "in_progress" | "done"
+  dueDate: string | null
+  updatedAt: string
+  createdAt: string
+  syncedAt: string | null
+}
+
+export interface PendingSyncOperation {
+  id: string
+  operation: "create" | "update" | "delete"
+  table: string
+  entityId: string
+  payload: string
+  createdAt: string
+  retryCount: number
+}
+
+// --- IndexedDB Schema ---
+
+const DB_NAME = "meitheal-offline"
+const DB_VERSION = 1
+
+const STORES = {
+  tasks: "tasks",
+  pendingSync: "pending_sync",
+} as const
+
+// --- Database Initialization ---
+
+function openDatabase(): Promise<IDBDatabase> {
+  return new Promise((resolve, reject) => {
+    const request = indexedDB.open(DB_NAME, DB_VERSION)
+
+    request.onupgradeneeded = (event) => {
+      const db = (event.target as IDBOpenDBRequest).result
+
+      // Tasks store — mirrors server schema
+      if (!db.objectStoreNames.contains(STORES.tasks)) {
+        const taskStore = db.createObjectStore(STORES.tasks, { keyPath: "id" })
+        taskStore.createIndex("status", "status", { unique: false })
+        taskStore.createIndex("updatedAt", "updatedAt", { unique: false })
+      }
+
+      // Pending sync queue — FIFO operations
+      if (!db.objectStoreNames.contains(STORES.pendingSync)) {
+        const syncStore = db.createObjectStore(STORES.pendingSync, { keyPath: "id" })
+        syncStore.createIndex("createdAt", "createdAt", { unique: false })
+        syncStore.createIndex("table", "table", { unique: false })
+      }
+    }
+
+    request.onsuccess = () => resolve(request.result)
+    request.onerror = () => reject(new Error(`IndexedDB open failed: ${request.error?.message}`))
+  })
+}
+
+// --- Singleton ---
+
+let dbInstance: IDBDatabase | null = null
+
+async function getDb(): Promise<IDBDatabase> {
+  if (dbInstance) return dbInstance
+  dbInstance = await openDatabase()
+  return dbInstance
+}
+
+// --- Task CRUD ---
+
+export async function putTask(task: OfflineTask): Promise<void> {
+  const db = await getDb()
+  return new Promise((resolve, reject) => {
+    const tx = db.transaction(STORES.tasks, "readwrite")
+    const store = tx.objectStore(STORES.tasks)
+    const request = store.put(task)
+    request.onsuccess = () => resolve()
+    request.onerror = () => reject(new Error(`putTask failed: ${request.error?.message}`))
+    tx.onerror = () => reject(new Error(`putTask tx failed: ${tx.error?.message}`))
+  })
+}
+
+export async function getTask(id: string): Promise<OfflineTask | undefined> {
+  const db = await getDb()
+  return new Promise((resolve, reject) => {
+    const tx = db.transaction(STORES.tasks, "readonly")
+    const store = tx.objectStore(STORES.tasks)
+    const request = store.get(id)
+    request.onsuccess = () => resolve(request.result as OfflineTask | undefined)
+    request.onerror = () => reject(new Error(`getTask failed: ${request.error?.message}`))
+  })
+}
+
+export async function getAllTasks(): Promise<OfflineTask[]> {
+  const db = await getDb()
+  return new Promise((resolve, reject) => {
+    const tx = db.transaction(STORES.tasks, "readonly")
+    const store = tx.objectStore(STORES.tasks)
+    const request = store.getAll()
+    request.onsuccess = () => resolve(request.result as OfflineTask[])
+    request.onerror = () => reject(new Error(`getAllTasks failed: ${request.error?.message}`))
+  })
+}
+
+export async function deleteTask(id: string): Promise<void> {
+  const db = await getDb()
+  return new Promise((resolve, reject) => {
+    const tx = db.transaction(STORES.tasks, "readwrite")
+    const store = tx.objectStore(STORES.tasks)
+    const request = store.delete(id)
+    request.onsuccess = () => resolve()
+    request.onerror = () => reject(new Error(`deleteTask failed: ${request.error?.message}`))
+  })
+}
+
+// --- Sync Queue Operations ---
+
+const MAX_QUEUE_DEPTH = 100
+
+export async function enqueueSyncOp(op: Omit<PendingSyncOperation, "id" | "createdAt" | "retryCount">): Promise<string> {
+  const db = await getDb()
+
+  // Check queue depth warning
+  const depth = await getSyncQueueDepth()
+  if (depth >= MAX_QUEUE_DEPTH) {
+    console.warn(`[offline-store] Sync queue at capacity (${depth}/${MAX_QUEUE_DEPTH})`)
+  }
+
+  // Deduplication: collapse updates to same entity
+  if (op.operation === "update") {
+    await deduplicateUpdate(op.entityId, op.table)
+  }
+
+  const entry: PendingSyncOperation = {
+    id: crypto.randomUUID(),
+    ...op,
+    createdAt: new Date().toISOString(),
+    retryCount: 0,
+  }
+
+  return new Promise((resolve, reject) => {
+    const tx = db.transaction(STORES.pendingSync, "readwrite")
+    const store = tx.objectStore(STORES.pendingSync)
+    const request = store.put(entry)
+    request.onsuccess = () => resolve(entry.id)
+    request.onerror = () => reject(new Error(`enqueueSyncOp failed: ${request.error?.message}`))
+  })
+}
+
+async function deduplicateUpdate(entityId: string, table: string): Promise<void> {
+  const db = await getDb()
+  return new Promise<void>((resolve, reject) => {
+    const tx = db.transaction(STORES.pendingSync, "readwrite")
+    const store = tx.objectStore(STORES.pendingSync)
+    const index = store.index("table")
+    const request = index.openCursor(IDBKeyRange.only(table))
+
+    request.onsuccess = () => {
+      const cursor = request.result
+      if (cursor) {
+        const entry = cursor.value as PendingSyncOperation
+        if (entry.entityId === entityId && entry.operation === "update") {
+          cursor.delete()
+        }
+        cursor.continue()
+      } else {
+        resolve()
+      }
+    }
+    request.onerror = () => reject(new Error(`deduplicateUpdate failed: ${request.error?.message}`))
+  })
+}
+
+export async function getSyncQueue(): Promise<PendingSyncOperation[]> {
+  const db = await getDb()
+  return new Promise((resolve, reject) => {
+    const tx = db.transaction(STORES.pendingSync, "readonly")
+    const store = tx.objectStore(STORES.pendingSync)
+    const index = store.index("createdAt")
+    const request = index.getAll()
+    request.onsuccess = () => resolve(request.result as PendingSyncOperation[])
+    request.onerror = () => reject(new Error(`getSyncQueue failed: ${request.error?.message}`))
+  })
+}
+
+export async function removeSyncOp(id: string): Promise<void> {
+  const db = await getDb()
+  return new Promise((resolve, reject) => {
+    const tx = db.transaction(STORES.pendingSync, "readwrite")
+    const store = tx.objectStore(STORES.pendingSync)
+    const request = store.delete(id)
+    request.onsuccess = () => resolve()
+    request.onerror = () => reject(new Error(`removeSyncOp failed: ${request.error?.message}`))
+  })
+}
+
+export async function incrementRetryCount(id: string): Promise<void> {
+  const db = await getDb()
+  return new Promise<void>((resolve, reject) => {
+    const tx = db.transaction(STORES.pendingSync, "readwrite")
+    const store = tx.objectStore(STORES.pendingSync)
+    const getReq = store.get(id)
+    getReq.onsuccess = () => {
+      const entry = getReq.result as PendingSyncOperation | undefined
+      if (entry) {
+        entry.retryCount += 1
+        const putReq = store.put(entry)
+        putReq.onsuccess = () => resolve()
+        putReq.onerror = () => reject(new Error(`incrementRetryCount put failed`))
+      } else {
+        resolve()
+      }
+    }
+    getReq.onerror = () => reject(new Error(`incrementRetryCount get failed`))
+  })
+}
+
+export async function getSyncQueueDepth(): Promise<number> {
+  const db = await getDb()
+  return new Promise((resolve, reject) => {
+    const tx = db.transaction(STORES.pendingSync, "readonly")
+    const store = tx.objectStore(STORES.pendingSync)
+    const request = store.count()
+    request.onsuccess = () => resolve(request.result)
+    request.onerror = () => reject(new Error(`getSyncQueueDepth failed: ${request.error?.message}`))
+  })
+}
+
+// --- Metadata ---
+
+export function getDbName(): string {
+  return DB_NAME
+}
+
+export function getDbVersion(): number {
+  return DB_VERSION
+}
