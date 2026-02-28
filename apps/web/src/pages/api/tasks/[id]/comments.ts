@@ -54,7 +54,7 @@ export const POST: APIRoute = async ({ params, request }) => {
         });
     }
 
-    const author = typeof body.author === "string" ? body.author.trim() : "user";
+    const author = typeof body.author === "string" ? body.author.trim().replace(/<[^>]*>/g, "").slice(0, 100) : "user";
 
     await client.execute({
         sql: "INSERT INTO comments (task_id, content, author) VALUES (?, ?, ?)",

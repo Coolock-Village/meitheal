@@ -9,17 +9,20 @@ This section supersedes earlier "all phases complete" language in legacy plannin
 ### Normalized phase map
 
 1. Primary Delivery (`01-06`):
+
 - `01` complete
 - `02` complete
 - `03` complete
 - `04` complete
 - `05` complete
 - `06` planned (draft plans only, pre-execution)
+
 2. Extension Track (`15-18`):
-- `15` planned
-- `16` planned
+
+- `15` complete (Kanban UX, boards, RICE, custom fields — executed prior session)
+- `16` complete (TW migration, component extraction, a11y — 5 commits)
 - `17` planned
-- `18` planned
+- `18` complete (task detail modal, command palette, comments — 4 commits)
 
 ### Remaining blockers
 
@@ -30,13 +33,18 @@ This section supersedes earlier "all phases complete" language in legacy plannin
 ### Exact next commands
 
 1. Planning/state sanity
+
 - `node /home/ryan/.config/opencode/get-shit-done/bin/gsd-tools.cjs init resume`
 - `node /home/ryan/.config/opencode/get-shit-done/bin/gsd-tools.cjs init progress`
+
 2. Check gate triage
+
 - `gh pr checks 1`
 - `gh run list --limit 20`
 - `gh run view 22519149376 --job 65241337743 --log-failed`
+
 3. Local guardrail rerun
+
 - `npx pnpm check`
 - `npx pnpm --filter @meitheal/tests test`
 - `npx pnpm --filter @meitheal/web perf:budget`
@@ -54,9 +62,38 @@ Latest commits:
 2. `c2d1750` feat: deliver pre-iteration-4 compatibility, ops hardening, and CI gates
 3. `813884b` chore: continue persona loop with production runtime and migration harness
 
+### Extension Track Execution (2026-02-28)
+
+Phases 15, 16, and 18 executed with full validation gates.
+
+#### Phase 16 commits
+
+- `b4ceca6` deps: zod 4, libsql 0.17, wrangler 4, @types/node 25
+- `1dcefce` TW migration: tailwind.config.mjs, 907-line CSS → @apply, astro.config cleanup
+- `f3da01d` component extraction: toast.ts, task-api.ts
+- `de3068d` UX/a11y/perf: debounce, skip-to-content, old CSS removed
+- `2334221` fix: ring utilities replacing invalid shadow-[] rgba
+
+#### Phase 18 commits
+
+- `3698145` context: Phase 18 gap analysis (Vikunja card parity)
+- `f7385e2` schema: 5 new columns + comments table; API: comments CRUD; UI: task detail + command palette (+554 lines)
+- `98f5647` fix: delegated click-to-open task detail from list/kanban/table
+- `193d210` docs: mark Phase 18 complete
+
+#### Validation snapshot (2026-02-28 10:53 UTC)
+
+| Gate | Result |
+|------|--------|
+| `pnpm check` | 0 errors, 43 files |
+| `tests` | 97 passed, 7 skipped |
+| `perf:budget` | client 81700/81920 (220B headroom), RSS 195368/225280, p95 6.5/250ms |
+| `schema:drift` | passed |
+
 ## What Is Implemented
 
 1. Compatibility API surface implemented and token-gated:
+
 - `/api/v1/projects`
 - `/api/v1/projects/{id}/projectusers`
 - `/api/v1/projects/{id}/tasks`
@@ -65,25 +102,30 @@ Latest commits:
 - `/api/v1/tasks/{id}/labels`
 - `/api/v1/tasks/{id}/assignees`
 
-2. Compatibility auth is env-only:
+1. Compatibility auth is env-only:
+
 - `MEITHEAL_VIKUNJA_API_TOKEN`
 - `MEITHEAL_VIKUNJA_API_TOKENS`
 
-3. Compatibility calendar behavior is config-gated:
+1. Compatibility calendar behavior is config-gated:
+
 - `compatibility.vikunja_api.calendar_sync_mode: disabled|enabled`
 - default is `disabled`.
 
-4. Add-on/runtime hardening:
+1. Add-on/runtime hardening:
+
 - startup migration failure reporting
 - health endpoint: `GET /api/health`
 - Docker install/build/prune flow improved.
 
-5. CI gates expanded:
+1. CI gates expanded:
+
 - `schema-drift` (required)
 - `perf-budgets` (required)
 - existing governance, typecheck/tests, ha-harness, migration-check remain.
 
-6. Home Assistant publishing requirements integrated:
+1. Home Assistant publishing requirements integrated:
+
 - root `repository.yaml`
 - add-on `config.yaml` includes image contract with `{arch}`
 - add-on `README.md` and `DOCS.md`
@@ -91,7 +133,8 @@ Latest commits:
 - optional live verification workflow `live-ha-integration.yml`
 - KCS checklist: `docs/kcs/ha-publishing-checklist.md`.
 
-7. Iteration-04 persona loop artifacts completed:
+1. Iteration-04 persona loop artifacts completed:
+
 - `.planning/persona-loops/phase-1/iteration-04/01..07`.
 
 ## Validation Snapshot
@@ -114,6 +157,7 @@ PR checks currently reported green for required jobs, but PR remains blocked by 
 3. Secrets must remain env-based, not YAML-stored.
 4. Perf budget is enforced fail-closed with current thresholds:
    CI calibrated profile (`GITHUB_ACTIONS=true`):
+
 - client <= 64KB
 - RSS <= 160MB
 - p95 task create <= 150ms

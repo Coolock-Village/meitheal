@@ -84,7 +84,7 @@ export const PUT: APIRoute = async ({ params, request }) => {
     sanitized.due_date = typeof body.due_date === "string" ? body.due_date : null;
   }
   if (typeof body.labels === "string") {
-    sanitized.labels = body.labels;
+    try { const parsed = JSON.parse(body.labels); if (Array.isArray(parsed)) sanitized.labels = body.labels; } catch { /* skip invalid */ }
   }
   if (typeof body.framework_payload === "string") {
     try { JSON.parse(body.framework_payload); sanitized.framework_payload = body.framework_payload; } catch { /* skip */ }
@@ -106,10 +106,16 @@ export const PUT: APIRoute = async ({ params, request }) => {
     sanitized.progress = Math.min(100, Math.max(0, Math.round(body.progress)));
   }
   if (body.color !== undefined) {
-    sanitized.color = typeof body.color === "string" ? body.color : null;
+    sanitized.color = typeof body.color === "string" && /^#([0-9a-fA-F]{3}|[0-9a-fA-F]{6})$/.test(body.color) ? body.color : null;
   }
   if (body.is_favorite !== undefined) {
     sanitized.is_favorite = body.is_favorite ? 1 : 0;
+  }
+  if (typeof body.parent_id === "string" || body.parent_id === null) {
+    sanitized.parent_id = body.parent_id;
+  }
+  if (typeof body.time_tracked === "number") {
+    sanitized.time_tracked = Math.max(0, Math.round(body.time_tracked));
   }
 
   const updates: string[] = [];

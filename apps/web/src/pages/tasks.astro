@@ -10,7 +10,7 @@ try {
   await ensureSchema();
   const client = getPersistenceClient();
   const result = await client.execute(
-    "SELECT id, title, description, status, priority, due_date, labels, framework_payload, calendar_sync_state, board_id, custom_fields, created_at, updated_at FROM tasks ORDER BY created_at DESC",
+    "SELECT id, title, description, status, priority, due_date, labels, framework_payload, calendar_sync_state, board_id, custom_fields, start_date, end_date, progress, color, is_favorite, created_at, updated_at FROM tasks ORDER BY created_at DESC",
   );
   tasks = result.rows as Record<string, unknown>[];
 } catch (e) {
@@ -76,13 +76,13 @@ const statusLabels: Record<string, string> = {
       placeholder="Search tasks... (press /)"
       style="max-width: 300px;"
     />
-    <select class="form-select" id="filter-status" style="max-width: 150px;">
+    <select class="form-select" id="filter-status" style="max-width: 150px;" aria-label="Filter by status">
       <option value="">All Statuses</option>
       <option value="pending">Pending</option>
       <option value="active">Active</option>
       <option value="complete">Complete</option>
     </select>
-    <select class="form-select" id="filter-priority" style="max-width: 150px;">
+    <select class="form-select" id="filter-priority" style="max-width: 150px;" aria-label="Filter by priority">
       <option value="">All Priorities</option>
       <option value="1">Critical</option>
       <option value="2">High</option>
@@ -96,7 +96,7 @@ const statusLabels: Record<string, string> = {
       <option value="medium">Medium (8–14)</option>
       <option value="low">Low (&lt;8)</option>
     </select>
-    <select class="form-select" id="sort-select" style="max-width: 160px;">
+    <select class="form-select" id="sort-select" style="max-width: 160px;" aria-label="Sort tasks">
       <option value="created_at-desc">Newest First</option>
       <option value="created_at-asc">Oldest First</option>
       <option value="priority-asc">Priority ↑</option>

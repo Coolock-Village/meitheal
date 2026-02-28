@@ -17,9 +17,9 @@ export const PUT: APIRoute = async ({ params, request }) => {
         const updates: string[] = [];
         const args: (string | number)[] = [];
 
-        if (body.title !== undefined) { updates.push("title = ?"); args.push(String(body.title)); }
-        if (body.icon !== undefined) { updates.push("icon = ?"); args.push(String(body.icon)); }
-        if (body.color !== undefined) { updates.push("color = ?"); args.push(String(body.color)); }
+        if (body.title !== undefined) { const t = String(body.title).trim().replace(/<[^>]*>/g, ""); if (t && t.length <= 200) { updates.push("title = ?"); args.push(t); } }
+        if (body.icon !== undefined) { updates.push("icon = ?"); args.push(String(body.icon).slice(0, 10)); }
+        if (body.color !== undefined) { const c = String(body.color); if (/^#([0-9a-fA-F]{3}|[0-9a-fA-F]{6})$/.test(c)) { updates.push("color = ?"); args.push(c); } }
         if (body.position !== undefined) { updates.push("position = ?"); args.push(Number(body.position)); }
 
         if (updates.length === 0) {

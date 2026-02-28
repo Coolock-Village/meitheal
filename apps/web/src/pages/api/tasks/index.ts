@@ -123,7 +123,11 @@ export const POST: APIRoute = async ({ request }) => {
   const status = typeof body.status === "string" && allowedStatuses.includes(body.status) ? body.status : "pending";
 
   const due_date = typeof body.due_date === "string" ? body.due_date : null;
-  const labels = typeof body.labels === "string" ? body.labels : "[]";
+  // Validate labels is valid JSON array
+  let labels = "[]";
+  if (typeof body.labels === "string") {
+    try { const parsed = JSON.parse(body.labels); if (Array.isArray(parsed)) labels = body.labels; } catch { labels = "[]"; }
+  }
 
   // Validate framework_payload is valid JSON
   let framework_payload = "{}";
@@ -151,7 +155,7 @@ export const POST: APIRoute = async ({ request }) => {
   const end_date = typeof body.end_date === "string" ? body.end_date : null;
   const progress_raw = typeof body.progress === "number" ? body.progress : 0;
   const progress = Math.min(100, Math.max(0, Math.round(progress_raw)));
-  const color = typeof body.color === "string" ? body.color : null;
+  const color = typeof body.color === "string" && /^#([0-9a-fA-F]{3}|[0-9a-fA-F]{6})$/.test(body.color) ? body.color : null;
   const is_favorite = body.is_favorite ? 1 : 0;
 
   await client.execute({
@@ -165,7 +169,7 @@ export const POST: APIRoute = async ({ request }) => {
       crypto.randomUUID(), crypto.randomUUID(), now, now] as InValue[],
   });
 
-  return new Response(JSON.stringify({ id, title, description, status, priority, due_date, labels, parent_id, board_id, custom_fields, time_tracked: 0, created_at: now, updated_at: now }), {
+  return new Response(JSON.stringify({ id, title, description, status, priority, due_date, labels, parent_id, board_id, custom_fields, time_tracked: 0, start_date, end_date, progress, color, is_favorite, created_at: now, updated_at: now }), {
     status: 201,
     headers: { "content-type": "application/json" },
   });
