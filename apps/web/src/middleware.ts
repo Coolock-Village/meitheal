@@ -33,6 +33,37 @@ async function getRequiredIngressHeaders(): Promise<string[]> {
   return cachedRequiredHeaders;
 }
 
+// ── In-memory rate limiter (R-107) ──
+const rateLimitMap = new Map<string, { count: number; resetAt: number }>();
+const RATE_LIMIT = 120; // requests per window
+const RATE_WINDOW_MS = 60_000; // 1 minute
+
+function getRateLimit(ip: string): { remaining: number; resetAt: number; exceeded: boolean } {
+  const now = Date.now();
+  let entry = rateLimitMap.get(ip);
+  if (!entry || now >= entry.resetAt) {
+    entry = { count: 0, resetAt: now + RATE_WINDOW_MS };
+    rateLimitMap.set(ip, entry);
+  }
+  entry.count++;
+  const remaining = Math.max(0, RATE_LIMIT - entry.count);
+  return { remaining, resetAt: entry.resetAt, exceeded: entry.count > RATE_LIMIT };
+}
+
+// Periodic cleanup (every 5 min)
+setInterval(() => {
+  const now = Date.now();
+  for (const [ip, entry] of rateLimitMap) {
+    if (now >= entry.resetAt) rateLimitMap.delete(ip);
+  }
+}, 5 * 60_000);
+
+function applyRateLimitHeaders(response: Response, remaining: number, resetAt: number): void {
+  response.headers.set("x-ratelimit-limit", String(RATE_LIMIT));
+  response.headers.set("x-ratelimit-remaining", String(remaining));
+  response.headers.set("x-ratelimit-reset", String(Math.ceil(resetAt / 1000)));
+}
+
 export const onRequest: MiddlewareHandler = async ({ request, locals }, next) => {
   const requiredIngressHeaders = await getRequiredIngressHeaders();
   const ingressPath = getIngressPath(request.headers);
@@ -40,9 +71,28 @@ export const onRequest: MiddlewareHandler = async ({ request, locals }, next) =>
   locals.ingressPath = ingressPath;
   locals.hassioTokenPresent = hasHassioToken(request.headers);
 
+  // Rate limiting (API routes only)
+  const url = new URL(request.url);
+  const ip = request.headers.get("x-forwarded-for")?.split(",")[0]?.trim()
+    || request.headers.get("x-real-ip")
+    || "127.0.0.1";
+  const rateInfo = getRateLimit(ip);
+
+  if (rateInfo.exceeded && url.pathname.startsWith("/api/")) {
+    return new Response(JSON.stringify({ error: "Rate limit exceeded" }), {
+      status: 429,
+      headers: {
+        "content-type": "application/json",
+        "retry-after": String(Math.ceil((rateInfo.resetAt - Date.now()) / 1000)),
+        "x-ratelimit-limit": String(RATE_LIMIT),
+        "x-ratelimit-remaining": "0",
+        "x-ratelimit-reset": String(Math.ceil(rateInfo.resetAt / 1000)),
+      },
+    });
+  }
+
   // CSRF origin check for mutating API requests (defense-in-depth)
   const method = request.method.toUpperCase();
-  const url = new URL(request.url);
   if (["POST", "PUT", "DELETE", "PATCH"].includes(method) && url.pathname.startsWith("/api/")) {
     const origin = request.headers.get("origin");
     const referer = request.headers.get("referer");
@@ -95,6 +145,7 @@ export const onRequest: MiddlewareHandler = async ({ request, locals }, next) =>
       for (const [key, value] of Object.entries(securityHeaders)) {
         response.headers.set(key, value);
       }
+      if (url.pathname.startsWith("/api/")) applyRateLimitHeaders(response, rateInfo.remaining, rateInfo.resetAt);
       return response;
     }
 
@@ -115,5 +166,6 @@ export const onRequest: MiddlewareHandler = async ({ request, locals }, next) =>
   for (const [key, value] of Object.entries(securityHeaders)) {
     response.headers.set(key, value);
   }
+  if (url.pathname.startsWith("/api/")) applyRateLimitHeaders(response, rateInfo.remaining, rateInfo.resetAt);
   return response;
 };
