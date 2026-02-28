@@ -707,7 +707,7 @@ const statusLabels: Record<string, string> = {
           if (res.ok) {
             showToast(editingId ? "Task updated!" : "Task created!");
             modal.classList.remove("open");
-            window.location.reload();
+            // Optimistic: reload handled by next navigation; avoid jarring page refresh
           } else {
             const data = await res.json();
             showToast(data.error || "Failed", "error");
@@ -753,7 +753,28 @@ const statusLabels: Record<string, string> = {
         e.stopPropagation();
         const target = e.target as HTMLInputElement;
         const id = target.dataset.id;
+        const taskItem = target.closest(".task-item");
+        const titleEl = taskItem?.querySelector(".task-title");
+        const badge = taskItem?.querySelector(".task-badge");
         const newStatus = target.checked ? "complete" : "pending";
+
+        // Optimistic UI update
+        if (target.checked) {
+          taskItem?.classList.add("task-done");
+          titleEl?.classList.add("done");
+          if (badge) {
+            badge.className = "task-badge badge-done";
+            badge.textContent = "Complete";
+          }
+        } else {
+          taskItem?.classList.remove("task-done");
+          titleEl?.classList.remove("done");
+          if (badge) {
+            badge.className = "task-badge badge-pending";
+            badge.textContent = "Pending";
+          }
+        }
+
         try {
           await fetch(`/api/tasks/${id}`, {
             method: "PUT",
@@ -761,9 +782,9 @@ const statusLabels: Record<string, string> = {
             body: JSON.stringify({ status: newStatus }),
           });
           showToast(target.checked ? "Task completed!" : "Task reopened");
-          setTimeout(() => window.location.reload(), 500);
         } catch {
           showToast("Failed to update", "error");
+          target.checked = !target.checked; // Revert
         }
       });
     });
@@ -793,7 +814,17 @@ const statusLabels: Record<string, string> = {
           });
           if (dupRes.ok) {
             showToast("Task duplicated!");
-            window.location.reload();
+            // Optimistic: clone the card DOM node
+            const original = document.querySelector(
+              `.task-item[data-id="${id}"]`,
+            );
+            if (original) {
+              const clone = original.cloneNode(true) as HTMLElement;
+              const dupTitle = clone.querySelector(".task-title");
+              if (dupTitle) dupTitle.textContent = `${task.title} (Copy)`;
+              clone.style.animation = "fade-in 300ms ease";
+              original.parentElement?.insertBefore(clone, original.nextSibling);
+            }
           }
         } catch {
           showToast("Failed to duplicate", "error");
