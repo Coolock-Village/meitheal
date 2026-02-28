@@ -6,7 +6,7 @@
 import { showToast } from "./toast";
 
 export interface Task {
-    id: number;
+    id: string;
     title: string;
     description?: string;
     status: string;
@@ -17,6 +17,15 @@ export interface Task {
     calendar_sync_state?: string;
     board_id?: string;
     custom_fields?: string;
+    // Phase 18: Extended fields
+    parent_id?: string;
+    time_tracked?: number;
+    start_date?: string;
+    end_date?: string;
+    progress?: number;
+    color?: string;
+    is_favorite?: number;
+    task_type?: string;
     created_at: string;
     updated_at: string;
 }
@@ -28,7 +37,7 @@ export async function fetchTasks(boardId?: string): Promise<Task[]> {
         : "/api/tasks";
     const res = await fetch(url);
     if (!res.ok) {
-        showToast("Failed to load tasks", "error");
+        showToast(`Failed to load tasks (${res.status})`, "error");
         return [];
     }
     const data = await res.json();
@@ -45,7 +54,7 @@ export async function createTask(
         body: JSON.stringify(task),
     });
     if (!res.ok) {
-        showToast("Failed to create task", "error");
+        showToast(`Failed to create task (${res.status})`, "error");
         return null;
     }
     const data = await res.json();
@@ -64,7 +73,7 @@ export async function updateTask(
         body: JSON.stringify(updates),
     });
     if (!res.ok) {
-        showToast("Failed to update task", "error");
+        showToast(`Failed to update task (${res.status})`, "error");
         return false;
     }
     return true;
@@ -75,8 +84,8 @@ export async function deleteTask(id: number | string): Promise<boolean> {
     const res = await fetch(`/api/tasks/${id}`, {
         method: "DELETE",
     });
-    if (!res.ok) {
-        showToast("Failed to delete task", "error");
+    if (!res.ok && res.status !== 204) {
+        showToast(`Failed to delete task (${res.status})`, "error");
         return false;
     }
     showToast("Task deleted", "success");

@@ -13,6 +13,7 @@ export const GET: APIRoute = async () => {
             headers: { "content-type": "application/json" },
         });
     } catch (e) {
+        console.error("[boards] GET failed:", e);
         return new Response(JSON.stringify({ error: "Failed to list boards" }), {
             status: 500,
             headers: { "content-type": "application/json" },
@@ -43,6 +44,8 @@ export const POST: APIRoute = async ({ request }) => {
             });
         }
 
+        // Generate deterministic board ID by slug-ifying the title
+        // e.g. "My Board" → "my_board"
         const id = title.toLowerCase().replace(/[^a-z0-9]+/g, "_").replace(/^_|_$/g, "");
         const icon = String(body.icon ?? "📋").slice(0, 10);
         const color = typeof body.color === "string" && /^#([0-9a-fA-F]{3}|[0-9a-fA-F]{6})$/.test(body.color) ? body.color : "#10b981";
@@ -62,6 +65,7 @@ export const POST: APIRoute = async ({ request }) => {
             { status: 201, headers: { "content-type": "application/json" } }
         );
     } catch (e) {
+        console.error("[boards] POST failed:", e);
         return new Response(JSON.stringify({ error: "Failed to create board" }), {
             status: 500,
             headers: { "content-type": "application/json" },
