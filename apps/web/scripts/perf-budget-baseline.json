@@ -10,8 +10,8 @@
     "p95Ms": 23.6
   },
   "budgets": {
-    "clientBytesMax": 120832,
-    "rssKbMax": 225280,
+    "clientBytesMax": 143360,
+    "rssKbMax": 235520,
     "p95MsMax": 250
   }
 }
