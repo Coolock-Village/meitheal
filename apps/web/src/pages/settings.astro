@@ -213,29 +213,169 @@ import Layout from "../layouts/Layout.astro";
       </div>
     </div>
 
-    <!-- Integrations -->
-    <div class="card">
+    <!-- Integrations — Comprehensive Configuration -->
+    <div class="card" style="grid-column: 1 / -1;">
       <div class="card-header">
         <div>
           <div class="card-title">🔗 Integrations</div>
-          <div class="card-subtitle">External service connections</div>
+          <div class="card-subtitle">Connect Meitheal to external services for automation, sync, and enhanced workflows</div>
         </div>
       </div>
-      <div class="integration-row">
-        <span>📅 Calendar Sync</span>
-        <span class="badge badge-active" id="cal-status">Connected</span>
+
+      <!-- Calendar Sync -->
+      <div class="integration-section">
+        <div class="integration-header">
+          <div>
+            <strong>📅 Calendar Sync</strong>
+            <div class="integration-desc">Sync tasks with due dates to your Home Assistant or CalDAV calendar. Tasks appear as events with priority color coding.</div>
+          </div>
+          <span class="badge badge-active" id="cal-status">Connected</span>
+        </div>
+        <div class="integration-config">
+          <div class="form-group">
+            <label class="form-label" for="cal-entity">Calendar Entity</label>
+            <input type="text" class="form-input" id="cal-entity" placeholder="calendar.meitheal_tasks" />
+            <small style="color: var(--text-muted); font-size: 11px;">The HA calendar entity to sync tasks to. Find it in HA → Developer Tools → States → search "calendar."</small>
+          </div>
+          <div class="form-group">
+            <label class="form-label" for="caldav-url">CalDAV URL (optional)</label>
+            <input type="url" class="form-input" id="caldav-url" placeholder="https://your-server.com/dav/calendars/" />
+            <small style="color: var(--text-muted); font-size: 11px;">For direct CalDAV sync (Nextcloud, Radicale, etc). Leave blank to use HA calendar only.</small>
+          </div>
+          <div style="display: flex; gap: 8px; align-items: center;">
+            <button class="btn btn-primary" id="save-cal" style="font-size: 13px;">Save Calendar Settings</button>
+            <button class="btn btn-ghost" id="test-cal" style="font-size: 13px;">Test Sync</button>
+          </div>
+        </div>
       </div>
-      <div class="integration-row">
-        <span>🛒 Grocy</span>
-        <span class="badge badge-pending">Not configured</span>
+
+      <!-- Grocy -->
+      <div class="integration-section">
+        <div class="integration-header">
+          <div>
+            <strong>🛒 Grocy</strong>
+            <div class="integration-desc">Connect to Grocy for household inventory and chore management. Meitheal can import Grocy tasks and expose its own tasks back.</div>
+          </div>
+          <span class="badge badge-pending" id="grocy-status">Not configured</span>
+        </div>
+        <div class="integration-config">
+          <div class="form-group">
+            <label class="form-label" for="grocy-url">Grocy URL</label>
+            <input type="url" class="form-input" id="grocy-url" placeholder="http://homeassistant.local:9192" />
+            <small style="color: var(--text-muted); font-size: 11px;">The URL of your Grocy instance. Often runs as a HA add-on on port 9192.</small>
+          </div>
+          <div class="form-group">
+            <label class="form-label" for="grocy-key">API Key</label>
+            <input type="password" class="form-input" id="grocy-key" placeholder="••••••••" />
+            <small style="color: var(--text-muted); font-size: 11px;">Generate in Grocy → Settings → API Keys → Add.</small>
+          </div>
+          <div class="form-group">
+            <label class="form-label" for="grocy-sync-mode">Sync Mode</label>
+            <select class="form-select" id="grocy-sync-mode">
+              <option value="import">Import Grocy → Meitheal</option>
+              <option value="export">Export Meitheal → Grocy</option>
+              <option value="bidirectional">Bidirectional sync</option>
+            </select>
+          </div>
+          <button class="btn btn-primary" id="save-grocy" style="font-size: 13px;">Save Grocy Settings</button>
+        </div>
       </div>
-      <div class="integration-row">
-        <span>⚙ n8n / Node-RED</span>
-        <span class="badge badge-pending">Not configured</span>
+
+      <!-- n8n / Node-RED -->
+      <div class="integration-section">
+        <div class="integration-header">
+          <div>
+            <strong>⚙ n8n / Node-RED</strong>
+            <div class="integration-desc">Trigger automation workflows when tasks are created, updated, or completed. Create complex pipelines that react to task events.</div>
+          </div>
+          <span class="badge badge-pending" id="n8n-status">Not configured</span>
+        </div>
+        <div class="integration-config">
+          <div class="form-group">
+            <label class="form-label" for="n8n-webhook-url">Webhook URL</label>
+            <input type="url" class="form-input" id="n8n-webhook-url" placeholder="https://n8n.example.com/webhook/meitheal" />
+            <small style="color: var(--text-muted); font-size: 11px;">The webhook URL from your n8n/Node-RED flow. Meitheal will POST task events here.</small>
+          </div>
+          <div class="form-group">
+            <label class="form-label">Trigger Events</label>
+            <div style="display: flex; gap: 12px; flex-wrap: wrap;">
+              <label style="font-size: 13px; display: flex; gap: 4px; align-items: center;">
+                <input type="checkbox" class="n8n-event" value="task.created" checked /> Created
+              </label>
+              <label style="font-size: 13px; display: flex; gap: 4px; align-items: center;">
+                <input type="checkbox" class="n8n-event" value="task.updated" checked /> Updated
+              </label>
+              <label style="font-size: 13px; display: flex; gap: 4px; align-items: center;">
+                <input type="checkbox" class="n8n-event" value="task.completed" checked /> Completed
+              </label>
+              <label style="font-size: 13px; display: flex; gap: 4px; align-items: center;">
+                <input type="checkbox" class="n8n-event" value="task.deleted" /> Deleted
+              </label>
+            </div>
+          </div>
+          <button class="btn btn-primary" id="save-n8n" style="font-size: 13px;">Save n8n Settings</button>
+        </div>
       </div>
-      <div class="integration-row">
-        <span>🔔 Webhooks</span>
-        <span class="badge badge-active">Active</span>
+
+      <!-- Webhooks -->
+      <div class="integration-section">
+        <div class="integration-header">
+          <div>
+            <strong>🔔 Webhooks</strong>
+            <div class="integration-desc">Generic outgoing webhooks for any service. Each event sends a JSON payload with the full task object and event type.</div>
+          </div>
+          <span class="badge badge-active" id="webhook-status">Active</span>
+        </div>
+        <div class="integration-config">
+          <div class="form-group">
+            <label class="form-label" for="webhook-endpoint">Endpoint URL</label>
+            <input type="url" class="form-input" id="webhook-endpoint" placeholder="https://your-service.com/webhook" />
+          </div>
+          <div class="form-group">
+            <label class="form-label" for="webhook-secret">Signing Secret (optional)</label>
+            <input type="password" class="form-input" id="webhook-secret" placeholder="••••••••" />
+            <small style="color: var(--text-muted); font-size: 11px;">HMAC-SHA256 secret used to sign webhook payloads. Verify with the X-Webhook-Signature header.</small>
+          </div>
+          <div class="form-group">
+            <label class="form-label">Payload Format</label>
+            <select class="form-select" id="webhook-format">
+              <option value="json" selected>JSON</option>
+              <option value="form">Form-encoded</option>
+            </select>
+          </div>
+          <div style="display: flex; gap: 8px;">
+            <button class="btn btn-primary" id="save-webhook" style="font-size: 13px;">Save Webhook</button>
+            <button class="btn btn-ghost" id="test-webhook" style="font-size: 13px;">Send Test</button>
+          </div>
+        </div>
+      </div>
+
+      <!-- AI Provider -->
+      <div class="integration-section">
+        <div class="integration-header">
+          <div>
+            <strong>🤖 AI Provider</strong>
+            <div class="integration-desc">Configure which AI service the "Ask AI" button sends tasks to. Generates a pre-filled prompt with task context for analysis.</div>
+          </div>
+          <span class="badge badge-active">ChatGPT</span>
+        </div>
+        <div class="integration-config">
+          <div class="form-group">
+            <label class="form-label" for="ai-provider">Provider</label>
+            <select class="form-select" id="ai-provider">
+              <option value="chatgpt" selected>ChatGPT</option>
+              <option value="claude">Claude</option>
+              <option value="gemini">Google Gemini</option>
+              <option value="ollama">Ollama (local)</option>
+              <option value="custom">Custom URL</option>
+            </select>
+          </div>
+          <div class="form-group" id="ai-custom-url-group" style="display: none;">
+            <label class="form-label" for="ai-custom-url">Custom API URL</label>
+            <input type="url" class="form-input" id="ai-custom-url" placeholder="http://localhost:11434/api/chat" />
+          </div>
+          <button class="btn btn-primary" id="save-ai" style="font-size: 13px;">Save AI Settings</button>
+        </div>
       </div>
     </div>
 
@@ -466,14 +606,59 @@ import Layout from "../layouts/Layout.astro";
         <select class="form-select">
           <option value="text">Text</option>
           <option value="number">Number</option>
+          <option value="url">URL</option>
           <option value="select">Select</option>
           <option value="date">Date</option>
           <option value="checkbox">Checkbox</option>
         </select>
+        <button class="btn btn-primary custom-field-save" style="padding: 4px 12px; font-size: 12px;">Save</button>
         <button class="btn btn-ghost" style="padding: 4px 8px; color: var(--danger);" onclick="this.closest('.custom-field-row')?.remove()">×</button>
       `;
         list.appendChild(row);
+        row.querySelector("input")?.focus();
+
+        // Attach save handler to new row
+        row.querySelector(".custom-field-save")?.addEventListener("click", async function() {
+          const nameInput = row.querySelector("input") as HTMLInputElement;
+          const typeSelect = row.querySelector("select") as HTMLSelectElement;
+          const name = nameInput?.value?.trim();
+          const type = typeSelect?.value || "text";
+          if (!name) { nameInput?.focus(); return; }
+
+          try {
+            const settingsRes = await fetch("/api/settings");
+            const settings = settingsRes.ok ? await settingsRes.json() : {};
+            const existing = settings.custom_fields ? JSON.parse(settings.custom_fields) : [];
+            existing.push({ name, type });
+
+            await fetch("/api/settings", {
+              method: "PUT",
+              headers: { "content-type": "application/json" },
+              body: JSON.stringify({ key: "custom_fields", value: JSON.stringify(existing) }),
+            });
+
+            nameInput.disabled = true;
+            typeSelect.disabled = true;
+            const saveBtn = row.querySelector(".custom-field-save") as HTMLButtonElement;
+            if (saveBtn) {
+              saveBtn.textContent = "✓ Saved";
+              saveBtn.disabled = true;
+              saveBtn.style.color = "var(--success)";
+            }
+            showToast("Custom field saved!");
+          } catch {
+            showToast("Failed to save field", "error");
+          }
+        });
       });
+
+    // AI provider custom URL toggle
+    document.getElementById("ai-provider")?.addEventListener("change", function() {
+      const group = document.getElementById("ai-custom-url-group");
+      if (group) {
+        group.style.display = (this as HTMLSelectElement).value === "custom" ? "block" : "none";
+      }
+    });
 
     // Init
     loadSettings();
@@ -496,16 +681,30 @@ import Layout from "../layouts/Layout.astro";
   .custom-field-row:last-child {
     border-bottom: none;
   }
-  .integration-row {
+  .integration-section {
+    border-bottom: 1px solid var(--border);
+    padding: 16px 0;
+  }
+  .integration-section:last-child {
+    border-bottom: none;
+  }
+  .integration-header {
     display: flex;
     justify-content: space-between;
-    align-items: center;
-    padding: 12px 0;
-    border-bottom: 1px solid var(--border);
-    font-size: 14px;
+    align-items: flex-start;
+    gap: 12px;
+    margin-bottom: 12px;
   }
-  .integration-row:last-child {
-    border-bottom: none;
+  .integration-desc {
+    font-size: 12px;
+    color: var(--text-muted);
+    margin-top: 4px;
+    line-height: 1.4;
+  }
+  .integration-config {
+    padding-left: 8px;
+    border-left: 2px solid var(--border);
+    margin-left: 4px;
   }
   .shortcut-grid {
     display: grid;

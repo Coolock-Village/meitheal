@@ -77,10 +77,10 @@ try {
             href="/tasks"
             class="nav-link"
             data-page="tasks"
-            aria-label="Tasks ({taskCounts.total} total)"
+            aria-label={`Tasks (${taskCounts.total} total)`}
             ><span class="nav-icon">✅</span> Tasks <span
               class="nav-badge"
-              aria-label="{taskCounts.total} tasks">{taskCounts.total}</span
+              aria-label={`${taskCounts.total} tasks`}>{taskCounts.total}</span
             ></a
           >
         </li>
@@ -89,10 +89,10 @@ try {
             href="/kanban"
             class="nav-link"
             data-page="kanban"
-            aria-label="Kanban board ({taskCounts.active} active)"
+            aria-label={`Kanban board (${taskCounts.active} active)`}
             ><span class="nav-icon">▦</span> Kanban <span
               class="nav-badge"
-              aria-label="{taskCounts.active} active tasks"
+              aria-label={`${taskCounts.active} active tasks`}
               >{taskCounts.active}</span
             ></a
           >

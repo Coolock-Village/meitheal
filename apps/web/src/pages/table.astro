@@ -59,7 +59,7 @@ const priorityColors: Record<number, string> = {
     <table class="data-table" id="task-table">
       <thead>
         <tr>
-          <th style="width: 40px;"><input type="checkbox" id="select-all" /></th
+          <th style="width: 40px;"><input type="checkbox" id="select-all" aria-label="Select all tasks" /></th
           >
           <th class="sortable" data-col="title">Title</th>
           <th class="sortable" data-col="status" style="width: 100px;"
@@ -117,6 +117,7 @@ const priorityColors: Record<number, string> = {
                       type="checkbox"
                       class="row-check"
                       data-id={String(task.id)}
+                      aria-label={`Select task: ${String(task.title)}`}
                     />
                   </td>
                   <td>
@@ -139,6 +140,7 @@ const priorityColors: Record<number, string> = {
                       class="inline-select"
                       data-field="status"
                       data-id={String(task.id)}
+                      aria-label={`Status for ${String(task.title)}`}
                     >
                       <option
                         value="pending"
@@ -496,20 +498,33 @@ const priorityColors: Record<number, string> = {
     outline: 1px solid var(--border-focus);
   }
   .inline-select {
-    background: transparent;
+    background: var(--bg-card, #1e1e2e);
     border: 1px solid transparent;
     color: var(--text-primary);
     font-size: 13px;
-    padding: 4px;
+    padding: 4px 8px;
     border-radius: var(--radius-sm);
     cursor: pointer;
+    appearance: none;
+    -webkit-appearance: none;
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 12 12'%3E%3Cpath fill='%239ca3af' d='M3 5l3 3 3-3'/%3E%3C/svg%3E");
+    background-repeat: no-repeat;
+    background-position: right 6px center;
+    padding-right: 22px;
+  }
+  .inline-select option {
+    background: var(--bg-card, #1e1e2e);
+    color: var(--text-primary, #e2e8f0);
+    padding: 6px 10px;
   }
   .inline-select:hover {
     border-color: var(--border);
+    background: var(--bg-hover);
   }
   .inline-select:focus {
     border-color: var(--accent);
     outline: none;
+    box-shadow: 0 0 0 2px rgba(16, 185, 129, 0.15);
   }
   .priority-indicator {
     font-size: 13px;
