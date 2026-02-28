@@ -1,7 +1,5 @@
 import { defineConfig } from "astro/config";
 import node from "@astrojs/node";
-import mdx from "@astrojs/mdx";
-import sitemap from "@astrojs/sitemap";
 import tailwind from "@astrojs/tailwind";
 
 export default defineConfig({
@@ -9,13 +7,16 @@ export default defineConfig({
   output: "server",
   adapter: node({ mode: "standalone" }),
   integrations: [
-    mdx(),
-    tailwind(),
-    sitemap()
+    tailwind({
+      // Use our custom global.css (imported in Layout.astro)
+      applyBaseStyles: false,
+    }),
   ],
+  compressHTML: true,
+  prefetch: true,
   vite: {
     define: {
-      __MEITHEAL_ASTRO_FIRST__: true
-    }
-  }
+      __MEITHEAL_ASTRO_FIRST__: true,
+    },
+  },
 });
