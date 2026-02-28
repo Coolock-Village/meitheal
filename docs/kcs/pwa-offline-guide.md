@@ -17,6 +17,7 @@ Meitheal uses a **service worker** to cache the app shell and intercept network 
 | Create tasks | ✅ | Saved locally, synced when online |
 | Edit tasks | ✅ | Saved locally, synced when online |
 | Delete tasks | ✅ | Marked for deletion, synced when online |
+| Image attachments | ✅ | Stored as Base64 in IDB `task_attachments` store |
 | Calendar sync | ❌ | Requires network (HA API call) |
 | Webhook delivery | ❌ | Requires network |
 
@@ -32,6 +33,7 @@ Meitheal uses a **service worker** to cache the app shell and intercept network 
 ## Conflict Resolution
 
 When the same task is edited on multiple devices:
+
 - **Last write wins** — the most recent `updatedAt` timestamp takes precedence
 - The server's timestamp is authoritative (prevents clock skew issues)
 - Conflicts are logged as `sync.conflict.resolved` domain events
@@ -40,7 +42,8 @@ When the same task is edited on multiple devices:
 ## Storage Limits
 
 - **Sync queue**: max 100 pending operations (warning at capacity)
-- **IndexedDB**: warning at 50MB, guidance at 100MB
+- **IndexedDB tasks**: warning at 50MB, guidance at 100MB
+- **IndexedDB attachments**: large images are Base64-encoded (~1.37x file size); monitor total IDB usage
 - **Precache**: ≤ 1MB budget for static assets
 
 ## Troubleshooting
@@ -52,7 +55,8 @@ When the same task is edited on multiple devices:
 | SW update available | Accept update prompt when it appears |
 | Clearing all offline data | Browser settings → Clear site data |
 | Force sync | Navigate to any page while online |
+| Attachment not showing | Check browser IDB storage quota in DevTools |
 
 ---
 
-*Last updated: 2026-02-28 — Phase 3 PWA & Offline-First*
+*Last updated: 2026-02-28 — Phase 23 Offline Image Attachments*

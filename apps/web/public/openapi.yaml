@@ -470,3 +470,99 @@ components:
         created_at:
           type: string
           format: date-time
+
+  # --- Data Export & Import Endpoints (Phase 21) ---
+
+  /api/export/tasks.json:
+    get:
+      tags: [Tasks]
+      summary: Export all tasks as JSON
+      operationId: exportTasksJson
+      description: Downloads all tasks from the server-side SQLite database as a JSON file.
+      responses:
+        "200":
+          description: JSON file download
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/Task"
+
+  /api/export/tasks.csv:
+    get:
+      tags: [Tasks]
+      summary: Export all tasks as CSV
+      operationId: exportTasksCsv
+      description: Downloads all tasks as a CSV file with proper field escaping.
+      responses:
+        "200":
+          description: CSV file download
+          content:
+            text/csv:
+              schema:
+                type: string
+        "204":
+          description: No tasks to export
+
+  /api/export/database.sqlite:
+    get:
+      tags: [Health]
+      summary: Download raw SQLite database
+      operationId: exportDatabase
+      description: Streams the raw meitheal.db file for full local-first data sovereignty.
+      responses:
+        "200":
+          description: SQLite binary download
+          content:
+            application/x-sqlite3:
+              schema:
+                type: string
+                format: binary
+        "400":
+          description: Database is not file-based
+        "404":
+          description: Database file not found
+
+  /api/export/settings.json:
+    get:
+      tags: [Settings]
+      summary: Export settings as JSON
+      operationId: exportSettings
+      description: Downloads all user settings as a key-value JSON file.
+      responses:
+        "200":
+          description: Settings JSON download
+          content:
+            application/json:
+              schema:
+                type: object
+
+  /api/import/settings:
+    post:
+      tags: [Settings]
+      summary: Import settings from JSON
+      operationId: importSettings
+      description: Accepts a JSON payload of settings (key allowlisted) and bulk-upserts them.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              description: Key-value pairs of settings to import
+      responses:
+        "200":
+          description: Settings imported successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                  message:
+                    type: string
+        "400":
+          description: Invalid payload or no valid keys
+
