@@ -10,8 +10,8 @@ Local-first task orchestration with HA calendar sync and Vikunja compatibility.
 - **Planning model:** dual-track (`Primary Delivery` + `Extension Track`)
 - **Primary Delivery:** 6 of 6 phases complete (`01-06 complete`)
 - **Extension Track:** 7 of 8 phases complete (`15-21 complete`, `22 planned`)
-- **Overall phase count:** 13 of 14 complete
-- **Current execution focus:** Phase 22 (AI Context Generation). Continuing 40 waves of optimization.
+- **Overall phase count:** 14 of 15 complete
+- **Current execution focus:** Phase 24 (Performance Budgets).
 
 ## Phase Status Snapshot
 
@@ -24,7 +24,7 @@ Local-first task orchestration with HA calendar sync and Vikunja compatibility.
 5. `05-market-parity` — `complete`
 6. `06-functional-ui` — `complete` (browser-verified, 4 summaries)
 
-### Extension Track (`15-18`)
+### Extension Track (`15-24`)
 
 1. `15-ux-parity-boards` — `complete`
 2. `16-astro-optimizations-ux` — `complete`
@@ -33,7 +33,9 @@ Local-first task orchestration with HA calendar sync and Vikunja compatibility.
 5. `19-kanban-overhaul` — `complete`
 6. `20-deep-production-polish` — `complete`
 7. `21-data-export-portability` — `complete`
-8. `22-ai-context-generation` — `planned`
+8. `22-ai-context-generation` — `complete`
+9. `23-offline-image-uploads` — `complete`
+10. `24-perf-budgets-ci` — `planned`
 
 ## Recent Decisions
 
