@@ -213,8 +213,8 @@ const typeConfig: Record<
             data-status={col.key}
             data-lane-id={col.id}
             data-wip-limit={String(col.wipLimit)}
-            ondrop="handleDrop(event)"
-            ondragover="event.preventDefault(); this.classList.add('drag-over')"
+            ondrop="handleDrop(arguments[0])"
+            ondragover="arguments[0].preventDefault(); this.classList.add('drag-over')"
             ondragleave="this.classList.remove('drag-over')"
           >
             <div class="kanban-column-header">
@@ -312,7 +312,7 @@ const typeConfig: Record<
                     data-status={String(task.status)}
                     data-task-type={tt}
                     data-board={String(task.board_id ?? "default")}
-                    ondragstart="event.dataTransfer.setData('text/plain', this.dataset.id); this.classList.add('dragging');"
+                    ondragstart="arguments[0].dataTransfer.setData('text/plain', this.dataset.id); this.classList.add('dragging');"
                     ondragend="this.classList.remove('dragging');"
                     style={`border-left: 3px solid ${task.color ? String(task.color) : tc.color};`}
                   >
@@ -536,14 +536,23 @@ const typeConfig: Record<
       }
 
       // T-1902: Optimistic DOM update — no page reload
-      // Move card to target column's card container
-      const targetCards = col.querySelector(".kanban-cards");
+      // Phase 20: Detect drop into specific swimlane
+      const targetSwimlane = e.target.closest(".swimlane-group");
+      const targetCards = targetSwimlane 
+        ? targetSwimlane.querySelector(".swimlane-cards") 
+        : col.querySelector(".kanban-cards");
+
       if (targetCards) {
         // Remove empty state if present
         const empty = targetCards.querySelector(".kanban-empty");
         if (empty) empty.remove();
         targetCards.appendChild(card);
         card.dataset.status = newStatus;
+        if (targetSwimlane) {
+          // Update the card's native dataset so filtering still works on reload
+          card.dataset.taskType = targetSwimlane.dataset.swimlaneType;
+          // Find the badge inside the card and update visually if possible - this requires a reload for full icon update, but we keep the structure
+        }
       }
 
       // Update column counts
@@ -577,10 +586,14 @@ const typeConfig: Record<
 
       // Persist to API (background, no reload)
       try {
+        const payload = { status: newStatus };
+        if (targetSwimlane) {
+          payload.task_type = targetSwimlane.dataset.swimlaneType;
+        }
         await fetch(`/api/tasks/${taskId}`, {
           method: "PUT",
           headers: { "content-type": "application/json" },
-          body: JSON.stringify({ status: newStatus }),
+          body: JSON.stringify(payload),
         });
       } catch {
         // Revert on failure — reload to get server state

@@ -191,13 +191,13 @@ try {
         id="task-detail-panel"
         class="absolute right-0 top-0 h-full w-full max-w-3xl bg-bg-secondary border-l border-border shadow-lg overflow-y-auto animate-slide-in"
       >
-        <div
-          class="flex items-center justify-between px-6 py-4 border-b border-border"
-        >
-          <div class="flex items-center gap-3">
-            <span id="td-id" class="text-xs text-text-muted">#</span>
-            <input
-              id="td-title"
+        <div class="px-6 pt-4">
+          <a href="#" id="td-parent" class="text-xs text-info hidden hover:underline flex items-center gap-1 mb-1"></a>
+          <div class="flex items-center justify-between pb-4 border-b border-border">
+            <div class="flex items-center gap-3 w-full">
+              <span id="td-id" class="text-xs text-text-muted">#</span>
+              <input
+                id="td-title"
               class="form-input bg-transparent border-none text-lg font-bold p-0 focus:ring-0"
               placeholder="Task title"
             />
@@ -639,6 +639,24 @@ try {
           const modal = document.getElementById("shortcut-modal");
           if (modal) modal.classList.toggle("hidden");
         }
+
+        // Phase 20 (ADHD Optimization): T/S/E shortcuts for detail panel task_type
+        const taskOverlay = document.getElementById("task-detail-overlay");
+        if (taskOverlay && !taskOverlay.classList.contains("hidden")) {
+          const typeSelect = document.getElementById("td-task-type") as HTMLSelectElement | null;
+          if (typeSelect) {
+            let newType = null;
+            if (e.key.toLowerCase() === "t") newType = "task";
+            if (e.key.toLowerCase() === "s") newType = "story";
+            if (e.key.toLowerCase() === "e") newType = "epic";
+            
+            if (newType && typeSelect.value !== newType) {
+              e.preventDefault();
+              typeSelect.value = newType;
+              typeSelect.dispatchEvent(new Event("change"));
+            }
+          }
+        }
       });
 
       // Keyboard shortcut onboarding hint (show once)
@@ -794,6 +812,19 @@ try {
           const res = await fetch(`/api/tasks/${taskId}`);
           if (!res.ok) return;
           const t = (await res.json()) as Record<string, unknown>;
+
+          const parentEl = document.getElementById("td-parent") as HTMLAnchorElement | null;
+          if (parentEl && t.parent_id) {
+            parentEl.textContent = `↑ ${t.parent_title ?? t.parent_id}`;
+            parentEl.href = `#task-${t.parent_id}`;
+            parentEl.classList.remove("hidden");
+            parentEl.onclick = (e) => {
+              e.preventDefault();
+              openTaskDetail(String(t.parent_id));
+            };
+          } else if (parentEl) {
+            parentEl.classList.add("hidden");
+          }
 
           (document.getElementById("td-id") as HTMLElement).textContent =
             `#${String(t.id).slice(0, 8)}`;

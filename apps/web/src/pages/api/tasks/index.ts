@@ -133,20 +133,33 @@ export const POST: APIRoute = async ({ request }) => {
   const status = rawStatus && rawStatus.length <= 50 ? rawStatus : "pending";
 
   const due_date = typeof body.due_date === "string" ? body.due_date : null;
-  // Validate labels is valid JSON array
+  // Validate labels is valid JSON array of strings
   let labels = "[]";
-  if (typeof body.labels === "string") {
-    try { const parsed = JSON.parse(body.labels); if (Array.isArray(parsed)) labels = body.labels; } catch { labels = "[]"; }
+  if (body.labels !== undefined) {
+    if (typeof body.labels !== "string") {
+      return new Response(JSON.stringify({ error: "labels must be a JSON string array" }), { status: 400, headers: { "content-type": "application/json" } });
+    }
+    try {
+      const parsed = JSON.parse(body.labels);
+      if (!Array.isArray(parsed) || !parsed.every(item => typeof item === "string")) throw new Error();
+      labels = body.labels;
+    } catch {
+      return new Response(JSON.stringify({ error: "labels must be a valid JSON string array" }), { status: 400, headers: { "content-type": "application/json" } });
+    }
   }
 
-  // Validate framework_payload is valid JSON
+  // Validate framework_payload is valid JSON object
   let framework_payload = "{}";
-  if (typeof body.framework_payload === "string") {
+  if (body.framework_payload !== undefined) {
+    if (typeof body.framework_payload !== "string") {
+      return new Response(JSON.stringify({ error: "framework_payload must be a JSON string" }), { status: 400, headers: { "content-type": "application/json" } });
+    }
     try {
-      JSON.parse(body.framework_payload);
+      const parsed = JSON.parse(body.framework_payload);
+      if (typeof parsed !== "object" || Array.isArray(parsed) || parsed === null) throw new Error();
       framework_payload = body.framework_payload;
     } catch {
-      framework_payload = "{}";
+      return new Response(JSON.stringify({ error: "framework_payload must be a valid JSON object string" }), { status: 400, headers: { "content-type": "application/json" } });
     }
   }
 
@@ -155,9 +168,20 @@ export const POST: APIRoute = async ({ request }) => {
 
   // Board and custom fields
   const board_id = typeof body.board_id === "string" ? body.board_id : "default";
+
   let custom_fields = "{}";
-  if (typeof body.custom_fields === "string") {
-    try { JSON.parse(body.custom_fields); custom_fields = body.custom_fields; } catch { custom_fields = "{}"; }
+  if (body.custom_fields !== undefined) {
+    if (typeof body.custom_fields !== "string") {
+      return new Response(JSON.stringify({ error: "custom_fields must be a JSON string" }), { status: 400, headers: { "content-type": "application/json" } });
+    }
+    try {
+      const parsed = JSON.parse(body.custom_fields);
+      // must be an object, not array or null
+      if (typeof parsed !== "object" || Array.isArray(parsed) || parsed === null) throw new Error();
+      custom_fields = body.custom_fields;
+    } catch {
+      return new Response(JSON.stringify({ error: "custom_fields must be a valid JSON object string" }), { status: 400, headers: { "content-type": "application/json" } });
+    }
   }
 
   // Phase 18: Extended fields

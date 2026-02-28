@@ -11,11 +11,14 @@ export const GET: APIRoute = async ({ params }) => {
   await ensureSchema();
   const client = getPersistenceClient();
   const result = await client.execute({
-    sql: `SELECT id, title, description, status, priority, due_date, labels,
-                 framework_payload, calendar_sync_state, board_id, custom_fields,
-                 parent_id, time_tracked, start_date, end_date, progress, color,
-                 is_favorite, task_type, created_at, updated_at
-          FROM tasks WHERE id = ? LIMIT 1`,
+    sql: `SELECT t.id, t.title, t.description, t.status, t.priority, t.due_date, t.labels,
+                 t.framework_payload, t.calendar_sync_state, t.board_id, t.custom_fields,
+                 t.parent_id, t.time_tracked, t.start_date, t.end_date, t.progress, t.color,
+                 t.is_favorite, t.task_type, t.created_at, t.updated_at,
+                 p.title as parent_title, p.task_type as parent_task_type
+          FROM tasks t
+          LEFT JOIN tasks p ON t.parent_id = p.id
+          WHERE t.id = ? LIMIT 1`,
     args: [params.id!],
   });
 
@@ -86,14 +89,42 @@ export const PUT: APIRoute = async ({ params, request }) => {
   if (body.due_date !== undefined) {
     sanitized.due_date = typeof body.due_date === "string" ? body.due_date : null;
   }
-  if (typeof body.labels === "string") {
-    try { const parsed = JSON.parse(body.labels); if (Array.isArray(parsed)) sanitized.labels = body.labels; } catch { /* skip invalid */ }
+  if (body.labels !== undefined) {
+    if (typeof body.labels !== "string") {
+      return new Response(JSON.stringify({ error: "labels must be a JSON string array" }), { status: 400, headers: { "content-type": "application/json" } });
+    }
+    try {
+      const parsed = JSON.parse(body.labels);
+      if (!Array.isArray(parsed) || !parsed.every(item => typeof item === "string")) throw new Error();
+      sanitized.labels = body.labels;
+    } catch {
+      return new Response(JSON.stringify({ error: "labels must be a valid JSON string array" }), { status: 400, headers: { "content-type": "application/json" } });
+    }
   }
-  if (typeof body.framework_payload === "string") {
-    try { JSON.parse(body.framework_payload); sanitized.framework_payload = body.framework_payload; } catch { /* skip */ }
+  if (body.framework_payload !== undefined) {
+    if (typeof body.framework_payload !== "string") {
+      return new Response(JSON.stringify({ error: "framework_payload must be a JSON string" }), { status: 400, headers: { "content-type": "application/json" } });
+    }
+    try {
+      const parsed = JSON.parse(body.framework_payload);
+      if (typeof parsed !== "object" || Array.isArray(parsed) || parsed === null) throw new Error();
+      sanitized.framework_payload = body.framework_payload;
+    } catch {
+      return new Response(JSON.stringify({ error: "framework_payload must be a valid JSON object string" }), { status: 400, headers: { "content-type": "application/json" } });
+    }
   }
-  if (typeof body.custom_fields === "string") {
-    try { JSON.parse(body.custom_fields); sanitized.custom_fields = body.custom_fields; } catch { /* skip */ }
+  if (body.custom_fields !== undefined) {
+    if (typeof body.custom_fields !== "string") {
+      return new Response(JSON.stringify({ error: "custom_fields must be a JSON string" }), { status: 400, headers: { "content-type": "application/json" } });
+    }
+    try {
+      const parsed = JSON.parse(body.custom_fields);
+      // must be an object, not array or null
+      if (typeof parsed !== "object" || Array.isArray(parsed) || parsed === null) throw new Error();
+      sanitized.custom_fields = body.custom_fields;
+    } catch {
+      return new Response(JSON.stringify({ error: "custom_fields must be a valid JSON object string" }), { status: 400, headers: { "content-type": "application/json" } });
+    }
   }
   if (typeof body.board_id === "string") {
     sanitized.board_id = body.board_id;
