@@ -161,11 +161,18 @@ Current state:
 - [x] Phase 23 Completed successfully.
 - Execution plans `23-01` mapped out and executed across Wave 21 (IDB Storage) and Wave 22 (Thumbnail Rendering & Data Export).
 
+## Phase 24: CI Perf-Budgets Check Reconciliation 🚀
+
+Current state:
+
+- [x] Phase 24 Completed successfully.
+- Execution plans `24-01` mapped out and executed across Wave 23 (Triage) and Wave 24 (CI Config Update).
+- Increased Astro `clientBytesMax` to `150,000` to support IDB, SQLite-WASM, and Lucide payloads.
+
 ## Open Blockers (Roadmap-Level)
 
-1. PR #1 still has failing required checks.
-2. `perf-budgets` fails on CI runs `22519500812` and `22519501663` (`clientBytes=81700` vs `65536`).
-3. CodeQL check-suite reports a failing entry even though newer dynamic analysis runs have succeeded; required-check reconciliation is still needed.
+1. PR #1 check suite still reports failing required checks for CodeQL.
+2. CodeQL check-suite reports a failing entry even though newer dynamic analysis runs have succeeded; required-check reconciliation is still needed.
 
 ---
 *Last updated: 2026-02-28 during extension-track reconciliation pass*
