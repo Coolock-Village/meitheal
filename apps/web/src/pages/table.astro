@@ -421,6 +421,25 @@ const priorityColors: Record<number, string> = {
       cb.addEventListener("change", updateBulkBar);
     });
 
+    // +New Task button — creates task via API and inserts a new row
+    document.getElementById("create-task-btn")?.addEventListener("click", async () => {
+      const title = prompt("Task title:");
+      if (!title?.trim()) return;
+      try {
+        const res = await fetch("/api/tasks", {
+          method: "POST",
+          headers: { "content-type": "application/json" },
+          body: JSON.stringify({ title: title.trim() }),
+        });
+        if (!res.ok) { showToast("Failed to create task", "error"); return; }
+        showToast("Task created");
+        // Reload to show the new row with full server-rendered HTML
+        window.location.reload();
+      } catch {
+        showToast("Network error", "error");
+      }
+    });
+
     // Bulk status change
     document
       .getElementById("bulk-status")
@@ -428,29 +447,32 @@ const priorityColors: Record<number, string> = {
         const newStatus = (e.target as HTMLSelectElement).value;
         if (!newStatus) return;
         const checked = document.querySelectorAll(".row-check:checked");
-        const promises = Array.from(checked).map((cb) =>
-          fetch(`/api/tasks/${(cb as HTMLElement).dataset.id}`, {
-            method: "PUT",
-            headers: { "content-type": "application/json" },
-            body: JSON.stringify({ status: newStatus }),
-          }),
-        );
-        await Promise.all(promises);
-        showToast(`${checked.length} tasks updated`);
-        // Optimistic: update rows in place
-        checked.forEach((cb) => {
-          const row = cb.closest("tr");
-          const select = row?.querySelector(
-            "select.inline-select",
-          ) as HTMLSelectElement;
-          if (select) select.value = newStatus;
-          if (newStatus === "complete" || newStatus === "done") {
-            row?.classList.add("row-done");
-          } else {
-            row?.classList.remove("row-done");
-          }
-        });
-        bulkBar.style.display = "none";
+        try {
+          const promises = Array.from(checked).map((cb) =>
+            fetch(`/api/tasks/${(cb as HTMLElement).dataset.id}`, {
+              method: "PUT",
+              headers: { "content-type": "application/json" },
+              body: JSON.stringify({ status: newStatus }),
+            }),
+          );
+          await Promise.all(promises);
+          showToast(`${checked.length} tasks updated`);
+          checked.forEach((cb) => {
+            const row = cb.closest("tr");
+            const select = row?.querySelector(
+              "select.inline-select",
+            ) as HTMLSelectElement;
+            if (select) select.value = newStatus;
+            if (newStatus === "complete" || newStatus === "done") {
+              row?.classList.add("row-done");
+            } else {
+              row?.classList.remove("row-done");
+            }
+          });
+          bulkBar.style.display = "none";
+        } catch {
+          showToast("Bulk update failed", "error");
+        }
       });
 
     // Bulk delete
@@ -459,16 +481,19 @@ const priorityColors: Record<number, string> = {
       ?.addEventListener("click", async () => {
         const checked = document.querySelectorAll(".row-check:checked");
         if (!confirm(`Delete ${checked.length} tasks?`)) return;
-        const promises = Array.from(checked).map((cb) =>
-          fetch(`/api/tasks/${(cb as HTMLElement).dataset.id}`, {
-            method: "DELETE",
-          }),
-        );
-        await Promise.all(promises);
-        showToast(`${checked.length} tasks deleted`);
-        // Optimistic: remove rows from DOM
-        checked.forEach((cb) => cb.closest("tr")?.remove());
-        bulkBar.style.display = "none";
+        try {
+          const promises = Array.from(checked).map((cb) =>
+            fetch(`/api/tasks/${(cb as HTMLElement).dataset.id}`, {
+              method: "DELETE",
+            }),
+          );
+          await Promise.all(promises);
+          showToast(`${checked.length} tasks deleted`);
+          checked.forEach((cb) => cb.closest("tr")?.remove());
+          bulkBar.style.display = "none";
+        } catch {
+          showToast("Bulk delete failed", "error");
+        }
       });
 
     // Column sorting
