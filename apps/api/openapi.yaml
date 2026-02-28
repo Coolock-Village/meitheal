@@ -1,0 +1,197 @@
+openapi: "3.0.3"
+info:
+  title: Meitheal Cloud Runtime API
+  version: "1.0.0"
+  description: |
+    Cloudflare Workers dual-runtime API for Meitheal.
+    Mirrors /api/v1/* compat routes from the Astro HA runtime.
+  contact:
+    name: Meitheal
+    url: https://github.com/Coolock-Village/meitheal
+servers:
+  - url: https://meitheal-api.workers.dev
+    description: Production
+  - url: http://localhost:8787
+    description: Local development
+
+paths:
+  /health:
+    get:
+      summary: Health check
+      operationId: healthCheck
+      responses:
+        "200":
+          description: Service healthy
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  ok: { type: boolean }
+                  runtime: { type: string }
+
+  /api/runtime:
+    get:
+      summary: Runtime detection
+      operationId: getRuntime
+      responses:
+        "200":
+          description: Current runtime config
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  runtime:
+                    { type: string, enum: [cloudflare, standalone, ha-addon] }
+                  dbType: { type: string, enum: [d1, sqlite] }
+
+  /api/v1/tasks:
+    get:
+      summary: List tasks
+      operationId: listTasks
+      security: [{ bearerAuth: [] }]
+      responses:
+        "200":
+          description: Task list (max 100)
+          content:
+            application/json:
+              schema:
+                type: array
+                items: { $ref: "#/components/schemas/Task" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "429": { $ref: "#/components/responses/RateLimited" }
+    post:
+      summary: Create task
+      operationId: createTask
+      security: [{ bearerAuth: [] }]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                title: { type: string }
+                description: { type: string }
+                due_date: { type: string, format: date }
+              required: [title]
+      responses:
+        "201":
+          description: Task created
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/Task" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "403": { $ref: "#/components/responses/CsrfRejected" }
+        "503": { $ref: "#/components/responses/ServiceUnavailable" }
+
+  /api/v1/tasks/{id}:
+    parameters:
+      - name: id
+        in: path
+        required: true
+        schema: { type: string, format: uuid }
+    get:
+      summary: Get task
+      operationId: getTask
+      security: [{ bearerAuth: [] }]
+      responses:
+        "200":
+          description: Task found
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/Task" }
+        "404": { description: Task not found }
+    put:
+      summary: Update task
+      operationId: updateTask
+      security: [{ bearerAuth: [] }]
+      parameters:
+        - name: If-Match
+          in: header
+          description: "updated_at timestamp for conflict detection (T-503)"
+          required: false
+          schema: { type: string }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                title: { type: string }
+                description: { type: string }
+                status: { type: string, enum: [pending, in_progress, done] }
+                due_date: { type: string, format: date }
+      responses:
+        "200": { description: Task updated }
+        "409":
+          description: "Conflict — task modified since last read"
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error: { type: string }
+                  current: { $ref: "#/components/schemas/Task" }
+    delete:
+      summary: Delete task
+      operationId: deleteTask
+      security: [{ bearerAuth: [] }]
+      responses:
+        "200": { description: Task deleted }
+
+  /api/v1/user/data:
+    delete:
+      summary: GDPR data deletion (hard delete)
+      operationId: deleteUserData
+      security: [{ bearerAuth: [] }]
+      responses:
+        "200":
+          description: All user data permanently deleted
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  deleted: { type: boolean }
+                  message: { type: string }
+
+components:
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+
+  schemas:
+    Task:
+      type: object
+      properties:
+        id: { type: string, format: uuid }
+        title: { type: string }
+        description: { type: string }
+        status: { type: string, enum: [pending, in_progress, done] }
+        due_date: { type: string, format: date, nullable: true }
+        created_at: { type: string, format: date-time }
+        updated_at: { type: string, format: date-time }
+
+  responses:
+    Unauthorized:
+      description: Missing or invalid bearer token
+      content:
+        application/json:
+          schema:
+            type: object
+            properties:
+              error: { type: string }
+    RateLimited:
+      description: Rate limit exceeded
+      headers:
+        x-ratelimit-remaining: { schema: { type: integer } }
+    CsrfRejected:
+      description: CSRF validation failed
+    ServiceUnavailable:
+      description: D1 database temporarily unavailable
+      headers:
+        retry-after: { schema: { type: integer } }

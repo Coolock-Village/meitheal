@@ -240,6 +240,36 @@ export async function getSyncQueueDepth(): Promise<number> {
   })
 }
 
+// --- TTL Cleanup (T-514: 7-day expiry) ---
+
+const SYNC_TTL_MS = 7 * 24 * 60 * 60 * 1000 // 7 days
+
+export async function cleanupExpiredSyncOps(): Promise<number> {
+  const db = await getDb()
+  const cutoff = new Date(Date.now() - SYNC_TTL_MS).toISOString()
+  let removed = 0
+
+  return new Promise((resolve, reject) => {
+    const tx = db.transaction(STORES.pendingSync, "readwrite")
+    const store = tx.objectStore(STORES.pendingSync)
+    const index = store.index("createdAt")
+    const range = IDBKeyRange.upperBound(cutoff)
+    const request = index.openCursor(range)
+
+    request.onsuccess = () => {
+      const cursor = request.result
+      if (cursor) {
+        cursor.delete()
+        removed++
+        cursor.continue()
+      } else {
+        resolve(removed)
+      }
+    }
+    request.onerror = () => reject(new Error(`cleanupExpiredSyncOps failed: ${request.error?.message}`))
+  })
+}
+
 // --- Metadata ---
 
 export function getDbName(): string {
@@ -249,3 +279,4 @@ export function getDbName(): string {
 export function getDbVersion(): number {
   return DB_VERSION
 }
+
