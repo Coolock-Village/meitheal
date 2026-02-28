@@ -46,6 +46,18 @@ jobs:
           echo "version=${version}" >> "$GITHUB_OUTPUT"
           echo "build_from=${build_from}" >> "$GITHUB_OUTPUT"
 
+      - name: Validate release tag matches add-on version
+        if: startsWith(github.ref, 'refs/tags/')
+        env:
+          RELEASE_TAG: ${{ github.ref_name }}
+          CONFIG_VERSION: ${{ steps.meta.outputs.version }}
+        run: |
+          expected_tag="v${CONFIG_VERSION}"
+          if [ "${RELEASE_TAG}" != "${expected_tag}" ]; then
+            echo "::error::Release tag ${RELEASE_TAG} does not match addons/meitheal-hub/config.yaml version ${CONFIG_VERSION} (expected ${expected_tag})."
+            exit 1
+          fi
+
       - name: Build and publish add-on image
         uses: docker/build-push-action@v6
         with:

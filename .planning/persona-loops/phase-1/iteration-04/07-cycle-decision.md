@@ -12,5 +12,4 @@ Iteration 04 delivers compatibility, publishing readiness, and CI reliability co
 
 - `OA-401` live voice-assistant compatibility validation
 - `OA-403`/`OA-405` perf and calendar-mode test calibration
-- `OA-406` ingress threat-model expansion
 - `OA-412` plugin-expansion RFC for integrations roadmap

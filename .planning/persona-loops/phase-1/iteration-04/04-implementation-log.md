@@ -48,3 +48,14 @@
 
 7. PR/Review closure (pending)
 - Resolve all unresolved review threads with fix references or rationale.
+
+8. Continuation pass (OA-404, OA-406, OA-407, OA-408)
+- `git status --short --branch`
+- `sed -n ... .github/workflows/publish-addon-images.yml`
+- `sed -n ... apps/web/scripts/migrate.mjs`
+- `npx pnpm --filter @meitheal/tests test e2e/ingress-header-validation.spec.ts e2e/migration-splitter.spec.mjs governance/repo-standards.spec.ts`
+- `MEITHEAL_DB_URL=file:./.data/ci-migrations.db npx pnpm --filter @meitheal/web db:migrate`
+- `MEITHEAL_DB_URL=file:./.data/ci-migrations.db npx pnpm --filter @meitheal/web db:migrate:check`
+- `npx pnpm check`
+- `npx pnpm --filter @meitheal/tests test`
+- Outcome: all targeted/new checks passed; migration splitter edge-case fixtures, ingress spoofing permutations, and release tag/version publish assertion implemented.

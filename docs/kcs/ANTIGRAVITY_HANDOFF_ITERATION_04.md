@@ -85,13 +85,27 @@ From iteration-04 optimization actions:
 1. `OA-401` Validate `/api/v1` against live `vikunja-voice-assistant`.
 2. `OA-405` Add integration test for `calendar_sync_mode=enabled` compatibility path.
 3. `OA-403` Recalibrate perf thresholds using GitHub runner historical data.
-4. `OA-406` Expand ingress header spoofing threat-model tests.
-5. `OA-404` Add CI assertion that add-on image tag and release tag match.
-6. `OA-407` Add migration splitter edge-case fixtures.
-7. `OA-409` Add compatibility dashboard panels.
-8. `OA-410` Validate live-HA workflow across non-UTC calendars.
-9. `OA-411` Improve custom component error payload UX.
-10. `OA-412` Draft iteration-05 integrations RFC (Grocy/Node-RED/n8n deeper adapters).
+4. `OA-409` Add compatibility dashboard panels.
+5. `OA-410` Validate live-HA workflow across non-UTC calendars.
+6. `OA-411` Improve custom component error payload UX.
+7. `OA-412` Draft iteration-05 integrations RFC (Grocy/Node-RED/n8n deeper adapters).
+
+## Continuation Update (2026-02-28)
+
+Completed in the continuation pass:
+
+1. `OA-404` publish workflow now hard-fails when release tag does not match `addons/meitheal-hub/config.yaml` version (`v<version>` check).
+2. `OA-406` ingress spoofing permutation coverage added (`tests/e2e/ingress-header-validation.spec.ts`).
+3. `OA-407` migration splitter edge-case fixtures added (`tests/e2e/migration-splitter.spec.mjs`), splitter extracted to `apps/web/scripts/split-sql-statements.mjs`.
+4. `OA-408` governance test added for `repository.yaml` semantic fields and maintainer format.
+
+Validation rerun after continuation edits:
+
+1. `npx pnpm check` (pass)
+2. `npx pnpm --filter @meitheal/tests test` (pass)
+3. `npx pnpm --filter @meitheal/tests test e2e/ingress-header-validation.spec.ts e2e/migration-splitter.spec.mjs governance/repo-standards.spec.ts` (pass)
+4. `MEITHEAL_DB_URL=file:./.data/ci-migrations.db npx pnpm --filter @meitheal/web db:migrate` (pass)
+5. `MEITHEAL_DB_URL=file:./.data/ci-migrations.db npx pnpm --filter @meitheal/web db:migrate:check` (pass)
 
 ## Recommended Next Operator Steps
 
