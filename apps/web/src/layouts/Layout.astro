@@ -132,6 +132,22 @@ try {
           >☰</button
         >
         <h1 class="page-title"><slot name="page-title" /></h1>
+        <div class="search-container" id="search-container">
+          <input
+            type="search"
+            class="search-input"
+            id="global-search"
+            placeholder="Search tasks..."
+            aria-label="Search tasks"
+            autocomplete="off"
+          />
+          <div
+            class="search-results"
+            id="search-results"
+            style="display: none;"
+          >
+          </div>
+        </div>
         <div class="topbar-actions">
           <slot name="actions" />
         </div>
@@ -183,6 +199,71 @@ try {
             link.getAttribute("data-page") === "dashboard")
         ) {
           link.classList.add("active");
+        }
+      });
+
+      // Global search
+      const searchInput = document.getElementById(
+        "global-search",
+      ) as HTMLInputElement;
+      const searchResults = document.getElementById("search-results")!;
+      let searchTimeout: ReturnType<typeof setTimeout> | null = null;
+
+      searchInput?.addEventListener("input", () => {
+        const q = searchInput.value.trim();
+        if (searchTimeout) clearTimeout(searchTimeout);
+        if (!q) {
+          searchResults.style.display = "none";
+          return;
+        }
+        searchTimeout = setTimeout(async () => {
+          try {
+            const res = await fetch(
+              `/api/tasks?q=${encodeURIComponent(q)}&limit=8`,
+            );
+            const data = (await res.json()) as {
+              tasks: Array<Record<string, unknown>>;
+              total: number;
+            };
+            if (data.tasks.length === 0) {
+              searchResults.innerHTML =
+                '<div class="search-empty">No tasks found</div>';
+            } else {
+              searchResults.innerHTML = data.tasks
+                .map(
+                  (t) =>
+                    `<a class="search-item" href="/tasks">
+                  <strong>${String(t.title ?? "")}</strong>
+                  <span class="search-meta">${String(t.status ?? "pending")} · P${t.priority ?? 3}</span>
+                </a>`,
+                )
+                .join("");
+            }
+            searchResults.style.display = "block";
+          } catch {
+            searchResults.style.display = "none";
+          }
+        }, 300);
+      });
+
+      // Close search on click outside
+      document.addEventListener("click", (e) => {
+        if (!(e.target as Element)?.closest("#search-container")) {
+          searchResults.style.display = "none";
+        }
+      });
+
+      // "/" to focus search
+      document.addEventListener("keydown", (e) => {
+        if (
+          e.key === "/" &&
+          !["INPUT", "TEXTAREA", "SELECT"].includes(
+            (e.target as HTMLElement)?.tagName,
+          ) &&
+          (e.target as HTMLElement)?.contentEditable !== "true"
+        ) {
+          e.preventDefault();
+          searchInput?.focus();
         }
       });
 
