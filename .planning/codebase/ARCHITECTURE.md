@@ -1,119 +1,86 @@
 # Architecture
 
 **Analysis Date:** 2026-02-28
+**Commit:** 9b9f2ab
 
-## Pattern Overview
+## Pattern
 
-**Overall:** DDD monorepo with Astro SSR + domain packages
+**DDD monorepo** with Astro SSR + domain packages + event-driven integration.
 
-**Key Characteristics:**
-- Domain-Driven Design with 5 bounded contexts as separate packages
-- Astro SSR server mode with Node standalone adapter
-- Event-driven architecture with domain events and idempotency
-- Dual runtime: HA (Node + SQLite) and Cloud (Workers + D1)
+| Aspect | Decision |
+|--------|----------|
+| Architecture | Domain-Driven Design, 5 bounded contexts |
+| Runtime | Astro SSR (Node standalone) for HA; Workers adapter (skeleton) for Cloudflare |
+| Data | SQLite via Drizzle ORM, libSQL driver |
+| Events | Domain events with idempotency keys and request tracing |
+| Integration | Adapter pattern via `CalendarIntegrationAdapter` interface |
 
 ## Layers
 
-**Web Runtime (`apps/web/`):**
-- Purpose: Astro SSR application — pages, API routes, middleware
-- Location: `apps/web/src/`
-- Contains: Pages, API endpoints, domain implementations, content schemas
-- Depends on: Domain packages via `workspace:*`
-- Used by: HA add-on runtime, browser clients
+### Web Runtime (`apps/web/`)
+- Astro SSR app — pages, API routes, middleware
+- Depends on domain packages via `workspace:*`
+- 22 source files in `apps/web/src/`
 
-**Domain Packages (`packages/domain-*/`):**
-- Purpose: Pure domain logic — infrastructure agnostic
-- Location: `packages/domain-auth/`, `packages/domain-tasks/`, `packages/domain-strategy/`, `packages/domain-observability/`
-- Contains: Types, interfaces, business logic, event definitions
-- Depends on: Nothing external (pure TS)
-- Used by: `apps/web`, `integration-core`
+### Domain Packages (`packages/domain-*/`)
+- Pure domain logic — infrastructure agnostic
+- 4 packages: `domain-auth`, `domain-tasks`, `domain-strategy`, `domain-observability`
+- Used by `apps/web` and `integration-core`
 
-**Integration Core (`packages/integration-core/`):**
-- Purpose: Calendar and HA service adapters
-- Location: `packages/integration-core/src/`
-- Contains: `CalendarIntegrationAdapter` interface, `HomeAssistantCalendarAdapter` class
-- Depends on: Domain package types
-- Used by: `apps/web` task-sync service
+### Integration Core (`packages/integration-core/`)
+- `CalendarIntegrationAdapter` interface + `HomeAssistantCalendarAdapter` implementation
+- Error classification, timeout handling, retry semantics
 
-**API Layer (`apps/web/src/pages/api/`):**
-- Purpose: REST endpoints for native and compat APIs
-- Location: `apps/web/src/pages/api/`
-- Contains: Native routes (`tasks/create`, `health`, `unfurl`, `integrations/calendar/confirmation`) and compat routes (`v1/*`)
-- Depends on: Domain implementations in `apps/web/src/domains/`
-- Used by: HA ingress, voice assistants, external clients
+### API Layer (`apps/web/src/pages/api/`)
+- **Native:** `tasks/create`, `health`, `unfurl`, `integrations/calendar/confirmation`
+- **Compat (Vikunja v1):** 7 routes under `/api/v1/` — projects, tasks, labels, users, assignees, projectusers
 
-**Middleware (`apps/web/src/middleware.ts`):**
-- Purpose: Ingress auth enforcement for HA
-- Location: `apps/web/src/middleware.ts`
-- Contains: Header validation, ingress path extraction, HASSIO token detection
-- Depends on: `@domains/auth/ingress`
-- Used by: All incoming requests
+### Middleware (`apps/web/src/middleware.ts`)
+- Ingress auth enforcement for HA
+- Required header validation, HASSIO token detection
 
-## Data Flow
+### Observability (`apps/web/src/domains/integrations/vikunja-compat/compat-logger.ts`)
+- Structured request logging for all compat routes
+- Emits `compat.request.completed` events with route/method/status/duration/error
 
-**Task Creation with Calendar Sync:**
+## Data Flow: Task Creation with Calendar Sync
 
-1. Client POSTs to `/api/tasks/create`
-2. `createTaskWithFrameworkAndCalendarSync()` builds aggregate + domain events + calendar request
-3. Persistence layer stores task, events, and integration attempt in SQLite
-4. `HomeAssistantCalendarAdapter` calls HA `calendar/create_event` service
-5. Confirmation stored in `calendar_confirmations` table
-6. Audit trail entry written
-
-**State Management:**
-- Server-side SQLite via Drizzle ORM
-- 5 tables: `tasks`, `domain_events`, `integration_attempts`, `calendar_confirmations`, `audit_trail`
-- Idempotency via `idempotencyKey` on task aggregates
+```
+POST /api/tasks/create
+  → createTaskWithFrameworkAndCalendarSync() — builds aggregate + events + calendar request
+  → Persist: task, domain_events, integration_attempt → SQLite
+  → HomeAssistantCalendarAdapter.createEvent() → HA calendar/create_event
+  → Persist: calendar_confirmation → SQLite
+  → Audit trail entry
+```
 
 ## Key Abstractions
 
-**DomainEvent:**
-- Purpose: Canonical event envelope for all domain events
-- Examples: `packages/domain-tasks/src/vertical-slice.ts`
-- Pattern: `{ eventId, eventType, occurredAt, requestId, payload }`
+| Abstraction | Purpose | Location |
+|-------------|---------|----------|
+| `DomainEvent<T>` | Canonical event envelope | `domain-tasks/src/vertical-slice.ts` |
+| `CalendarIntegrationAdapter` | Calendar service port | `integration-core/src/index.ts` |
+| `CreateTaskPlan` | Task + events + calendar request aggregate | `domain-tasks/src/vertical-slice.ts` |
+| `CalendarSyncResult` | Discriminated union for sync outcomes | `domain-tasks/src/vertical-slice.ts` |
+| `CompatRequestLog` | Structured log entry for compat API | `vikunja-compat/compat-logger.ts` |
 
-**CalendarIntegrationAdapter:**
-- Purpose: Port for calendar service integration
-- Examples: `packages/integration-core/src/index.ts`
-- Pattern: Interface with `createEvent()` returning `CalendarResult`
+## Canonical Events
 
-**CreateTaskPlan:**
-- Purpose: Aggregate of task + events + calendar request
-- Examples: `packages/domain-tasks/src/vertical-slice.ts`
-- Pattern: Command → Plan → Persist → Integrate
-
-## Entry Points
-
-**Astro Server:**
-- Location: `apps/web/dist/server/entry.mjs` (built)
-- Triggers: Node process start via `run.sh`
-- Responsibilities: HTTP server, routing, SSR
-
-**API Routes:**
-- Location: `apps/web/src/pages/api/`
-- Triggers: HTTP requests
-- Responsibilities: Business logic execution, response formatting
-
-**Health Endpoint:**
-- Location: `apps/web/src/pages/api/health.ts`
-- Triggers: Add-on healthcheck, monitoring
-- Responsibilities: Runtime + DB readiness check
+| Event | Trigger | Payload |
+|-------|---------|---------|
+| `task.created` | Task creation | taskId, title, frameworkPayload |
+| `framework.score.applied` | Framework fields applied | taskId, frameworkPayload |
+| `integration.sync.requested` | Calendar sync initiated | taskId, integration, idempotencyKey |
+| `integration.sync.completed` | Calendar sync result | taskId, confirmationId/errorCode |
+| `compat.request.completed` | Compat API request finished | route, method, status, duration |
 
 ## Error Handling
 
-**Strategy:** Typed discriminated unions (`CalendarResult = { ok: true } | { ok: false }`)
-
-**Patterns:**
-- `classifyError()` maps HTTP status codes to retryable/terminal states
-- Middleware returns structured JSON errors with `missingHeaders`
-- Logger redacts secrets/PII by default
-
-## Cross-Cutting Concerns
-
-**Logging:** Structured JSON to stdout via `domain-observability` logger (Loki-compatible)
-**Validation:** Zod schemas for API input, config content schemas for YAML
-**Authentication:** HA ingress headers + HASSIO token (native), env-based API tokens (compat)
+- Discriminated unions: `{ ok: true } | { ok: false, errorCode, retryable }`
+- `classifyError(status)` maps HTTP codes to retry semantics
+- `AbortController` timeouts on external calls
+- Structured JSON error responses from all API routes
 
 ---
 
-*Architecture analysis: 2026-02-28*
+*Architecture analysis: 2026-02-28 @ 9b9f2ab*

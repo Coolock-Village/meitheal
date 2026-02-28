@@ -1,136 +1,105 @@
 # Codebase Structure
 
 **Analysis Date:** 2026-02-28
+**Commit:** 9b9f2ab
 
 ## Directory Layout
 
 ```
 meitheal/
-├── .github/workflows/       # CI and publishing workflows
-├── .planning/               # GSD planning artifacts
-├── .skills/                 # Antigravity/agent skill definitions
-├── .zeroclaw/               # AI agent soul file
-├── addons/meitheal-hub/     # HA OS add-on package
+├── .agents/rules/           # Agent behavior rules (autonomous.md)
+├── .github/workflows/       # CI/CD (ci.yml, publish-addon, live-ha, live-vikunja)
+├── .planning/               # GSD planning (codebase map, persona loops)
+├── .skills/                 # Agent skill definitions
+├── .zeroclaw/               # AI soul file
+├── addons/meitheal-hub/     # HA OS add-on
+│   ├── Dockerfile
+│   ├── config.yaml
+│   ├── run.sh
+│   └── rootfs/etc/
+│       ├── alloy/config.river
+│       └── grafana/dashboards/compat-api.json
 ├── apps/
 │   ├── api/                 # Cloudflare Workers adapter (skeleton)
-│   └── web/                 # Astro SSR application (primary)
+│   └── web/                 # Astro SSR application (22 source files)
+│       ├── drizzle/         # Schema + migrations
+│       ├── scripts/         # Build/CI scripts (5 files)
+│       └── src/
+│           ├── content/config.ts
+│           ├── domains/
+│           │   ├── auth/ingress.ts
+│           │   ├── integrations/vikunja-compat/
+│           │   │   ├── auth.ts
+│           │   │   ├── compat-logger.ts    # NEW: structured request logging
+│           │   │   ├── http.ts
+│           │   │   └── store.ts
+│           │   └── tasks/
+│           │       ├── persistence/store.ts
+│           │       └── task-sync-service.ts
+│           ├── middleware.ts
+│           └── pages/
+│               ├── api/     # 11 API endpoints (4 native + 7 compat)
+│               └── index.astro
 ├── docs/
-│   ├── decisions/           # ADRs (5 decisions)
-│   ├── kcs/                 # KCS runbooks (5 docs)
-│   ├── methodologies/       # Framework methodology docs
+│   ├── decisions/           # 6 ADRs (0001–0006)
+│   ├── kcs/                 # 5 KCS docs
+│   ├── methodologies/       # Framework docs
 │   └── prfaq/               # Product FAQ docs
-├── integrations/
-│   └── home-assistant/      # HA custom component skeleton
+├── integrations/home-assistant/  # HACS custom component
 ├── packages/
-│   ├── domain-auth/         # Auth bounded context
-│   ├── domain-observability/# Logging and audit
-│   ├── domain-strategy/     # Framework scoring (RICE)
-│   ├── domain-tasks/        # Task lifecycle and vertical slice
-│   └── integration-core/    # Calendar adapter interface + HA impl
-├── public/
-│   └── .well-known/         # MCP and JSON discovery
+│   ├── domain-auth/
+│   ├── domain-observability/
+│   ├── domain-strategy/
+│   ├── domain-tasks/
+│   └── integration-core/
 ├── tests/
-│   ├── e2e/                 # 21 Playwright test specs
-│   ├── governance/          # Repo standards enforcement
+│   ├── e2e/                 # 22 Playwright specs (21 + new timezone test)
+│   ├── governance/          # 1 spec (repo standards)
 │   └── scripts/             # Live verification scripts
-├── AGENTS.md                # Contributor rules (CI enforced)
-├── README.md                # Project overview and ubiquitous language
-├── SKILL.md                 # Skill index for AI contributors
-├── WEBMCP.md                # WebMCP configuration
-├── package.json             # Root monorepo config
-├── pnpm-workspace.yaml      # Workspace definition
-├── repository.yaml          # HA add-on repository manifest
-└── tsconfig.base.json       # Shared TypeScript config
+├── AGENTS.md
+├── README.md
+├── SKILL.md
+├── WEBMCP.md
+├── package.json
+├── pnpm-workspace.yaml
+├── repository.yaml
+└── tsconfig.base.json
 ```
 
-## Directory Purposes
+## Key Files
 
-**`apps/web/`:**
-- Purpose: Primary Astro SSR application
-- Contains: Pages, API routes, middleware, domain implementations, scripts, content schemas
-- Key files: `astro.config.mjs`, `src/middleware.ts`, `src/pages/api/`
-
-**`apps/web/src/domains/`:**
-- Purpose: App-level domain implementations (bridge between domain packages and Astro)
-- Contains: Auth ingress logic, task persistence/sync, vikunja-compat surface
-- Key files: `auth/ingress.ts`, `tasks/persistence/store.ts`, `tasks/task-sync-service.ts`, `integrations/vikunja-compat/`
-
-**`apps/web/scripts/`:**
-- Purpose: Build and CI scripts
-- Contains: `migrate.mjs`, `schema-drift-check.mjs`, `perf-budget-check.mjs`, `split-sql-statements.mjs`, `perf-budget-baseline.json`
-
-**`packages/domain-tasks/src/`:**
-- Purpose: Pure task domain logic
-- Contains: Task entity (`task.ts`), vertical slice with events (`vertical-slice.ts`), public API (`index.ts`)
-
-**`addons/meitheal-hub/`:**
-- Purpose: HA OS add-on distribution package
-- Contains: `Dockerfile`, `run.sh`, `config.yaml`, `build.json`, `DOCS.md`, Alloy config
-
-## Key File Locations
-
-**Entry Points:**
-- `apps/web/dist/server/entry.mjs`: Production server (built)
-- `apps/web/src/pages/index.astro`: Home page
-- `addons/meitheal-hub/run.sh`: Add-on startup script
-
-**Configuration:**
-- `apps/web/astro.config.mjs`: Astro config
-- `apps/web/drizzle.config.ts`: Database config
-- `addons/meitheal-hub/config.yaml`: HA add-on options schema
-- `apps/web/scripts/perf-budget-baseline.json`: CI performance thresholds
-
-**Core Logic:**
-- `packages/domain-tasks/src/vertical-slice.ts`: Task create + calendar sync orchestration (173 lines)
-- `packages/integration-core/src/home-assistant-calendar.ts`: HA calendar adapter (166 lines)
-- `apps/web/src/domains/tasks/persistence/store.ts`: SQLite persistence layer
-- `apps/web/src/domains/integrations/vikunja-compat/`: Vikunja compatibility API
-
-**Testing:**
-- `tests/e2e/ha-calendar-adapter.spec.ts`: HA integration test (4.3KB)
-- `tests/e2e/task-sync-persistence.spec.ts`: Persistence tests (5.4KB)
-- `tests/governance/repo-standards.spec.ts`: CI governance gate
-
-## Naming Conventions
-
-**Files:**
-- kebab-case: `task-sync-service.ts`, `home-assistant-calendar.ts`
-- Spec suffix: `*.spec.ts`, `*.spec.mjs`
-
-**Directories:**
-- kebab-case: `domain-tasks`, `integration-core`, `vikunja-compat`
-- DDD bounded context prefix: `domain-*`
+| File | Purpose |
+|------|---------|
+| `apps/web/src/middleware.ts` | Ingress auth for all requests |
+| `packages/domain-tasks/src/vertical-slice.ts` | Task create + calendar sync (173 lines) |
+| `packages/integration-core/src/home-assistant-calendar.ts` | HA calendar adapter (166 lines) |
+| `apps/web/src/domains/integrations/vikunja-compat/compat-logger.ts` | Structured compat logging |
+| `apps/web/scripts/perf-budget-check.mjs` | CI performance enforcement |
+| `addons/meitheal-hub/run.sh` | HA add-on startup |
+| `addons/meitheal-hub/rootfs/etc/grafana/dashboards/compat-api.json` | Grafana dashboard |
+| `docs/decisions/0006-iteration-05-integrations-rfc.md` | Next iteration RFC |
 
 ## Where to Add New Code
 
-**New Domain Package:**
-- Create `packages/domain-<name>/` with `src/index.ts` and `package.json`
-- Register in `pnpm-workspace.yaml`
+| What | Where |
+|------|-------|
+| New domain package | `packages/domain-<name>/` + register in `pnpm-workspace.yaml` |
+| New API route | `apps/web/src/pages/api/` (Astro file-based routing) |
+| New integration adapter | `packages/integration-core/src/` |
+| New E2E test | `tests/e2e/<name>.spec.ts` |
+| New governance test | `tests/governance/<name>.spec.ts` |
+| New ADR | `docs/decisions/000N-<name>.md` |
+| New KCS doc | `docs/kcs/<name>.md` |
+| New Grafana dashboard | `addons/meitheal-hub/rootfs/etc/grafana/dashboards/` |
 
-**New API Route:**
-- Add file to `apps/web/src/pages/api/`
-- Follow Astro file-based routing conventions
+## Naming
 
-**New Integration:**
-- Implement `CalendarIntegrationAdapter` in `packages/integration-core/`
-- Wire in `apps/web/src/domains/integrations/`
-
-**New Test:**
-- E2E: `tests/e2e/<name>.spec.ts`
-- Governance: `tests/governance/<name>.spec.ts`
-
-## Special Directories
-
-**`.planning/`:**
-- Purpose: GSD planning and persona loop artifacts
-- Generated: By GSD workflows and agent loops
-- Committed: Yes (tracked in git)
-
-**`apps/web/dist/`:**
-- Purpose: Astro build output
-- Generated: Yes (`astro build`)
-- Committed: Yes (needed for HA add-on runtime)
+- **Files:** kebab-case (`task-sync-service.ts`, `compat-logger.ts`)
+- **Test specs:** `<feature>.spec.ts` or `<feature>.spec.mjs`
+- **Domain packages:** `domain-<context>` prefix
+- **Exports:** Named only (no default exports)
+- **Barrel files:** `index.ts` in each package
 
 ---
 
-*Structure analysis: 2026-02-28*
+*Structure analysis: 2026-02-28 @ 9b9f2ab*

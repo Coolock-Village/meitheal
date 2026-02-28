@@ -1,100 +1,75 @@
 # External Integrations
 
 **Analysis Date:** 2026-02-28
+**Commit:** 9b9f2ab
 
-## APIs & External Services
+## Home Assistant Calendar
 
-**Home Assistant:**
-- Primary integration target — task-to-calendar sync
-- SDK/Client: Custom `HomeAssistantCalendarAdapter` in `packages/integration-core/src/home-assistant-calendar.ts`
-- Auth: `SUPERVISOR_TOKEN` (preferred, auto-detected in add-on) or `HA_BASE_URL` + `HA_TOKEN`
-- Endpoint: `POST /api/services/calendar/create_event`
-- Timeout: 8 seconds default, retryable on 429/5xx
+| Property | Value |
+|----------|-------|
+| Adapter | `HomeAssistantCalendarAdapter` in `integration-core/` |
+| Auth | `SUPERVISOR_TOKEN` (auto) or `HA_BASE_URL` + `HA_TOKEN` |
+| Endpoint | `POST /api/services/calendar/create_event` |
+| Timeout | 8s, retryable on 429/5xx |
+| Idempotency | `x-meitheal-idempotency-key` header |
 
-**Vikunja Compatibility:**
-- Protocol-level compatibility for voice assistant integrations
-- SDK/Client: Custom HTTP handlers in `apps/web/src/domains/integrations/vikunja-compat/`
-- Auth: `MEITHEAL_VIKUNJA_API_TOKEN` or `MEITHEAL_VIKUNJA_API_TOKENS` (comma-separated)
-- Surface: 7 REST endpoints under `/api/v1/` (projects, tasks, labels, users, assignees)
+## Vikunja Compatibility API
 
-## Data Storage
+| Property | Value |
+|----------|-------|
+| Surface | 7 REST routes under `/api/v1/` |
+| Auth | `MEITHEAL_VIKUNJA_API_TOKEN(S)` bearer tokens |
+| Observability | Structured logging via `compat-logger.ts` |
+| Calendar sync | Optional, toggled by `MEITHEAL_COMPAT_CALENDAR_SYNC_MODE` |
 
-**Databases:**
-- SQLite via libSQL (`@libsql/client`)
-  - Connection: `MEITHEAL_DB_URL` (default: `file:/data/meitheal.db`)
-  - Client: Drizzle ORM (`drizzle-orm`)
-  - Tables: `tasks`, `domain_events`, `integration_attempts`, `calendar_confirmations`, `audit_trail`
-  - Migrations: `apps/web/drizzle/migrations/`
+**Compat Routes:**
 
-**File Storage:**
-- Local filesystem only (SQLite database file)
+| Method | Route | Purpose |
+|--------|-------|---------|
+| GET | `/api/v1/projects` | List projects |
+| PUT | `/api/v1/projects/:id/tasks` | Create task |
+| GET | `/api/v1/projects/:id/projectusers` | List project users |
+| GET | `/api/v1/labels` | List labels |
+| PUT | `/api/v1/labels` | Create label |
+| PUT | `/api/v1/tasks/:id/labels` | Attach label |
+| PUT | `/api/v1/tasks/:id/assignees` | Assign user |
+| GET | `/api/v1/users` | Search users |
 
-**Caching:**
-- None — middleware caches required ingress headers in memory
+## Database
 
-## Authentication & Identity
+| Property | Value |
+|----------|-------|
+| Engine | SQLite via libSQL |
+| ORM | Drizzle ORM 0.45 |
+| Connection | `MEITHEAL_DB_URL` (default: `file:/data/meitheal.db`) |
+| Tables | `tasks`, `domain_events`, `integration_attempts`, `calendar_confirmations`, `audit_trail` |
+| Migrations | `apps/web/drizzle/migrations/` |
 
-**Auth Provider:**
-- HA Ingress (native) — header-based trust bridge
-  - Implementation: `apps/web/src/domains/auth/ingress.ts`
-  - Required headers: `x-ingress-path`, configurable via content schema
-  - HASSIO token detection for supervisor context
-- Vikunja compat tokens (env-only) — bearer token validation
-  - Implementation: `apps/web/src/domains/integrations/vikunja-compat/auth.ts`
+## Observability Pipeline
 
-## Monitoring & Observability
+```
+app stdout (JSON) → HA journal → Grafana Alloy → Loki → Grafana
+```
 
-**Error Tracking:**
-- Structured JSON logs with `err_code` field
-- No external error tracking service (Sentry, etc.)
+**Dashboards:**
+- `addons/meitheal-hub/rootfs/etc/grafana/dashboards/compat-api.json` — compat API metrics
 
-**Logs:**
-- Structured JSON to stdout → HA journal → Alloy → Loki → Grafana
-- Config: `addons/meitheal-hub/rootfs/etc/alloy/config.river`
-- Redaction: Default patterns for bearer tokens, emails, HA tokens
+**Log labels (low-cardinality only):**
+- `service`, `domain`, `env`, `host`, `addon`, `level`
 
-## CI/CD & Deployment
+## CI/CD
 
-**Hosting:**
-- Home Assistant OS (add-on) — primary
-- Cloudflare Workers (adapter skeleton) — future
+| Workflow | Trigger | Purpose |
+|----------|---------|---------|
+| `ci.yml` | Push/PR | 6 required jobs |
+| `publish-addon-images.yml` | Tag `v*` | Multi-arch Docker |
+| `live-ha-integration.yml` | Manual | Live HA calendar test |
+| `live-vikunja-voice-assistant.yml` | Manual | Live compat validation |
 
-**CI Pipeline:**
-- GitHub Actions — 4 workflows:
-  - `ci.yml` — 6 required jobs (governance, typecheck-and-tests, ha-harness, migration-check, schema-drift, perf-budgets)
-  - `publish-addon-images.yml` — Multi-arch Docker build (tag-triggered)
-  - `live-ha-integration.yml` — Live HA calendar test (manual)
-  - `live-vikunja-voice-assistant.yml` — Live compat validation (manual)
+## Secrets
 
-**PR Review:**
-- CodeRabbitAI enabled (`.coderabbit.yaml`)
-- Protected `main` branch with required checks
-
-## Environment Configuration
-
-**Required env vars:**
-- `MEITHEAL_DB_URL` — Database path
-- `SUPERVISOR_TOKEN` or `HA_BASE_URL` + `HA_TOKEN` — HA auth
-
-**Optional env vars:**
-- `MEITHEAL_VIKUNJA_API_TOKEN` / `MEITHEAL_VIKUNJA_API_TOKENS` — Compat auth
-- `MEITHEAL_LOG_LEVEL`, `MEITHEAL_LOG_REDACTION`, `MEITHEAL_AUDIT_ENABLED` — Logging
-- `LOKI_URL` — Observability pipeline
-- `MEITHEAL_COMPAT_CALENDAR_SYNC_MODE` — Compat calendar override
-- `MEITHEAL_PERF_BUDGET_*` — Performance threshold overrides
-
-**Secrets location:**
-- Environment variables only (never YAML-stored)
-- HA add-on options expose log/audit toggles (not secrets)
-
-## Webhooks & Callbacks
-
-**Incoming:**
-- `/api/integrations/calendar/confirmation` — Calendar sync confirmation endpoint
-
-**Outgoing:**
-- HA calendar service calls (`POST /api/services/calendar/create_event`)
+All secrets are **environment-only** — never stored in YAML/config files.
 
 ---
 
-*Integration audit: 2026-02-28*
+*Integration audit: 2026-02-28 @ 9b9f2ab*

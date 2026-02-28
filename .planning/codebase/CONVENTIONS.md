@@ -1,93 +1,57 @@
 # Coding Conventions
 
 **Analysis Date:** 2026-02-28
+**Commit:** 9b9f2ab
 
-## Naming Patterns
+## Naming
 
-**Files:**
-- Use kebab-case: `task-sync-service.ts`, `home-assistant-calendar.ts`
-- Domain packages: `domain-<context>/src/index.ts` as public API
-- Test specs: `<name>.spec.ts` or `<name>.spec.mjs`
-
-**Functions:**
-- Use camelCase: `createTask()`, `resolveIntegrationOutcome()`, `classifyError()`
-- Factory pattern: `create*()` for constructors (`createLogger`, `createTask`)
-- Resolver pattern: `resolve*()` for env/config resolution (`resolveHomeAssistantAuthFromEnv`)
-
-**Variables:**
-- Use camelCase: `calendarSyncState`, `idempotencyKey`
-- Constants use camelCase (not UPPER_SNAKE): `defaultBudgets`, `defaultRedactionPatterns`
-
-**Types:**
-- Use PascalCase: `TaskAggregate`, `CalendarSyncState`, `DomainEvent`
-- Interfaces prefixed with descriptive noun: `CreateTaskCommand`, `LoggerConfig`
-- Discriminated unions: `CalendarSyncResult = { ok: true } | { ok: false }`
+| Category | Convention | Example |
+|----------|-----------|---------|
+| Files | kebab-case | `task-sync-service.ts`, `compat-logger.ts` |
+| Functions | camelCase | `createTask()`, `resolveIntegrationOutcome()` |
+| Factory functions | `create*()` | `createLogger()`, `createTask()` |
+| Resolvers | `resolve*()` | `resolveHomeAssistantAuthFromEnv()` |
+| Types/Interfaces | PascalCase | `TaskAggregate`, `CalendarSyncState` |
+| Constants | camelCase | `defaultBudgets`, `defaultRedactionPatterns` |
+| Test specs | `<name>.spec.ts` | `ha-calendar-adapter.spec.ts` |
 
 ## Code Style
 
-**Formatting:**
-- No explicit Prettier/ESLint config detected — relies on Astro's `astro check`
-- Semicolons: not used (no-semicolons style)
-- Quotes: double quotes in imports
-- Indentation: 2 spaces
+- **Semicolons:** no
+- **Quotes:** double
+- **Indent:** 2 spaces
+- **Linting:** `astro check` + `tsc --noEmit`
+- **Formatter:** none explicit (Astro defaults)
 
-**Linting:**
-- `astro check` for type checking
-- `tsc --noEmit` for test packages
-- CI enforces both in `typecheck-and-tests` job
+## Import Order
 
-## Import Organization
+1. Node builtins (`node:fs/promises`, `node:path`)
+2. Framework (`astro`, `astro:content`)
+3. External packages (`drizzle-orm`, `zod`)
+4. Workspace packages (`@meitheal/domain-tasks`)
+5. Local/relative (`./task`, `@domains/auth/ingress`)
 
-**Order:**
-1. Node.js builtins (`node:fs/promises`, `node:path`)
-2. Framework imports (`astro`, `astro:content`)
-3. External packages (`drizzle-orm`, `zod`, `undici`)
-4. Workspace packages (`@meitheal/domain-tasks`, `@meitheal/integration-core`)
-5. Local/relative imports (`./task`, `@domains/auth/ingress`)
+**Path alias:** `@domains/` → `apps/web/src/domains/`
 
-**Path Aliases:**
-- `@domains/` alias for `apps/web/src/domains/` (used in middleware)
+## Patterns
 
-## Error Handling
+| Pattern | Usage | Example |
+|---------|-------|---------|
+| Discriminated unions | API results | `{ ok: true } \| { ok: false, errorCode }` |
+| Command objects | Complex inputs | `CreateTaskCommand` |
+| Named exports only | All modules | No default exports |
+| Barrel files | Package APIs | `index.ts` re-exports |
+| Error classification | HTTP→retry semantics | `classifyError(status)` |
+| Structured logging | Compat routes | `logCompatRequest({ route, method, status })` |
+| AbortController | External call timeouts | `HomeAssistantCalendarAdapter` |
 
-**Patterns:**
-- Discriminated unions for results: `{ ok: true, ... } | { ok: false, errorCode, retryable }`
-- `classifyError(status)` maps HTTP codes to retry semantics
-- Try-catch with structured error responses (JSON with error/missingHeaders)
-- `AbortController` for timeouts on external calls
+## Logging Convention
 
-## Logging
-
-**Framework:** Custom structured JSON logger from `@meitheal/domain-observability`
-
-**Patterns:**
 - Single JSON object per line to stdout (Loki-compatible)
 - Schema: `{ ts, level, event, domain, component, request_id, message, metadata }`
-- Redact secrets by default using `defaultRedactionPatterns`
-- Low-cardinality labels only (no user IDs, task IDs, URLs as labels)
-- Audit events via `logger.audit()` method
-
-## Comments
-
-**When to Comment:**
-- Inline comments for non-obvious behavior: `// Fallback to defaults for local dev`
-- Section markers in middleware: `// For API routes that expect ingress context`
-
-**JSDoc/TSDoc:**
-- Not heavily used — types serve as documentation
-- Interfaces have descriptive property names instead of JSDoc
-
-## Function Design
-
-**Size:** Small, focused functions (~10-30 lines)
-**Parameters:** Command objects for complex inputs (`CreateTaskCommand`)
-**Return Values:** Typed discriminated unions, never `any`
-
-## Module Design
-
-**Exports:** Named exports only (no default exports)
-**Barrel Files:** `index.ts` in each package re-exports public API
+- Redact secrets by default via `defaultRedactionPatterns`
+- Compat routes use `compat-logger.ts` for consistent structured logging
 
 ---
 
-*Convention analysis: 2026-02-28*
+*Convention analysis: 2026-02-28 @ 9b9f2ab*
