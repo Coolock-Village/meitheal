@@ -253,17 +253,58 @@ try {
         }
       });
 
-      // "/" to focus search
+      // "/" to focus search, Escape to blur, "n" for new task
       document.addEventListener("keydown", (e) => {
-        if (
-          e.key === "/" &&
-          !["INPUT", "TEXTAREA", "SELECT"].includes(
-            (e.target as HTMLElement)?.tagName,
-          ) &&
-          (e.target as HTMLElement)?.contentEditable !== "true"
-        ) {
+        const tag = (e.target as HTMLElement)?.tagName;
+        const isEditing =
+          ["INPUT", "TEXTAREA", "SELECT"].includes(tag) ||
+          (e.target as HTMLElement)?.contentEditable === "true";
+
+        if (e.key === "Escape") {
+          // Blur search input and hide results
+          if (document.activeElement === searchInput) {
+            searchInput?.blur();
+            searchResults.style.display = "none";
+            return;
+          }
+        }
+
+        if (isEditing) return;
+
+        if (e.key === "/") {
           e.preventDefault();
           searchInput?.focus();
+        }
+        if (e.key === "n") {
+          e.preventDefault();
+          // If on tasks page, click the create button; otherwise navigate
+          const createBtn = document.getElementById("create-task-btn");
+          if (createBtn) {
+            createBtn.click();
+          } else {
+            window.location.href = "/tasks";
+          }
+        }
+        if (e.key === "k") {
+          window.location.href = "/kanban";
+        }
+        if (e.key === "t") {
+          window.location.href = "/table";
+        }
+        if (e.key === "d") {
+          window.location.href = "/";
+        }
+        if (e.key === "?") {
+          e.preventDefault();
+          alert(
+            "Keyboard Shortcuts:\n\n" +
+              "/  — Focus search\n" +
+              "n  — New task\n" +
+              "k  — Kanban board\n" +
+              "t  — Table view\n" +
+              "d  — Dashboard\n" +
+              "Esc — Close modal / blur search",
+          );
         }
       });
 

@@ -767,3 +767,18 @@ body {
 .task-duplicate:hover {
   color: var(--info);
 }
+
+/* Kanban lane management */
+.lane-mgmt {
+  margin-bottom: 16px;
+}
+.lane-mgmt-inner {
+  background: var(--bg-secondary);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-md);
+  padding: 16px;
+  max-width: 400px;
+}
+.lane-item + .lane-item {
+  border-top: 1px solid var(--border);
+}
