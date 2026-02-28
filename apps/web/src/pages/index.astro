@@ -250,10 +250,11 @@ function relativeTime(dueDate: string): string {
           );
 
         try {
+          const activeBoard = (window as any).__activeBoard ?? "default";
           const res = await fetch("/api/tasks", {
             method: "POST",
             headers: { "content-type": "application/json" },
-            body: JSON.stringify({ title }),
+            body: JSON.stringify({ title, board_id: activeBoard === "all" ? "default" : activeBoard }),
           });
           if (res.ok) {
             showToast("Task created!");
