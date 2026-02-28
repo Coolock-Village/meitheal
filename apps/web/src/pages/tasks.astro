@@ -10,7 +10,7 @@ try {
   await ensureSchema();
   const client = getPersistenceClient();
   const result = await client.execute(
-    "SELECT id, title, description, status, priority, due_date, labels, framework_payload, calendar_sync_state, board_id, custom_fields, start_date, end_date, progress, color, is_favorite, created_at, updated_at FROM tasks ORDER BY created_at DESC",
+    "SELECT id, title, description, status, priority, due_date, labels, framework_payload, calendar_sync_state, board_id, custom_fields, start_date, end_date, progress, color, is_favorite, task_type, parent_id, created_at, updated_at FROM tasks ORDER BY created_at DESC",
   );
   tasks = result.rows as Record<string, unknown>[];
 } catch (e) {
@@ -990,27 +990,12 @@ Can you help me break this down, suggest next steps, estimate effort, or identif
       }
     }
 
-    // Keyboard shortcuts
+    // Keyboard shortcuts — most handled by Layout.astro global handler
+    // Only keep task-specific Escape for local modals
     document.addEventListener("keydown", (e) => {
-      const tag = (e.target as HTMLElement)?.tagName;
-      if (["INPUT", "TEXTAREA", "SELECT"].includes(tag)) return;
-      if (e.key === "n") {
-        e.preventDefault();
-        document.getElementById("create-task-btn")?.click();
-      }
-      if (e.key === "/") {
-        e.preventDefault();
-        (document.getElementById("search-input") as HTMLInputElement)?.focus();
-      }
       if (e.key === "Escape") {
         modal.classList.remove("open");
         deleteModal.classList.remove("open");
-      }
-      if (e.key === "k") {
-        window.location.href = "/kanban";
-      }
-      if (e.key === "t") {
-        window.location.href = "/table";
       }
     });
 
