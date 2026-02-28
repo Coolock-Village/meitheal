@@ -146,17 +146,31 @@ const priorityColors: Record<number, string> = {
                     draggable="true"
                     data-id={String(task.id)}
                     data-title={String(task.title)}
-                    data-desc={task.description ? String(task.description).slice(0, 200) : ""}
+                    data-desc={
+                      task.description
+                        ? String(task.description).slice(0, 200)
+                        : ""
+                    }
                     data-priority={String(p)}
                     data-status={String(task.status)}
                     data-board={String(task.board_id ?? "default")}
                     ondragstart="event.dataTransfer.setData('text/plain', this.dataset.id); this.classList.add('dragging');"
                     ondragend="this.classList.remove('dragging');"
-                    style={`border-left: 3px solid ${priorityColors[p]};`}
+                    style={`border-left: 3px solid ${task.color ? String(task.color) : priorityColors[p]};`}
                   >
-                    <div class="kanban-card-title">{String(task.title)}</div>
+                    <div class="kanban-card-header">
+                      <div class="kanban-card-title">{String(task.title)}</div>
+                      {Number(task.is_favorite ?? 0) === 1 && (
+                        <span class="kanban-fav" title="Favorite">
+                          ★
+                        </span>
+                      )}
+                    </div>
                     {task.description && String(task.description).trim() && (
-                      <div class="kanban-card-desc">{String(task.description).slice(0, 80)}{String(task.description).length > 80 ? "…" : ""}</div>
+                      <div class="kanban-card-desc">
+                        {String(task.description).slice(0, 80)}
+                        {String(task.description).length > 80 ? "…" : ""}
+                      </div>
                     )}
                     <div class="kanban-card-meta">
                       <span
@@ -175,20 +189,74 @@ const priorityColors: Record<number, string> = {
                         </span>
                       ) : null}
                       {rice ? (
-                        <span style="font-size: 11px; color: var(--accent);">
-                          RICE: {rice}
-                        </span>
+                        <span class="kanban-rice-badge">RICE: {rice}</span>
                       ) : null}
+                      {String(task.calendar_sync_state) === "confirmed" && (
+                        <span class="kanban-sync-badge" title="Calendar synced">
+                          📅✓
+                        </span>
+                      )}
                     </div>
+                    {/* Progress bar */}
+                    {Number(task.progress ?? 0) > 0 && (
+                      <div class="kanban-progress">
+                        <div
+                          class="kanban-progress-bar"
+                          style={`width: ${Number(task.progress)}%`}
+                        />
+                        <span class="kanban-progress-text">
+                          {Number(task.progress)}%
+                        </span>
+                      </div>
+                    )}
+                    {/* Labels */}
                     {(() => {
                       try {
                         const lbls = JSON.parse(String(task.labels ?? "[]"));
                         if (Array.isArray(lbls) && lbls.length > 0) {
                           return (
-                            <div class="task-labels" style="margin-top: 6px;">
-                              {lbls.map((l: string) => (
-                                <span class="label-chip">{l}</span>
+                            <div class="kanban-labels">
+                              {lbls.map(
+                                (
+                                  l: string | { name: string; color?: string },
+                                ) => (
+                                  <span class="label-chip">
+                                    {typeof l === "string" ? l : l.name}
+                                  </span>
+                                ),
+                              )}
+                            </div>
+                          );
+                        }
+                      } catch {
+                        /* skip */
+                      }
+                      return null;
+                    })()}
+                    {/* Custom fields */}
+                    {(() => {
+                      try {
+                        const cf =
+                          typeof task.custom_fields === "string"
+                            ? JSON.parse(String(task.custom_fields ?? "{}"))
+                            : {};
+                        const keys = Object.keys(cf);
+                        if (keys.length > 0) {
+                          return (
+                            <div class="kanban-custom-fields">
+                              {keys.slice(0, 4).map((k) => (
+                                <span
+                                  class="kanban-cf-chip"
+                                  title={`${k}: ${cf[k]}`}
+                                >
+                                  {k}: {String(cf[k]).slice(0, 20)}
+                                </span>
                               ))}
+                              {keys.length > 4 && (
+                                <span class="kanban-cf-chip">
+                                  +{keys.length - 4} more
+                                </span>
+                              )}
                             </div>
                           );
                         }
@@ -198,11 +266,34 @@ const priorityColors: Record<number, string> = {
                       return null;
                     })()}
                     <div class="kanban-card-actions">
-                      <button class="card-action-btn card-edit-btn" data-id={String(task.id)} title="Edit task">✏️</button>
-                      <button class="card-action-btn card-ai-btn" data-title={String(task.title)} data-desc={task.description ? String(task.description) : ""} data-status={String(task.status ?? "pending")} data-priority={String(p)} title="Ask AI">🤖</button>
-                      <button class="card-action-btn card-dup-btn" data-id={String(task.id)} title="Duplicate">⧉</button>
+                      <button
+                        class="card-action-btn card-edit-btn"
+                        data-id={String(task.id)}
+                        title="Edit task"
+                      >
+                        ✏️
+                      </button>
+                      <button
+                        class="card-action-btn card-ai-btn"
+                        data-title={String(task.title)}
+                        data-desc={
+                          task.description ? String(task.description) : ""
+                        }
+                        data-status={String(task.status ?? "pending")}
+                        data-priority={String(p)}
+                        title="Ask AI"
+                      >
+                        🤖
+                      </button>
+                      <button
+                        class="card-action-btn card-dup-btn"
+                        data-id={String(task.id)}
+                        title="Duplicate"
+                      >
+                        ⧉
+                      </button>
                     </div>
-                    </div>
+                  </div>
                 );
               })}
               {colTasks.length === 0 && (
@@ -272,7 +363,10 @@ const priorityColors: Record<number, string> = {
         const status = el.dataset.status ?? "pending";
         const priority = el.dataset.priority ?? "3";
         const prompt = `I have a task:\n\nTitle: ${title}\nStatus: ${status}\nPriority: ${priority}/5\n${desc ? `Description: ${desc}` : ""}\n\nCan you help me break this down, suggest next steps, estimate effort, or identify blockers?`;
-        window.open(`https://chatgpt.com/?q=${encodeURIComponent(prompt)}`, "_blank");
+        window.open(
+          `https://chatgpt.com/?q=${encodeURIComponent(prompt)}`,
+          "_blank",
+        );
       });
     });
 
@@ -319,7 +413,10 @@ const priorityColors: Record<number, string> = {
       btn.addEventListener("click", () => {
         // If inline form already exists, focus it
         const existing = btn.parentElement.querySelector(".kanban-inline-add");
-        if (existing) { existing.querySelector("input")?.focus(); return; }
+        if (existing) {
+          existing.querySelector("input")?.focus();
+          return;
+        }
 
         const status = btn.dataset.status;
         const form = document.createElement("div");
@@ -338,7 +435,10 @@ const priorityColors: Record<number, string> = {
 
         async function submitTask() {
           const title = input.value.trim();
-          if (!title) { cleanup(); return; }
+          if (!title) {
+            cleanup();
+            return;
+          }
           try {
             const res = await fetch("/api/tasks", {
               method: "POST",
@@ -346,7 +446,9 @@ const priorityColors: Record<number, string> = {
               body: JSON.stringify({ title, status }),
             });
             if (res.ok) window.location.reload();
-          } catch { /* ignore */ }
+          } catch {
+            /* ignore */
+          }
         }
 
         function cleanup() {
@@ -356,12 +458,19 @@ const priorityColors: Record<number, string> = {
 
         addBtn.addEventListener("click", submitTask);
         input.addEventListener("keydown", (e) => {
-          if (e.key === "Enter") { e.preventDefault(); submitTask(); }
-          if (e.key === "Escape") { cleanup(); }
+          if (e.key === "Enter") {
+            e.preventDefault();
+            submitTask();
+          }
+          if (e.key === "Escape") {
+            cleanup();
+          }
         });
         input.addEventListener("blur", () => {
           // Delay to allow button click
-          setTimeout(() => { if (!form.contains(document.activeElement)) cleanup(); }, 200);
+          setTimeout(() => {
+            if (!form.contains(document.activeElement)) cleanup();
+          }, 200);
         });
       });
     });
@@ -484,12 +593,15 @@ const priorityColors: Record<number, string> = {
         col.className = "kanban-column";
         col.dataset.status = lane.key;
         col.ondrop = (e) => handleDrop(e);
-        col.ondragover = (e) => { e.preventDefault(); col.classList.add("drag-over"); };
+        col.ondragover = (e) => {
+          e.preventDefault();
+          col.classList.add("drag-over");
+        };
         col.ondragleave = () => col.classList.remove("drag-over");
 
         // Find tasks matching this lane
         const laneTasks = allTasks.filter((t) =>
-          lane.includes.includes(String(t.status))
+          lane.includes.includes(String(t.status)),
         );
 
         col.innerHTML = `
@@ -498,12 +610,25 @@ const priorityColors: Record<number, string> = {
             <span class="kanban-count">${laneTasks.length}</span>
           </div>
           <div class="kanban-cards">
-            ${laneTasks.length === 0 ? '<div class="kanban-empty">Drop tasks here</div>' : ''}
-            ${laneTasks.map((task) => {
-              const p = Number(task.priority ?? 3);
-              const pLabels = { 1: "Critical", 2: "High", 3: "Medium", 4: "Low", 5: "Minimal" };
-              const pColors = { 1: "#ef4444", 2: "#f59e0b", 3: "#3b82f6", 4: "#10b981", 5: "#6b7280" };
-              return `
+            ${laneTasks.length === 0 ? '<div class="kanban-empty">Drop tasks here</div>' : ""}
+            ${laneTasks
+              .map((task) => {
+                const p = Number(task.priority ?? 3);
+                const pLabels = {
+                  1: "Critical",
+                  2: "High",
+                  3: "Medium",
+                  4: "Low",
+                  5: "Minimal",
+                };
+                const pColors = {
+                  1: "#ef4444",
+                  2: "#f59e0b",
+                  3: "#3b82f6",
+                  4: "#10b981",
+                  5: "#6b7280",
+                };
+                return `
                 <div class="kanban-card" draggable="true" data-id="${task.id}"
                   ondragstart="event.dataTransfer.setData('text/plain', this.dataset.id); this.classList.add('dragging');"
                   ondragend="this.classList.remove('dragging');">
@@ -513,7 +638,8 @@ const priorityColors: Record<number, string> = {
                     <span style="color: ${pColors[p]}; font-size: 11px;">${pLabels[p]}</span>
                   </div>
                 </div>`;
-            }).join('')}
+              })
+              .join("")}
           </div>
           <button class="kanban-add-btn" data-status="${lane.key}" aria-label="Add task to ${lane.label}">+ Add Task</button>
         `;
@@ -524,8 +650,12 @@ const priorityColors: Record<number, string> = {
         const addBtn = col.querySelector(".kanban-add-btn");
         if (addBtn) {
           addBtn.addEventListener("click", () => {
-            const existing = addBtn.parentElement.querySelector(".kanban-inline-add");
-            if (existing) { existing.querySelector("input")?.focus(); return; }
+            const existing =
+              addBtn.parentElement.querySelector(".kanban-inline-add");
+            if (existing) {
+              existing.querySelector("input")?.focus();
+              return;
+            }
             const status = addBtn.dataset.status;
             const form = document.createElement("div");
             form.className = "kanban-inline-add";
@@ -541,10 +671,15 @@ const priorityColors: Record<number, string> = {
             input2.focus();
             async function submitNew() {
               const title = input2.value.trim();
-              if (!title) { form.remove(); addBtn.style.display = ""; return; }
+              if (!title) {
+                form.remove();
+                addBtn.style.display = "";
+                return;
+              }
               try {
                 const res = await fetch("/api/tasks", {
-                  method: "POST", headers: { "content-type": "application/json" },
+                  method: "POST",
+                  headers: { "content-type": "application/json" },
                   body: JSON.stringify({ title, status }),
                 });
                 if (res.ok) window.location.reload();
@@ -552,8 +687,14 @@ const priorityColors: Record<number, string> = {
             }
             submitBtn.addEventListener("click", submitNew);
             input2.addEventListener("keydown", (e) => {
-              if (e.key === "Enter") { e.preventDefault(); submitNew(); }
-              if (e.key === "Escape") { form.remove(); addBtn.style.display = ""; }
+              if (e.key === "Enter") {
+                e.preventDefault();
+                submitNew();
+              }
+              if (e.key === "Escape") {
+                form.remove();
+                addBtn.style.display = "";
+              }
             });
           });
         }
@@ -566,7 +707,7 @@ const priorityColors: Record<number, string> = {
 
     // Store tasks data for client-side custom column rendering
     window.__kanbanAllTasks = [];
-    (async function() {
+    (async function () {
       try {
         const res = await fetch("/api/tasks?limit=500");
         if (res.ok) {
@@ -692,7 +833,7 @@ const priorityColors: Record<number, string> = {
   .kanban-card-due {
     font-size: 11px;
     color: var(--text-muted);
-    background: rgba(255,255,255,0.05);
+    background: rgba(255, 255, 255, 0.05);
     padding: 1px 6px;
     border-radius: 4px;
   }
@@ -722,9 +863,15 @@ const priorityColors: Record<number, string> = {
     background: var(--bg-hover);
     border-color: var(--border);
   }
-  .card-edit-btn:hover { color: var(--info); }
-  .card-ai-btn:hover { color: var(--success); }
-  .card-dup-btn:hover { color: var(--warning); }
+  .card-edit-btn:hover {
+    color: var(--info);
+  }
+  .card-ai-btn:hover {
+    color: var(--success);
+  }
+  .card-dup-btn:hover {
+    color: var(--warning);
+  }
   .view-switcher {
     display: flex;
     border: 1px solid var(--border);

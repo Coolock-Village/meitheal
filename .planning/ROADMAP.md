@@ -37,6 +37,7 @@ Primary Delivery drives completion math and release readiness.
 | 16 | Astro Optimizations & UX | ✅ Complete | `16-01-PLAN.md`, `16-01-SUMMARY.md` |
 | 17 | Full 50-Persona Audit | ✅ Complete | `17-01-PLAN.md`, `17-01-SUMMARY.md` |
 | 18 | Vikunja Card Parity + E2E | ✅ Complete | `18-01-PLAN.md`, `18-01-SUMMARY.md` |
+| 19 | Kanban Board Overhaul | 📋 Planned | `19-01..19-03-PLAN.md`, 50-persona audit |
 
 ## Primary Delivery Details
 
