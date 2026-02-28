@@ -75,14 +75,21 @@ export const PUT: APIRoute = async ({ request }) => {
     const body = (await request.json().catch(() => ({}))) as Record<string, unknown>;
 
     const key = typeof body.key === "string" ? body.key.trim() : "";
-    if (!key) {
-      return new Response(JSON.stringify({ error: "key is required" }), {
+    if (!key || key.length > 100 || !/^[a-zA-Z0-9_-]+$/.test(key)) {
+      return new Response(JSON.stringify({ error: "key must be 1-100 alphanumeric/hyphen/underscore characters" }), {
         status: 400,
         headers: { "content-type": "application/json" },
       });
     }
 
     const value = JSON.stringify(body.value ?? null);
+    // Cap value size at 10KB to prevent abuse
+    if (value.length > 10240) {
+      return new Response(JSON.stringify({ error: "value exceeds 10KB limit" }), {
+        status: 400,
+        headers: { "content-type": "application/json" },
+      });
+    }
     const now = Date.now();
 
     await client.execute({

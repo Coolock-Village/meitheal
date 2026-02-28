@@ -1411,6 +1411,8 @@ try {
         });
 
       // ───── Custom Fields interactive ─────
+      const RICE_KEYS = ["Reach", "Impact", "Confidence", "Effort"];
+
       function getCFFromUI(): Record<string, string> {
         const result: Record<string, string> = {};
         document.querySelectorAll(".td-cf-row").forEach((row) => {
@@ -1426,7 +1428,32 @@ try {
       }
 
       function saveCF() {
-        saveTD("custom_fields", JSON.stringify(getCFFromUI()));
+        const all = getCFFromUI();
+        // Split RICE keys → framework_payload, rest → custom_fields
+        const ricePayload: Record<string, number> = {};
+        const cfPayload: Record<string, string> = {};
+        let hasRice = false;
+        for (const [k, v] of Object.entries(all)) {
+          if (RICE_KEYS.includes(k)) {
+            ricePayload[k.toLowerCase()] = Number(v) || 0;
+            hasRice = true;
+          } else {
+            cfPayload[k] = v;
+          }
+        }
+        saveTD("custom_fields", JSON.stringify(cfPayload));
+        if (hasRice) {
+          // Compute RICE score: (Reach × Impact × Confidence) / Effort
+          const r = ricePayload.reach ?? 0;
+          const i = ricePayload.impact ?? 0;
+          const c = ricePayload.confidence ?? 0;
+          const e = ricePayload.effort ?? 1;
+          ricePayload.rice_score = Math.round((r * i * c) / Math.max(e, 1));
+          saveTD("framework_payload", JSON.stringify(ricePayload));
+          // Update the RICE score display
+          const riceEl = document.getElementById("td-rice");
+          if (riceEl) riceEl.textContent = `RICE Score: ${ricePayload.rice_score}`;
+        }
       }
 
       function addCFRow(key: string, value: string) {
@@ -1449,8 +1476,16 @@ try {
         cfDiv.appendChild(row);
       }
 
-      // Common field names for the dropdown
-      const commonFields = ["Estimate", "Sprint", "Team", "Component", "Environment", "Version", "Story Points", "Acceptance Criteria"];
+      // Common field names for the dropdown — unified across RICE, agile, and org fields
+      const commonFields = [
+        // RICE framework
+        "Reach", "Impact", "Confidence", "Effort",
+        // Agile & project fields
+        "Estimate", "Sprint", "Team", "Component", "Environment",
+        "Version", "Story Points", "Acceptance Criteria",
+        // Complexity & sizing
+        "Complexity", "T-Shirt Size", "Business Value",
+      ];
 
       function getFieldSuggestions(): string[] {
         // Combine common fields with existing custom fields from all tasks
