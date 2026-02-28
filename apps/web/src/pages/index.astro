@@ -218,6 +218,32 @@ function relativeTime(dueDate: string): string {
         const title = input.value.trim();
         if (!title) return;
 
+        // Optimistic: insert task card immediately
+        const taskList = document.getElementById("task-list");
+        const emptyState = taskList?.querySelector(".empty-state");
+        if (emptyState) emptyState.remove();
+
+        const newCard = document.createElement("div");
+        newCard.className = "task-item";
+        newCard.innerHTML = `
+          <input type="checkbox" class="task-checkbox" />
+          <div class="task-content">
+            <div class="task-title">${title}</div>
+            <div class="task-meta">Medium · Pending</div>
+          </div>
+          <span class="task-badge badge-pending">Pending</span>
+        `;
+        newCard.style.animation = "fade-in 300ms ease";
+        taskList?.prepend(newCard);
+        input.value = "";
+
+        // Update stat counts
+        const statValues = document.querySelectorAll(".stat-value");
+        if (statValues[0])
+          statValues[0].textContent = String(
+            Number(statValues[0].textContent) + 1,
+          );
+
         try {
           const res = await fetch("/api/tasks", {
             method: "POST",
@@ -226,23 +252,44 @@ function relativeTime(dueDate: string): string {
           });
           if (res.ok) {
             showToast("Task created!");
-            input.value = "";
-            window.location.reload();
           } else {
             const data = await res.json();
             showToast(data.error || "Failed to create task", "error");
+            newCard.remove(); // Revert on error
           }
         } catch {
           showToast("Network error", "error");
+          newCard.remove();
         }
       });
 
-    // Checkbox toggles
+    // Checkbox toggles — optimistic CSS swap
     document.querySelectorAll(".task-checkbox").forEach((cb) => {
       cb.addEventListener("change", async (e) => {
         const target = e.target as HTMLInputElement;
         const id = target.dataset.id;
+        const taskItem = target.closest(".task-item");
+        const titleEl = taskItem?.querySelector(".task-title");
+        const badge = taskItem?.querySelector(".task-badge");
         const newStatus = target.checked ? "complete" : "pending";
+
+        // Optimistic UI update
+        if (target.checked) {
+          taskItem?.classList.add("task-done");
+          titleEl?.classList.add("done");
+          if (badge) {
+            badge.className = "task-badge badge-done";
+            badge.textContent = "Complete";
+          }
+        } else {
+          taskItem?.classList.remove("task-done");
+          titleEl?.classList.remove("done");
+          if (badge) {
+            badge.className = "task-badge badge-pending";
+            badge.textContent = "Pending";
+          }
+        }
+
         try {
           await fetch(`/api/tasks/${id}`, {
             method: "PUT",
@@ -250,9 +297,10 @@ function relativeTime(dueDate: string): string {
             body: JSON.stringify({ status: newStatus }),
           });
           showToast(target.checked ? "Task completed!" : "Task reopened");
-          setTimeout(() => window.location.reload(), 500);
         } catch {
           showToast("Failed to update", "error");
+          // Revert
+          target.checked = !target.checked;
         }
       });
     });
