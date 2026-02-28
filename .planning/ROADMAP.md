@@ -138,7 +138,14 @@ Current state:
 
 - Planned out 40 waves of optimization per autonomous directive.
 - Covering empty states, API hardening, offline sync, ARIA labels, form validation.
-- Execution plans `20-01` through `20-04` mapped.
+- Execution plans `20-01` through `20-04` mapped out and completed.
+
+## Phase 21: Data Export & Portability 📋
+
+Current state:
+
+- Planning out JSON/CSV task export tools, local SQLite DB download, and settings backup.
+- Execution plans `21-01` through `21-03` mapped.
 
 ## Open Blockers (Roadmap-Level)
 
