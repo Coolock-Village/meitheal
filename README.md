@@ -82,11 +82,12 @@ Interop design is informed by existing HA/Vikunja integration patterns, includin
 
 ## Status
 
-This repository is scaffolded for Iteration 1 with:
+Repository is now at Iteration 2 baseline with:
 
-- Architecture/governance docs
-- DDD package boundaries
-- HA add-on skeleton
-- Observability and logging baseline
-- Playwright and governance test harness
+- Public GitHub publication at `Coolock-Village/meitheal`
+- Protected `main` branch and feature-branch workflow
+- Persistent SQLite-backed vertical slice for task->calendar sync
+- Direct Home Assistant calendar service integration
+- Idempotent replay handling and persistent audit trail
+- Playwright test harness including new domain/persistence coverage
 - Persona optimization loop artifacts under `.planning/persona-loops/`

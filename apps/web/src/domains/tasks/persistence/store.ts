@@ -1,0 +1,534 @@
+import { mkdirSync } from "node:fs";
+import path from "node:path";
+import { type Client, createClient } from "@libsql/client";
+import type { CalendarResult } from "@meitheal/integration-core";
+import type { CalendarSyncState, CreateTaskPlan, IntegrationOutcome } from "@meitheal/domain-tasks";
+import { drizzle } from "drizzle-orm/libsql";
+
+export interface PersistedTask {
+  id: string;
+  title: string;
+  status: string;
+  frameworkPayload: Record<string, unknown>;
+  calendarSyncState: CalendarSyncState;
+  idempotencyKey: string;
+  requestId: string;
+  createdAt: number;
+  updatedAt: number;
+}
+
+export interface PersistedTaskResponse {
+  task: PersistedTask;
+  integration: IntegrationOutcome;
+}
+
+let clientSingleton: Client | null = null;
+let dbSingleton: ReturnType<typeof drizzle> | null = null;
+let ensured = false;
+
+function resolveDbUrl(): string {
+  return process.env.MEITHEAL_DB_URL ?? "file:./.data/meitheal.db";
+}
+
+function ensureFileDbDirectory(dbUrl: string): void {
+  if (!dbUrl.startsWith("file:")) {
+    return;
+  }
+
+  const dbPath = dbUrl.slice("file:".length);
+  const absolutePath = path.isAbsolute(dbPath) ? dbPath : path.join(process.cwd(), dbPath);
+  mkdirSync(path.dirname(absolutePath), { recursive: true });
+}
+
+function getClient(): Client {
+  if (clientSingleton) {
+    return clientSingleton;
+  }
+
+  const dbUrl = resolveDbUrl();
+  ensureFileDbDirectory(dbUrl);
+  clientSingleton = createClient({ url: dbUrl });
+  dbSingleton = drizzle(clientSingleton);
+  return clientSingleton;
+}
+
+export function getDb() {
+  if (dbSingleton) {
+    return dbSingleton;
+  }
+  getClient();
+  if (!dbSingleton) {
+    throw new Error("Failed to initialize Drizzle client");
+  }
+  return dbSingleton;
+}
+
+function toTask(row: Record<string, unknown>): PersistedTask {
+  return {
+    id: String(row.id),
+    title: String(row.title),
+    status: String(row.status),
+    frameworkPayload:
+      typeof row.framework_payload === "string"
+        ? (JSON.parse(row.framework_payload) as Record<string, unknown>)
+        : (row.framework_payload as Record<string, unknown>) ?? {},
+    calendarSyncState: String(row.calendar_sync_state) as CalendarSyncState,
+    idempotencyKey: String(row.idempotency_key),
+    requestId: String(row.request_id),
+    createdAt: Number(row.created_at),
+    updatedAt: Number(row.updated_at)
+  };
+}
+
+function toIntegrationOutcomeFromStored(params: {
+  calendarSyncState: CalendarSyncState;
+  confirmationId?: string;
+  errorCode?: string;
+  retryAfterSeconds?: number;
+}): IntegrationOutcome {
+  return {
+    calendarSyncState: params.calendarSyncState,
+    ...(params.confirmationId ? { confirmationId: params.confirmationId } : {}),
+    ...(params.errorCode ? { errorCode: params.errorCode } : {}),
+    ...(typeof params.retryAfterSeconds === "number"
+      ? { retryAfterSeconds: params.retryAfterSeconds }
+      : {})
+  };
+}
+
+async function withTransaction<T>(fn: (client: Client) => Promise<T>): Promise<T> {
+  const client = getClient();
+  await client.execute("BEGIN");
+  try {
+    const result = await fn(client);
+    await client.execute("COMMIT");
+    return result;
+  } catch (error) {
+    await client.execute("ROLLBACK");
+    throw error;
+  }
+}
+
+export async function ensureSchema(): Promise<void> {
+  if (ensured) {
+    return;
+  }
+
+  const client = getClient();
+
+  await client.execute(`
+    CREATE TABLE IF NOT EXISTS tasks (
+      id TEXT PRIMARY KEY,
+      endeavor_id TEXT,
+      title TEXT NOT NULL,
+      description TEXT,
+      status TEXT NOT NULL DEFAULT 'todo',
+      framework_payload TEXT NOT NULL DEFAULT '{}',
+      calendar_sync_state TEXT NOT NULL DEFAULT 'pending',
+      idempotency_key TEXT NOT NULL UNIQUE,
+      request_id TEXT NOT NULL,
+      created_at INTEGER NOT NULL,
+      updated_at INTEGER NOT NULL
+    )
+  `);
+
+  await client.execute(`
+    CREATE TABLE IF NOT EXISTS domain_events (
+      event_id TEXT PRIMARY KEY,
+      event_type TEXT NOT NULL,
+      task_id TEXT NOT NULL,
+      request_id TEXT NOT NULL,
+      idempotency_key TEXT NOT NULL,
+      payload TEXT NOT NULL,
+      created_at INTEGER NOT NULL
+    )
+  `);
+
+  await client.execute(`
+    CREATE TABLE IF NOT EXISTS integration_attempts (
+      attempt_id TEXT PRIMARY KEY,
+      task_id TEXT NOT NULL,
+      integration TEXT NOT NULL,
+      request_id TEXT NOT NULL,
+      idempotency_key TEXT NOT NULL,
+      status TEXT NOT NULL,
+      error_code TEXT,
+      retry_after_seconds INTEGER,
+      response_payload TEXT,
+      created_at INTEGER NOT NULL,
+      UNIQUE(idempotency_key, integration)
+    )
+  `);
+
+  await client.execute(`
+    CREATE TABLE IF NOT EXISTS calendar_confirmations (
+      confirmation_id TEXT PRIMARY KEY,
+      task_id TEXT NOT NULL,
+      request_id TEXT NOT NULL,
+      provider_event_id TEXT,
+      source TEXT NOT NULL DEFAULT 'ha.create_event',
+      payload TEXT,
+      created_at INTEGER NOT NULL,
+      UNIQUE(task_id, confirmation_id)
+    )
+  `);
+
+  await client.execute(`
+    CREATE TABLE IF NOT EXISTS audit_trail (
+      audit_id TEXT PRIMARY KEY,
+      request_id TEXT NOT NULL,
+      event_id TEXT,
+      task_id TEXT,
+      integration TEXT,
+      level TEXT NOT NULL,
+      message TEXT NOT NULL,
+      metadata TEXT,
+      created_at INTEGER NOT NULL
+    )
+  `);
+
+  await client.execute("CREATE INDEX IF NOT EXISTS tasks_request_idx ON tasks(request_id)");
+  await client.execute("CREATE INDEX IF NOT EXISTS tasks_calendar_sync_state_idx ON tasks(calendar_sync_state)");
+  await client.execute("CREATE INDEX IF NOT EXISTS tasks_created_idx ON tasks(created_at)");
+  await client.execute("CREATE INDEX IF NOT EXISTS domain_events_task_idx ON domain_events(task_id)");
+  await client.execute("CREATE INDEX IF NOT EXISTS domain_events_request_idx ON domain_events(request_id)");
+  await client.execute("CREATE INDEX IF NOT EXISTS domain_events_created_idx ON domain_events(created_at)");
+  await client.execute("CREATE INDEX IF NOT EXISTS integration_attempts_task_idx ON integration_attempts(task_id)");
+  await client.execute("CREATE INDEX IF NOT EXISTS integration_attempts_request_idx ON integration_attempts(request_id)");
+  await client.execute("CREATE INDEX IF NOT EXISTS calendar_confirmations_task_idx ON calendar_confirmations(task_id)");
+  await client.execute("CREATE INDEX IF NOT EXISTS calendar_confirmations_request_idx ON calendar_confirmations(request_id)");
+  await client.execute("CREATE INDEX IF NOT EXISTS audit_trail_request_idx ON audit_trail(request_id)");
+  await client.execute("CREATE INDEX IF NOT EXISTS audit_trail_task_idx ON audit_trail(task_id)");
+  await client.execute("CREATE INDEX IF NOT EXISTS audit_trail_created_idx ON audit_trail(created_at)");
+
+  ensured = true;
+}
+
+export async function findByIdempotencyKey(idempotencyKey: string): Promise<PersistedTaskResponse | null> {
+  const client = getClient();
+  const taskResult = await client.execute({
+    sql: `
+      SELECT id, title, status, framework_payload, calendar_sync_state, idempotency_key, request_id, created_at, updated_at
+      FROM tasks
+      WHERE idempotency_key = ?
+      LIMIT 1
+    `,
+    args: [idempotencyKey]
+  });
+
+  const taskRow = taskResult.rows[0] as Record<string, unknown> | undefined;
+  if (!taskRow) {
+    return null;
+  }
+
+  const task = toTask(taskRow);
+
+  const confirmationResult = await client.execute({
+    sql: `
+      SELECT confirmation_id
+      FROM calendar_confirmations
+      WHERE task_id = ?
+      ORDER BY created_at DESC
+      LIMIT 1
+    `,
+    args: [task.id]
+  });
+
+  const attemptResult = await client.execute({
+    sql: `
+      SELECT error_code, retry_after_seconds
+      FROM integration_attempts
+      WHERE task_id = ? AND integration = 'calendar'
+      ORDER BY created_at DESC
+      LIMIT 1
+    `,
+    args: [task.id]
+  });
+
+  const confirmationRow = confirmationResult.rows[0] as Record<string, unknown> | undefined;
+  const attemptRow = attemptResult.rows[0] as Record<string, unknown> | undefined;
+
+  return {
+    task,
+    integration: toIntegrationOutcomeFromStored({
+      calendarSyncState: task.calendarSyncState,
+      ...(typeof confirmationRow?.confirmation_id === "string"
+        ? { confirmationId: confirmationRow.confirmation_id }
+        : {}),
+      ...(typeof attemptRow?.error_code === "string" ? { errorCode: attemptRow.error_code } : {}),
+      ...(typeof attemptRow?.retry_after_seconds === "number"
+        ? { retryAfterSeconds: attemptRow.retry_after_seconds }
+        : {})
+    })
+  };
+}
+
+export async function persistInitialPlan(plan: CreateTaskPlan): Promise<void> {
+  const now = Date.now();
+
+  await withTransaction(async (client) => {
+    await client.execute({
+      sql: `
+        INSERT INTO tasks(
+          id, title, status, framework_payload, calendar_sync_state,
+          idempotency_key, request_id, created_at, updated_at
+        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
+      `,
+      args: [
+        plan.aggregate.task.id,
+        plan.aggregate.task.title,
+        plan.aggregate.task.status,
+        JSON.stringify(plan.aggregate.task.frameworkPayload),
+        plan.aggregate.calendarSyncState,
+        plan.aggregate.idempotencyKey,
+        plan.aggregate.requestId,
+        now,
+        now
+      ]
+    });
+
+    for (const event of plan.events) {
+      await client.execute({
+        sql: `
+          INSERT INTO domain_events(event_id, event_type, task_id, request_id, idempotency_key, payload, created_at)
+          VALUES (?, ?, ?, ?, ?, ?, ?)
+        `,
+        args: [
+          event.eventId,
+          event.eventType,
+          plan.aggregate.task.id,
+          event.requestId,
+          plan.aggregate.idempotencyKey,
+          JSON.stringify(event.payload),
+          now
+        ]
+      });
+    }
+
+    await client.execute({
+      sql: `
+        INSERT INTO integration_attempts(
+          attempt_id, task_id, integration, request_id, idempotency_key, status, created_at
+        ) VALUES (?, ?, 'calendar', ?, ?, 'pending', ?)
+      `,
+      args: [crypto.randomUUID(), plan.aggregate.task.id, plan.aggregate.requestId, plan.aggregate.idempotencyKey, now]
+    });
+
+    await client.execute({
+      sql: `
+        INSERT INTO audit_trail(audit_id, request_id, task_id, integration, level, message, metadata, created_at)
+        VALUES (?, ?, ?, 'calendar', 'info', ?, ?, ?)
+      `,
+      args: [
+        crypto.randomUUID(),
+        plan.aggregate.requestId,
+        plan.aggregate.task.id,
+        "Task persisted and calendar sync marked pending",
+        JSON.stringify({ idempotencyKey: plan.aggregate.idempotencyKey }),
+        now
+      ]
+    });
+  });
+}
+
+export async function persistCalendarIntegrationResult(params: {
+  taskId: string;
+  requestId: string;
+  idempotencyKey: string;
+  result: CalendarResult;
+}): Promise<PersistedTaskResponse> {
+  const now = Date.now();
+
+  await withTransaction(async (client) => {
+    if (params.result.ok) {
+      await client.execute({
+        sql: `
+          UPDATE tasks SET calendar_sync_state = 'confirmed', updated_at = ?
+          WHERE id = ?
+        `,
+        args: [now, params.taskId]
+      });
+
+      await client.execute({
+        sql: `
+          UPDATE integration_attempts
+          SET status = 'succeeded', response_payload = ?, created_at = ?
+          WHERE task_id = ? AND integration = 'calendar'
+        `,
+        args: [JSON.stringify(params.result.raw ?? null), now, params.taskId]
+      });
+
+      await client.execute({
+        sql: `
+          INSERT OR IGNORE INTO calendar_confirmations(
+            confirmation_id, task_id, request_id, provider_event_id, source, payload, created_at
+          ) VALUES (?, ?, ?, ?, 'ha.create_event', ?, ?)
+        `,
+        args: [
+          params.result.confirmationId,
+          params.taskId,
+          params.requestId,
+          params.result.providerEventId ?? null,
+          JSON.stringify(params.result.raw ?? null),
+          now
+        ]
+      });
+
+      await client.execute({
+        sql: `
+          INSERT INTO domain_events(event_id, event_type, task_id, request_id, idempotency_key, payload, created_at)
+          VALUES (?, 'integration.sync.completed', ?, ?, ?, ?, ?)
+        `,
+        args: [
+          crypto.randomUUID(),
+          params.taskId,
+          params.requestId,
+          params.idempotencyKey,
+          JSON.stringify({ integration: "calendar", confirmationId: params.result.confirmationId }),
+          now
+        ]
+      });
+
+      await client.execute({
+        sql: `
+          INSERT INTO audit_trail(audit_id, request_id, task_id, integration, level, message, metadata, created_at)
+          VALUES (?, ?, ?, 'calendar', 'info', 'Calendar event confirmed', ?, ?)
+        `,
+        args: [
+          crypto.randomUUID(),
+          params.requestId,
+          params.taskId,
+          JSON.stringify({ confirmationId: params.result.confirmationId }),
+          now
+        ]
+      });
+
+      return;
+    }
+
+    const failedState = params.result.retryable ? "failed_retryable" : "failed_terminal";
+
+    await client.execute({
+      sql: `
+        UPDATE tasks SET calendar_sync_state = ?, updated_at = ?
+        WHERE id = ?
+      `,
+      args: [failedState, now, params.taskId]
+    });
+
+    await client.execute({
+      sql: `
+        UPDATE integration_attempts
+        SET status = 'failed', error_code = ?, retry_after_seconds = ?, response_payload = ?, created_at = ?
+        WHERE task_id = ? AND integration = 'calendar'
+      `,
+      args: [
+        params.result.errorCode,
+        params.result.retryAfterSeconds ?? null,
+        JSON.stringify(params.result.raw ?? null),
+        now,
+        params.taskId
+      ]
+    });
+
+    await client.execute({
+      sql: `
+        INSERT INTO audit_trail(audit_id, request_id, task_id, integration, level, message, metadata, created_at)
+        VALUES (?, ?, ?, 'calendar', 'warn', 'Calendar sync failed', ?, ?)
+      `,
+      args: [
+        crypto.randomUUID(),
+        params.requestId,
+        params.taskId,
+        JSON.stringify({
+          errorCode: params.result.errorCode,
+          retryAfterSeconds: params.result.retryAfterSeconds,
+          retryable: params.result.retryable
+        }),
+        now
+      ]
+    });
+  });
+
+  const persisted = await findByIdempotencyKey(params.idempotencyKey);
+  if (!persisted) {
+    throw new Error(`Unable to reload persisted task for idempotency key ${params.idempotencyKey}`);
+  }
+
+  return persisted;
+}
+
+export async function persistManualCalendarConfirmation(params: {
+  taskId: string;
+  requestId: string;
+  confirmationId: string;
+  providerEventId?: string;
+  payload?: unknown;
+}): Promise<{ confirmationId: string; alreadyExisted: boolean }> {
+  const client = getClient();
+
+  const existingResult = await client.execute({
+    sql: `
+      SELECT confirmation_id
+      FROM calendar_confirmations
+      WHERE task_id = ? AND confirmation_id = ?
+      LIMIT 1
+    `,
+    args: [params.taskId, params.confirmationId]
+  });
+
+  const existing = existingResult.rows[0] as Record<string, unknown> | undefined;
+  if (existing) {
+    return { confirmationId: String(existing.confirmation_id), alreadyExisted: true };
+  }
+
+  const now = Date.now();
+  await withTransaction(async (txClient) => {
+    await txClient.execute({
+      sql: `
+        INSERT INTO calendar_confirmations(
+          confirmation_id, task_id, request_id, provider_event_id, source, payload, created_at
+        ) VALUES (?, ?, ?, ?, 'manual.confirmation', ?, ?)
+      `,
+      args: [
+        params.confirmationId,
+        params.taskId,
+        params.requestId,
+        params.providerEventId ?? null,
+        JSON.stringify(params.payload ?? null),
+        now
+      ]
+    });
+
+    await txClient.execute({
+      sql: `
+        UPDATE tasks
+        SET calendar_sync_state = 'confirmed', updated_at = ?
+        WHERE id = ?
+      `,
+      args: [now, params.taskId]
+    });
+
+    await txClient.execute({
+      sql: `
+        INSERT INTO audit_trail(audit_id, request_id, task_id, integration, level, message, metadata, created_at)
+        VALUES (?, ?, ?, 'calendar', 'info', 'Manual calendar confirmation persisted', ?, ?)
+      `,
+      args: [
+        crypto.randomUUID(),
+        params.requestId,
+        params.taskId,
+        JSON.stringify({ confirmationId: params.confirmationId, providerEventId: params.providerEventId }),
+        now
+      ]
+    });
+  });
+
+  return { confirmationId: params.confirmationId, alreadyExisted: false };
+}
+
+export function resetPersistenceForTests(): void {
+  clientSingleton = null;
+  dbSingleton = null;
+  ensured = false;
+}

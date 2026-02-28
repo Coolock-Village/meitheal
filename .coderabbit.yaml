@@ -1,0 +1,24 @@
+reviews:
+  profile: "assertive"
+  auto_review:
+    enabled: true
+    drafts: false
+    base_branches:
+      - main
+  high_level_summary: true
+  review_status: true
+  poem: false
+  path_instructions:
+    - path: "packages/**"
+      instructions: "Treat bounded-context boundaries as strict; flag cross-domain leakage."
+    - path: "apps/web/src/content/**"
+      instructions: "Validate YAML/Zod schema drift and config backward compatibility."
+    - path: "addons/**"
+      instructions: "Prioritize low-resource HA runtime behavior and secret handling."
+  labeling_instructions:
+    - label: "ddd"
+      instructions: "Apply when domain boundaries or ubiquitous language are violated."
+    - label: "kcs"
+      instructions: "Apply when docs/runbook updates are missing for behavior changes."
+chat:
+  auto_reply: true

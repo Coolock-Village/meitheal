@@ -9,6 +9,7 @@ const requiredFiles = [
   "AGENTS.md",
   "SKILL.md",
   "WEBMCP.md",
+  ".coderabbit.yaml",
   ".zeroclaw/soul.md",
   ".skills/core-workflows/SKILL.md",
   "docs/decisions/0001-legal-and-naming-strategy.md",

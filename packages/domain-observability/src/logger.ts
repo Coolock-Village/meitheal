@@ -79,5 +79,7 @@ export const defaultRedactionPatterns: RegExp[] = [
   /(bearer\s+[a-z0-9\-._~+/]+=*)/gi,
   /(authorization:\s*[^\s]+)/gi,
   /(hassio_token=)[^&\s]+/gi,
+  /(ha_token=)[^&\s]+/gi,
+  /(supervisor_token=)[^&\s]+/gi,
   /([a-z0-9._%+-]+@[a-z0-9.-]+\.[a-z]{2,})/gi
 ];

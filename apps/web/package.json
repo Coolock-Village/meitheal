@@ -10,10 +10,12 @@
     "check": "astro check"
   },
   "dependencies": {
+    "@libsql/client": "^0.15.15",
     "@astrojs/mdx": "^4.3.13",
     "@astrojs/node": "^9.5.4",
     "@astrojs/sitemap": "^3.7.0",
     "@astrojs/tailwind": "^6.0.2",
+    "@meitheal/integration-core": "workspace:*",
     "@meitheal/domain-observability": "workspace:*",
     "@meitheal/domain-tasks": "workspace:*",
     "astro": "^5.18.0",

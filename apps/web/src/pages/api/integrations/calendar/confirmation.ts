@@ -1,18 +1,25 @@
 import type { APIRoute } from "astro";
-import { saveCalendarConfirmation } from "@domains/integrations/calendar-memory-store";
 import { createLogger, defaultRedactionPatterns } from "@meitheal/domain-observability";
+import { ensureSchema, persistManualCalendarConfirmation } from "@domains/tasks/persistence/store";
 
 const logger = createLogger({
   service: "meitheal-web",
   env: process.env.NODE_ENV ?? "development",
   minLevel: "info",
-  enabledCategories: ["integrations", "audit"],
+  enabledCategories: ["integrations", "audit", "observability"],
   redactPatterns: defaultRedactionPatterns,
   auditEnabled: true
 });
 
 export const POST: APIRoute = async ({ request }) => {
-  const body = (await request.json().catch(() => ({}))) as { taskId?: string };
+  const body = (await request.json().catch(() => ({}))) as {
+    taskId?: string;
+    confirmationId?: string;
+    providerEventId?: string;
+    payload?: unknown;
+    requestId?: string;
+  };
+
   if (!body.taskId) {
     return new Response(JSON.stringify({ error: "taskId is required" }), {
       status: 400,
@@ -20,8 +27,17 @@ export const POST: APIRoute = async ({ request }) => {
     });
   }
 
-  const confirmation = saveCalendarConfirmation(body.taskId);
-  const requestId = crypto.randomUUID();
+  const requestId = body.requestId ?? request.headers.get("x-request-id") ?? crypto.randomUUID();
+  const confirmationId = body.confirmationId ?? crypto.randomUUID();
+
+  await ensureSchema();
+  const persisted = await persistManualCalendarConfirmation({
+    taskId: body.taskId,
+    requestId,
+    confirmationId,
+    ...(body.providerEventId ? { providerEventId: body.providerEventId } : {}),
+    ...(typeof body.payload !== "undefined" ? { payload: body.payload } : {})
+  });
 
   logger.log("info", {
     event: "calendar.confirmation.received",
@@ -30,7 +46,9 @@ export const POST: APIRoute = async ({ request }) => {
     request_id: requestId,
     task_id: body.taskId,
     integration: "calendar",
-    message: "Calendar confirmation received"
+    message: persisted.alreadyExisted
+      ? "Calendar confirmation already existed and was replayed"
+      : "Calendar confirmation persisted"
   });
 
   logger.audit({
@@ -40,11 +58,21 @@ export const POST: APIRoute = async ({ request }) => {
     request_id: requestId,
     task_id: body.taskId,
     integration: "calendar",
-    message: "Calendar confirmation persisted"
+    message: persisted.alreadyExisted
+      ? "Manual confirmation idempotent replay"
+      : "Manual confirmation persisted"
   });
 
-  return new Response(JSON.stringify({ confirmation }), {
-    status: 200,
-    headers: { "content-type": "application/json" }
-  });
+  return new Response(
+    JSON.stringify({
+      taskId: body.taskId,
+      requestId,
+      confirmationId: persisted.confirmationId,
+      alreadyExisted: persisted.alreadyExisted
+    }),
+    {
+      status: persisted.alreadyExisted ? 200 : 201,
+      headers: { "content-type": "application/json" }
+    }
+  );
 };

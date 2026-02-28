@@ -23,7 +23,25 @@ const frameworks = defineCollection({
 
 const configCollection = defineCollection({
   loader: glob({ pattern: "*.yaml", base: "./src/content/config" }),
-  schema: z.record(z.unknown())
+  schema: z
+    .object({
+      integrations: z
+        .object({
+          calendar: z
+            .object({
+              enabled: z.boolean().default(true),
+              entity_id: z.string().min(1),
+              default_duration_minutes: z.number().int().positive().default(30),
+              timezone: z.string().min(1).default("UTC")
+            })
+            .optional(),
+          grocy: z.object({ enabled: z.boolean() }).optional(),
+          node_red: z.object({ enabled: z.boolean() }).optional(),
+          n8n: z.object({ enabled: z.boolean() }).optional()
+        })
+        .optional()
+    })
+    .passthrough()
 });
 
 export const collections = {

@@ -1,4 +1,6 @@
 import type { APIRoute } from "astro";
+import dns from "node:dns/promises";
+import net from "node:net";
 
 const blockedHosts = new Set(["localhost", "127.0.0.1", "::1", "0.0.0.0"]);
 
@@ -13,6 +15,24 @@ function isPrivateHost(hostname: string): boolean {
     hostname.startsWith("192.168.") ||
     /^172\.(1[6-9]|2\d|3[0-1])\./.test(hostname)
   );
+}
+
+function isPrivateIpAddress(ip: string): boolean {
+  if (net.isIP(ip) === 4) {
+    return (
+      ip.startsWith("10.") ||
+      ip.startsWith("127.") ||
+      ip.startsWith("192.168.") ||
+      /^172\.(1[6-9]|2\d|3[0-1])\./.test(ip)
+    );
+  }
+
+  if (net.isIP(ip) === 6) {
+    const lowered = ip.toLowerCase();
+    return lowered === "::1" || lowered.startsWith("fc") || lowered.startsWith("fd") || lowered.startsWith("fe80");
+  }
+
+  return false;
 }
 
 function extractMeta(html: string, property: string): string | undefined {
@@ -47,6 +67,21 @@ export const POST: APIRoute = async ({ request }) => {
 
   if (!["http:", "https:"].includes(parsed.protocol) || isPrivateHost(parsed.hostname.toLowerCase())) {
     return new Response(JSON.stringify({ error: "Blocked URL target" }), {
+      status: 400,
+      headers: { "content-type": "application/json" }
+    });
+  }
+
+  try {
+    const records = await dns.lookup(parsed.hostname, { all: true });
+    if (records.some((record) => isPrivateIpAddress(record.address))) {
+      return new Response(JSON.stringify({ error: "Blocked private network target" }), {
+        status: 400,
+        headers: { "content-type": "application/json" }
+      });
+    }
+  } catch {
+    return new Response(JSON.stringify({ error: "Unable to resolve host" }), {
       status: 400,
       headers: { "content-type": "application/json" }
     });

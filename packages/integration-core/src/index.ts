@@ -22,3 +22,42 @@ export class IntegrationBus {
     await Promise.all(this.plugins.map((plugin) => plugin.handle(event)));
   }
 }
+
+export interface CalendarCreateEventInput {
+  taskId: string;
+  requestId: string;
+  idempotencyKey: string;
+  entityId: string;
+  summary: string;
+  description?: string;
+  startDateTime: string;
+  endDateTime: string;
+}
+
+export type CalendarErrorCode =
+  | "timeout"
+  | "unauthorized"
+  | "invalid_request"
+  | "service_unavailable"
+  | "unknown";
+
+export type CalendarResult =
+  | {
+      ok: true;
+      confirmationId: string;
+      providerEventId?: string;
+      raw?: unknown;
+    }
+  | {
+      ok: false;
+      errorCode: CalendarErrorCode;
+      retryable: boolean;
+      retryAfterSeconds?: number;
+      raw?: unknown;
+    };
+
+export interface CalendarIntegrationAdapter {
+  createEvent(input: CalendarCreateEventInput): Promise<CalendarResult>;
+}
+
+export * from "./home-assistant-calendar";

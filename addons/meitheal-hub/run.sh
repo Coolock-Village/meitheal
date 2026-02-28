@@ -5,6 +5,13 @@ export MEITHEAL_LOG_LEVEL="$(bashio::config 'log_level')"
 export MEITHEAL_LOG_REDACTION="$(bashio::config 'log_redaction')"
 export MEITHEAL_AUDIT_ENABLED="$(bashio::config 'audit_enabled')"
 export LOKI_URL="$(bashio::config 'loki_url')"
+export MEITHEAL_DB_URL="${MEITHEAL_DB_URL:-file:/data/meitheal.db}"
+
+# Prefer Supervisor credentials for direct Home Assistant service calls.
+if [ -n "${SUPERVISOR_TOKEN:-}" ]; then
+  export HA_BASE_URL="${HA_BASE_URL:-http://supervisor/core}"
+  export HA_TOKEN="${HA_TOKEN:-$SUPERVISOR_TOKEN}"
+fi
 
 # Start web app (placeholder command for scaffold)
 if [ -f /opt/meitheal/apps/web/package.json ]; then

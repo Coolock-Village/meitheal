@@ -4,6 +4,11 @@
 
 This file defines mandatory behavior for human and AI contributors working in Meitheal.
 
+## Automation Review
+
+- CodeRabbitAI is enabled for PR review on this repository.
+- Treat CodeRabbit findings as required triage items (accept, fix, or explicitly document reject rationale).
+
 ## Hard Requirements
 
 - Preserve Astro-first architecture decisions.
@@ -18,6 +23,7 @@ This file defines mandatory behavior for human and AI contributors working in Me
 - `AGENTS.md`
 - `SKILL.md`
 - `WEBMCP.md`
+- `.coderabbit.yaml`
 - `.skills/core-workflows/SKILL.md`
 - `.zeroclaw/soul.md`
 - `docs/decisions/*.md`
