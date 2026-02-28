@@ -521,12 +521,22 @@ const typeConfig: Record<
       const newStatus = col.dataset.status;
       if (!taskId || !newStatus) return;
 
-      // T-1902: Optimistic DOM update — no page reload
+      // WIP Limit enforcement
+      const wipLimit = parseInt(col.dataset.wipLimit || "0");
+      const targetCardsContainer = col.querySelector(".kanban-cards");
+      const currentCardCount = targetCardsContainer ? targetCardsContainer.querySelectorAll(".kanban-card").length : 0;
+      
       const card = document.querySelector(`.kanban-card[data-id="${taskId}"]`);
       if (!card) return;
 
-      // Move card to target column's card container
       const oldCol = card.closest(".kanban-column");
+      if (oldCol !== col && wipLimit > 0 && currentCardCount >= wipLimit) {
+        alert(`Cannot move task: WIP limit of ${wipLimit} reached for this lane.`);
+        return;
+      }
+
+      // T-1902: Optimistic DOM update — no page reload
+      // Move card to target column's card container
       const targetCards = col.querySelector(".kanban-cards");
       if (targetCards) {
         // Remove empty state if present
