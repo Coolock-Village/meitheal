@@ -1,0 +1,43 @@
+loki.source.journal "meitheal_journal" {
+  labels = {
+    service = "meitheal",
+    addon = "meitheal_hub",
+    env = "ha"
+  }
+  forward_to = [loki.process.meitheal.receiver]
+}
+
+loki.process "meitheal" {
+  stage.json {
+    expressions = {
+      level = "level",
+      domain = "domain",
+      component = "component",
+      message = "message",
+      request_id = "request_id",
+      event = "event"
+    }
+  }
+
+  stage.labels {
+    values = {
+      level = "level",
+      domain = "domain",
+      service = "service",
+      addon = "addon",
+      env = "env"
+    }
+  }
+
+  stage.output {
+    source = "message"
+  }
+
+  forward_to = [loki.write.default.receiver]
+}
+
+loki.write "default" {
+  endpoint {
+    url = sys.env("LOKI_URL")
+  }
+}

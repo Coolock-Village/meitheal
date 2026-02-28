@@ -1,0 +1,11 @@
+{
+  "name": "meitheal-webmcp",
+  "version": "0.1.0",
+  "description": "WebMCP discovery for Meitheal",
+  "capabilities": [
+    "tasks",
+    "frameworks",
+    "integrations",
+    "observability"
+  ]
+}

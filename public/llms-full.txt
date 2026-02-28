@@ -1,0 +1,3 @@
+Project: Meitheal
+Tagline: The cooperative task and life engine for your home.
+Core constraints: Astro-first, DDD/KCS, HA-native, local-first, observability-first.

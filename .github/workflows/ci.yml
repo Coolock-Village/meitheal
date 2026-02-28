@@ -1,0 +1,38 @@
+name: CI
+
+on:
+  push:
+  pull_request:
+
+jobs:
+  governance:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - name: Verify required governance files
+        run: |
+          test -f README.md
+          test -f AGENTS.md
+          test -f WEBMCP.md
+          test -f .zeroclaw/soul.md
+          test -f .skills/core-workflows/SKILL.md
+          test -f public/.well-known/mcp.json
+          test -f public/.well-known/jsondoc.json
+
+  typecheck-and-tests:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 10
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: pnpm
+      - run: pnpm install --frozen-lockfile=false
+      - run: pnpm check
+      - run: pnpm --filter @meitheal/tests test

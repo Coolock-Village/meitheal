@@ -1,0 +1,10 @@
+{
+  "name": "Meitheal",
+  "short_name": "Meitheal",
+  "description": "The cooperative task and life engine for your home.",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#f8fafc",
+  "theme_color": "#0f172a",
+  "icons": []
+}

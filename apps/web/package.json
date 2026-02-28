@@ -1,0 +1,29 @@
+{
+  "name": "@meitheal/web",
+  "private": true,
+  "version": "0.1.0",
+  "type": "module",
+  "scripts": {
+    "dev": "astro dev",
+    "build": "astro build",
+    "preview": "astro preview",
+    "check": "astro check"
+  },
+  "dependencies": {
+    "@astrojs/mdx": "^4.3.13",
+    "@astrojs/node": "^9.5.4",
+    "@astrojs/sitemap": "^3.7.0",
+    "@astrojs/tailwind": "^6.0.2",
+    "@meitheal/domain-observability": "workspace:*",
+    "@meitheal/domain-tasks": "workspace:*",
+    "astro": "^5.18.0",
+    "drizzle-orm": "^0.45.1",
+    "zod": "^3.24.3"
+  },
+  "devDependencies": {
+    "@astrojs/check": "^0.9.6",
+    "@types/node": "^22.15.0",
+    "drizzle-kit": "^0.31.9",
+    "typescript": "^5.8.3"
+  }
+}

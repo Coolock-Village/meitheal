@@ -1,0 +1,12 @@
+{
+  "name": "meitheal-monorepo",
+  "private": true,
+  "version": "0.1.0",
+  "description": "Meitheal: The cooperative task and life engine for your home.",
+  "packageManager": "pnpm@10.8.0",
+  "scripts": {
+    "check": "pnpm -r --if-present check",
+    "test": "pnpm -r --if-present test",
+    "lint": "pnpm -r --if-present lint"
+  }
+}

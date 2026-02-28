@@ -1,0 +1,9 @@
+integrations:
+  grocy:
+    enabled: true
+  node_red:
+    enabled: true
+  n8n:
+    enabled: true
+  calendar:
+    enabled: true

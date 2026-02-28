@@ -1,0 +1,34 @@
+name: "Meitheal Hub"
+version: "0.1.0"
+slug: "meitheal_hub"
+description: "The cooperative task and life engine for your home"
+url: "https://github.com/Coolock-Village/meitheal"
+arch:
+  - aarch64
+  - amd64
+startup: services
+boot: auto
+init: false
+ingress: true
+ingress_port: 3000
+homeassistant_api: true
+hassio_api: true
+hassio_role: default
+panel_icon: mdi:account-group
+options:
+  log_level: info
+  log_categories:
+    - auth
+    - tasks
+    - integrations
+    - observability
+  log_redaction: true
+  audit_enabled: true
+  loki_url: "http://a0d7b954-loki:3100/loki/api/v1/push"
+schema:
+  log_level: list(debug|info|warn|error)
+  log_categories:
+    - str
+  log_redaction: bool
+  audit_enabled: bool
+  loki_url: str

@@ -1,0 +1,2 @@
+Meitheal is an Astro-first, Home Assistant-native life operating system.
+Primary docs: README.md, AGENTS.md, WEBMCP.md, docs/decisions.

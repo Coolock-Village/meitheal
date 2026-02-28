@@ -1,0 +1,11 @@
+{
+  "extends": "../../tsconfig.base.json",
+  "compilerOptions": {
+    "types": ["node"],
+    "baseUrl": ".",
+    "paths": {
+      "@domains/*": ["src/domains/*"]
+    }
+  },
+  "include": ["src", "astro.config.mjs"]
+}
