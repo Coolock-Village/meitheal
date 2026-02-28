@@ -4,77 +4,71 @@
 
 **Meitheal** — the cooperative task and life engine for your home.
 
-A clean-room OSS Life OS built on Astro SSR for households, homelabs, and communities. It runs natively as a Home Assistant app/add-on and optionally on Cloudflare. Forged in Coolock, Dublin.
+A clean-room OSS Life OS built on Astro SSR for households, homelabs, and communities. It runs natively as a Home Assistant app/add-on and optionally on Cloudflare.
 
-**Core Value:** Local-first task orchestration that shares the cognitive load through cooperative automation — your home, your data, your village.
+## Planning State Alignment
+
+- Planning contract: `.planning/README.md`
+- Roadmap model: dual-track (`Primary Delivery 01-06`, `Extension Track 15-18`)
+- Current completion: primary `5/6`, extension `0/4`
 
 ## Requirements
 
-### Validated
+### Validated (implemented)
 
-- ✓ Astro 5.18 SSR with `@astrojs/node` adapter — existing (`apps/web/`)
-- ✓ DDD monorepo: 5 bounded contexts (Auth, Tasks, Strategy, Observability, Integrations) — existing (`packages/domain-*/`)
-- ✓ SQLite via Drizzle ORM 0.45 + libSQL — existing (`apps/web/drizzle/`)
-- ✓ HA OS add-on: Dockerfile, config.yaml, ingress auth, Alloy observability — existing (`addons/meitheal-hub/`)
-- ✓ Vikunja-compatible API: 7 routes for voice assistant interop — existing (`apps/web/src/pages/api/v1/`)
-- ✓ Calendar sync: HA calendar service adapter with idempotency — existing (`packages/integration-core/`)
-- ✓ Structured JSON logging with secret redaction — existing (`packages/domain-observability/`)
-- ✓ Compat API observability: structured request logging + Grafana dashboard — existing
-- ✓ CI pipeline: 6 required jobs — existing (`.github/workflows/ci.yml`)
-- ✓ Governance tests: repo standards, perf budgets, schema drift — existing (`tests/governance/`)
-- ✓ HA custom component skeleton — existing (`integrations/home-assistant/`)
-- ✓ Clean-room protocol + legal/naming ADR — existing (`docs/decisions/0001`, `0003`)
+- Astro SSR runtime with HA-first topology (`apps/web/`, `addons/meitheal-hub/`)
+- DDD domain packages (`domain-auth`, `domain-tasks`, `domain-strategy`, `domain-observability`, `integration-core`)
+- SQLite/libSQL persistence with Drizzle schema and migrations
+- HA calendar sync and confirmation flow with idempotency
+- Vikunja compatibility API surface used by voice-assistant clients
+- Structured JSON logging and redaction policy
+- Governance and required docs checks
+- Competitor gap matrix + parity contract baseline in `docs/analysis/`
 
-### Active
+### Active (next execution targets)
 
-- [ ] Webhook emission for domain events (HMAC-signed)
-- [ ] Grocy stock check adapter
-- [ ] n8n / Node-RED integration via webhooks
-- [ ] Operational dashboards for integrations
-- [ ] Local-first PWA: service worker, IndexedDB, background sync
-- [ ] Passkeys / WebAuthn with Conditional UI
-- [ ] Cloudflare Workers + D1 runtime path
-- [ ] Rich link unfurl with SSRF hardening
-- [ ] Market parity with Super Productivity + Vikunja core workflows
-- [ ] Maintain competitor analysis package and gap matrix as a roadmap input (`docs/analysis/`)
-- [ ] Enforce parity floor/exceed targets from `docs/analysis/parity-spec.md`
+- Clear PR #1 blockers (`perf-budgets`, CodeQL check-suite reconciliation)
+- Decide and execute phase `06` draft plans or replace with fresh execution plans
+- Promote extension-track phases (`15-18`) only when execution artifacts are ready
+- Continue HA publishing compliance checks (repository/add-on contracts)
 
-### Out of Scope
+### Out of Scope (current cycle)
 
-- Full Grocy recipe management — beyond current integration scope
-- Obsidian sync — deferred to Phase 5+
-- Calendar write-back from external events — deferred
-- Electron/Tauri desktop wrapper — violates Astro-first principle
+- Rewriting runtime architecture outside Astro-first model
+- Removing existing planning artifacts for cleanup convenience
+- Treating extension-track context-only phases as completed work
 
 ## Key Decisions
 
-| # | Decision | Rationale | Outcome |
-|---|----------|-----------|---------|
-| ADR-001 | Dual-track licensing | Clean-room core vs. AGPL adapter | Established |
-| ADR-002 | HA-first architecture | Node/SQLite primary, Workers/D1 secondary | Established |
-| ADR-003 | Clean-room protocol | Who reads upstream, what can be referenced | Established |
-| ADR-004 | Threat model | Auth, sync, integrations, unfurl risks | Established |
-| ADR-005 | Calendar sync design | Idempotency keys + confirmation flow | Established |
-| ADR-006 | Iteration-05 RFC | Webhooks, Grocy, n8n/Node-RED adapters | Draft |
-| ADR-007 | Competitor gap matrix and parity contract | Canonicalize parity/gap analysis + planning traceability | Established |
+| # | Decision | Outcome |
+|---|----------|---------|
+| ADR-001 | Dual-track licensing posture | Established |
+| ADR-002 | HA-first architecture | Established |
+| ADR-003 | Clean-room protocol | Established |
+| ADR-004 | Threat model baseline | Established |
+| ADR-005 | Calendar sync + idempotency | Established |
+| ADR-006 | Integration RFC (iteration-05) | Draft |
+| ADR-007 | Competitor matrix/parity contract | Established |
 
 ## Constraints
 
-- Must run on HA Green (2GB RAM, 128MB Node heap)
-- Astro-first: favor OSS Astro integrations over bespoke code
-- Env-only secrets: no tokens in YAML/config/client bundles
-- DDD boundaries: domain packages are infrastructure-agnostic
-- KCS culture: every behavior change updates docs in same commit
-- AGPL-3.0 obligations for any Vikunja-derived code
-- Roadmap changes must reference `docs/analysis/gap-matrix.md` and `docs/analysis/parity-spec.md`
+- Astro-first/native delivery; prefer official/open Astro integrations where suitable.
+- HA add-on compatibility and HA publishing alignment are mandatory.
+- DDD context boundaries enforced; no deep cross-context imports.
+- KCS updates are required alongside behavior changes.
+- Env-only secrets; no token leakage in YAML/client surfaces.
+- Structured logging schema must remain Loki-friendly (low-cardinality labels only).
 
 ## Source Artifacts
 
-Synthesized from:
-- `.planning/codebase/STACK.md`, `ARCHITECTURE.md`, `STRUCTURE.md`, `CONVENTIONS.md`, `TESTING.md`, `INTEGRATIONS.md`, `CONCERNS.md`
-- `.planning/persona-loops/phase-1/iteration-01..04/`
-- `README.md`, `docs/decisions/0001..0006`, `docs/kcs/*`
-- `docs/analysis/gap-matrix.md`, `docs/analysis/parity-spec.md`, `docs/analysis/competitors/*.md`
+- `.planning/codebase/*.md`
+- `.planning/phases/*`
+- `.planning/persona-loops/*`
+- `docs/analysis/gap-matrix.md`
+- `docs/analysis/parity-spec.md`
+- `docs/analysis/competitors/*.md`
+- `docs/decisions/*.md`
+- `docs/kcs/*.md`
 
 ---
-*Last updated: 2026-02-28 after brownfield initialization*
+*Last updated: 2026-02-28 during GSD recovery normalization pass*

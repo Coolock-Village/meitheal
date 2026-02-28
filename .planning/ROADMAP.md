@@ -1,19 +1,13 @@
 # Meitheal — Roadmap
 
-## Phase Overview
+## Planning Model
 
-| Phase | Name | Status | Iterations |
-|-------|------|--------|------------|
-| 1 | Foundation & Vertical Slice | ✅ Complete | 4 persona loop iterations |
-| 2 | Integration Deepening | ✅ Complete | 1 persona loop iteration |
-| 3 | PWA & Offline-First | ✅ Complete | 1 persona loop iteration |
-| 4 | Cloud Runtime | ✅ Complete | 1 persona loop + 50-persona audit |
-| 5 | Market Parity | ✅ Complete | 3 persona loop iterations (0 findings) |
-| 6 | Functional UI & Feature Parity | 📋 Not started | — |
-| 15 | UX Parity & Board Domain Separation | ✅ Complete | Kanban UX, boards, RICE filters, custom fields |
-| 16 | Astro Optimizations & UX | ✅ Complete | TW migration, component extraction, a11y, perf |
-| 17 | Full 50-Persona Audit | 📋 Not started | Every domain, function, and addition audited |
-| 18 | Vikunja Card Parity + E2E | ✅ Complete | Task detail modal, command palette, comments, extended fields |
+This roadmap uses the dual-track model defined in `.planning/README.md`:
+
+1. **Primary Delivery**: phases `01-06` (core release progression)
+2. **Extension Track**: phases `15-18` (parallel expansion workstreams)
+
+Primary Delivery drives completion math and merge/release readiness.
 
 ## Analysis Baseline
 
@@ -22,61 +16,94 @@
 - Parity contract: `docs/analysis/parity-spec.md`
 - Per-competitor details: `docs/analysis/competitors/*.md`
 
-## Phase 1: Foundation & Vertical Slice ✅
+## Phase Overview
 
-**Goal:** Architecture docs, monorepo scaffold, CI/governance, one end-to-end vertical slice.
+### Primary Delivery (`01-06`)
 
-**Delivered:**
+| Phase | Name | Status | Evidence |
+|------|------|--------|----------|
+| 01 | Foundation & Vertical Slice | ✅ Complete | `01-01-SUMMARY.md` |
+| 02 | Integration Deepening | ✅ Complete | `02-01..02-04-SUMMARY.md` |
+| 03 | PWA & Offline-First | ✅ Complete | `03-01..03-03-SUMMARY.md` |
+| 04 | Cloud Runtime | ✅ Complete | `04-01..04-02-SUMMARY.md` |
+| 05 | Market Parity | ✅ Complete | `05-01..05-04-SUMMARY.md` |
+| 06 | Functional UI & Feature Parity | 📋 Planned | `06-01..06-04-PLAN.md` are draft/pre-execution |
 
-- DDD monorepo with 5 domain packages
-- HA add-on: Dockerfile, ingress auth, Alloy config, Grafana dashboard
-- Vertical slice: task create → framework fields → calendar sync → confirmation → audit trail
-- Vikunja-compatible API: 7 routes with voice assistant interop
-- 33 tests passing, 6-job CI pipeline
-- Structured observability: compat logging, redaction, perf budgets, schema drift
+### Extension Track (`15-18`)
 
-**Persona Loop:** 4 iterations, OA-401 through OA-412 all closed.
+| Phase | Name | Status | Evidence |
+|------|------|--------|----------|
+| 15 | UX Parity & Board Domain Separation | 📋 Planned | `15-CONTEXT.md` |
+| 16 | Astro Optimizations & UX | 📋 Planned | `16-CONTEXT.md` |
+| 17 | Full 50-Persona Audit | 📋 Planned | `17-CONTEXT.md` |
+| 18 | Vikunja Card Parity + E2E | 📋 Planned | `18-CONTEXT.md` |
 
-**Source:** `.planning/persona-loops/phase-1/iteration-01..04/`
+## Primary Delivery Details
 
-## Phase 2: Integration Deepening 🔜
+## Phase 01: Foundation & Vertical Slice ✅
 
-**Goal:** Webhook emission, Grocy adapter, n8n/Node-RED integration, security hardening.
+Goal: establish Astro-first monorepo, DDD package boundaries, HA add-on runtime, observability baseline, and first end-to-end vertical slice.
 
-**RFC:** `docs/decisions/0006-iteration-05-integrations-rfc.md`
+Execution artifacts:
+- `.planning/phases/01-foundation-vertical-slice/01-CONTEXT.md`
+- `.planning/phases/01-foundation-vertical-slice/01-01-PLAN.md`
+- `.planning/phases/01-foundation-vertical-slice/01-01-SUMMARY.md`
 
-**Key deliverables:**
+## Phase 02: Integration Deepening ✅
 
-- HMAC-signed webhook emission for all domain events
-- Grocy stock check adapter (ingredient checks on task create)
-- Grafana dashboards for webhook/integration metrics
-- SSRF hardening for `/api/unfurl`
-- Rate limiting on compat API
-- KCS runbook for webhook setup
+Goal: integration primitives (webhooks/rate limiting/Grocy/KCS integration docs).
 
-## Phase 3: PWA & Offline-First 📋
+Execution artifacts:
+- `.planning/phases/02-integration-deepening/02-CONTEXT.md`
+- `.planning/phases/02-integration-deepening/02-01..02-04-PLAN.md`
+- `.planning/phases/02-integration-deepening/02-01..02-04-SUMMARY.md`
 
-**Goal:** Local-first PWA with service worker, IndexedDB queue, background sync, deterministic conflict resolution.
+## Phase 03: PWA & Offline-First ✅
 
-**Dependencies:** Phase 2 webhook infrastructure (sync conflict events)
+Goal: PWA shell, offline store/sync foundations, and operator guidance.
 
-## Phase 4: Cloud Runtime 📋
+Execution artifacts:
+- `.planning/phases/03-pwa-offline-first/03-CONTEXT.md`
+- `.planning/phases/03-pwa-offline-first/03-01..03-03-PLAN.md`
+- `.planning/phases/03-pwa-offline-first/03-01..03-03-SUMMARY.md`
 
-**Goal:** Cloudflare Workers adapter + D1, dual-runtime deployment.
+## Phase 04: Cloud Runtime ✅
 
-**Existing scaffold:** `apps/api/` skeleton
+Goal: Cloudflare Worker + D1 runtime path and deployment/runbook baseline.
 
-## Phase 5: Market Parity 📋
+Execution artifacts:
+- `.planning/phases/04-cloud-runtime/04-CONTEXT.md`
+- `.planning/phases/04-cloud-runtime/04-01..04-02-PLAN.md`
+- `.planning/phases/04-cloud-runtime/04-01..04-02-SUMMARY.md`
 
-**Goal:** Match Super Productivity + Vikunja core workflows. Passkeys/WebAuthn, rich links, Obsidian sync.
+## Phase 05: Market Parity ✅
 
-**Parity-driven deliverables:**
+Goal: security/auth hardening, worker API maturity, governance/docs closure.
 
-- Rich custom fields + forms logic with conditional UI.
-- Portfolio/workload/priority workflow (RICE/DRICE/HEART overlays).
-- Mobile/offline/collaboration parity improvements from PWA foundation.
-- Integration ecosystem depth (Grocy, n8n, Node-RED, calendars, knowledge links).
-- Parity verification against `docs/analysis/parity-spec.md`.
+Execution artifacts:
+- `.planning/phases/05-market-parity/05-CONTEXT.md`
+- `.planning/phases/05-market-parity/05-01..05-04-PLAN.md`
+- `.planning/phases/05-market-parity/05-01..05-04-SUMMARY.md`
+
+## Phase 06: Functional UI & Feature Parity 📋
+
+Goal: functional UI completion across dashboard/list/kanban/table/labels/projects and polish.
+
+Current state:
+- `06-01..06-04-PLAN.md` exist as draft/pre-execution plans.
+- No summary files by design until execution starts.
+- `gsd-tools init progress` reports this phase as `in_progress` heuristically because plans exist; canonical roadmap status remains `planned` under the draft-plan exception in `.planning/README.md`.
+
+## Extension Track Details
+
+Phases `15-18` remain context-only planning artifacts and are not counted as complete.
+They can be promoted into active execution by creating phase plans and summaries per `.planning/README.md` rules.
+
+## Open Blockers (Roadmap-Level)
+
+1. PR #1 has failing required checks to clear before merge.
+2. `perf-budgets` exceeded the current client bundle threshold (`81416 > 65536`) in CI runs `22519148342` and `22519149376`.
+3. CodeQL status needs check-suite reconciliation due stale failure reporting vs newer successful dynamic runs.
 
 ---
-*Last updated: 2026-02-28 after brownfield initialization*
+*Last updated: 2026-02-28 during GSD recovery normalization pass*

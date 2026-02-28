@@ -2,6 +2,45 @@
 
 Last updated: 2026-02-28 (Europe/Dublin)
 
+## GSD Recovery Normalization Update (2026-02-28)
+
+This section supersedes earlier "all phases complete" language in legacy planning docs.
+
+### Normalized phase map
+
+1. Primary Delivery (`01-06`):
+- `01` complete
+- `02` complete
+- `03` complete
+- `04` complete
+- `05` complete
+- `06` planned (draft plans only, pre-execution)
+2. Extension Track (`15-18`):
+- `15` planned
+- `16` planned
+- `17` planned
+- `18` planned
+
+### Remaining blockers
+
+1. PR #1 required checks still need cleanup before merge.
+2. `perf-budgets` failure observed in CI (`22519148342`, `22519149376`): `clientBytes=81416` vs `65536` limit.
+3. CodeQL check history showed a stale failing entry in one suite view (`65241355688`) while newer dynamic runs succeeded; status reconciliation is required.
+
+### Exact next commands
+
+1. Planning/state sanity
+- `node /home/ryan/.config/opencode/get-shit-done/bin/gsd-tools.cjs init resume`
+- `node /home/ryan/.config/opencode/get-shit-done/bin/gsd-tools.cjs init progress`
+2. Check gate triage
+- `gh pr checks 1`
+- `gh run list --limit 20`
+- `gh run view 22519149376 --job 65241337743 --log-failed`
+3. Local guardrail rerun
+- `npx pnpm check`
+- `npx pnpm --filter @meitheal/tests test`
+- `npx pnpm --filter @meitheal/web perf:budget`
+
 ## Repository State
 
 - Repo: `Coolock-Village/meitheal`
@@ -146,4 +185,3 @@ All iteration-04 OAs are closed. Next: start iteration-05 per docs/decisions/000
 Keep Astro-first/native, env-only token auth, DDD boundaries, and HA publishing contract intact.
 Do not regress existing required checks: governance, typecheck-and-tests, ha-harness, migration-check, schema-drift, perf-budgets.
 ```
-
