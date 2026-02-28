@@ -286,6 +286,13 @@ export async function ensureSchema(): Promise<void> {
     await client.execute("ALTER TABLE tasks ADD COLUMN is_favorite INTEGER NOT NULL DEFAULT 0");
   }
 
+  // Phase 20: Agile hierarchy — epic/story/task type
+  if (!(await hasColumn(client, "tasks", "task_type"))) {
+    await client.execute("ALTER TABLE tasks ADD COLUMN task_type TEXT NOT NULL DEFAULT 'task'");
+  }
+  await client.execute("CREATE INDEX IF NOT EXISTS tasks_task_type_idx ON tasks(task_type)");
+
+
   // Phase 18: Comments table
   await client.execute(`
     CREATE TABLE IF NOT EXISTS comments (
@@ -297,6 +304,41 @@ export async function ensureSchema(): Promise<void> {
       FOREIGN KEY (task_id) REFERENCES tasks(id) ON DELETE CASCADE
     )
   `);
+
+  // Kanban swim lanes — server-persisted lane configuration
+  await client.execute(`
+    CREATE TABLE IF NOT EXISTS kanban_lanes (
+      id TEXT PRIMARY KEY,
+      key TEXT NOT NULL UNIQUE,
+      label TEXT NOT NULL,
+      icon TEXT NOT NULL DEFAULT '📌',
+      position INTEGER NOT NULL DEFAULT 0,
+      wip_limit INTEGER NOT NULL DEFAULT 0,
+      includes TEXT NOT NULL DEFAULT '[]',
+      built_in INTEGER NOT NULL DEFAULT 0,
+      created_at INTEGER NOT NULL,
+      updated_at INTEGER NOT NULL
+    )
+  `);
+
+  // Seed default lanes if none exist
+  const laneCount = await client.execute("SELECT COUNT(*) as cnt FROM kanban_lanes");
+  if (Number(laneCount.rows[0]?.cnt ?? 0) === 0) {
+    const now = Date.now();
+    const defaultLanes = [
+      { id: "lane-pending", key: "pending", label: "Pending", icon: "📋", position: 0, includes: '["pending","todo"]', builtIn: 1 },
+      { id: "lane-active", key: "active", label: "Active", icon: "⚡", position: 1, includes: '["active","in_progress"]', builtIn: 1 },
+      { id: "lane-complete", key: "complete", label: "Complete", icon: "✅", position: 2, includes: '["complete","done"]', builtIn: 1 },
+    ];
+    for (const lane of defaultLanes) {
+      await client.execute({
+        sql: "INSERT INTO kanban_lanes (id, key, label, icon, position, wip_limit, includes, built_in, created_at, updated_at) VALUES (?, ?, ?, ?, ?, 0, ?, ?, ?, ?)",
+        args: [lane.id, lane.key, lane.label, lane.icon, lane.position, lane.includes, lane.builtIn, now, now],
+      });
+    }
+  }
+
+  await client.execute("CREATE INDEX IF NOT EXISTS kanban_lanes_position_idx ON kanban_lanes(position)");
 
   await client.execute("CREATE INDEX IF NOT EXISTS tasks_status_idx ON tasks(status)");
   await client.execute("CREATE INDEX IF NOT EXISTS tasks_priority_idx ON tasks(priority)");

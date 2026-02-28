@@ -102,7 +102,7 @@ const priorityColors: Record<number, string> = {
             >Due Date</th
           >
           <th class="sortable" data-col="rice" style="width: 80px;">RICE</th>
-          <th style="width: 70px;">Cal</th>
+          <th style="width: 70px;" title="Calendar Sync">📅</th>
           <th style="width: 100px;">Custom Fields</th>
           <th style="width: 80px;">Actions</th>
         </tr>
@@ -522,7 +522,20 @@ const priorityColors: Record<number, string> = {
       if ((e.target as HTMLElement)?.contentEditable === "true") return;
       if (e.key === "l") window.location.href = "/tasks";
       if (e.key === "k") window.location.href = "/kanban";
+      if (e.key === "d") window.location.href = "/";
     });
+
+    // Detect table horizontal overflow for scroll shadow
+    const tableContainer = document.querySelector(".table-container");
+    if (tableContainer) {
+      const checkScroll = () => {
+        const hasScroll =
+          tableContainer.scrollWidth > tableContainer.clientWidth;
+        tableContainer.classList.toggle("has-scroll", hasScroll);
+      };
+      checkScroll();
+      window.addEventListener("resize", checkScroll);
+    }
   </script>
 </Layout>
 

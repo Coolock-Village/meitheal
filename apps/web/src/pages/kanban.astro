@@ -5,10 +5,11 @@ import {
   getPersistenceClient,
 } from "@domains/tasks/persistence/store";
 
+await ensureSchema();
+const client = getPersistenceClient();
+
 let tasks: Record<string, unknown>[] = [];
 try {
-  await ensureSchema();
-  const client = getPersistenceClient();
   const result = await client.execute(
     "SELECT id, title, description, status, priority, due_date, labels, framework_payload, calendar_sync_state, board_id, custom_fields, start_date, end_date, progress, color, is_favorite, created_at FROM tasks ORDER BY priority ASC, created_at DESC",
   );
@@ -17,29 +18,64 @@ try {
   /* DB not available */
 }
 
-const columns = [
-  {
-    key: "pending",
-    label: "Pending",
-    icon: "📋",
-    includes: ["pending", "todo"],
-    builtIn: true,
-  },
-  {
-    key: "active",
-    label: "Active",
-    icon: "⚡",
-    includes: ["active", "in_progress"],
-    builtIn: true,
-  },
-  {
-    key: "complete",
-    label: "Complete",
-    icon: "✅",
-    includes: ["complete", "done"],
-    builtIn: true,
-  },
-];
+let columns: {
+  key: string;
+  label: string;
+  icon: string;
+  includes: string[];
+  builtIn: boolean;
+  wipLimit: number;
+  id: string;
+}[] = [];
+try {
+  const laneResult = await client.execute(
+    "SELECT id, key, label, icon, position, wip_limit, includes, built_in FROM kanban_lanes ORDER BY position ASC",
+  );
+  columns = laneResult.rows.map((r: Record<string, unknown>) => ({
+    id: String(r.id),
+    key: String(r.key),
+    label: String(r.label),
+    icon: String(r.icon),
+    includes: JSON.parse(String(r.includes ?? "[]")),
+    builtIn: Number(r.built_in ?? 0) === 1,
+    wipLimit: Number(r.wip_limit ?? 0),
+  }));
+} catch {
+  /* fallback to defaults */
+}
+
+// Fallback if no lanes in DB
+if (columns.length === 0) {
+  columns = [
+    {
+      id: "lane-pending",
+      key: "pending",
+      label: "Pending",
+      icon: "📋",
+      includes: ["pending", "todo"],
+      builtIn: true,
+      wipLimit: 0,
+    },
+    {
+      id: "lane-active",
+      key: "active",
+      label: "Active",
+      icon: "⚡",
+      includes: ["active", "in_progress"],
+      builtIn: true,
+      wipLimit: 0,
+    },
+    {
+      id: "lane-complete",
+      key: "complete",
+      label: "Complete",
+      icon: "✅",
+      includes: ["complete", "done"],
+      builtIn: true,
+      wipLimit: 0,
+    },
+  ];
+}
 
 const priorityLabels: Record<number, string> = {
   1: "Critical",
@@ -104,16 +140,22 @@ const priorityColors: Record<number, string> = {
     </div>
   </div>
 
-  <div class="kanban-board">
+  <div
+    class="kanban-board"
+    style={`grid-template-columns: repeat(${columns.length}, 1fr);`}
+  >
     {
       columns.map((col) => {
         const colTasks = tasks.filter((t) =>
           col.includes.includes(String(t.status)),
         );
+        const wipExceeded = col.wipLimit > 0 && colTasks.length > col.wipLimit;
         return (
           <div
-            class="kanban-column"
+            class={`kanban-column${wipExceeded ? " wip-exceeded" : ""}`}
             data-status={col.key}
+            data-lane-id={col.id}
+            data-wip-limit={String(col.wipLimit)}
             ondrop="handleDrop(event)"
             ondragover="event.preventDefault(); this.classList.add('drag-over')"
             ondragleave="this.classList.remove('drag-over')"
@@ -122,7 +164,17 @@ const priorityColors: Record<number, string> = {
               <span>
                 {col.icon} {col.label}
               </span>
-              <span class="kanban-count">{colTasks.length}</span>
+              <span class="kanban-header-right">
+                {col.wipLimit > 0 && (
+                  <span
+                    class={`kanban-wip${wipExceeded ? " wip-over" : ""}`}
+                    title={`WIP limit: ${col.wipLimit}`}
+                  >
+                    {colTasks.length}/{col.wipLimit}
+                  </span>
+                )}
+                <span class="kanban-count">{colTasks.length}</span>
+              </span>
             </div>
             <div class="kanban-cards">
               {colTasks.map((task) => {
@@ -564,44 +616,40 @@ const priorityColors: Record<number, string> = {
       });
     });
 
-    // Lane management (client-side with localStorage)
-    const LANE_KEY = "meitheal-kanban-lanes";
+    // Lane management (API-backed, server-persisted)
     const manageLanesBtn = document.getElementById("manage-lanes-btn");
     const laneMgmt = document.getElementById("lane-mgmt");
     const laneList = document.getElementById("lane-list");
     const newLaneInput = document.getElementById("new-lane-input");
     const addLaneBtn = document.getElementById("add-lane-btn");
 
-    function getCustomLanes() {
+    async function fetchLanes() {
       try {
-        return JSON.parse(localStorage.getItem(LANE_KEY) || "[]");
-      } catch {
-        return [];
-      }
+        const res = await fetch("/api/lanes");
+        if (res.ok) {
+          const data = await res.json();
+          return data.lanes || [];
+        }
+      } catch {}
+      return [];
     }
 
-    function saveCustomLanes(lanes) {
-      localStorage.setItem(LANE_KEY, JSON.stringify(lanes));
-    }
-
-    function renderLaneList() {
-      const builtInKeys = ["pending", "active", "complete"];
-      const allLanes = [
-        { key: "pending", label: "Pending", builtIn: true },
-        { key: "active", label: "Active", builtIn: true },
-        { key: "complete", label: "Complete", builtIn: true },
-        ...getCustomLanes(),
-      ];
-      laneList.innerHTML = allLanes
+    async function renderLaneList() {
+      const lanes = await fetchLanes();
+      laneList.innerHTML = lanes
         .map(
-          (lane) => `
-        <div class="lane-item" style="display: flex; align-items: center; gap: 8px; padding: 4px 0;">
+          (lane, idx) => `
+        <div class="lane-item" data-id="${lane.id}" data-position="${lane.position}" style="display: flex; align-items: center; gap: 8px; padding: 6px 0; border-bottom: 1px solid var(--border);">
+          <span class="lane-drag-handle" style="cursor: grab; color: var(--text-muted); font-size: 12px;" title="Drag to reorder">⠿</span>
           <span style="flex: 1; font-size: 13px;">${lane.builtIn ? "🔒" : "📌"} ${lane.label}</span>
+          <label style="font-size: 11px; color: var(--text-muted); display: flex; align-items: center; gap: 4px;" title="WIP limit (0 = unlimited)">
+            WIP: <input type="number" class="lane-wip-input" data-id="${lane.id}" value="${lane.wip_limit}" min="0" max="99" style="width: 40px; font-size: 11px; padding: 2px 4px; border: 1px solid var(--border); border-radius: 4px; background: var(--bg-card); color: var(--text-primary);" />
+          </label>
           ${
             !lane.builtIn
               ? `
-            <button class="lane-edit" data-key="${lane.key}" title="Rename" style="background:none;border:none;cursor:pointer;color:var(--text-muted);">✏️</button>
-            <button class="lane-remove" data-key="${lane.key}" title="Remove" style="background:none;border:none;cursor:pointer;color:var(--danger);">×</button>
+            <button class="lane-edit" data-id="${lane.id}" data-label="${lane.label}" title="Rename" style="background:none;border:none;cursor:pointer;color:var(--text-muted);font-size:14px;">✏️</button>
+            <button class="lane-remove" data-id="${lane.id}" title="Remove" style="background:none;border:none;cursor:pointer;color:var(--danger);font-size:14px;">×</button>
           `
               : '<span style="font-size:11px;color:var(--text-muted);">built-in</span>'
           }
@@ -610,270 +658,136 @@ const priorityColors: Record<number, string> = {
         )
         .join("");
 
+      // WIP limit change handlers
+      laneList.querySelectorAll(".lane-wip-input").forEach((input) => {
+        input.addEventListener("change", async () => {
+          const laneId = input.dataset.id;
+          const wipLimit = Math.max(0, parseInt(input.value) || 0);
+          try {
+            await fetch(`/api/lanes/${laneId}`, {
+              method: "PUT",
+              headers: { "content-type": "application/json" },
+              body: JSON.stringify({ wip_limit: wipLimit }),
+            });
+            window.location.reload();
+          } catch {}
+        });
+      });
+
       // Edit handlers
       laneList.querySelectorAll(".lane-edit").forEach((btn) => {
-        btn.addEventListener("click", () => {
-          const key = btn.dataset.key;
-          const lanes = getCustomLanes();
-          const lane = lanes.find((l) => l.key === key);
-          if (!lane) return;
-          const newName = prompt("Rename lane:", lane.label);
+        btn.addEventListener("click", async () => {
+          const laneId = btn.dataset.id;
+          const currentLabel = btn.dataset.label;
+          const newName = prompt("Rename lane:", currentLabel);
           if (newName?.trim()) {
-            lane.label = newName.trim();
-            saveCustomLanes(lanes);
-            window.location.reload();
+            try {
+              await fetch(`/api/lanes/${laneId}`, {
+                method: "PUT",
+                headers: { "content-type": "application/json" },
+                body: JSON.stringify({ label: newName.trim() }),
+              });
+              window.location.reload();
+            } catch {}
           }
         });
       });
 
       // Remove handlers
       laneList.querySelectorAll(".lane-remove").forEach((btn) => {
-        btn.addEventListener("click", () => {
-          const key = btn.dataset.key;
-          const lanes = getCustomLanes().filter((l) => l.key !== key);
-          saveCustomLanes(lanes);
+        btn.addEventListener("click", async () => {
+          const laneId = btn.dataset.id;
+          if (!confirm("Delete this lane? Tasks in it will move to Pending."))
+            return;
+          try {
+            await fetch(`/api/lanes/${laneId}`, { method: "DELETE" });
+            window.location.reload();
+          } catch {}
+        });
+      });
+
+      // Drag to reorder lanes
+      let draggedItem = null;
+      laneList.querySelectorAll(".lane-item").forEach((item) => {
+        const handle = item.querySelector(".lane-drag-handle");
+        if (!handle) return;
+
+        handle.addEventListener("mousedown", () => {
+          item.setAttribute("draggable", "true");
+        });
+        handle.addEventListener("mouseup", () => {
+          item.removeAttribute("draggable");
+        });
+
+        item.addEventListener("dragstart", (e) => {
+          draggedItem = item;
+          item.style.opacity = "0.5";
+          e.dataTransfer.effectAllowed = "move";
+        });
+        item.addEventListener("dragend", async () => {
+          item.style.opacity = "";
+          item.removeAttribute("draggable");
+          draggedItem = null;
+
+          // Collect new order and save positions
+          const items = laneList.querySelectorAll(".lane-item");
+          const updates = [];
+          items.forEach((el, idx) => {
+            updates.push(
+              fetch(`/api/lanes/${el.dataset.id}`, {
+                method: "PUT",
+                headers: { "content-type": "application/json" },
+                body: JSON.stringify({ position: idx }),
+              }),
+            );
+          });
+          await Promise.all(updates);
           window.location.reload();
+        });
+        item.addEventListener("dragover", (e) => {
+          e.preventDefault();
+          if (draggedItem && draggedItem !== item) {
+            const rect = item.getBoundingClientRect();
+            const mid = rect.top + rect.height / 2;
+            if (e.clientY < mid) {
+              item.parentElement.insertBefore(draggedItem, item);
+            } else {
+              item.parentElement.insertBefore(draggedItem, item.nextSibling);
+            }
+          }
         });
       });
     }
 
-    // T-1904: Toggle lanes panel — use 'flex' to preserve centered layout
+    // T-1904: Toggle lanes panel
     manageLanesBtn?.addEventListener("click", () => {
       const isOpen = laneMgmt.style.display !== "none";
       laneMgmt.style.display = isOpen ? "none" : "flex";
       if (!isOpen) renderLaneList();
     });
 
-    // T-1905: Lane creation with validation (1-50 chars, strip HTML)
-    addLaneBtn?.addEventListener("click", () => {
+    // T-1905: Lane creation via API
+    addLaneBtn?.addEventListener("click", async () => {
       const raw = newLaneInput.value.trim();
       const name = raw.replace(/<[^>]*>/g, "");
       if (!name || name.length < 1 || name.length > 50) {
         alert("Lane name must be 1-50 characters");
         return;
       }
-      const key = name.toLowerCase().replace(/[^a-z0-9]+/g, "_");
-      const lanes = getCustomLanes();
-      if (lanes.some((l) => l.key === key)) {
-        alert("Lane already exists");
-        return;
-      }
-      lanes.push({
-        key,
-        label: name,
-        icon: "📌",
-        includes: [key],
-        builtIn: false,
-      });
-      saveCustomLanes(lanes);
-      window.location.reload();
-    });
-
-    // Inject custom lane columns into the DOM on page load
-    function injectCustomColumns() {
-      const customLanes = getCustomLanes();
-      if (customLanes.length === 0) return;
-
-      const board = document.querySelector(".kanban-board");
-      if (!board) return;
-
-      // Fetch all tasks to check for tasks in custom statuses
-      const allTasks = window.__kanbanAllTasks || [];
-
-      customLanes.forEach((lane) => {
-        // Don't duplicate if column already exists
-        if (board.querySelector(`[data-status="${lane.key}"]`)) return;
-
-        const col = document.createElement("div");
-        col.className = "kanban-column";
-        col.dataset.status = lane.key;
-        col.ondrop = (e) => handleDrop(e);
-        col.ondragover = (e) => {
-          e.preventDefault();
-          col.classList.add("drag-over");
-        };
-        col.ondragleave = () => col.classList.remove("drag-over");
-
-        // Find tasks matching this lane
-        const laneTasks = allTasks.filter((t) =>
-          lane.includes.includes(String(t.status)),
-        );
-
-        col.innerHTML = `
-          <div class="kanban-column-header">
-            <span>${lane.icon} ${lane.label}</span>
-            <span class="kanban-count">${laneTasks.length}</span>
-          </div>
-          <div class="kanban-cards">
-            ${laneTasks.length === 0 ? '<div class="kanban-empty">Drop tasks here</div>' : ""}
-            ${laneTasks
-              .map((task) => {
-                const p = Number(task.priority ?? 3);
-                const pLabels = {
-                  1: "Critical",
-                  2: "High",
-                  3: "Medium",
-                  4: "Low",
-                  5: "Minimal",
-                };
-                const pColors = {
-                  1: "#ef4444",
-                  2: "#f59e0b",
-                  3: "#3b82f6",
-                  4: "#10b981",
-                  5: "#6b7280",
-                };
-                return `
-                <div class="kanban-card" draggable="true" data-id="${task.id}"
-                  data-title="${(task.title || "").replace(/"/g, "&quot;")}"
-                  data-desc="${(task.description || "").slice(0, 200).replace(/"/g, "&quot;")}"
-                  data-priority="${p}"
-                  data-status="${task.status || "pending"}"
-                  ondragstart="event.dataTransfer.setData('text/plain', this.dataset.id); this.classList.add('dragging');"
-                  ondragend="this.classList.remove('dragging');"
-                  style="border-left: 3px solid ${task.color || pColors[p]};">
-                  <div class="kanban-card-header">
-                    <div class="kanban-card-title">${task.title}</div>
-                    ${Number(task.is_favorite) === 1 ? '<span class="kanban-fav" title="Favorite">★</span>' : ""}
-                  </div>
-                  ${task.description ? `<div class="kanban-card-desc">${task.description.slice(0, 80)}${task.description.length > 80 ? "…" : ""}</div>` : ""}
-                  <div class="kanban-card-meta">
-                    <span class="priority-dot" style="background: ${pColors[p]}" title="${pLabels[p]}"></span>
-                    <span style="color: ${pColors[p]}; font-size: 11px;">${pLabels[p]}</span>
-                    ${task.due_date ? `<span class="kanban-card-due">📅 ${String(task.due_date).split("T")[0]}</span>` : ""}
-                    ${(() => {
-                      try {
-                        const fp = JSON.parse(task.framework_payload || "{}");
-                        const rice =
-                          fp.reach && fp.impact && fp.confidence && fp.effort
-                            ? Math.round(
-                                (fp.reach * fp.impact * fp.confidence) /
-                                  fp.effort,
-                              )
-                            : null;
-                        return rice
-                          ? `<span class="kanban-rice-badge">RICE: ${rice}</span>`
-                          : "";
-                      } catch {
-                        return "";
-                      }
-                    })()}
-                  </div>
-                  ${Number(task.progress || 0) > 0 ? `<div class="kanban-progress"><div class="kanban-progress-track"><div class="kanban-progress-bar" style="width: ${task.progress}%"></div></div><span class="kanban-progress-text">${task.progress}%</span></div>` : ""}
-                  ${(() => {
-                    try {
-                      const lbls = JSON.parse(task.labels || "[]");
-                      return Array.isArray(lbls) && lbls.length > 0
-                        ? `<div class="kanban-labels">${lbls.map((l) => `<span class="label-chip">${typeof l === "string" ? l : l.name}</span>`).join("")}</div>`
-                        : "";
-                    } catch {
-                      return "";
-                    }
-                  })()}
-                  ${(() => {
-                    try {
-                      const cf = JSON.parse(task.custom_fields || "{}");
-                      const keys = Object.keys(cf);
-                      return keys.length > 0
-                        ? `<div class="kanban-custom-fields">${keys
-                            .slice(0, 4)
-                            .map(
-                              (k) =>
-                                `<span class="kanban-cf-chip" title="${k}: ${cf[k]}">${k}: ${String(cf[k]).slice(0, 20)}</span>`,
-                            )
-                            .join(
-                              "",
-                            )}${keys.length > 4 ? `<span class="kanban-cf-chip">+${keys.length - 4} more</span>` : ""}</div>`
-                        : "";
-                    } catch {
-                      return "";
-                    }
-                  })()}
-                  <div class="kanban-card-actions">
-                    <button class="card-action-btn card-edit-btn" data-id="${task.id}" title="Edit task">✏️</button>
-                    <button class="card-action-btn card-ai-btn" data-title="${(task.title || "").replace(/"/g, "&quot;")}" data-desc="${(task.description || "").replace(/"/g, "&quot;")}" data-status="${task.status || "pending"}" data-priority="${p}" title="Ask AI">🤖</button>
-                    <button class="card-action-btn card-dup-btn" data-id="${task.id}" title="Duplicate">⧉</button>
-                  </div>
-                </div>`;
-              })
-              .join("")}
-          </div>
-          <button class="kanban-add-btn" data-status="${lane.key}" aria-label="Add task to ${lane.label}">+ Add Task</button>
-        `;
-
-        board.appendChild(col);
-
-        // Wire up inline add for the new column
-        const addBtn = col.querySelector(".kanban-add-btn");
-        if (addBtn) {
-          addBtn.addEventListener("click", () => {
-            const existing =
-              addBtn.parentElement.querySelector(".kanban-inline-add");
-            if (existing) {
-              existing.querySelector("input")?.focus();
-              return;
-            }
-            const status = addBtn.dataset.status;
-            const form = document.createElement("div");
-            form.className = "kanban-inline-add";
-            form.style.cssText = "display:flex;gap:6px;margin-top:8px;";
-            form.innerHTML = `
-              <input type="text" class="form-input" placeholder="Task title..." style="flex:1;font-size:13px;padding:6px 10px;" autofocus />
-              <button class="btn btn-primary" style="font-size:13px;padding:6px 12px;">Add</button>
-            `;
-            addBtn.parentElement.insertBefore(form, addBtn);
-            addBtn.style.display = "none";
-            const input2 = form.querySelector("input");
-            const submitBtn = form.querySelector("button");
-            input2.focus();
-            async function submitNew() {
-              const title = input2.value.trim();
-              if (!title) {
-                form.remove();
-                addBtn.style.display = "";
-                return;
-              }
-              try {
-                const res = await fetch("/api/tasks", {
-                  method: "POST",
-                  headers: { "content-type": "application/json" },
-                  body: JSON.stringify({ title, status }),
-                });
-                if (res.ok) window.location.reload();
-              } catch {}
-            }
-            submitBtn.addEventListener("click", submitNew);
-            input2.addEventListener("keydown", (e) => {
-              if (e.key === "Enter") {
-                e.preventDefault();
-                submitNew();
-              }
-              if (e.key === "Escape") {
-                form.remove();
-                addBtn.style.display = "";
-              }
-            });
-          });
-        }
-      });
-
-      // Update grid to accommodate all columns
-      const totalCols = board.querySelectorAll(".kanban-column").length;
-      board.style.gridTemplateColumns = `repeat(${totalCols}, 1fr)`;
-    }
-
-    // Store tasks data for client-side custom column rendering
-    window.__kanbanAllTasks = [];
-    (async function () {
       try {
-        const res = await fetch("/api/tasks?limit=500");
+        const res = await fetch("/api/lanes", {
+          method: "POST",
+          headers: { "content-type": "application/json" },
+          body: JSON.stringify({ label: name }),
+        });
         if (res.ok) {
-          const data = await res.json();
-          window.__kanbanAllTasks = data.tasks || [];
+          window.location.reload();
+        } else {
+          const err = await res.json();
+          alert(err.error || "Failed to create lane");
         }
       } catch {}
-      injectCustomColumns();
-    })();
+    });
 
     // T-1907: Search filters Kanban cards in real-time
     (() => {
@@ -1021,7 +935,6 @@ const priorityColors: Record<number, string> = {
 <style>
   .kanban-board {
     display: grid;
-    grid-template-columns: repeat(3, 1fr);
     gap: 16px;
     min-height: calc(100vh - 140px);
   }
@@ -1038,7 +951,6 @@ const priorityColors: Record<number, string> = {
   /* Tablet: horizontal scroll with minimum column widths */
   @media (min-width: 769px) and (max-width: 1024px) {
     .kanban-board {
-      grid-template-columns: repeat(3, minmax(280px, 1fr));
       overflow-x: auto;
     }
   }
@@ -1071,6 +983,37 @@ const priorityColors: Record<number, string> = {
     border-radius: 12px;
     font-size: 12px;
     color: var(--text-secondary);
+  }
+  .kanban-header-right {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+  }
+  .kanban-wip {
+    font-size: 11px;
+    padding: 1px 6px;
+    border-radius: 4px;
+    background: rgba(16, 185, 129, 0.1);
+    color: var(--accent);
+  }
+  .kanban-wip.wip-over {
+    background: rgba(239, 68, 68, 0.15);
+    color: var(--danger);
+    font-weight: 600;
+    animation: wip-pulse 1.5s ease-in-out infinite;
+  }
+  .kanban-column.wip-exceeded {
+    border-color: var(--danger);
+    background: rgba(239, 68, 68, 0.03);
+  }
+  @keyframes wip-pulse {
+    0%,
+    100% {
+      opacity: 1;
+    }
+    50% {
+      opacity: 0.6;
+    }
   }
   .kanban-cards {
     flex: 1;

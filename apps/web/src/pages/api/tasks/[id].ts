@@ -2,6 +2,8 @@ import type { APIRoute } from "astro";
 import type { InValue } from "@libsql/client";
 import { ensureSchema, getPersistenceClient } from "@domains/tasks/persistence/store";
 import { stripHtml } from "../../../lib/strip-html";
+import { VALID_TASK_TYPES } from "@meitheal/domain-tasks";
+import type { TaskType } from "@meitheal/domain-tasks";
 
 /** GET /api/tasks/[id], PUT /api/tasks/[id], DELETE /api/tasks/[id] */
 
@@ -12,7 +14,7 @@ export const GET: APIRoute = async ({ params }) => {
     sql: `SELECT id, title, description, status, priority, due_date, labels,
                  framework_payload, calendar_sync_state, board_id, custom_fields,
                  parent_id, time_tracked, start_date, end_date, progress, color,
-                 is_favorite, created_at, updated_at
+                 is_favorite, task_type, created_at, updated_at
           FROM tasks WHERE id = ? LIMIT 1`,
     args: [params.id!],
   });
@@ -50,7 +52,6 @@ export const PUT: APIRoute = async ({ params, request }) => {
   }
 
   // Input sanitization — same rules as POST
-  const allowedStatuses = ["pending", "active", "in_progress", "complete", "done", "todo"];
   const sanitized: Record<string, InValue> = {};
 
   if (typeof body.title === "string") {
@@ -71,12 +72,13 @@ export const PUT: APIRoute = async ({ params, request }) => {
     sanitized.description = stripHtml(body.description.slice(0, 10000));
   }
   if (typeof body.status === "string") {
-    if (!allowedStatuses.includes(body.status)) {
-      return new Response(JSON.stringify({ error: `Invalid status. Allowed: ${allowedStatuses.join(", ")}` }), {
+    const st = body.status.trim().toLowerCase().replace(/[^a-z0-9_]/g, "");
+    if (!st || st.length > 50) {
+      return new Response(JSON.stringify({ error: "status must be 1-50 alphanumeric/underscore characters" }), {
         status: 400, headers: { "content-type": "application/json" },
       });
     }
-    sanitized.status = body.status;
+    sanitized.status = st;
   }
   if (typeof body.priority === "number") {
     sanitized.priority = Math.min(5, Math.max(1, Math.round(body.priority)));
@@ -118,6 +120,13 @@ export const PUT: APIRoute = async ({ params, request }) => {
   if (typeof body.time_tracked === "number") {
     sanitized.time_tracked = Math.max(0, Math.round(body.time_tracked));
   }
+  // Phase 20: Agile hierarchy type
+  if (typeof body.task_type === "string") {
+    const tt = body.task_type.trim().toLowerCase();
+    if (VALID_TASK_TYPES.includes(tt as TaskType)) {
+      sanitized.task_type = tt;
+    }
+  }
 
   const updates: string[] = [];
   const args: InValue[] = [];
@@ -148,7 +157,7 @@ export const PUT: APIRoute = async ({ params, request }) => {
     sql: `SELECT id, title, description, status, priority, due_date, labels,
                  framework_payload, calendar_sync_state, board_id, custom_fields,
                  parent_id, time_tracked, start_date, end_date, progress, color,
-                 is_favorite, created_at, updated_at
+                 is_favorite, task_type, created_at, updated_at
           FROM tasks WHERE id = ? LIMIT 1`,
     args: [params.id!],
   });

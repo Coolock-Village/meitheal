@@ -3,14 +3,14 @@
   "captured_at": "2026-02-28",
   "runner": "ubuntu-24.04 / node 22",
   "sample_runs": 16,
-  "rationale": "Budget aligned with default budgets after Phase 06/15-18 execution added functional UI (task CRUD, kanban, table, dashboard, command palette). Client bundle grew from 5578 to 81700 bytes as designed.",
+  "rationale": "Budget updated for Phase 19 production polish: mobile responsive CSS, keyboard nav, due-date badges, stat-card-danger, table scroll shadow, collapsed columns. Growth from 81700 to ~108KB is legitimate production CSS.",
   "observed_max": {
-    "clientBytes": 81700,
+    "clientBytes": 107835,
     "rssKb": 195688,
     "p95Ms": 23.6
   },
   "budgets": {
-    "clientBytesMax": 81920,
+    "clientBytesMax": 112640,
     "rssKbMax": 225280,
     "p95MsMax": 250
   }

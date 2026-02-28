@@ -34,7 +34,7 @@ async function loadBudgets(scriptDir) {
   const configuredPath = process.env.MEITHEAL_PERF_BUDGET_FILE;
   let budgets = { ...defaultBudgets };
 
-  const shouldLoadBaseline = Boolean(configuredPath) || process.env.GITHUB_ACTIONS === "true";
+  const shouldLoadBaseline = true; // Always try baseline first, fall back to defaults if missing
   if (shouldLoadBaseline) {
     const baselinePath = configuredPath
       ? path.resolve(process.cwd(), configuredPath)

@@ -1,0 +1,136 @@
+import type { APIRoute } from "astro";
+import type { InValue } from "@libsql/client";
+import { ensureSchema, getPersistenceClient } from "@domains/tasks/persistence/store";
+import { stripHtml } from "../../../lib/strip-html";
+
+/** PUT /api/lanes/[id], DELETE /api/lanes/[id] */
+
+export const PUT: APIRoute = async ({ params, request }) => {
+  await ensureSchema();
+  const client = getPersistenceClient();
+  const body = (await request.json().catch(() => ({}))) as Record<string, unknown>;
+
+  const existing = await client.execute({
+    sql: "SELECT id, built_in FROM kanban_lanes WHERE id = ? LIMIT 1",
+    args: [params.id!],
+  });
+  if (existing.rows.length === 0) {
+    return new Response(JSON.stringify({ error: "Lane not found" }), {
+      status: 404,
+      headers: { "content-type": "application/json" },
+    });
+  }
+
+  const now = Date.now();
+  const updates: string[] = [];
+  const args: InValue[] = [];
+
+  if (typeof body.label === "string") {
+    const label = stripHtml(body.label.trim());
+    if (!label || label.length < 1 || label.length > 50) {
+      return new Response(JSON.stringify({ error: "label must be 1-50 characters" }), {
+        status: 400,
+        headers: { "content-type": "application/json" },
+      });
+    }
+    updates.push("label = ?");
+    args.push(label);
+  }
+  if (typeof body.icon === "string") {
+    updates.push("icon = ?");
+    args.push(body.icon.slice(0, 4));
+  }
+  if (typeof body.position === "number") {
+    updates.push("position = ?");
+    args.push(Math.max(0, Math.round(body.position)));
+  }
+  if (typeof body.wip_limit === "number") {
+    updates.push("wip_limit = ?");
+    args.push(Math.max(0, Math.round(body.wip_limit)));
+  }
+  if (typeof body.includes === "string") {
+    try {
+      const parsed = JSON.parse(body.includes);
+      if (Array.isArray(parsed)) {
+        updates.push("includes = ?");
+        args.push(body.includes);
+      }
+    } catch { /* skip invalid JSON */ }
+  }
+
+  if (updates.length === 0) {
+    return new Response(JSON.stringify({ error: "No fields to update" }), {
+      status: 400,
+      headers: { "content-type": "application/json" },
+    });
+  }
+
+  updates.push("updated_at = ?");
+  args.push(now);
+  args.push(params.id!);
+
+  await client.execute({
+    sql: `UPDATE kanban_lanes SET ${updates.join(", ")} WHERE id = ?`,
+    args,
+  });
+
+  const updated = await client.execute({
+    sql: "SELECT id, key, label, icon, position, wip_limit, includes, built_in, created_at, updated_at FROM kanban_lanes WHERE id = ? LIMIT 1",
+    args: [params.id!],
+  });
+
+  const row = updated.rows[0] as Record<string, unknown>;
+  return new Response(JSON.stringify({
+    id: row.id,
+    key: row.key,
+    label: row.label,
+    icon: row.icon,
+    position: Number(row.position ?? 0),
+    wip_limit: Number(row.wip_limit ?? 0),
+    includes: typeof row.includes === "string" ? JSON.parse(String(row.includes)) : [],
+    builtIn: Number(row.built_in ?? 0) === 1,
+    created_at: row.created_at,
+    updated_at: row.updated_at,
+  }), {
+    status: 200,
+    headers: { "content-type": "application/json" },
+  });
+};
+
+export const DELETE: APIRoute = async ({ params }) => {
+  await ensureSchema();
+  const client = getPersistenceClient();
+
+  const existing = await client.execute({
+    sql: "SELECT id, built_in, key FROM kanban_lanes WHERE id = ? LIMIT 1",
+    args: [params.id!],
+  });
+  if (existing.rows.length === 0) {
+    return new Response(JSON.stringify({ error: "Lane not found" }), {
+      status: 404,
+      headers: { "content-type": "application/json" },
+    });
+  }
+
+  const row = existing.rows[0] as Record<string, unknown>;
+  if (Number(row.built_in ?? 0) === 1) {
+    return new Response(JSON.stringify({ error: "Cannot delete built-in lane" }), {
+      status: 403,
+      headers: { "content-type": "application/json" },
+    });
+  }
+
+  // Move tasks in this lane's status back to "pending"
+  const key = String(row.key);
+  await client.execute({
+    sql: "UPDATE tasks SET status = 'pending', updated_at = ? WHERE status = ?",
+    args: [Date.now(), key],
+  });
+
+  await client.execute({ sql: "DELETE FROM kanban_lanes WHERE id = ?", args: [params.id!] });
+
+  return new Response(JSON.stringify({ deleted: true, tasksReassigned: key }), {
+    status: 200,
+    headers: { "content-type": "application/json" },
+  });
+};
