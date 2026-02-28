@@ -510,6 +510,32 @@
   .stat-card {
     @apply bg-bg-card border border-border rounded-lg p-4 flex items-center shadow-sm;
     gap: 12px;
+    transition: transform 0.2s ease, box-shadow 0.2s ease, border-color 0.2s ease;
+    cursor: default;
+  }
+
+  .stat-card:hover {
+    transform: translateY(-2px) scale(1.02);
+    box-shadow: 0 4px 20px rgba(16, 185, 129, 0.12), var(--shadow-sm);
+    border-color: var(--accent);
+  }
+
+  @keyframes flash-success {
+    0% {
+      box-shadow: 0 0 0 0 rgba(16, 185, 129, 0.4);
+    }
+
+    50% {
+      box-shadow: 0 0 12px 4px rgba(16, 185, 129, 0.25);
+    }
+
+    100% {
+      box-shadow: 0 0 0 0 rgba(16, 185, 129, 0);
+    }
+  }
+
+  .flash-success {
+    animation: flash-success 0.6s ease;
   }
 
   .stat-card-danger {
@@ -924,4 +950,29 @@
 /* ===== Skip-to-content (a11y) ===== */
 .skip-to-content {
   @apply sr-only focus:not-sr-only focus:fixed focus:top-4 focus:left-4 focus:z-[100] focus:bg-accent focus:text-white focus:px-4 focus:py-2 focus:rounded-md focus:shadow-lg;
+}
+
+/* ===== Keyboard Shortcuts Modal ===== */
+.shortcut-modal-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 70;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(0, 0, 0, 0.6);
+}
+
+.shortcut-modal-overlay.hidden {
+  display: none !important;
+}
+
+.shortcut-modal-content {
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  padding: 24px 32px;
+  max-width: 360px;
+  width: 90%;
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.4);
 }

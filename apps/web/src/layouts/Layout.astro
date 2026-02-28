@@ -1606,17 +1606,21 @@ try {
     <!-- Keyboard Shortcuts Modal -->
     <div
       id="shortcut-modal"
-      class="hidden"
-      style="position:fixed;inset:0;z-index:70;display:flex;align-items:center;justify-content:center;background:rgba(0,0,0,0.6);"
-      onclick="this.classList.add('hidden')"
+      class="shortcut-modal-overlay hidden"
     >
       <div
-        style="background:var(--bg-card);border:1px solid var(--border);border-radius:12px;padding:24px 32px;max-width:360px;width:90%;box-shadow:0 8px 32px rgba(0,0,0,0.4);"
+        class="shortcut-modal-content"
         onclick="arguments[0].stopPropagation()"
       >
-        <h3 style="margin:0 0 16px;font-size:16px;color:var(--accent);">
-          ⌨ Keyboard Shortcuts
-        </h3>
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px;">
+          <h3 style="margin:0;font-size:16px;color:var(--accent);">
+            ⌨ Keyboard Shortcuts
+          </h3>
+          <button
+            id="shortcut-modal-close"
+            style="background:none;border:none;color:var(--text-muted);cursor:pointer;font-size:18px;padding:4px 8px;"
+            aria-label="Close shortcuts">✕</button>
+        </div>
         <div
           style="display:grid;grid-template-columns:auto 1fr;gap:8px 16px;font-size:13px;"
         >
@@ -1655,5 +1659,16 @@ try {
         </div>
       </div>
     </div>
+
+    <script>
+      // Shortcut modal: close on overlay click or close button
+      const shortcutOverlay = document.getElementById("shortcut-modal");
+      shortcutOverlay?.addEventListener("click", (e) => {
+        if (e.target === shortcutOverlay) shortcutOverlay.classList.add("hidden");
+      });
+      document.getElementById("shortcut-modal-close")?.addEventListener("click", () => {
+        shortcutOverlay?.classList.add("hidden");
+      });
+    </script>
   </body>
 </html>
