@@ -158,7 +158,7 @@ All 11 phases complete and container-verified:
 8. ✅ Per-Domain Audit — HA integration, tasks, settings, kanban
 9. ✅ Gap Analysis Audit — Vikunja labels, Quick Add Magic, security
 10. ✅ UX & Feature Coverage — a11y, keyboard shortcuts, label chips
-11. ✅ Vikunja Feature Audit — duplicate task, swimlanes, OpenAPI
+11. ✅ Phase 20: Epic/Story/Task Agile Board hierarchy with kanban grouping
 
 - 37 source files, 0 typecheck errors
 - Container-tested on `ghcr.io/home-assistant/amd64-base:3.20`

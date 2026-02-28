@@ -782,7 +782,7 @@ const typeConfig: Record<
       const lanes = await fetchLanes();
       laneList.innerHTML = lanes
         .map(
-          (lane, idx) => `
+          (lane) => `
         <div class="lane-item" data-id="${lane.id}" data-position="${lane.position}" style="display: flex; align-items: center; gap: 8px; padding: 6px 0; border-bottom: 1px solid var(--border);">
           <span class="lane-drag-handle" style="cursor: grab; color: var(--text-muted); font-size: 12px;" title="Drag to reorder">⠿</span>
           <span style="flex: 1; font-size: 13px;">${lane.builtIn ? "🔒" : "📌"} ${lane.label}</span>

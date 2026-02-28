@@ -84,6 +84,11 @@ paths:
           schema:
             type: string
             enum: [pending, active, in_progress, complete, done]
+        - name: task_type
+          in: query
+          schema:
+            type: string
+            enum: [epic, story, task]
         - name: priority
           in: query
           schema:
@@ -382,6 +387,9 @@ components:
         status:
           type: string
           enum: [pending, active, in_progress, complete, done]
+        task_type:
+          type: string
+          enum: [epic, story, task]
         priority:
           type: integer
           minimum: 1
@@ -419,6 +427,10 @@ components:
         status:
           type: string
           default: pending
+        task_type:
+          type: string
+          enum: [epic, story, task]
+          default: task
         priority:
           type: integer
           default: 3

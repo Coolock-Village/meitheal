@@ -33,6 +33,16 @@ export const POST: APIRoute = async ({ request }) => {
         }
 
         const client = getPersistenceClient();
+
+        // Phase 20 (Security Audit): Limit total boards to prevent abuse
+        const countRes = await client.execute("SELECT COUNT(*) as c FROM boards");
+        if (Number(countRes.rows[0]?.c || 0) >= 50) {
+            return new Response(JSON.stringify({ error: "Maximum board limit (50) reached" }), {
+                status: 429,
+                headers: { "content-type": "application/json" },
+            });
+        }
+
         const id = title.toLowerCase().replace(/[^a-z0-9]+/g, "_").replace(/^_|_$/g, "");
         const icon = String(body.icon ?? "📋").slice(0, 10);
         const color = typeof body.color === "string" && /^#([0-9a-fA-F]{3}|[0-9a-fA-F]{6})$/.test(body.color) ? body.color : "#10b981";

@@ -129,9 +129,10 @@ export async function processSyncQueue(
       if (op.retryCount < MAX_RETRIES) {
         await incrementRetryCount(op.id)
         const delay = RETRY_DELAYS_MS[op.retryCount] ?? RETRY_DELAYS_MS[RETRY_DELAYS_MS.length - 1]!
+        console.warn(`[sync-engine] op ${op.id} failed, retrying in ${delay}ms...`)
         emitSyncEvent({
           type: "sync-error",
-          error: `Offline. Retrying sync in ${delay / 1000}s...`,
+          error: `Network unstable. Retrying in ${delay / 1000}s...`,
         })
         await new Promise((r) => setTimeout(r, delay))
         break; // Break queue if the network is completely down
@@ -141,8 +142,8 @@ export async function processSyncQueue(
           type: "sync-error",
           error: `Sync failed permanently for operation ${op.id}.`,
         })
+        console.error(`[sync-engine] Operation ${op.id} failed:`, error)
       }
-      console.error(`[sync-engine] Operation ${op.id} failed:`, error)
     }
   }
 

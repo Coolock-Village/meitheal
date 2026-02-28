@@ -38,6 +38,9 @@
 | R-502 | Strict input sanitization & rate limiting headers | 20 | P0 | `autonomous.md` |
 | R-503 | Advanced robust offline sync architecture | 20 | P1 | `autonomous.md` |
 | R-504 | Global accessibility focus traps & contrast | 20 | P1 | `autonomous.md` |
+| R-511 | CSV/JSON task export capability | 21 | P0 | `autonomous.md` |
+| R-512 | SQLite direct DB download backup | 21 | P0 | `autonomous.md` |
+| R-513 | Import/Export user preferences/settings | 21 | P1 | `autonomous.md` |
 
 ## Out of Scope
 
