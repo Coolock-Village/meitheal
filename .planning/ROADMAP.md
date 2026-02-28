@@ -147,6 +147,13 @@ Current state:
 - Planning out JSON/CSV task export tools, local SQLite DB download, and settings backup.
 - Execution plans `21-01` through `21-03` mapped.
 
+## Phase 22: AI Context Generation & Routing 🤖
+
+Current state:
+
+- Planned out `22-01` to construct task metadata prompts and route users to configured LLM providers (ChatGPT, Claude, Gemini, Ollama).
+- Satisfies the integrations panel settings added in Phase 7.
+
 ## Open Blockers (Roadmap-Level)
 
 1. PR #1 still has failing required checks.
