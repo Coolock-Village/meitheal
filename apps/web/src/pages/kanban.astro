@@ -10,9 +10,9 @@ const client = getPersistenceClient();
 
 let tasks: Record<string, unknown>[] = [];
 try {
-  const result = await client.execute(
-    "SELECT id, title, description, status, priority, due_date, labels, framework_payload, calendar_sync_state, board_id, custom_fields, start_date, end_date, progress, color, is_favorite, task_type, created_at FROM tasks ORDER BY priority ASC, created_at DESC",
-  );
+    const result = await client.execute(
+      "SELECT id, title, description, status, priority, due_date, labels, framework_payload, calendar_sync_state, board_id, custom_fields, start_date, end_date, progress, color, is_favorite, task_type, parent_id, created_at FROM tasks ORDER BY priority ASC, created_at DESC",
+    );
   tasks = result.rows as Record<string, unknown>[];
 } catch (e) {
   /* DB not available */
@@ -264,6 +264,15 @@ const typeConfig: Record<
                     <div class="swimlane-cards">
                       {/* Cards moved here by JS when grouping is active */}
                     </div>
+                    <button
+                      class="kanban-add-btn swimlane-add-btn"
+                      style="margin-top: 8px; font-size: 13px; color: var(--text-muted); background: none; border: 1px dashed var(--border); width: 100%; text-align: left; padding: 6px 12px; border-radius: 6px;"
+                      data-status={col.key}
+                      data-task-type={type}
+                      aria-label={`Add ${type} to ${col.label}`}
+                    >
+                      + Add {type}
+                    </button>
                   </div>
                 );
               })}
@@ -276,6 +285,8 @@ const typeConfig: Record<
                   typeof task.framework_payload === "string"
                     ? JSON.parse(String(task.framework_payload))
                     : {};
+                // Phase 20: Sub-task indicator (ADHD Optimization)
+                const childCount = tasks.filter((t) => t.parent_id === task.id).length;
                 const rice =
                   fp.reach && fp.impact && fp.confidence && fp.effort
                     ? Math.round(
@@ -358,10 +369,15 @@ const typeConfig: Record<
                             ? "🔴"
                             : dueStatus === "today"
                               ? "🟡"
-                              : "🟢"}{" "}
-                          {String(task.due_date).split("T")[0]}
+                              : "📅"}{" "}
+                          {dueDate?.toLocaleDateString()}
                         </span>
                       ) : null}
+                      {childCount > 0 && (
+                        <span class="kanban-card-due" title={`${childCount} sub-tasks`} style="color:var(--text-primary);">
+                          ↳ {childCount} sub-tasks
+                        </span>
+                      )}
                       {rice ? (
                         <span class="kanban-rice-badge">RICE: {rice}</span>
                       ) : null}
@@ -685,6 +701,7 @@ const typeConfig: Record<
         }
 
         const status = btn.dataset.status;
+        const taskType = btn.dataset.taskType;
         const form = document.createElement("div");
         form.className = "kanban-inline-add";
         form.style.cssText = "display:flex;gap:6px;margin-top:8px;";
@@ -706,10 +723,12 @@ const typeConfig: Record<
             return;
           }
           try {
+            const payload = { title, status };
+            if (taskType) payload.task_type = taskType;
             const res = await fetch("/api/tasks", {
               method: "POST",
               headers: { "content-type": "application/json" },
-              body: JSON.stringify({ title, status }),
+              body: JSON.stringify(payload),
             });
             if (res.ok) window.location.reload();
           } catch {
@@ -1062,20 +1081,26 @@ const typeConfig: Record<
               allBtn?.classList.remove("active");
             }
           }
-          applyTypeFilter();
+          applyTypeFilters();
         });
       });
 
-      function applyTypeFilter() {
-        document.querySelectorAll(".kanban-card").forEach((card) => {
-          const cardType = card.dataset.taskType || "task";
-          card.style.display = activeTypes.has(cardType) ? "" : "none";
-        });
-        // Also filter swimlane groups
-        document.querySelectorAll(".swimlane-group").forEach((group) => {
-          const groupType = group.dataset.swimlaneType;
-          if (isGrouped) {
-            group.style.display = activeTypes.has(groupType) ? "" : "none";
+      function applyTypeFilters() {
+        // Find visible types using safe match
+        const btnTypes = Array.from(
+          document.querySelectorAll(".type-filter-btn.active")
+        ).map((b) => b.getAttribute("data-type") || "");
+
+        // 1. Filter flat cards
+        document.querySelectorAll(".flat-card").forEach((c) => {
+          const ct = String(c.getAttribute("data-task-type") || "task").toLowerCase();
+          // Graceful fallback: treat invalid types as "task" for filtering
+          const safeType = ["epic", "story", "task"].includes(ct) ? ct : "task";
+          
+          if (btnTypes.includes("all") || btnTypes.includes(safeType)) {
+            c.style.display = "";
+          } else {
+            c.style.display = "none";
           }
         });
         updateColumnCounts();
@@ -1149,7 +1174,7 @@ const typeConfig: Record<
             });
           }
         });
-        applyTypeFilter();
+        applyTypeFilters();
       });
 
       // Swimlane header collapse toggle
