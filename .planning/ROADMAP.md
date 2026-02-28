@@ -11,8 +11,9 @@
 | 5 | Market Parity | ✅ Complete | 3 persona loop iterations (0 findings) |
 | 6 | Functional UI & Feature Parity | 📋 Not started | — |
 | 15 | UX Parity & Board Domain Separation | ✅ Complete | Kanban UX, boards, RICE filters, custom fields |
-| 16 | Astro Optimizations & UX | 📋 Not started | Performance, UX polish |
+| 16 | Astro Optimizations & UX | ✅ Complete | TW migration, component extraction, a11y, perf |
 | 17 | Full 50-Persona Audit | 📋 Not started | Every domain, function, and addition audited |
+| 18 | Vikunja Card Parity + E2E | 📋 Not started | Rich task detail, command palette, e2e testing |
 
 ## Analysis Baseline
 
