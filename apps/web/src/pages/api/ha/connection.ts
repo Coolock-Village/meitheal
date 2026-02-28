@@ -26,7 +26,7 @@ export const GET: APIRoute = async () => {
         mode: "unconfigured",
         message: "No HA credentials configured (SUPERVISOR_TOKEN or HA_BASE_URL + HA_TOKEN)",
       }),
-      { status: 200, headers: { "content-type": "application/json" } }
+      { status: 200, headers: { "content-type": "application/json", "cache-control": "no-store" } }
     );
   }
 
@@ -68,8 +68,8 @@ export const GET: APIRoute = async () => {
         time_zone: config.time_zone ?? "UTC",
         components: Array.isArray(config.components)
           ? (config.components as string[]).filter((c) =>
-              ["calendar", "todo", "automation", "script", "webhook"].includes(c)
-            )
+            ["calendar", "todo", "automation", "script", "webhook"].includes(c)
+          )
           : [],
       }),
       { status: 200, headers: { "content-type": "application/json" } }

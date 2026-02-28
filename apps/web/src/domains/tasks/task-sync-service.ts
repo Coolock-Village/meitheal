@@ -42,18 +42,26 @@ export interface CreateTaskAndSyncResult {
   idempotentReplay: boolean;
 }
 
-function mapStoredResponseToResult(stored: PersistedTaskResponse): CreateTaskAndSyncResult {
+function buildResult(
+  persisted: PersistedTaskResponse,
+  events: CreateTaskPlan["events"],
+  idempotentReplay: boolean
+): CreateTaskAndSyncResult {
   return {
     task: {
-      id: stored.task.id,
-      title: stored.task.title,
-      status: stored.task.status,
-      frameworkPayload: stored.task.frameworkPayload as Record<string, unknown>
+      id: persisted.task.id,
+      title: persisted.task.title,
+      status: persisted.task.status,
+      frameworkPayload: (persisted.task.frameworkPayload ?? {}) as Record<string, unknown>
     },
-    events: [],
-    integration: stored.integration,
-    idempotentReplay: true
+    events,
+    integration: persisted.integration,
+    idempotentReplay
   };
+}
+
+function mapStoredResponseToResult(stored: PersistedTaskResponse): CreateTaskAndSyncResult {
+  return buildResult(stored, [], true);
 }
 
 function isIdempotencyConflict(error: unknown): boolean {
@@ -115,17 +123,7 @@ export async function createTaskAndSyncCalendar(
       }
     });
 
-    return {
-      task: {
-        id: disabledResult.task.id,
-        title: disabledResult.task.title,
-        status: disabledResult.task.status,
-        frameworkPayload: disabledResult.task.frameworkPayload as Record<string, unknown>
-      },
-      events: plan.events,
-      integration: disabledResult.integration,
-      idempotentReplay: false
-    };
+    return buildResult(disabledResult, plan.events, false);
   }
 
   const calendarCreateInput = {
@@ -146,15 +144,5 @@ export async function createTaskAndSyncCalendar(
     result: calendarResult
   });
 
-  return {
-    task: {
-      id: persisted.task.id,
-      title: persisted.task.title,
-      status: persisted.task.status,
-      frameworkPayload: persisted.task.frameworkPayload as Record<string, unknown>
-    },
-    events: plan.events,
-    integration: persisted.integration,
-    idempotentReplay: false
-  };
+  return buildResult(persisted, plan.events, false);
 }
