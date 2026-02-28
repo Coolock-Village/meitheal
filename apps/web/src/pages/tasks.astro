@@ -10,7 +10,7 @@ try {
   await ensureSchema();
   const client = getPersistenceClient();
   const result = await client.execute(
-    "SELECT id, title, description, status, priority, due_date, labels, framework_payload, calendar_sync_state, created_at, updated_at FROM tasks ORDER BY created_at DESC",
+    "SELECT id, title, description, status, priority, due_date, labels, framework_payload, calendar_sync_state, board_id, custom_fields, created_at, updated_at FROM tasks ORDER BY created_at DESC",
   );
   tasks = result.rows as Record<string, unknown>[];
 } catch (e) {
@@ -90,11 +90,19 @@ const statusLabels: Record<string, string> = {
       <option value="4">Low</option>
       <option value="5">Minimal</option>
     </select>
+    <select class="form-select" id="filter-rice" style="max-width: 150px;" aria-label="Filter by RICE score">
+      <option value="">All RICE</option>
+      <option value="high">High (≥15)</option>
+      <option value="medium">Medium (8–14)</option>
+      <option value="low">Low (&lt;8)</option>
+    </select>
     <select class="form-select" id="sort-select" style="max-width: 160px;">
       <option value="created_at-desc">Newest First</option>
       <option value="created_at-asc">Oldest First</option>
       <option value="priority-asc">Priority ↑</option>
       <option value="priority-desc">Priority ↓</option>
+      <option value="rice-desc">RICE ↓</option>
+      <option value="rice-asc">RICE ↑</option>
       <option value="title-asc">Title A-Z</option>
       <option value="due_date-asc">Due Soonest</option>
     </select>
@@ -135,6 +143,7 @@ const statusLabels: Record<string, string> = {
               data-id={String(task.id)}
               data-status={s}
               data-priority={String(p)}
+              data-rice={rice !== null ? String(rice) : ""}
               data-title={String(task.title).toLowerCase()}
             >
               <input
@@ -741,6 +750,10 @@ Can you help me break this down, suggest next steps, estimate effort, or identif
         document.getElementById("filter-priority") as HTMLSelectElement
       ).value;
 
+      const riceFilter = (
+        document.getElementById("filter-rice") as HTMLSelectElement
+      ).value;
+
       document.querySelectorAll(".task-item").forEach((item) => {
         const el = item as HTMLElement;
         const matchTitle = !search || (el.dataset.title ?? "").includes(search);
@@ -751,8 +764,19 @@ Can you help me break this down, suggest next steps, estimate effort, or identif
             (el.dataset.status === "done" || el.dataset.status === "complete"));
         const matchPriority =
           !priorityFilter || el.dataset.priority === priorityFilter;
+
+        let matchRice = true;
+        if (riceFilter && el.dataset.rice) {
+          const r = Number(el.dataset.rice);
+          if (riceFilter === "high") matchRice = r >= 15;
+          else if (riceFilter === "medium") matchRice = r >= 8 && r < 15;
+          else if (riceFilter === "low") matchRice = r < 8;
+        } else if (riceFilter && !el.dataset.rice) {
+          matchRice = false; // No RICE score = doesn't match any RICE filter
+        }
+
         el.style.display =
-          matchTitle && matchStatus && matchPriority ? "" : "none";
+          matchTitle && matchStatus && matchPriority && matchRice ? "" : "none";
       });
     }
 
@@ -766,6 +790,10 @@ Can you help me break this down, suggest next steps, estimate effort, or identif
       .getElementById("filter-priority")
       ?.addEventListener("change", applyFilters);
 
+    document
+      .getElementById("filter-rice")
+      ?.addEventListener("change", applyFilters);
+
     // OA-611: Persist filter/sort state in localStorage
     function saveFilterState() {
       const state = {
@@ -777,6 +805,9 @@ Can you help me break this down, suggest next steps, estimate effort, or identif
             ?.value ?? "",
         priority:
           (document.getElementById("filter-priority") as HTMLSelectElement)
+            ?.value ?? "",
+        rice:
+          (document.getElementById("filter-rice") as HTMLSelectElement)
             ?.value ?? "",
         sort:
           (document.getElementById("sort-select") as HTMLSelectElement)
@@ -792,6 +823,9 @@ Can you help me break this down, suggest next steps, estimate effort, or identif
       ?.addEventListener("change", saveFilterState);
     document
       .getElementById("filter-priority")
+      ?.addEventListener("change", saveFilterState);
+    document
+      .getElementById("filter-rice")
       ?.addEventListener("change", saveFilterState);
     document
       .getElementById("sort-select")
@@ -813,6 +847,10 @@ Can you help me break this down, suggest next steps, estimate effort, or identif
           (
             document.getElementById("filter-priority") as HTMLSelectElement
           ).value = state.priority;
+        if (state.rice)
+          (
+            document.getElementById("filter-rice") as HTMLSelectElement
+          ).value = state.rice;
         if (state.sort)
           (document.getElementById("sort-select") as HTMLSelectElement).value =
             state.sort;
@@ -820,6 +858,18 @@ Can you help me break this down, suggest next steps, estimate effort, or identif
       }
     } catch {
       /* ignore */
+    }
+
+    // Hash deep-link: #edit-{id} opens task edit
+    const hash = window.location.hash;
+    if (hash.startsWith("#edit-")) {
+      const taskId = hash.slice(6);
+      const taskItem = document.querySelector(`.task-item[data-id="${taskId}"]`);
+      if (taskItem) {
+        taskItem.scrollIntoView({ behavior: "smooth", block: "center" });
+        const editBtn = taskItem.querySelector(".edit-btn") as HTMLElement;
+        if (editBtn) setTimeout(() => editBtn.click(), 300);
+      }
     }
 
     // Keyboard shortcuts
