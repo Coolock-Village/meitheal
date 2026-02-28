@@ -1106,7 +1106,8 @@ try {
               const riceRes = await fetch("/api/settings");
               if (riceRes.ok) {
                 const allSettings = await riceRes.json();
-                riceEnabled = allSettings["rice-scoring-enabled"] === true || allSettings["rice-scoring-enabled"] === "true";
+                const fw = allSettings["frameworks_enabled"];
+                riceEnabled = fw?.rice === true;
               }
             } catch { /* default to false */ }
 
