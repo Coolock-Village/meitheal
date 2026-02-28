@@ -316,8 +316,23 @@ function relativeTime(dueDate: string): string {
     });
 
     // Header "+ New Task" button → focus Quick Add input
-    document.getElementById("quick-add-btn")?.addEventListener("click", () => {
-      (document.getElementById("quick-title") as HTMLInputElement)?.focus();
+    document.getElementById("quick-add-btn")?.addEventListener("click", async () => {
+      try {
+        const activeBoard = (window as any).__activeBoard ?? "default";
+        const res = await fetch("/api/tasks", {
+          method: "POST",
+          headers: { "content-type": "application/json" },
+          body: JSON.stringify({ title: "Untitled Task", board_id: activeBoard === "all" ? "default" : activeBoard }),
+        });
+        if (!res.ok) { showToast("Failed to create task", "error"); return; }
+        const task = await res.json();
+        showToast("Task created — fill in the details");
+        if (typeof (window as any).openTaskDetail === "function") {
+          (window as any).openTaskDetail(task.id);
+        }
+      } catch {
+        showToast("Network error", "error");
+      }
     });
 
     // Keyboard shortcut: n -> focus quick add

@@ -9,11 +9,20 @@ await ensureSchema();
 const client = getPersistenceClient();
 
 let tasks: Record<string, unknown>[] = [];
+let commentCounts: Record<string, number> = {};
 try {
     const result = await client.execute(
-      "SELECT id, title, description, status, priority, due_date, labels, framework_payload, calendar_sync_state, board_id, custom_fields, start_date, end_date, progress, color, is_favorite, task_type, parent_id, created_at FROM tasks ORDER BY priority ASC, created_at DESC",
+      "SELECT id, title, description, status, priority, due_date, labels, framework_payload, calendar_sync_state, board_id, custom_fields, start_date, end_date, progress, color, is_favorite, task_type, parent_id, created_at, updated_at FROM tasks ORDER BY priority ASC, created_at DESC",
     );
   tasks = result.rows as Record<string, unknown>[];
+  // Comment count aggregation (competitor parity: Jira/Asana/Linear show comment counts)
+  try {
+    const ccResult = await client.execute("SELECT task_id, COUNT(*) as cnt FROM comments GROUP BY task_id");
+    for (const row of ccResult.rows) {
+      const r = row as Record<string, unknown>;
+      commentCounts[String(r.task_id)] = Number(r.cnt);
+    }
+  } catch { /* comments table may not exist yet */ }
 } catch (e) {
   /* DB not available */
 }
@@ -393,6 +402,11 @@ const typeConfig: Record<
                       {String(task.calendar_sync_state) === "confirmed" && (
                         <span class="kanban-sync-badge" title="Calendar synced">
                           📅✓
+                        </span>
+                      )}
+                      {(commentCounts[String(task.id)] ?? 0) > 0 && (
+                        <span class="kanban-card-due" title={`${commentCounts[String(task.id)] ?? 0} comments`} style="color:var(--text-primary);">
+                          💬 {commentCounts[String(task.id)] ?? 0}
                         </span>
                       )}
                     </div>
