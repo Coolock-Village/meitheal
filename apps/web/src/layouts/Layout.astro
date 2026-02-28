@@ -1263,11 +1263,18 @@ try {
 
       async function saveTD(field: string, value: unknown) {
         if (!currentTaskId) return;
-        await fetch(`/api/tasks/${currentTaskId}`, {
-          method: "PUT",
-          headers: { "content-type": "application/json" },
-          body: JSON.stringify({ [field]: value }),
-        });
+        try {
+          const res = await fetch(`/api/tasks/${currentTaskId}`, {
+            method: "PUT",
+            headers: { "content-type": "application/json" },
+            body: JSON.stringify({ [field]: value }),
+          });
+          if (!res.ok) {
+            console.warn(`[saveTD] Failed to save ${field}:`, res.status);
+          }
+        } catch (err) {
+          console.warn(`[saveTD] Network error saving ${field}:`, err);
+        }
       }
 
       // Auto-save on change
