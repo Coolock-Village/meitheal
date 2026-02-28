@@ -50,7 +50,13 @@ try {
     <link rel="stylesheet" href="/styles/global.css" />
   </head>
   <body>
-    <nav class="sidebar" id="sidebar">
+    <a href="#main-content" class="skip-link">Skip to content</a>
+    <nav
+      class="sidebar"
+      id="sidebar"
+      role="navigation"
+      aria-label="Main navigation"
+    >
       <div class="sidebar-header">
         <div class="logo">
           <span class="logo-icon">☘</span>
@@ -59,38 +65,63 @@ try {
       </div>
       <ul class="nav-links">
         <li>
-          <a href="/" class="nav-link" data-page="dashboard"
-            ><span class="nav-icon">📊</span> Dashboard</a
+          <a
+            href="/"
+            class="nav-link"
+            data-page="dashboard"
+            aria-label="Dashboard"><span class="nav-icon">📊</span> Dashboard</a
           >
         </li>
         <li>
-          <a href="/tasks" class="nav-link" data-page="tasks"
-            ><span class="nav-icon">✅</span> Tasks <span class="nav-badge"
-              >{taskCounts.total}</span
+          <a
+            href="/tasks"
+            class="nav-link"
+            data-page="tasks"
+            aria-label="Tasks ({taskCounts.total} total)"
+            ><span class="nav-icon">✅</span> Tasks <span
+              class="nav-badge"
+              aria-label="{taskCounts.total} tasks">{taskCounts.total}</span
             ></a
           >
         </li>
         <li>
-          <a href="/kanban" class="nav-link" data-page="kanban"
-            ><span class="nav-icon">▦</span> Kanban <span class="nav-badge"
+          <a
+            href="/kanban"
+            class="nav-link"
+            data-page="kanban"
+            aria-label="Kanban board ({taskCounts.active} active)"
+            ><span class="nav-icon">▦</span> Kanban <span
+              class="nav-badge"
+              aria-label="{taskCounts.active} active tasks"
               >{taskCounts.active}</span
             ></a
           >
         </li>
         <li>
-          <a href="/table" class="nav-link" data-page="table"
-            ><span class="nav-icon">⊞</span> Table</a
+          <a
+            href="/table"
+            class="nav-link"
+            data-page="table"
+            aria-label="Table view"><span class="nav-icon">⊞</span> Table</a
           >
         </li>
         <li>
-          <a href="/settings" class="nav-link" data-page="settings"
-            ><span class="nav-icon">⚙</span> Settings</a
+          <a
+            href="/settings"
+            class="nav-link"
+            data-page="settings"
+            aria-label="Settings"><span class="nav-icon">⚙</span> Settings</a
           >
         </li>
       </ul>
       <div class="sidebar-footer">
-        <div class="status-indicator" id="connection-status">
-          <span class="status-dot"></span>
+        <div
+          class="status-indicator"
+          id="connection-status"
+          role="status"
+          aria-live="polite"
+        >
+          <span class="status-dot" aria-hidden="true"></span>
           <span class="status-text">Checking...</span>
         </div>
       </div>
@@ -105,7 +136,7 @@ try {
           <slot name="actions" />
         </div>
       </header>
-      <main class="content">
+      <main class="content" role="main" id="main-content">
         <slot />
       </main>
     </div>
@@ -154,6 +185,20 @@ try {
           link.classList.add("active");
         }
       });
+
+      // Keyboard shortcut onboarding hint (show once)
+      if (!localStorage.getItem("meitheal_shortcut_hint_dismissed")) {
+        const hint = document.createElement("div");
+        hint.className = "shortcut-hint";
+        hint.textContent = "💡 Press ? for keyboard shortcuts";
+        hint.setAttribute("role", "tooltip");
+        hint.addEventListener("click", () => {
+          hint.remove();
+          localStorage.setItem("meitheal_shortcut_hint_dismissed", "1");
+        });
+        document.body.appendChild(hint);
+        setTimeout(() => hint.remove(), 8000);
+      }
     </script>
   </body>
 </html>
