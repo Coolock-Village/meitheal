@@ -67,9 +67,9 @@ Local-first task orchestration with HA calendar sync and Vikunja compatibility.
 
 ## Session Continuity
 
-Last session: 2026-02-28T11:20:00Z
-Stopped at: extension-track phase artifacts reconciled (`15-18` evidence-complete).
-Resume hint: start with PR #1 check triage, then choose phase-06 execution or roadmap extension.
+Last session: 2026-02-28T15:25:00Z
+Stopped at: GSD Persona Audit completed for Phases 21-23. All P0-P4 issues resolved.
+Resume hint: Phase 24 (Performance Budgets) is next. PR #1 checks still need triage.
 
 ---
-*Last updated: 2026-02-28 during extension-track reconciliation pass*
+*Last updated: 2026-02-28 during Phase 21-23 persona audit pass*
