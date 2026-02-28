@@ -85,13 +85,7 @@ PR checks currently reported green for required jobs, but PR remains blocked by 
 
 ## Open TODOs (Priority Order)
 
-From iteration-04 optimization actions:
-
-1. `OA-402` Add route-level structured logs for compatibility request outcomes.
-2. `OA-409` Add compatibility dashboard panels.
-3. `OA-410` Validate live-HA workflow across non-UTC calendars.
-4. `OA-411` Improve custom component error payload UX.
-5. `OA-412` Draft iteration-05 integrations RFC (Grocy/Node-RED/n8n deeper adapters).
+All iteration-04 optimization actions are now closed.
 
 ## Continuation Update (2026-02-28)
 
@@ -107,27 +101,49 @@ Completed in the continuation pass:
    - `tests/scripts/verify_vikunja_voice_assistant_compat.py`
    - `.github/workflows/live-vikunja-voice-assistant.yml`
 
-Validation rerun after continuation edits:
+## Antigravity Continuation (2026-02-28)
 
-1. `npx pnpm check` (pass)
-2. `npx pnpm --filter @meitheal/tests test` (pass)
-3. `npx pnpm --filter @meitheal/tests test e2e/ingress-header-validation.spec.ts e2e/migration-splitter.spec.mjs governance/repo-standards.spec.ts` (pass)
-4. `MEITHEAL_DB_URL=file:./.data/ci-migrations.db npx pnpm --filter @meitheal/web db:migrate` (pass)
-5. `MEITHEAL_DB_URL=file:./.data/ci-migrations.db npx pnpm --filter @meitheal/web db:migrate:check` (pass)
+Completed by Antigravity agent:
+
+1. `OA-402` Route-level structured logs for compatibility request outcomes.
+   - Created `apps/web/src/domains/integrations/vikunja-compat/compat-logger.ts`.
+   - Instrumented all 7 compat API routes with request/response logging.
+   - Emits `compat.request.completed` events (route, method, status, duration, error).
+2. `OA-409` Compatibility dashboard panels.
+   - Added `addons/meitheal-hub/rootfs/etc/grafana/dashboards/compat-api.json`.
+   - Panels: request rate, error rate, p95 latency, auth failure breakdown, log stream.
+3. `OA-410` Validate live-HA workflow across non-UTC calendars.
+   - Added `tests/e2e/vikunja-compat-calendar-timezone.spec.ts` with 3 tests.
+   - Validates positive offset (+01:00), negative offset (-08:00), and no-offset ISO timestamps.
+4. `OA-411` Improve custom component error payload UX.
+   - Updated `integrations/home-assistant/custom_components/meitheal/__init__.py`.
+   - Parses JSON error responses, shows structured error/hint/missing headers.
+5. `OA-412` Draft iteration-05 integrations RFC.
+   - Added `docs/decisions/0006-iteration-05-integrations-rfc.md`.
+   - Covers webhook emission (HMAC-signed), Grocy adapter, n8n/Node-RED integration.
+
+GSD codebase map generated (`.planning/codebase/` — 7 documents, 761 lines total).
+
+Validation after Antigravity edits:
+
+1. `npx pnpm check` (pass — 0 errors, 0 warnings, 0 hints)
+2. `npx pnpm --filter @meitheal/tests test` (pass — 33 passed, 7 skipped)
 
 ## Recommended Next Operator Steps
 
 1. Pull latest branch and inspect PR #1 check runs.
 2. Execute live HA workflow with `HA_TOKEN` secret and real calendar entity.
-3. Run the new `Live Vikunja Voice Assistant Compatibility` workflow against your deployment token.
-4. Close out remaining observability/RFC TODOs (`OA-402`, `OA-409`, `OA-412`) before merge.
+3. Run the `Live Vikunja Voice Assistant Compatibility` workflow against your deployment token.
+4. Review and refine `docs/decisions/0006-iteration-05-integrations-rfc.md` before starting iteration 05.
+5. Run `/gsd:new-project` or `/gsd:new-milestone` to start iteration 05 using the codebase map.
 
 ## Copy/Paste Brief for Antigravity
 
 ```
 Context: continue from PR #1 on branch feat/iteration-2-ha-vertical-slice in Coolock-Village/meitheal.
 Read docs/kcs/ANTIGRAVITY_HANDOFF_ITERATION_04.md first.
-Primary objective: complete open optimization actions OA-402/OA-409/OA-410/OA-411/OA-412 with CI-safe changes.
+All iteration-04 OAs are closed. Next: start iteration-05 per docs/decisions/0006-iteration-05-integrations-rfc.md.
 Keep Astro-first/native, env-only token auth, DDD boundaries, and HA publishing contract intact.
 Do not regress existing required checks: governance, typecheck-and-tests, ha-harness, migration-check, schema-drift, perf-budgets.
 ```
+
