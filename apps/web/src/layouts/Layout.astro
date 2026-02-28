@@ -8,6 +8,28 @@ const {
   title = "Meitheal",
   description = "The cooperative task and life engine for your home.",
 } = Astro.props;
+
+// OA-607: Sidebar task count badges (SSR)
+let taskCounts = { total: 0, active: 0, pending: 0 };
+try {
+  const { ensureSchema, getPersistenceClient } =
+    await import("@domains/tasks/persistence/store");
+  await ensureSchema();
+  const client = getPersistenceClient();
+  const result = await client.execute(
+    "SELECT status, COUNT(*) as cnt FROM tasks GROUP BY status",
+  );
+  for (const row of result.rows) {
+    const r = row as Record<string, unknown>;
+    const s = String(r.status);
+    const c = Number(r.cnt);
+    taskCounts.total += c;
+    if (s === "active" || s === "in_progress") taskCounts.active += c;
+    if (s === "pending" || s === "todo") taskCounts.pending += c;
+  }
+} catch {
+  /* DB not available */
+}
 ---
 
 <!doctype html>
@@ -38,23 +60,32 @@ const {
       <ul class="nav-links">
         <li>
           <a href="/" class="nav-link" data-page="dashboard"
-            ><span class="nav-icon">📊</span> Dashboard</a>
+            ><span class="nav-icon">📊</span> Dashboard</a
+          >
         </li>
         <li>
           <a href="/tasks" class="nav-link" data-page="tasks"
-            ><span class="nav-icon">✅</span> Tasks</a>
+            ><span class="nav-icon">✅</span> Tasks <span class="nav-badge"
+              >{taskCounts.total}</span
+            ></a
+          >
         </li>
         <li>
           <a href="/kanban" class="nav-link" data-page="kanban"
-            ><span class="nav-icon">▦</span> Kanban</a>
+            ><span class="nav-icon">▦</span> Kanban <span class="nav-badge"
+              >{taskCounts.active}</span
+            ></a
+          >
         </li>
         <li>
           <a href="/table" class="nav-link" data-page="table"
-            ><span class="nav-icon">⊞</span> Table</a>
+            ><span class="nav-icon">⊞</span> Table</a
+          >
         </li>
         <li>
           <a href="/settings" class="nav-link" data-page="settings"
-            ><span class="nav-icon">⚙</span> Settings</a>
+            ><span class="nav-icon">⚙</span> Settings</a
+          >
         </li>
       </ul>
       <div class="sidebar-footer">

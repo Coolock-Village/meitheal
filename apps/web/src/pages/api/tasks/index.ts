@@ -64,9 +64,17 @@ export const POST: APIRoute = async ({ request }) => {
   const client = getPersistenceClient();
   const body = (await request.json().catch(() => ({}))) as Record<string, unknown>;
 
-  const title = typeof body.title === "string" ? body.title.trim() : "";
+  // OA-604: Input sanitization
+  const rawTitle = typeof body.title === "string" ? body.title.trim() : "";
+  const title = rawTitle.replace(/<[^>]*>/g, ""); // Strip HTML tags (XSS prevention)
   if (!title) {
     return new Response(JSON.stringify({ error: "title is required" }), {
+      status: 400,
+      headers: { "content-type": "application/json" },
+    });
+  }
+  if (title.length > 500) {
+    return new Response(JSON.stringify({ error: "title must be 500 characters or less" }), {
       status: 400,
       headers: { "content-type": "application/json" },
     });
@@ -74,12 +82,31 @@ export const POST: APIRoute = async ({ request }) => {
 
   const id = crypto.randomUUID();
   const now = Date.now();
-  const priority = typeof body.priority === "number" ? body.priority : 3;
-  const description = typeof body.description === "string" ? body.description : "";
-  const status = typeof body.status === "string" ? body.status : "pending";
+
+  // Validate priority (1-5)
+  const rawPriority = typeof body.priority === "number" ? body.priority : 3;
+  const priority = Math.min(5, Math.max(1, Math.round(rawPriority)));
+
+  // Sanitize description
+  const description = typeof body.description === "string" ? body.description.slice(0, 10000) : "";
+
+  // Validate status (allowed enum)
+  const allowedStatuses = ["pending", "active", "in_progress", "complete", "done", "todo"];
+  const status = typeof body.status === "string" && allowedStatuses.includes(body.status) ? body.status : "pending";
+
   const due_date = typeof body.due_date === "string" ? body.due_date : null;
   const labels = typeof body.labels === "string" ? body.labels : "[]";
-  const framework_payload = typeof body.framework_payload === "string" ? body.framework_payload : "{}";
+
+  // Validate framework_payload is valid JSON
+  let framework_payload = "{}";
+  if (typeof body.framework_payload === "string") {
+    try {
+      JSON.parse(body.framework_payload);
+      framework_payload = body.framework_payload;
+    } catch {
+      framework_payload = "{}";
+    }
+  }
 
   await client.execute({
     sql: `INSERT INTO tasks (id, title, description, status, priority, due_date, labels,

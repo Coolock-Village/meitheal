@@ -212,7 +212,16 @@ const statusLabels: Record<string, string> = {
         </div>
         <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 12px;">
           <div class="form-group">
-            <label class="form-label" for="rice-reach">RICE — Reach</label>
+            <label
+              class="form-label"
+              for="rice-reach"
+              title="How many users/events does this reach per quarter?"
+            >
+              RICE — Reach <span
+                style="cursor: help; color: var(--text-muted);"
+                title="# of users or events affected per time period">ⓘ</span
+              >
+            </label>
             <input
               type="number"
               class="form-input"
@@ -223,7 +232,17 @@ const statusLabels: Record<string, string> = {
             />
           </div>
           <div class="form-group">
-            <label class="form-label" for="rice-impact">Impact</label>
+            <label
+              class="form-label"
+              for="rice-impact"
+              title="How much does this impact each user? 3=Massive, 2=High, 1=Medium, 0.5=Low, 0.25=Minimal"
+            >
+              Impact <span
+                style="cursor: help; color: var(--text-muted);"
+                title="3=Massive, 2=High, 1=Medium, 0.5=Low, 0.25=Minimal"
+                >ⓘ</span
+              >
+            </label>
             <select class="form-select" id="rice-impact">
               <option value="">—</option>
               <option value="3">Massive (3)</option>
@@ -236,7 +255,16 @@ const statusLabels: Record<string, string> = {
         </div>
         <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 12px;">
           <div class="form-group">
-            <label class="form-label" for="rice-confidence">Confidence</label>
+            <label
+              class="form-label"
+              for="rice-confidence"
+              title="How confident are you in these estimates? 100%=High, 80%=Med, 50%=Low"
+            >
+              Confidence <span
+                style="cursor: help; color: var(--text-muted);"
+                title="100%=High, 80%=Medium, 50%=Low">ⓘ</span
+              >
+            </label>
             <select class="form-select" id="rice-confidence">
               <option value="">—</option>
               <option value="100">High (100%)</option>
@@ -245,9 +273,16 @@ const statusLabels: Record<string, string> = {
             </select>
           </div>
           <div class="form-group">
-            <label class="form-label" for="rice-effort"
-              >Effort (person-months)</label
+            <label
+              class="form-label"
+              for="rice-effort"
+              title="Estimated person-months of work to complete"
             >
+              Effort <span
+                style="cursor: help; color: var(--text-muted);"
+                title="Person-months to complete">ⓘ</span
+              >
+            </label>
             <input
               type="number"
               class="form-input"
@@ -536,6 +571,62 @@ const statusLabels: Record<string, string> = {
     document
       .getElementById("filter-priority")
       ?.addEventListener("change", applyFilters);
+
+    // OA-611: Persist filter/sort state in localStorage
+    function saveFilterState() {
+      const state = {
+        search:
+          (document.getElementById("search-input") as HTMLInputElement)
+            ?.value ?? "",
+        status:
+          (document.getElementById("filter-status") as HTMLSelectElement)
+            ?.value ?? "",
+        priority:
+          (document.getElementById("filter-priority") as HTMLSelectElement)
+            ?.value ?? "",
+        sort:
+          (document.getElementById("sort-select") as HTMLSelectElement)
+            ?.value ?? "created_at-desc",
+      };
+      localStorage.setItem("meitheal-task-filters", JSON.stringify(state));
+    }
+    document
+      .getElementById("search-input")
+      ?.addEventListener("input", saveFilterState);
+    document
+      .getElementById("filter-status")
+      ?.addEventListener("change", saveFilterState);
+    document
+      .getElementById("filter-priority")
+      ?.addEventListener("change", saveFilterState);
+    document
+      .getElementById("sort-select")
+      ?.addEventListener("change", saveFilterState);
+
+    // Restore filter state on load
+    try {
+      const saved = localStorage.getItem("meitheal-task-filters");
+      if (saved) {
+        const state = JSON.parse(saved);
+        if (state.search)
+          (document.getElementById("search-input") as HTMLInputElement).value =
+            state.search;
+        if (state.status)
+          (
+            document.getElementById("filter-status") as HTMLSelectElement
+          ).value = state.status;
+        if (state.priority)
+          (
+            document.getElementById("filter-priority") as HTMLSelectElement
+          ).value = state.priority;
+        if (state.sort)
+          (document.getElementById("sort-select") as HTMLSelectElement).value =
+            state.sort;
+        applyFilters();
+      }
+    } catch {
+      /* ignore */
+    }
 
     // Keyboard shortcuts
     document.addEventListener("keydown", (e) => {
