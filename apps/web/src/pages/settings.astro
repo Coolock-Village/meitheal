@@ -413,11 +413,25 @@ import Layout from "../layouts/Layout.astro";
       <div class="form-group" style="margin-top: 12px;">
         <label class="form-label" style="margin-bottom: 8px;">Export Tasks</label>
         <div style="display: flex; gap: 8px;">
-          <button class="btn btn-primary" id="export-json-btn" style="flex: 1;">📥 Download JSON</button>
-          <button class="btn btn-secondary" id="export-csv-btn" style="flex: 1;">📊 Download CSV</button>
+          <a href="/api/export/tasks.json" download class="btn btn-primary" id="export-json-btn" style="flex: 1; text-align: center; text-decoration: none;">📥 Download JSON</a>
+          <a href="/api/export/tasks.csv" download class="btn btn-secondary" id="export-csv-btn" style="flex: 1; text-align: center; text-decoration: none;">📊 Download CSV</a>
         </div>
         <small style="color: var(--text-muted); font-size: 11px; display: block; margin-top: 6px;">
           Exports all tasks from your local IndexedDB to your device.
+        </small>
+      </div>
+
+      <div class="form-group" style="margin-top: 16px; border-top: 1px solid var(--border-color); padding-top: 16px;">
+        <label class="form-label" style="margin-bottom: 8px;">Settings Configuration</label>
+        <div style="display: flex; gap: 8px;">
+          <button class="btn btn-secondary" id="export-settings-btn" style="flex: 1;">⚙️ Export Config</button>
+          <label class="btn btn-secondary" style="flex: 1; text-align: center; cursor: pointer; margin: 0; padding: 6px 16px; display: inline-flex; justify-content: center; align-items: center;">
+            🔄 Import Config
+            <input type="file" id="import-settings-input" accept=".json" style="display: none;" />
+          </label>
+        </div>
+        <small style="color: var(--text-muted); font-size: 11px; display: block; margin-top: 6px;">
+          Backup or restore your tokens, shortcuts, UI layouts, and active integrations. Restoring will trigger a page reload.
         </small>
       </div>
     </div>
@@ -450,7 +464,7 @@ import Layout from "../layouts/Layout.astro";
   <div id="toast-container" class="toast-container"></div>
 
   <script>
-    import { exportTasksAsJson, exportTasksAsCsv } from "../domains/offline/export-service";
+    import { exportTasksAsJson, exportTasksAsCsv, exportSettingsAsJson, importSettingsFromJson } from "../domains/offline/export-service";
 
     // Export Binding
     document.getElementById("export-json-btn")?.addEventListener("click", async () => {
@@ -473,6 +487,32 @@ import Layout from "../layouts/Layout.astro";
       }
     });
 
+    // Settings Export/Import
+    document.getElementById("export-settings-btn")?.addEventListener("click", async () => {
+      try {
+        await exportSettingsAsJson();
+        showToast("Settings exported successfully.");
+      } catch (err) {
+        console.error("Export settings error:", err);
+        showToast("Settings export failed.", "error");
+      }
+    });
+
+    document.getElementById("import-settings-input")?.addEventListener("change", async (e) => {
+      const file = (e.target as HTMLInputElement).files?.[0];
+      if (!file) return;
+      
+      try {
+        showToast("Restoring config...");
+        await importSettingsFromJson(file);
+        showToast("Settings restored successfully. Reloading...");
+        setTimeout(() => window.location.reload(), 1500);
+      } catch (err) {
+        console.error("Import settings error:", err);
+        showToast("Settings import failed. Invalid file format?", "error");
+      }
+      (e.target as HTMLInputElement).value = ""; // Reset input
+    });
     function showToast(message: string, type: "success" | "error" = "success") {
       const container = document.getElementById("toast-container");
       if (!container) return;
