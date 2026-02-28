@@ -241,22 +241,55 @@ const priorityColors: Record<number, string> = {
       }
     }
 
-    // Quick add from kanban column
+    // Quick add from kanban column — uses inline form, not prompt()
     document.querySelectorAll(".kanban-add-btn").forEach((btn) => {
-      btn.addEventListener("click", async () => {
+      btn.addEventListener("click", () => {
+        // If inline form already exists, focus it
+        const existing = btn.parentElement.querySelector(".kanban-inline-add");
+        if (existing) { existing.querySelector("input")?.focus(); return; }
+
         const status = btn.dataset.status;
-        const title = prompt("Task title:");
-        if (!title?.trim()) return;
-        try {
-          const res = await fetch("/api/tasks", {
-            method: "POST",
-            headers: { "content-type": "application/json" },
-            body: JSON.stringify({ title: title.trim(), status }),
-          });
-          if (res.ok) window.location.reload();
-        } catch {
-          /* ignore */
+        const form = document.createElement("div");
+        form.className = "kanban-inline-add";
+        form.style.cssText = "display:flex;gap:6px;margin-top:8px;";
+        form.innerHTML = `
+          <input type="text" class="form-input" placeholder="Task title..." style="flex:1;font-size:13px;padding:6px 10px;" autofocus />
+          <button class="btn btn-primary" style="font-size:13px;padding:6px 12px;">Add</button>
+        `;
+        btn.parentElement.insertBefore(form, btn);
+        btn.style.display = "none";
+
+        const input = form.querySelector("input");
+        const addBtn = form.querySelector("button");
+        input.focus();
+
+        async function submitTask() {
+          const title = input.value.trim();
+          if (!title) { cleanup(); return; }
+          try {
+            const res = await fetch("/api/tasks", {
+              method: "POST",
+              headers: { "content-type": "application/json" },
+              body: JSON.stringify({ title, status }),
+            });
+            if (res.ok) window.location.reload();
+          } catch { /* ignore */ }
         }
+
+        function cleanup() {
+          form.remove();
+          btn.style.display = "";
+        }
+
+        addBtn.addEventListener("click", submitTask);
+        input.addEventListener("keydown", (e) => {
+          if (e.key === "Enter") { e.preventDefault(); submitTask(); }
+          if (e.key === "Escape") { cleanup(); }
+        });
+        input.addEventListener("blur", () => {
+          // Delay to allow button click
+          setTimeout(() => { if (!form.contains(document.activeElement)) cleanup(); }, 200);
+        });
       });
     });
 
