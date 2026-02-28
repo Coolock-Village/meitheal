@@ -13,6 +13,9 @@ on:
         default: "main"
         type: string
 
+permissions:
+  contents: read
+
 jobs:
   live-vikunja-voice-compat:
     runs-on: ubuntu-latest

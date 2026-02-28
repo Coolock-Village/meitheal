@@ -1,5 +1,6 @@
 import type { APIRoute } from "astro";
 import { ensureSchema, getPersistenceClient } from "@domains/tasks/persistence/store";
+import { stripHtml } from "../../../lib/strip-html";
 
 export const GET: APIRoute = async () => {
     try {
@@ -23,7 +24,7 @@ export const POST: APIRoute = async ({ request }) => {
     try {
         await ensureSchema();
         const body = await request.json();
-        const title = String(body.title ?? "").trim().replace(/<[^>]*>/g, "");
+        const title = stripHtml(String(body.title ?? "").trim());
         if (!title || title.length > 200) {
             return new Response(JSON.stringify({ error: "Title is required" }), {
                 status: 400,

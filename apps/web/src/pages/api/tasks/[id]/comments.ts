@@ -1,6 +1,7 @@
 import type { APIRoute } from "astro";
 import type { InValue } from "@libsql/client";
 import { ensureSchema, getPersistenceClient } from "@domains/tasks/persistence/store";
+import { stripHtml } from "../../../../lib/strip-html";
 
 /** GET /api/tasks/[id]/comments — list comments, POST — add comment */
 
@@ -40,7 +41,7 @@ export const POST: APIRoute = async ({ params, request }) => {
 
     // Validate content
     const rawContent = typeof body.content === "string" ? body.content.trim() : "";
-    const content = rawContent.replace(/<[^>]*>/g, ""); // XSS prevention
+    const content = stripHtml(rawContent); // Recursive XSS prevention
     if (!content) {
         return new Response(JSON.stringify({ error: "content is required" }), {
             status: 400,
@@ -54,7 +55,7 @@ export const POST: APIRoute = async ({ params, request }) => {
         });
     }
 
-    const author = typeof body.author === "string" ? body.author.trim().replace(/<[^>]*>/g, "").slice(0, 100) : "user";
+    const author = typeof body.author === "string" ? stripHtml(body.author.trim()).slice(0, 100) : "user";
 
     await client.execute({
         sql: "INSERT INTO comments (task_id, content, author) VALUES (?, ?, ?)",

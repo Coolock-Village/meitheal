@@ -1,5 +1,6 @@
 import type { APIRoute } from "astro";
 import { ensureSchema, getPersistenceClient } from "@domains/tasks/persistence/store";
+import { stripHtml } from "../../../lib/strip-html";
 
 export const PUT: APIRoute = async ({ params, request }) => {
     try {
@@ -17,7 +18,7 @@ export const PUT: APIRoute = async ({ params, request }) => {
         const updates: string[] = [];
         const args: (string | number)[] = [];
 
-        if (body.title !== undefined) { const t = String(body.title).trim().replace(/<[^>]*>/g, ""); if (t && t.length <= 200) { updates.push("title = ?"); args.push(t); } }
+        if (body.title !== undefined) { const t = stripHtml(String(body.title).trim()); if (t && t.length <= 200) { updates.push("title = ?"); args.push(t); } }
         if (body.icon !== undefined) { updates.push("icon = ?"); args.push(String(body.icon).slice(0, 10)); }
         if (body.color !== undefined) { const c = String(body.color); if (/^#([0-9a-fA-F]{3}|[0-9a-fA-F]{6})$/.test(c)) { updates.push("color = ?"); args.push(c); } }
         if (body.position !== undefined) { updates.push("position = ?"); args.push(Number(body.position)); }

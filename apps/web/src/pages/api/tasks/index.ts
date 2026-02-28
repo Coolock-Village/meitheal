@@ -1,6 +1,7 @@
 import type { APIRoute } from "astro";
 import type { InValue } from "@libsql/client";
 import { ensureSchema, getPersistenceClient } from "@domains/tasks/persistence/store";
+import { stripHtml } from "../../../lib/strip-html";
 
 /** GET /api/tasks — list all tasks, POST /api/tasks — create a task */
 
@@ -93,7 +94,7 @@ export const POST: APIRoute = async ({ request }) => {
 
   // OA-604: Input sanitization
   const rawTitle = typeof body.title === "string" ? body.title.trim() : "";
-  const title = rawTitle.replace(/<[^>]*>/g, ""); // Strip HTML tags (XSS prevention)
+  const title = stripHtml(rawTitle); // Recursive HTML tag removal (CodeQL-safe)
   if (!title) {
     return new Response(JSON.stringify({ error: "title is required" }), {
       status: 400,
@@ -116,7 +117,7 @@ export const POST: APIRoute = async ({ request }) => {
 
   // Sanitize description (strip HTML tags like title)
   const rawDesc = typeof body.description === "string" ? body.description.slice(0, 10000) : "";
-  const description = rawDesc.replace(/<[^>]*>/g, "");
+  const description = stripHtml(rawDesc);
 
   // Validate status (allowed enum)
   const allowedStatuses = ["pending", "active", "in_progress", "complete", "done", "todo"];

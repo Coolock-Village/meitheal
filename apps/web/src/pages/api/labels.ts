@@ -4,6 +4,7 @@ import {
   createVikunjaLabel,
   ensureVikunjaCompatSchema,
 } from "@domains/integrations/vikunja-compat/store";
+import { stripHtml } from "../../lib/strip-html";
 
 /**
  * Native Labels API — wraps Vikunja-compat label store.
@@ -23,7 +24,7 @@ export const GET: APIRoute = async () => {
 export const POST: APIRoute = async ({ request }) => {
   await ensureVikunjaCompatSchema();
   const body = (await request.json().catch(() => ({}))) as Record<string, unknown>;
-  const title = typeof body.title === "string" ? body.title.trim().replace(/<[^>]*>/g, "") : "";
+  const title = typeof body.title === "string" ? stripHtml(body.title.trim()) : "";
 
   if (!title) {
     return new Response(JSON.stringify({ error: "title is required" }), {
