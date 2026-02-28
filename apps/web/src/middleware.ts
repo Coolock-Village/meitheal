@@ -40,6 +40,30 @@ export const onRequest: MiddlewareHandler = async ({ request, locals }, next) =>
   locals.ingressPath = ingressPath;
   locals.hassioTokenPresent = hasHassioToken(request.headers);
 
+  // CSRF origin check for mutating API requests (defense-in-depth)
+  const method = request.method.toUpperCase();
+  const url = new URL(request.url);
+  if (["POST", "PUT", "DELETE", "PATCH"].includes(method) && url.pathname.startsWith("/api/")) {
+    const origin = request.headers.get("origin");
+    const referer = request.headers.get("referer");
+    const host = request.headers.get("host") ?? url.host;
+    const isDev = import.meta.env.DEV;
+
+    if (!isDev) {
+      const originHost = origin ? new URL(origin).host : null;
+      const refererHost = referer ? new URL(referer).host : null;
+      const allowed = originHost === host || refererHost === host;
+      if (!allowed && !origin && !referer) {
+        // Allow requests with no origin/referer (e.g. curl, HA internal calls)
+      } else if (!allowed) {
+        return new Response(
+          JSON.stringify({ error: "CSRF origin mismatch" }),
+          { status: 403, headers: { "content-type": "application/json" } }
+        );
+      }
+    }
+  }
+
   // Security response headers (OWASP best practices)
   const securityHeaders: Record<string, string> = {
     "X-Content-Type-Options": "nosniff",

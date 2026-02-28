@@ -1476,38 +1476,50 @@ try {
         cfDiv.appendChild(row);
       }
 
-      // Common field names for the dropdown — unified across RICE, agile, and org fields
-      const commonFields = [
-        // RICE framework
-        "Reach", "Impact", "Confidence", "Effort",
-        // Agile & project fields
-        "Estimate", "Sprint", "Team", "Component", "Environment",
-        "Version", "Story Points", "Acceptance Criteria",
-        // Complexity & sizing
-        "Complexity", "T-Shirt Size", "Business Value",
+      // Categorized field groups for the dropdown
+      const fieldCategories: { label: string; fields: string[] }[] = [
+        { label: "🎯 RICE Framework", fields: ["Reach", "Impact", "Confidence", "Effort"] },
+        { label: "📋 Agile & Planning", fields: ["Estimate", "Sprint", "Team", "Component", "Environment", "Version", "Story Points", "Acceptance Criteria"] },
+        { label: "📊 Sizing & Value", fields: ["Complexity", "T-Shirt Size", "Business Value"] },
       ];
 
-      function getFieldSuggestions(): string[] {
-        // Combine common fields with existing custom fields from all tasks
-        const existingKeys = new Set<string>();
+      function getAvailableFields(): { label: string; fields: string[] }[] {
+        const currentKeys = new Set(Object.keys(getCFFromUI()));
+        // Build categorized list filtered by what's already on the task
+        const result = fieldCategories.map((cat) => ({
+          label: cat.label,
+          fields: cat.fields.filter((f) => !currentKeys.has(f)),
+        })).filter((cat) => cat.fields.length > 0);
+        // Add any custom keys from existing rows not in our predefined lists
+        const allPredefined = new Set(fieldCategories.flatMap((c) => c.fields));
+        const existingCustom: string[] = [];
         document.querySelectorAll(".td-cf-key").forEach((el) => {
           const val = (el as HTMLInputElement).value.trim();
-          if (val) existingKeys.add(val);
+          if (val && !allPredefined.has(val) && !currentKeys.has(val)) existingCustom.push(val);
         });
-        // Merge, deduplicate, and sort
-        const all = [...new Set([...commonFields, ...existingKeys])];
-        // Filter out fields already in the current task
-        const currentKeys = new Set(Object.keys(getCFFromUI()));
-        return all.filter((f) => !currentKeys.has(f)).sort();
+        if (existingCustom.length > 0) {
+          result.push({ label: "🔧 Custom", fields: [...new Set(existingCustom)].sort() });
+        }
+        return result;
       }
 
       function renderFieldDropdown(filter = "") {
         const optionsDiv = document.getElementById("td-add-cf-options")!;
-        const suggestions = getFieldSuggestions().filter((f) =>
-          f.toLowerCase().includes(filter.toLowerCase())
-        );
-        optionsDiv.innerHTML = suggestions.length
-          ? suggestions.map((f) => `<div class="td-cf-option px-3 py-1.5 text-sm cursor-pointer hover:bg-bg-hover" data-field="${f.replace(/"/g, '&quot;')}">${f}</div>`).join("")
+        const lowerFilter = filter.toLowerCase();
+        const categories = getAvailableFields();
+        let html = "";
+        let totalCount = 0;
+        for (const cat of categories) {
+          const filtered = cat.fields.filter((f) => f.toLowerCase().includes(lowerFilter));
+          if (filtered.length === 0) continue;
+          totalCount += filtered.length;
+          html += `<div class="px-3 py-1 text-[10px] text-text-muted uppercase tracking-wide font-semibold border-t border-border first:border-t-0">${cat.label}</div>`;
+          html += filtered.map((f) =>
+            `<div class="td-cf-option px-3 py-1.5 text-sm cursor-pointer hover:bg-bg-hover" data-field="${f.replace(/"/g, '&quot;')}">${f}</div>`
+          ).join("");
+        }
+        optionsDiv.innerHTML = totalCount > 0
+          ? html
           : `<div class="px-3 py-1.5 text-xs text-text-muted italic">Type a custom name and press Enter</div>`;
         // Click handlers
         optionsDiv.querySelectorAll(".td-cf-option").forEach((opt) => {
