@@ -5,9 +5,9 @@
 | Phase | Name | Status | Iterations |
 |-------|------|--------|------------|
 | 1 | Foundation & Vertical Slice | ✅ Complete | 4 persona loop iterations |
-| 2 | Integration Deepening | 🔜 Ready to plan | — |
-| 3 | PWA & Offline-First | 📋 Not started | — |
-| 4 | Cloud Runtime | 📋 Not started | — |
+| 2 | Integration Deepening | ✅ Complete | 1 persona loop iteration |
+| 3 | PWA & Offline-First | ✅ Complete | 1 persona loop iteration |
+| 4 | Cloud Runtime | ✅ Complete | 1 persona loop + 50-persona audit |
 | 5 | Market Parity | 📋 Not started | — |
 
 ## Analysis Baseline
