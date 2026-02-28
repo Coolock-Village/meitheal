@@ -83,9 +83,10 @@ export const GET: APIRoute = async ({ url }) => {
         "x-pagination-result-count": String(tasks.length),
       },
     });
-  } catch {
-    return new Response(JSON.stringify([]), {
-      status: 200,
+  } catch (err) {
+    console.error("[v1/tasks] GET failed:", err);
+    return new Response(JSON.stringify({ error: "Failed to list tasks" }), {
+      status: 500,
       headers: { "content-type": "application/json" },
     });
   }

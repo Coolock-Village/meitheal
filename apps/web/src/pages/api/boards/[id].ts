@@ -43,6 +43,7 @@ export const PUT: APIRoute = async ({ params, request }) => {
             headers: { "content-type": "application/json" },
         });
     } catch (e) {
+        console.error("[boards] PUT failed:", e);
         return new Response(JSON.stringify({ error: "Failed to update board" }), {
             status: 500,
             headers: { "content-type": "application/json" },
@@ -78,6 +79,7 @@ export const DELETE: APIRoute = async ({ params }) => {
             headers: { "content-type": "application/json" },
         });
     } catch (e) {
+        console.error("[boards] DELETE failed:", e);
         return new Response(JSON.stringify({ error: "Failed to delete board" }), {
             status: 500,
             headers: { "content-type": "application/json" },

@@ -6,33 +6,41 @@ import { stripHtml } from "../../../lib/strip-html";
 /** GET /api/lanes — list all lanes, POST /api/lanes — create a lane */
 
 export const GET: APIRoute = async () => {
-  await ensureSchema();
-  const client = getPersistenceClient();
+  try {
+    await ensureSchema();
+    const client = getPersistenceClient();
 
-  const result = await client.execute(
-    "SELECT id, key, label, icon, position, wip_limit, includes, built_in, created_at, updated_at FROM kanban_lanes ORDER BY position ASC",
-  );
+    const result = await client.execute(
+      "SELECT id, key, label, icon, position, wip_limit, includes, built_in, created_at, updated_at FROM kanban_lanes ORDER BY position ASC",
+    );
 
-  const lanes = result.rows.map((row) => {
-    const r = row as Record<string, unknown>;
-    return {
-      id: r.id,
-      key: r.key,
-      label: r.label,
-      icon: r.icon,
-      position: Number(r.position ?? 0),
-      wip_limit: Number(r.wip_limit ?? 0),
-      includes: typeof r.includes === "string" ? JSON.parse(String(r.includes)) : [],
-      builtIn: Number(r.built_in ?? 0) === 1,
-      created_at: r.created_at,
-      updated_at: r.updated_at,
-    };
-  });
+    const lanes = result.rows.map((row) => {
+      const r = row as Record<string, unknown>;
+      return {
+        id: r.id,
+        key: r.key,
+        label: r.label,
+        icon: r.icon,
+        position: Number(r.position ?? 0),
+        wip_limit: Number(r.wip_limit ?? 0),
+        includes: typeof r.includes === "string" ? JSON.parse(String(r.includes)) : [],
+        builtIn: Number(r.built_in ?? 0) === 1,
+        created_at: r.created_at,
+        updated_at: r.updated_at,
+      };
+    });
 
-  return new Response(JSON.stringify({ lanes }), {
-    status: 200,
-    headers: { "content-type": "application/json" },
-  });
+    return new Response(JSON.stringify({ lanes }), {
+      status: 200,
+      headers: { "content-type": "application/json" },
+    });
+  } catch (err) {
+    console.error("[lanes] GET failed:", err);
+    return new Response(JSON.stringify({ error: "Failed to list lanes" }), {
+      status: 500,
+      headers: { "content-type": "application/json" },
+    });
+  }
 };
 
 export const POST: APIRoute = async ({ request }) => {
