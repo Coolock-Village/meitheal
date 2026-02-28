@@ -28,3 +28,16 @@ Recommended Loki filter sequence:
 1. Verify `X-Ingress-Path` and `HASSIO_TOKEN` forwarding.
 2. Check middleware rejection reason in auth logs.
 3. Validate add-on ingress settings in `addons/meitheal-hub/config.yaml`.
+
+## Database Migrations
+
+Primary command path:
+
+1. `pnpm --filter @meitheal/web db:migrate`
+2. Verify applied migrations table `__meitheal_migrations`.
+3. Confirm task-sync tables exist and are queryable.
+
+CI gate:
+
+1. `migration-check` job runs `db:migrate:check`.
+2. If pending migrations exist, CI fails closed.

@@ -82,12 +82,14 @@ Interop design is informed by existing HA/Vikunja integration patterns, includin
 
 ## Status
 
-Repository is now at Iteration 2 baseline with:
+Repository is now at Iteration 3 baseline with:
 
 - Public GitHub publication at `Coolock-Village/meitheal`
-- Protected `main` branch and feature-branch workflow
+- Protected `main` branch with required checks (`governance`, `typecheck-and-tests`, `ha-harness`, `migration-check`)
 - Persistent SQLite-backed vertical slice for task->calendar sync
 - Direct Home Assistant calendar service integration
 - Idempotent replay handling and persistent audit trail
-- Playwright test harness including new domain/persistence coverage
+- Production add-on startup path (`db:migrate` + `node dist/server/entry.mjs`)
+- Migration command path and migration SQL under `apps/web/drizzle/migrations`
+- Playwright harness including HA adapter integration tests
 - Persona optimization loop artifacts under `.planning/persona-loops/`

@@ -13,9 +13,19 @@ if [ -n "${SUPERVISOR_TOKEN:-}" ]; then
   export HA_TOKEN="${HA_TOKEN:-$SUPERVISOR_TOKEN}"
 fi
 
-# Start web app (placeholder command for scaffold)
+export HOST="${HOST:-0.0.0.0}"
+export PORT="${PORT:-3000}"
+
 if [ -f /opt/meitheal/apps/web/package.json ]; then
-  (cd /opt/meitheal/apps/web && pnpm run dev --host 0.0.0.0 --port 3000) &
+  (
+    cd /opt/meitheal/apps/web
+    pnpm run db:migrate
+    if [ ! -f dist/server/entry.mjs ]; then
+      echo "Missing Astro server entry at dist/server/entry.mjs"
+      exit 1
+    fi
+    node dist/server/entry.mjs
+  ) &
 fi
 
 # Placeholder for Alloy sidecar integration path.

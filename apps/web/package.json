@@ -7,7 +7,9 @@
     "dev": "astro dev",
     "build": "astro build",
     "preview": "astro preview",
-    "check": "astro check"
+    "check": "astro check",
+    "db:migrate": "node ./scripts/migrate.mjs",
+    "db:migrate:check": "node ./scripts/migrate.mjs --check"
   },
   "dependencies": {
     "@libsql/client": "^0.15.15",

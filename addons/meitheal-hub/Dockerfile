@@ -7,8 +7,8 @@ RUN npm install -g pnpm@10.8.0
 WORKDIR /opt/meitheal
 COPY . /opt/meitheal
 
-# Minimal install for add-on runtime; production hardening comes in subsequent slices.
-RUN pnpm install --frozen-lockfile=false --ignore-scripts || true
+RUN pnpm install --frozen-lockfile=false --ignore-scripts
+RUN pnpm --filter @meitheal/web build
 
 COPY run.sh /run.sh
 RUN chmod +x /run.sh
