@@ -8,8 +8,7 @@
   "scripts": {
     "check": "tsc --noEmit"
   },
-  "dependencies": {},
   "devDependencies": {
-    "typescript": "^5.8.3"
+    "typescript": "^5.9.3"
   }
 }

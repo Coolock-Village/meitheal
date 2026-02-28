@@ -10,8 +10,8 @@
     "@meitheal/integration-core": "workspace:*"
   },
   "devDependencies": {
-    "typescript": "^5.8.3",
-    "@cloudflare/workers-types": "^4.20260226.1",
-    "wrangler": "^3.100.0"
+    "@cloudflare/workers-types": "^4.20260228.1",
+    "typescript": "^5.9.3",
+    "wrangler": "^4.69.0"
   }
 }
