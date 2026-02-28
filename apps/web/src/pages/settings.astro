@@ -413,20 +413,31 @@ import Layout from "../layouts/Layout.astro";
         const statusEl = document.getElementById("ha-status");
         if (statusEl)
           statusEl.innerHTML =
-            '<span style="color: var(--accent);">Testing...</span>';
+            '<span style="color: var(--accent);">Testing HA connection...</span>';
         try {
-          const res = await fetch("/api/health");
-          const data = await res.json();
+          const res = await fetch("/api/ha/connection");
+          const data = (await res.json()) as Record<string, unknown>;
           if (statusEl) {
-            statusEl.innerHTML =
-              data.status === "ok"
-                ? '<span style="color: var(--accent);">✅ Connected — API healthy</span>'
-                : '<span style="color: var(--danger);">⚠ API returned non-ok status</span>';
+            if (data.connected) {
+              const comps = Array.isArray(data.components)
+                ? (data.components as string[]).join(", ")
+                : "";
+              statusEl.innerHTML =
+                `<span style="color: var(--accent);">✅ Connected — HA ${data.version} (${data.mode})</span>` +
+                (comps
+                  ? `<br><small style="color: var(--text-muted);">Available: ${comps}</small>`
+                  : "") +
+                `<br><small style="color: var(--text-muted);">${data.location_name} · ${data.time_zone}</small>`;
+            } else {
+              statusEl.innerHTML =
+                `<span style="color: var(--danger);">⚠ ${data.message ?? "HA not reachable"}</span>` +
+                `<br><small style="color: var(--text-muted);">Mode: ${data.mode ?? "unknown"}</small>`;
+            }
           }
         } catch {
           if (statusEl)
             statusEl.innerHTML =
-              '<span style="color: var(--danger);">❌ Connection failed</span>';
+              '<span style="color: var(--danger);">❌ Connection test failed</span>';
         }
       });
 
