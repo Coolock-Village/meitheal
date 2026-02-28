@@ -11,6 +11,8 @@ export const GET: APIRoute = async ({ url }) => {
   const sort = url.searchParams.get("sort") ?? "created_at";
   const order = url.searchParams.get("order") === "asc" ? "ASC" : "DESC";
   const search = url.searchParams.get("q");
+  const limit = Math.min(500, Math.max(1, Number(url.searchParams.get("limit")) || 100));
+  const offset = Math.max(0, Number(url.searchParams.get("offset")) || 0);
 
   const validSorts = ["created_at", "updated_at", "title", "status", "priority", "due_date"];
   const sortCol = validSorts.includes(sort) ? sort : "created_at";
@@ -18,6 +20,7 @@ export const GET: APIRoute = async ({ url }) => {
   let sql = `SELECT id, title, description, status, priority, due_date, labels,
                     framework_payload, calendar_sync_state, created_at, updated_at
              FROM tasks`;
+  let countSql = "SELECT COUNT(*) as cnt FROM tasks";
   const conditions: string[] = [];
   const args: InValue[] = [];
 
@@ -31,11 +34,17 @@ export const GET: APIRoute = async ({ url }) => {
   }
 
   if (conditions.length > 0) {
-    sql += ` WHERE ${conditions.join(" AND ")}`;
+    const where = ` WHERE ${conditions.join(" AND ")}`;
+    sql += where;
+    countSql += where;
   }
-  sql += ` ORDER BY ${sortCol} ${order}`;
+  sql += ` ORDER BY ${sortCol} ${order} LIMIT ${limit} OFFSET ${offset}`;
 
-  const result = await client.execute({ sql, args });
+  const [result, countResult] = await Promise.all([
+    client.execute({ sql, args }),
+    client.execute({ sql: countSql, args }),
+  ]);
+  const total = Number((countResult.rows[0] as Record<string, unknown>)?.cnt ?? 0);
   const tasks = result.rows.map((row) => {
     const r = row as Record<string, unknown>;
     return {
@@ -53,7 +62,7 @@ export const GET: APIRoute = async ({ url }) => {
     };
   });
 
-  return new Response(JSON.stringify({ tasks, total: tasks.length }), {
+  return new Response(JSON.stringify({ tasks, total, limit, offset }), {
     status: 200,
     headers: { "content-type": "application/json" },
   });
@@ -87,8 +96,9 @@ export const POST: APIRoute = async ({ request }) => {
   const rawPriority = typeof body.priority === "number" ? body.priority : 3;
   const priority = Math.min(5, Math.max(1, Math.round(rawPriority)));
 
-  // Sanitize description
-  const description = typeof body.description === "string" ? body.description.slice(0, 10000) : "";
+  // Sanitize description (strip HTML tags like title)
+  const rawDesc = typeof body.description === "string" ? body.description.slice(0, 10000) : "";
+  const description = rawDesc.replace(/<[^>]*>/g, "");
 
   // Validate status (allowed enum)
   const allowedStatuses = ["pending", "active", "in_progress", "complete", "done", "todo"];

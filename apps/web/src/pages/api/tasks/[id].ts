@@ -46,20 +46,54 @@ export const PUT: APIRoute = async ({ params, request }) => {
     });
   }
 
+  // Input sanitization — same rules as POST
+  const allowedStatuses = ["pending", "active", "in_progress", "complete", "done", "todo"];
+  const sanitized: Record<string, InValue> = {};
+
+  if (typeof body.title === "string") {
+    const t = body.title.trim().replace(/<[^>]*>/g, "");
+    if (!t) {
+      return new Response(JSON.stringify({ error: "title cannot be empty" }), {
+        status: 400, headers: { "content-type": "application/json" },
+      });
+    }
+    if (t.length > 500) {
+      return new Response(JSON.stringify({ error: "title must be 500 characters or less" }), {
+        status: 400, headers: { "content-type": "application/json" },
+      });
+    }
+    sanitized.title = t;
+  }
+  if (typeof body.description === "string") {
+    sanitized.description = body.description.slice(0, 10000).replace(/<[^>]*>/g, "");
+  }
+  if (typeof body.status === "string") {
+    if (!allowedStatuses.includes(body.status)) {
+      return new Response(JSON.stringify({ error: `Invalid status. Allowed: ${allowedStatuses.join(", ")}` }), {
+        status: 400, headers: { "content-type": "application/json" },
+      });
+    }
+    sanitized.status = body.status;
+  }
+  if (typeof body.priority === "number") {
+    sanitized.priority = Math.min(5, Math.max(1, Math.round(body.priority)));
+  }
+  if (body.due_date !== undefined) {
+    sanitized.due_date = typeof body.due_date === "string" ? body.due_date : null;
+  }
+  if (typeof body.labels === "string") {
+    sanitized.labels = body.labels;
+  }
+  if (typeof body.framework_payload === "string") {
+    try { JSON.parse(body.framework_payload); sanitized.framework_payload = body.framework_payload; } catch { /* skip */ }
+  }
+
   const updates: string[] = [];
   const args: InValue[] = [];
 
-  const fields: Record<string, string> = {
-    title: "title", description: "description", status: "status",
-    priority: "priority", due_date: "due_date", labels: "labels",
-    framework_payload: "framework_payload",
-  };
-
-  for (const [bodyKey, col] of Object.entries(fields)) {
-    if (body[bodyKey] !== undefined) {
-      updates.push(`${col} = ?`);
-      args.push(body[bodyKey] as InValue);
-    }
+  for (const [col, val] of Object.entries(sanitized)) {
+    updates.push(`${col} = ?`);
+    args.push(val);
   }
 
   if (updates.length === 0) {
