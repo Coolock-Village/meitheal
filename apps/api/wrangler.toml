@@ -1,0 +1,23 @@
+name = "meitheal-api"
+main = "src/worker.ts"
+compatibility_date = "2026-02-28"
+compatibility_flags = ["nodejs_compat"]
+
+[[d1_databases]]
+binding = "DB"
+database_name = "meitheal-db"
+database_id = "REPLACE_WITH_D1_DATABASE_ID"
+
+[vars]
+MEITHEAL_RUNTIME = "cloudflare"
+
+# Secrets (set via `wrangler secret put`):
+# - MEITHEAL_VIKUNJA_API_TOKEN
+
+[env.staging]
+name = "meitheal-api-staging"
+
+[[env.staging.d1_databases]]
+binding = "DB"
+database_name = "meitheal-db-staging"
+database_id = "REPLACE_WITH_STAGING_D1_ID"
