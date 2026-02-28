@@ -9,7 +9,8 @@ export const GET: APIRoute = async ({ params }) => {
   const client = getPersistenceClient();
   const result = await client.execute({
     sql: `SELECT id, title, description, status, priority, due_date, labels,
-                 framework_payload, calendar_sync_state, created_at, updated_at
+                 framework_payload, calendar_sync_state, board_id, custom_fields,
+                 parent_id, time_tracked, created_at, updated_at
           FROM tasks WHERE id = ? LIMIT 1`,
     args: [params.id!],
   });
@@ -87,6 +88,12 @@ export const PUT: APIRoute = async ({ params, request }) => {
   if (typeof body.framework_payload === "string") {
     try { JSON.parse(body.framework_payload); sanitized.framework_payload = body.framework_payload; } catch { /* skip */ }
   }
+  if (typeof body.custom_fields === "string") {
+    try { JSON.parse(body.custom_fields); sanitized.custom_fields = body.custom_fields; } catch { /* skip */ }
+  }
+  if (typeof body.board_id === "string") {
+    sanitized.board_id = body.board_id;
+  }
 
   const updates: string[] = [];
   const args: InValue[] = [];
@@ -115,7 +122,8 @@ export const PUT: APIRoute = async ({ params, request }) => {
   // Return updated
   const updated = await client.execute({
     sql: `SELECT id, title, description, status, priority, due_date, labels,
-                 framework_payload, calendar_sync_state, created_at, updated_at
+                 framework_payload, calendar_sync_state, board_id, custom_fields,
+                 parent_id, time_tracked, created_at, updated_at
           FROM tasks WHERE id = ? LIMIT 1`,
     args: [params.id!],
   });

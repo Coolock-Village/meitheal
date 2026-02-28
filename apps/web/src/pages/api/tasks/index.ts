@@ -19,7 +19,7 @@ export const GET: APIRoute = async ({ url }) => {
 
   let sql = `SELECT id, title, description, status, priority, due_date, labels,
                     framework_payload, calendar_sync_state, parent_id, time_tracked,
-                    created_at, updated_at
+                    board_id, custom_fields, created_at, updated_at
              FROM tasks`;
   let countSql = "SELECT COUNT(*) as cnt FROM tasks";
   const conditions: string[] = [];
@@ -29,6 +29,13 @@ export const GET: APIRoute = async ({ url }) => {
     conditions.push("status = ?");
     args.push(status);
   }
+
+  const boardId = url.searchParams.get("board_id");
+  if (boardId) {
+    conditions.push("board_id = ?");
+    args.push(boardId);
+  }
+
   if (search) {
     conditions.push("(title LIKE ? OR description LIKE ?)");
     args.push(`%${search}%`, `%${search}%`);
@@ -60,6 +67,8 @@ export const GET: APIRoute = async ({ url }) => {
       calendar_sync_state: r.calendar_sync_state ?? "pending",
       parent_id: r.parent_id ?? null,
       time_tracked: Number(r.time_tracked ?? 0),
+      board_id: r.board_id ?? "default",
+      custom_fields: typeof r.custom_fields === "string" ? r.custom_fields : "{}",
       created_at: r.created_at,
       updated_at: r.updated_at,
     };
@@ -124,16 +133,24 @@ export const POST: APIRoute = async ({ request }) => {
   // Validate parent_id (optional reference to another task)
   const parent_id = typeof body.parent_id === "string" ? body.parent_id : null;
 
+  // Board and custom fields
+  const board_id = typeof body.board_id === "string" ? body.board_id : "default";
+  let custom_fields = "{}";
+  if (typeof body.custom_fields === "string") {
+    try { JSON.parse(body.custom_fields); custom_fields = body.custom_fields; } catch { custom_fields = "{}"; }
+  }
+
   await client.execute({
     sql: `INSERT INTO tasks (id, title, description, status, priority, due_date, labels,
                              framework_payload, calendar_sync_state, parent_id, time_tracked,
+                             board_id, custom_fields,
                              idempotency_key, request_id, created_at, updated_at)
-          VALUES (?, ?, ?, ?, ?, ?, ?, ?, 'pending', ?, 0, ?, ?, ?, ?)`,
+          VALUES (?, ?, ?, ?, ?, ?, ?, ?, 'pending', ?, 0, ?, ?, ?, ?, ?, ?)`,
     args: [id, title, description, status, priority, due_date, labels, framework_payload,
-      parent_id, crypto.randomUUID(), crypto.randomUUID(), now, now] as InValue[],
+      parent_id, board_id, custom_fields, crypto.randomUUID(), crypto.randomUUID(), now, now] as InValue[],
   });
 
-  return new Response(JSON.stringify({ id, title, description, status, priority, due_date, labels, parent_id, time_tracked: 0, created_at: now, updated_at: now }), {
+  return new Response(JSON.stringify({ id, title, description, status, priority, due_date, labels, parent_id, board_id, custom_fields, time_tracked: 0, created_at: now, updated_at: now }), {
     status: 201,
     headers: { "content-type": "application/json" },
   });

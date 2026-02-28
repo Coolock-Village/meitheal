@@ -235,9 +235,44 @@ export async function ensureSchema(): Promise<void> {
     await client.execute("ALTER TABLE tasks ADD COLUMN time_tracked INTEGER NOT NULL DEFAULT 0");
   }
 
+  // Phase 15: Boards for DDD domain separation
+  await client.execute(`
+    CREATE TABLE IF NOT EXISTS boards (
+      id TEXT PRIMARY KEY,
+      title TEXT NOT NULL,
+      icon TEXT NOT NULL DEFAULT '📋',
+      color TEXT NOT NULL DEFAULT '#10b981',
+      position INTEGER NOT NULL DEFAULT 0,
+      created_at INTEGER NOT NULL,
+      updated_at INTEGER NOT NULL
+    )
+  `);
+
+  // Auto-create default board if none exist
+  const boardCount = await client.execute("SELECT COUNT(*) as cnt FROM boards");
+  if (Number(boardCount.rows[0]?.cnt ?? 0) === 0) {
+    const now = Date.now();
+    await client.execute({
+      sql: "INSERT INTO boards (id, title, icon, color, position, created_at, updated_at) VALUES (?, ?, ?, ?, ?, ?, ?)",
+      args: ["default", "Default", "📋", "#10b981", 0, now, now],
+    });
+  }
+
+  // Add board_id to tasks
+  if (!(await hasColumn(client, "tasks", "board_id"))) {
+    await client.execute("ALTER TABLE tasks ADD COLUMN board_id TEXT NOT NULL DEFAULT 'default'");
+    await client.execute("UPDATE tasks SET board_id = 'default' WHERE board_id = 'default'");
+  }
+
+  // Custom fields JSON storage per task
+  if (!(await hasColumn(client, "tasks", "custom_fields"))) {
+    await client.execute("ALTER TABLE tasks ADD COLUMN custom_fields TEXT NOT NULL DEFAULT '{}'");
+  }
+
   await client.execute("CREATE INDEX IF NOT EXISTS tasks_status_idx ON tasks(status)");
   await client.execute("CREATE INDEX IF NOT EXISTS tasks_priority_idx ON tasks(priority)");
   await client.execute("CREATE INDEX IF NOT EXISTS tasks_parent_id_idx ON tasks(parent_id)");
+  await client.execute("CREATE INDEX IF NOT EXISTS tasks_board_id_idx ON tasks(board_id)");
 
   ensured = true;
 
