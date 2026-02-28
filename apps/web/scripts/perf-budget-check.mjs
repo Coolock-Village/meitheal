@@ -111,7 +111,12 @@ async function main() {
   const budgets = await loadBudgets(scriptDir);
   const appRoot = path.resolve(scriptDir, "..");
   const entryFile = path.join(appRoot, "dist/server/entry.mjs");
-  await fs.access(entryFile);
+  try {
+    await fs.access(entryFile);
+  } catch {
+    console.error("Error: dist/server/entry.mjs not found. Run 'pnpm --filter web build' first.");
+    process.exit(1);
+  }
 
   const clientDir = path.join(appRoot, "dist/client");
   const clientBytes = await sizeOfDirectoryBytes(clientDir);

@@ -98,7 +98,7 @@ export async function processSyncQueue(
           type: "conflict-resolved",
           conflict: {
             entityId: op.entityId,
-            localUpdatedAt: JSON.parse(op.payload).updatedAt as string,
+            localUpdatedAt: (JSON.parse(op.payload) as Record<string, string>).updatedAt ?? "unknown",
             serverUpdatedAt: serverVersion.updatedAt,
           },
         })
@@ -106,8 +106,7 @@ export async function processSyncQueue(
         // Server wins — update local with server data
         await putTask({ ...serverVersion, syncedAt: new Date().toISOString() })
         await removeSyncOp(op.id)
-        await incrementRetryCount(op.id)
-        result.failed++
+        result.succeeded++
         // Wait using exponential backoff based on retry count
         const delay = RETRY_DELAYS_MS[op.retryCount] ?? RETRY_DELAYS_MS[RETRY_DELAYS_MS.length - 1]!
         console.warn(`[sync-engine] op ${op.id} failed, retrying in ${delay}ms...`)

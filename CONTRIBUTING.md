@@ -33,7 +33,7 @@ Use feature branches from `main`:
 
 Use conventional commits with emoji prefixes:
 
-```
+```text
 feat(scope): description
 fix(scope): description
 docs(scope): description
@@ -43,7 +43,7 @@ test(scope): description
 
 Examples:
 
-```
+```text
 feat(offline): Add IDB attachment store for image uploads
 fix(ux): Suppress keyboard shortcuts when task detail is open
 docs(kcs): Update PWA guide with attachment documentation

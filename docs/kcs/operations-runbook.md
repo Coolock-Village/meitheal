@@ -33,9 +33,12 @@ Recommended Loki filter sequence:
 
 1. Query `GET /api/health` to validate runtime + DB readiness.
 2. Inspect add-on logs for:
+
 - `Database migration failed` errors from `run.sh`.
 - startup healthcheck pass/fail diagnostics.
+
 3. If health is failing:
+
 - verify `MEITHEAL_DB_URL` and add-on write permissions.
 - run migration commands manually in add-on shell.
 
@@ -52,18 +55,37 @@ CI gate:
 1. `migration-check` job runs `db:migrate:check`.
 2. If pending migrations exist, CI fails closed.
 
+### IndexedDB Offline Schema Upgrades
+
+The client-side `offline-store.ts` uses an `onupgradeneeded` handler to manage IDB schema versions:
+
+- **V1**: `tasks` store + `pending_sync` store
+- **V2**: Adds `task_attachments` store (Phase 23) with `taskId` and `createdAt` indexes
+
+The upgrade runs automatically when the browser opens the database with a higher version number. To force a schema reset:
+
+1. Clear site data in browser DevTools → Application → Storage
+2. Or delete the `meitheal-offline` database from IndexedDB directly
+
 ## Vikunja Compatibility Mode
 
 1. Configure one of:
+
 - `MEITHEAL_VIKUNJA_API_TOKEN`
 - `MEITHEAL_VIKUNJA_API_TOKENS`
+
 2. Use `/api/v1/*` routes for voice assistant interop.
-3. Calendar behavior for compat task create:
+2. Calendar behavior for compat task create:
+
 - `compatibility.vikunja_api.calendar_sync_mode: disabled` (default)
 - `compatibility.vikunja_api.calendar_sync_mode: enabled` (optional)
+
 4. Optional env override for validation/probing:
+
 - `MEITHEAL_COMPAT_CALENDAR_SYNC_MODE=enabled|disabled`
+
 5. Live compatibility verifier options:
+
 - local/manual: `tests/scripts/verify_vikunja_voice_assistant_compat.py`
 - GitHub Actions: `Live Vikunja Voice Assistant Compatibility` workflow (`.github/workflows/live-vikunja-voice-assistant.yml`)
 
@@ -71,17 +93,23 @@ CI gate:
 
 1. `schema-drift` CI job validates migration SQL against runtime schema expectations.
 2. `perf-budgets` CI job enforces (GitHub Actions calibrated profile):
+
 - client bundle total <= 64 KB
 - web process RSS <= 160 MB after warm start
 - task create p95 <= 150 ms in harness
+
 3. Budget source is `apps/web/scripts/perf-budget-baseline.json`, calibrated from GitHub runner measurements.
-4. Outside GitHub Actions, default local thresholds remain conservative:
+2. Outside GitHub Actions, default local thresholds remain conservative:
+
 - client bundle total <= 80 KB
 - web process RSS <= 220 MB
 - task create p95 <= 250 ms
+
 5. Optional overrides for calibration windows:
+
 - `MEITHEAL_PERF_BUDGET_CLIENT_BYTES_MAX`
 - `MEITHEAL_PERF_BUDGET_RSS_KB_MAX`
 - `MEITHEAL_PERF_BUDGET_P95_MS_MAX`
 - `MEITHEAL_PERF_BUDGET_FILE`
+
 6. Home Assistant publishing readiness checklist: `docs/kcs/ha-publishing-checklist.md`.

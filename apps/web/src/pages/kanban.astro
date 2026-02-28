@@ -769,10 +769,18 @@ const typeConfig: Record<
       });
     });
 
-    // Header "+ New Task" button → trigger first column's add button
+    // Header "+ New Task" button → trigger first visible column's add button
     document.getElementById("kanban-new-task-btn")?.addEventListener("click", () => {
-      const firstAddBtn = document.querySelector(".kanban-column .kanban-add-btn");
-      if (firstAddBtn instanceof HTMLElement) {
+      // Find the first visible add button (skip hidden ones in collapsed swimlanes)
+      const allAddBtns = document.querySelectorAll(".kanban-column .kanban-add-btn");
+      let firstAddBtn = null;
+      for (const btn of allAddBtns) {
+        if (btn instanceof HTMLElement && btn.offsetParent !== null) {
+          firstAddBtn = btn;
+          break;
+        }
+      }
+      if (firstAddBtn) {
         firstAddBtn.click();
         setTimeout(() => {
           const input = firstAddBtn.parentElement?.querySelector(".kanban-inline-add input");

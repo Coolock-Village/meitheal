@@ -216,8 +216,5 @@ export const DELETE: APIRoute = async ({ params }) => {
 
   await client.execute({ sql: "DELETE FROM tasks WHERE id = ?", args: [params.id!] });
 
-  return new Response(JSON.stringify({ deleted: true }), {
-    status: 200,
-    headers: { "content-type": "application/json" },
-  });
+  return new Response(null, { status: 204 });
 };
