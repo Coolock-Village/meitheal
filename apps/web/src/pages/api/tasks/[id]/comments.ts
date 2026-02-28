@@ -6,19 +6,27 @@ import { stripHtml } from "../../../../lib/strip-html";
 /** GET /api/tasks/[id]/comments — list comments, POST — add comment */
 
 export const GET: APIRoute = async ({ params }) => {
-    await ensureSchema();
-    const client = getPersistenceClient();
-    const taskId = params.id;
+    try {
+        await ensureSchema();
+        const client = getPersistenceClient();
+        const taskId = params.id;
 
-    const result = await client.execute({
-        sql: "SELECT id, task_id, content, author, created_at FROM comments WHERE task_id = ? ORDER BY created_at ASC",
-        args: [taskId!] as InValue[],
-    });
+        const result = await client.execute({
+            sql: "SELECT id, task_id, content, author, created_at FROM comments WHERE task_id = ? ORDER BY created_at ASC",
+            args: [taskId!] as InValue[],
+        });
 
-    return new Response(JSON.stringify({ comments: result.rows }), {
-        status: 200,
-        headers: { "content-type": "application/json" },
-    });
+        return new Response(JSON.stringify({ comments: result.rows }), {
+            status: 200,
+            headers: { "content-type": "application/json" },
+        });
+    } catch (err) {
+        console.error("[comments] GET failed:", err);
+        return new Response(JSON.stringify({ error: "Failed to load comments" }), {
+            status: 500,
+            headers: { "content-type": "application/json" },
+        });
+    }
 };
 
 export const POST: APIRoute = async ({ params, request }) => {

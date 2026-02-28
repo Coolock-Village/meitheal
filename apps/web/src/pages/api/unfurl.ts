@@ -166,7 +166,8 @@ export const POST: APIRoute = async ({ request }) => {
       status: 200,
       headers: { "content-type": "application/json" }
     });
-  } catch {
+  } catch (err) {
+    console.error("[unfurl] Failed to fetch URL:", url, err);
     return new Response(JSON.stringify({ error: "Unable to fetch URL" }), {
       status: 502,
       headers: { "content-type": "application/json" }
