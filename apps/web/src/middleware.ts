@@ -40,11 +40,25 @@ export const onRequest: MiddlewareHandler = async ({ request, locals }, next) =>
   locals.ingressPath = ingressPath;
   locals.hassioTokenPresent = hasHassioToken(request.headers);
 
+  // Security response headers (OWASP best practices)
+  const securityHeaders: Record<string, string> = {
+    "X-Content-Type-Options": "nosniff",
+    "X-Frame-Options": "SAMEORIGIN", // Allow HA ingress iframe
+    "Referrer-Policy": "strict-origin-when-cross-origin",
+    "Permissions-Policy": "camera=(), microphone=(), geolocation=()",
+    "X-XSS-Protection": "1; mode=block",
+  };
+
   // For API routes that expect ingress context, fail fast if required headers are absent.
   if (shouldEnforceIngressHeaders(request.url, ingressPath)) {
     const missingHeaders = getMissingRequiredIngressHeaders(requiredIngressHeaders, request.headers);
     if (missingHeaders.length === 0) {
-      return next();
+      const response = await next();
+      // Inject security headers
+      for (const [key, value] of Object.entries(securityHeaders)) {
+        response.headers.set(key, value);
+      }
+      return response;
     }
 
     return new Response(
@@ -54,10 +68,15 @@ export const onRequest: MiddlewareHandler = async ({ request, locals }, next) =>
       }),
       {
         status: 401,
-        headers: { "content-type": "application/json" }
+        headers: { "content-type": "application/json", ...securityHeaders }
       }
     );
   }
 
-  return next();
+  const response = await next();
+  // Inject security headers on all responses
+  for (const [key, value] of Object.entries(securityHeaders)) {
+    response.headers.set(key, value);
+  }
+  return response;
 };
