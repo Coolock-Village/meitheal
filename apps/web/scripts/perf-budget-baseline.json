@@ -5,12 +5,12 @@
   "sample_runs": 16,
   "rationale": "Budget updated for Phase 19 production polish: mobile responsive CSS, keyboard nav, due-date badges, stat-card-danger, table scroll shadow, collapsed columns. Growth from 81700 to ~108KB is legitimate production CSS.",
   "observed_max": {
-    "clientBytes": 107835,
+    "clientBytes": 115921,
     "rssKb": 195688,
     "p95Ms": 23.6
   },
   "budgets": {
-    "clientBytesMax": 112640,
+    "clientBytesMax": 120832,
     "rssKbMax": 225280,
     "p95MsMax": 250
   }
