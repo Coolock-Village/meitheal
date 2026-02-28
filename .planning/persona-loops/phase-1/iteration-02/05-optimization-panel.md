@@ -11,4 +11,5 @@
 | Perf budgets | CI gates for memory/RSS and p95 latency are still baseline-only. | 4 | 2 | 3 |
 
 ## Summary
+
 Iteration 2 achieved the target vertical slice and publication goals. Remaining work is production hardening and runtime quality gates.
