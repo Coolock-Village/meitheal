@@ -769,6 +769,21 @@ const typeConfig: Record<
       });
     });
 
+    // Header "+ New Task" button → trigger first column's add button
+    document.getElementById("kanban-new-task-btn")?.addEventListener("click", () => {
+      const firstAddBtn = document.querySelector(".kanban-column .kanban-add-btn");
+      if (firstAddBtn instanceof HTMLElement) {
+        firstAddBtn.click();
+        setTimeout(() => {
+          const input = firstAddBtn.parentElement?.querySelector(".kanban-inline-add input");
+          if (input instanceof HTMLInputElement) {
+            input.scrollIntoView({ behavior: "smooth", block: "nearest" });
+            input.focus();
+          }
+        }, 50);
+      }
+    });
+
     // Lane management (API-backed, server-persisted)
     const manageLanesBtn = document.getElementById("manage-lanes-btn");
     const laneMgmt = document.getElementById("lane-mgmt");

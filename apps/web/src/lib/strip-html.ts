@@ -1,17 +1,27 @@
 /**
- * Recursively strips HTML tags from a string.
+ * Strips HTML tags from a string using DOMParser.
  *
- * A single-pass regex `/<[^>]*>/g` is insufficient because nested/malformed
- * tags like `<scr<script>ipt>` would leave `<script>` after one pass.
- * This function loops until no tags remain, satisfying CodeQL's
- * "Incomplete multi-character sanitization" rule.
+ * DOMParser-based approach is more robust than regex against malformed HTML,
+ * nested tags, and edge cases. Falls back to regex stripping for server-side
+ * contexts where DOMParser may not be available.
  *
  * @domain tasks (shared utility — cross-domain safe)
- * @see https://codeql.github.com/codeql-query-help/javascript/js-incomplete-multi-character-sanitization/
  */
+
 const TAG_RE = /<[^>]*>/g;
 
 export function stripHtml(input: string): string {
+  // Prefer DOMParser for robust sanitization (browser context)
+  if (typeof DOMParser !== "undefined") {
+    try {
+      const doc = new DOMParser().parseFromString(input, "text/html");
+      return doc.body.textContent ?? "";
+    } catch {
+      // Fallback to regex if DOMParser fails
+    }
+  }
+
+  // Server-side fallback: recursive regex stripping
   let result = input;
   while (TAG_RE.test(result)) {
     TAG_RE.lastIndex = 0;

@@ -1,93 +1,75 @@
 # Contributing to Meitheal
 
-Thank you for your interest in contributing! Meitheal is a cooperative task and life engine for Home Assistant.
-
 ## Getting Started
 
 ```bash
-# Clone
+# Clone the repo
 git clone https://github.com/Coolock-Village/meitheal.git
 cd meitheal
 
-# Install
-npx pnpm install
+# Install dependencies (pnpm required)
+pnpm install
 
-# Dev server (Astro)
-npx pnpm -C apps/web dev
+# Run the dev server
+pnpm --filter web dev
 
-# Typecheck all packages
-npx pnpm check
+# Run type checks
+pnpm check
 
 # Run tests
-npx pnpm test
+pnpm test
 ```
 
-## Project Structure
+## Branch Naming
+
+Use feature branches from `main`:
+
+- `feat/<description>` — new features
+- `fix/<description>` — bug fixes
+- `docs/<description>` — documentation only
+- `chore/<description>` — tooling, CI, dependencies
+
+## Commit Messages
+
+Use conventional commits with emoji prefixes:
 
 ```
-apps/
-├── web/          # Astro SSR — HA add-on UI
-│   └── src/
-│       ├── domains/         # Bounded contexts
-│       │   ├── integrations/ # Vikunja compat, HA calendar
-│       │   └── offline/      # IndexedDB, sync engine, connectivity
-│       ├── pages/           # Astro routes
-│       └── components/      # UI components
-├── api/          # Cloudflare Workers — dual runtime
-packages/
-├── integration-core/  # Bus, adapters, webhook, rate limiter, D1
-├── domain-tasks/      # Task domain logic
-├── domain-strategy/   # Framework scoring (RICE/DRICE)
-├── domain-auth/       # Authentication
-└── domain-observability/ # Logging, metrics, audit trail
+feat(scope): description
+fix(scope): description
+docs(scope): description
+chore(scope): description
+test(scope): description
 ```
 
-## Architecture Principles
+Examples:
 
-- **DDD:** Each bounded context has explicit domain boundaries
-- **Ubiquitous language:** "task", "transcription", "framework", "integration"
-- **Astro-first:** SSR via Astro, not SPA
-- **HA-native:** Supervisor token, ingress auth, add-on lifecycle
-- **Dual-runtime:** Same domain packages for HA (Node) and Cloudflare
+```
+feat(offline): Add IDB attachment store for image uploads
+fix(ux): Suppress keyboard shortcuts when task detail is open
+docs(kcs): Update PWA guide with attachment documentation
+```
 
-## Making Changes
+## Monorepo Structure
 
-1. **Branch** from `main` — use `feat/`, `fix/`, `docs/` prefixes
-2. **Write tests** for new functionality
-3. **Run typecheck** — `npx pnpm check` must pass with 0 errors
-4. **Run tests** — `npx pnpm test` must pass
-5. **Commit** with descriptive messages (emoji prefixes welcome)
-6. **PR** against `main` — include what changed and why
+- `apps/web` — Astro PWA frontend + API routes
+- `apps/api` — Cloudflare Workers adapter
+- `packages/domain-*` — Pure domain logic (DDD bounded contexts)
+- `addons/meitheal-hub` — Home Assistant OS add-on
+- `tests/e2e` — Playwright e2e tests
+- `tests/governance` — Repo standards enforcement
+- `docs/` — ADRs, KCS runbooks, methodology docs
 
-## Code Style
+## Development Guidelines
 
-- TypeScript strict mode (exactOptionalPropertyTypes, noUncheckedIndexedAccess)
-- No `any` — use `unknown` and narrow
-- Explicit error handling — no silent failures
-- Document as you go (KCS principle)
+1. **DDD boundaries** — domain logic goes in `packages/domain-*`, not in pages
+2. **KCS compliance** — update docs when behavior changes (same commit)
+3. **Astro-first** — prefer Astro integrations over custom solutions
+4. **Type safety** — `pnpm check` must pass with 0 errors before committing
+5. **Test coverage** — add tests for new features in `tests/e2e/`
 
-### No Dummy Data or Fake Functionality
+## Pull Request Process
 
-> **This is a hard requirement.** All code must be real, functional, and production-grade.
-
-- ❌ No placeholder/dummy data (e.g. `"Lorem ipsum"`, `"Test User"`, hardcoded fake lists)
-- ❌ No fake API responses or mocked production behavior
-- ❌ No `TODO: implement later` stubs that pretend to work
-- ❌ No hardcoded sample data masquerading as real content
-- ✅ Use real integrations, real database queries, real API calls
-- ✅ Tests may use mocks — production code must not
-- ✅ If a feature isn't ready, gate it behind a feature flag — don't fake it
-
-## ADRs
-
-Architecture decisions are documented in `docs/decisions/`. When making structural changes, create a new ADR following the existing pattern.
-
-## Tests
-
-- **Unit/integration:** Playwright test runner in `tests/` workspace
-- **Governance:** Repo standards in `tests/governance/`
-- Run all: `npx pnpm test`
-
----
-
-*Meitheal means "cooperative work" in Irish. Let's build together.*
+1. Create a feature branch
+2. Make changes, ensuring `pnpm check` and `pnpm test` pass
+3. Push and open a PR against `main`
+4. PR must pass all 6 CI jobs before merge
