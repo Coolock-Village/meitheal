@@ -181,9 +181,18 @@ const statusLabels: Record<string, string> = {
                 {statusLabels[s] ?? s}
               </span>
               <button
+                class="task-duplicate"
+                data-id={String(task.id)}
+                title="Duplicate task"
+                aria-label="Duplicate task"
+              >
+                ⧉
+              </button>
+              <button
                 class="task-delete"
                 data-id={String(task.id)}
                 title="Delete task"
+                aria-label="Delete task"
               >
                 ×
               </button>
@@ -649,6 +658,39 @@ const statusLabels: Record<string, string> = {
           setTimeout(() => window.location.reload(), 500);
         } catch {
           showToast("Failed to update", "error");
+        }
+      });
+    });
+
+    // Duplicate task
+    document.querySelectorAll(".task-duplicate").forEach((btn) => {
+      btn.addEventListener("click", async (e) => {
+        e.stopPropagation();
+        const id = (btn as HTMLElement).dataset.id;
+        if (!id) return;
+        try {
+          const res = await fetch(`/api/tasks/${id}`);
+          if (!res.ok) return;
+          const task = await res.json();
+          const dupRes = await fetch("/api/tasks", {
+            method: "POST",
+            headers: { "content-type": "application/json" },
+            body: JSON.stringify({
+              title: `${task.title} (Copy)`,
+              description: task.description ?? "",
+              priority: task.priority ?? 3,
+              status: "pending",
+              due_date: task.due_date ?? null,
+              labels: task.labels ?? "[]",
+              framework_payload: task.framework_payload ?? "{}",
+            }),
+          });
+          if (dupRes.ok) {
+            showToast("Task duplicated!");
+            window.location.reload();
+          }
+        } catch {
+          showToast("Failed to duplicate", "error");
         }
       });
     });

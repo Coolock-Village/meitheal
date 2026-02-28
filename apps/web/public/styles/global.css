@@ -752,3 +752,18 @@ body {
   color: var(--accent);
   border: 1px solid rgba(16, 185, 129, 0.2);
 }
+
+/* Duplicate task button */
+.task-duplicate {
+  background: none;
+  border: none;
+  color: var(--text-muted);
+  cursor: pointer;
+  padding: 4px;
+  font-size: 16px;
+  transition: color var(--transition);
+  line-height: 1;
+}
+.task-duplicate:hover {
+  color: var(--info);
+}
