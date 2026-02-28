@@ -52,6 +52,37 @@
   ::selection {
     @apply bg-accent/30 text-text-primary;
   }
+
+  /* Focus-visible: keyboard accessibility (R-504) */
+  :focus-visible {
+    outline: 2px solid var(--accent);
+    outline-offset: 2px;
+    border-radius: var(--radius-sm);
+  }
+
+  /* Custom scrollbar — dark theme polish */
+  ::-webkit-scrollbar {
+    width: 8px;
+    height: 8px;
+  }
+
+  ::-webkit-scrollbar-track {
+    background: var(--bg-primary);
+  }
+
+  ::-webkit-scrollbar-thumb {
+    background: var(--border);
+    border-radius: 4px;
+  }
+
+  ::-webkit-scrollbar-thumb:hover {
+    background: var(--text-muted);
+  }
+
+  * {
+    scrollbar-width: thin;
+    scrollbar-color: var(--border) var(--bg-primary);
+  }
 }
 
 /* ===== Component Layer: Reusable patterns ===== */
