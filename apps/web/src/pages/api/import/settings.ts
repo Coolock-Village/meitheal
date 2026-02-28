@@ -6,11 +6,19 @@ const ALLOWED_KEYS = new Set([
     "ha-url", "ha-token", "vikunja-url", "vikunja-token",
     "default-board", "theme", "default-view", "wip-limit",
     "ai-provider", "ai-custom-url", "show-description", "column-order",
-    "enable-notifications", "notification-sound", "notification-vibrate", "calendar-entity"
+    "enable-notifications", "notification-sound", "notification-vibrate", "calendar-entity",
+    "rice-scoring-enabled", "heart-scoring-enabled", "kcs-scoring-enabled",
+    "sidebar-collapsed", "kanban-group-by", "task-detail-width",
 ]);
 
 export const POST: APIRoute = async ({ request }) => {
     try {
+        // Guard against oversized payloads (100KB max)
+        const contentLength = Number(request.headers.get("content-length") ?? 0);
+        if (contentLength > 102400) {
+            return new Response(JSON.stringify({ error: "Import payload too large (max 100KB)" }), { status: 413, headers: { "Content-Type": "application/json" } });
+        }
+
         const data = await request.json();
 
         if (!data || typeof data !== "object" || Array.isArray(data)) {
@@ -32,9 +40,10 @@ export const POST: APIRoute = async ({ request }) => {
             }
 
             const stringValue = typeof value === "string" ? value : JSON.stringify(value);
+            const now = Date.now();
             statements.push({
-                sql: `INSERT INTO settings (key, value) VALUES (?, ?) ON CONFLICT(key) DO UPDATE SET value = excluded.value`,
-                args: [key, stringValue]
+                sql: `INSERT INTO settings (key, value, updated_at) VALUES (?, ?, ?) ON CONFLICT(key) DO UPDATE SET value = excluded.value, updated_at = excluded.updated_at`,
+                args: [key, stringValue, now]
             });
         }
 
