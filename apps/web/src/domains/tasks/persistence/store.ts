@@ -52,6 +52,7 @@ function getClient(): Client {
   return clientSingleton;
 }
 
+/** Drizzle ORM client — lazy-initialized singleton. Use for typed queries. */
 export function getDb() {
   if (dbSingleton) {
     return dbSingleton;
@@ -63,6 +64,7 @@ export function getDb() {
   return dbSingleton;
 }
 
+/** Low-level libSQL client — use for raw SQL when Drizzle isn't needed. */
 export function getPersistenceClient(): Client {
   return getClient();
 }
@@ -118,6 +120,10 @@ async function hasColumn(client: Client, tableName: string, columnName: string):
   return result.rows.some((row) => String((row as Record<string, unknown>).name) === columnName);
 }
 
+/**
+ * Idempotent schema bootstrap — creates all tables, indexes, and default data.
+ * Safe to call on every request; short-circuits after first successful run.
+ */
 export async function ensureSchema(): Promise<void> {
   if (ensured) {
     return;
@@ -417,6 +423,7 @@ export async function findByIdempotencyKey(idempotencyKey: string): Promise<Pers
   };
 }
 
+/** Find a single task by UUID. Returns null if not found. */
 export async function findTaskById(taskId: string): Promise<PersistedTask | null> {
   const client = getClient();
   const taskResult = await client.execute({
