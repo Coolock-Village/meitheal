@@ -257,6 +257,10 @@ function relativeTime(dueDate: string): string {
           });
           if (res.ok) {
             showToast("Task created!");
+            // Green flash on form
+            const form = document.getElementById("quick-add-form");
+            form?.classList.add("flash-success");
+            setTimeout(() => form?.classList.remove("flash-success"), 600);
           } else {
             const data = await res.json();
             showToast(data.error || "Failed to create task", "error");

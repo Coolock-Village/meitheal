@@ -292,6 +292,11 @@ export async function ensureSchema(): Promise<void> {
   }
   await client.execute("CREATE INDEX IF NOT EXISTS tasks_task_type_idx ON tasks(task_type)");
 
+  // Phase 27: Summary field for card subtitles
+  if (!(await hasColumn(client, "tasks", "summary"))) {
+    await client.execute("ALTER TABLE tasks ADD COLUMN summary TEXT");
+  }
+
 
   // Phase 18: Comments table
   await client.execute(`

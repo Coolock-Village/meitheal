@@ -166,13 +166,13 @@ const typeConfig: Record<
       </button>
     </div>
     <div class="type-group-toggle">
-      <button
-        class="btn btn-ghost type-group-btn"
-        id="toggle-swimlanes"
-        title="Group cards by type into swimlanes"
-      >
-        ≡ Group by Type
-      </button>
+      <label class="text-xs text-text-muted" for="group-by-select" style="margin-right: 4px;">≡ Group</label>
+      <select id="group-by-select" class="inline-select" title="Group swimlanes by">
+        <option value="none">None</option>
+        <option value="type" selected>Type</option>
+        <option value="board">Board</option>
+        <option value="priority">Priority</option>
+      </select>
     </div>
   </div>
 
@@ -1148,14 +1148,25 @@ const typeConfig: Record<
         });
       }
 
-      // Swimlane grouping toggle
-      const toggleBtn = document.getElementById("toggle-swimlanes");
-      toggleBtn?.addEventListener("click", () => {
-        isGrouped = !isGrouped;
-        toggleBtn.classList.toggle("active", isGrouped);
-        toggleBtn.textContent = isGrouped
-          ? "≡ Grouped by Type"
-          : "≡ Group by Type";
+      // Swimlane group-by dropdown
+      const groupBySelect = document.getElementById("group-by-select");
+      groupBySelect?.addEventListener("change", () => {
+        const mode = groupBySelect.value;
+
+        if (mode === "board" || mode === "priority") {
+          // Future: dynamic swimlane generation for board/priority
+          const toast = document.createElement("div");
+          toast.className = "toast success";
+          toast.textContent = `Group by ${mode} coming soon`;
+          document.querySelector(".toast-container")?.appendChild(toast);
+          setTimeout(() => toast.remove(), 2500);
+          groupBySelect.value = isGrouped ? "type" : "none";
+          return;
+        }
+
+        const shouldGroup = mode === "type";
+        if (shouldGroup === isGrouped) return;
+        isGrouped = shouldGroup;
 
         document.querySelectorAll(".kanban-column").forEach((col) => {
           const cardsContainer = col.querySelector(".kanban-cards");

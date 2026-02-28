@@ -46,6 +46,12 @@ export const GET: APIRoute = async ({ url }) => {
     args.push(taskType);
   }
 
+  const parentId = url.searchParams.get("parent_id");
+  if (parentId) {
+    conditions.push("parent_id = ?");
+    args.push(parentId);
+  }
+
   if (search) {
     conditions.push("(title LIKE ? OR description LIKE ?)");
     args.push(`%${search}%`, `%${search}%`);

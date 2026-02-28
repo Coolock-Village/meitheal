@@ -256,6 +256,34 @@ try {
             </div>
 
 
+            <!-- Ticket Linking (Parent / Children) -->
+            <div>
+              <label
+                class="text-xs text-text-muted font-semibold uppercase tracking-wide mb-2 block"
+                >Linked Tickets</label
+              >
+              <div class="space-y-2">
+                <div class="flex items-center gap-2">
+                  <span class="text-xs text-text-muted w-14">Parent:</span>
+                  <div id="td-link-parent-display" class="flex-1 flex items-center gap-1">
+                    <span class="text-xs text-text-muted italic">None</span>
+                  </div>
+                </div>
+                <div class="relative">
+                  <input
+                    id="td-link-parent-search"
+                    class="form-input text-sm py-1.5"
+                    placeholder="Search for parent (Epic/Story)..."
+                    autocomplete="off"
+                  />
+                  <div id="td-link-parent-results" class="absolute z-10 left-0 right-0 bg-bg-card border border-border rounded-md shadow-lg max-h-40 overflow-y-auto" style="display:none;"></div>
+                </div>
+                <div>
+                  <span class="text-xs text-text-muted">Children:</span>
+                  <div id="td-link-children" class="space-y-1 mt-1"></div>
+                </div>
+              </div>
+            </div>
 
             <!-- Labels (interactive) -->
             <div>
@@ -278,12 +306,20 @@ try {
                 >Custom Fields</label
               >
               <div id="td-custom-fields" class="space-y-2"></div>
-              <button
-                id="td-add-cf"
-                type="button"
-                class="text-xs text-accent hover:text-accent-hover mt-2 transition-colors"
-                >+ Add Field</button
-              >
+              <div class="relative mt-2">
+                <button
+                  id="td-add-cf"
+                  type="button"
+                  class="text-xs text-accent hover:text-accent-hover transition-colors"
+                  >+ Add Field</button
+                >
+                <div id="td-add-cf-dropdown" class="absolute z-10 left-0 bg-bg-card border border-border rounded-md shadow-lg min-w-[200px] py-1" style="display:none;">
+                  <div class="px-2 py-1">
+                    <input id="td-add-cf-search" class="form-input text-xs py-1 w-full" placeholder="Field name..." autocomplete="off" />
+                  </div>
+                  <div id="td-add-cf-options" class="max-h-32 overflow-y-auto"></div>
+                </div>
+              </div>
             </div>
 
             <!-- Attachments (Phase 23) -->
@@ -649,9 +685,10 @@ try {
 
         if (isEditing) return;
 
-        // Suppress all shortcuts when task detail overlay is open
+        // Suppress most shortcuts when task detail overlay is open
+        // Allow ?, Escape, and Tab through so users can access help and close/navigate
         const taskDetailOpen = !document.getElementById("task-detail-overlay")?.classList.contains("hidden");
-        if (taskDetailOpen) return;
+        if (taskDetailOpen && e.key !== "?" && e.key !== "Escape" && e.key !== "Tab") return;
 
         if (e.key === "/") {
           e.preventDefault();
@@ -899,6 +936,56 @@ try {
             parentEl.classList.add("hidden");
           }
 
+          // Linked Tickets — parent display
+          const linkParentDisplay = document.getElementById("td-link-parent-display") as HTMLElement;
+          if (linkParentDisplay) {
+            if (t.parent_id) {
+              const parentTitle = String(t.parent_title ?? String(t.parent_id).slice(0, 8));
+              linkParentDisplay.innerHTML = `
+                <a href="#" class="text-xs text-accent hover:underline td-parent-link" data-id="${t.parent_id}">${parentTitle}</a>
+                <button class="text-xs text-danger hover:text-red-400 ml-1 td-unlink-parent" title="Remove parent">✕</button>
+              `;
+              linkParentDisplay.querySelector(".td-parent-link")?.addEventListener("click", (e) => {
+                e.preventDefault();
+                openTaskDetail(String(t.parent_id));
+              });
+              linkParentDisplay.querySelector(".td-unlink-parent")?.addEventListener("click", async () => {
+                await saveTD("parent_id", null);
+                linkParentDisplay.innerHTML = `<span class="text-xs text-text-muted italic">None</span>`;
+              });
+            } else {
+              linkParentDisplay.innerHTML = `<span class="text-xs text-text-muted italic">None</span>`;
+            }
+          }
+
+          // Linked Tickets — children
+          const childrenDiv = document.getElementById("td-link-children") as HTMLElement;
+          if (childrenDiv) {
+            childrenDiv.innerHTML = "";
+            try {
+              const childRes = await fetch(`/api/tasks?parent_id=${taskId}`);
+              if (childRes.ok) {
+                const childData = await childRes.json();
+                const children = childData.tasks ?? [];
+                if (children.length === 0) {
+                  childrenDiv.innerHTML = `<span class="text-xs text-text-muted italic">No children</span>`;
+                } else {
+                  children.forEach((c: Record<string, unknown>) => {
+                    const chip = document.createElement("a");
+                    chip.href = "#";
+                    chip.className = "text-xs text-accent hover:underline block";
+                    chip.textContent = `↳ ${String(c.title ?? c.id).slice(0, 50)}`;
+                    chip.addEventListener("click", (e) => {
+                      e.preventDefault();
+                      openTaskDetail(String(c.id));
+                    });
+                    childrenDiv.appendChild(chip);
+                  });
+                }
+              }
+            } catch { childrenDiv.innerHTML = `<span class="text-xs text-text-muted italic">—</span>`; }
+          }
+
           // ID — hidden, accessible via tooltip
           const tdIdEl = document.getElementById("td-id") as HTMLElement;
           tdIdEl.textContent = `#${String(t.id).slice(0, 8)}`;
@@ -1008,23 +1095,35 @@ try {
             document.getElementById("td-toggle-done") as HTMLElement
           ).textContent = isDone ? "↩ Mark as Undone" : "✓ Mark as Done";
 
-          // RICE scoring — render as editable custom field rows
+          // RICE scoring — always show editable fields when RICE is enabled
           try {
             const fp = JSON.parse(String(t.framework_payload ?? "{}"));
             const rice = document.getElementById("td-rice") as HTMLElement;
+
+            // Check if RICE scoring is enabled in settings
+            let riceEnabled = false;
+            try {
+              const riceRes = await fetch("/api/settings?key=rice-scoring-enabled");
+              if (riceRes.ok) {
+                const riceData = await riceRes.json();
+                riceEnabled = riceData.value === true || riceData.value === "true";
+              }
+            } catch { /* default to false */ }
+
             if (fp.rice_score) {
               rice.textContent = `RICE Score: ${fp.rice_score}`;
+            } else if (riceEnabled) {
+              rice.textContent = "RICE Score: —";
             } else {
               rice.textContent = "";
             }
-            // Inject RICE components as editable custom fields
-            const riceFields: Record<string, string> = {};
-            if (fp.reach !== undefined) riceFields["Reach"] = String(fp.reach);
-            if (fp.impact !== undefined) riceFields["Impact"] = String(fp.impact);
-            if (fp.confidence !== undefined) riceFields["Confidence"] = String(fp.confidence);
-            if (fp.effort !== undefined) riceFields["Effort"] = String(fp.effort);
-            for (const [k, v] of Object.entries(riceFields)) {
-              addCFRow(k, v);
+
+            // Always show RICE fields when scoring is enabled, with defaults
+            if (riceEnabled || fp.reach !== undefined || fp.impact !== undefined || fp.confidence !== undefined || fp.effort !== undefined) {
+              addCFRow("Reach", String(fp.reach ?? "0"));
+              addCFRow("Impact", String(fp.impact ?? "0"));
+              addCFRow("Confidence", String(fp.confidence ?? "0"));
+              addCFRow("Effort", String(fp.effort ?? "0"));
             }
           } catch {
             /* skip */
@@ -1350,8 +1449,138 @@ try {
         cfDiv.appendChild(row);
       }
 
-      document.getElementById("td-add-cf")?.addEventListener("click", () => {
-        addCFRow("", "");
+      // Common field names for the dropdown
+      const commonFields = ["Estimate", "Sprint", "Team", "Component", "Environment", "Version", "Story Points", "Acceptance Criteria"];
+
+      function getFieldSuggestions(): string[] {
+        // Combine common fields with existing custom fields from all tasks
+        const existingKeys = new Set<string>();
+        document.querySelectorAll(".td-cf-key").forEach((el) => {
+          const val = (el as HTMLInputElement).value.trim();
+          if (val) existingKeys.add(val);
+        });
+        // Merge, deduplicate, and sort
+        const all = [...new Set([...commonFields, ...existingKeys])];
+        // Filter out fields already in the current task
+        const currentKeys = new Set(Object.keys(getCFFromUI()));
+        return all.filter((f) => !currentKeys.has(f)).sort();
+      }
+
+      function renderFieldDropdown(filter = "") {
+        const optionsDiv = document.getElementById("td-add-cf-options")!;
+        const suggestions = getFieldSuggestions().filter((f) =>
+          f.toLowerCase().includes(filter.toLowerCase())
+        );
+        optionsDiv.innerHTML = suggestions.length
+          ? suggestions.map((f) => `<div class="td-cf-option px-3 py-1.5 text-sm cursor-pointer hover:bg-bg-hover" data-field="${f.replace(/"/g, '&quot;')}">${f}</div>`).join("")
+          : `<div class="px-3 py-1.5 text-xs text-text-muted italic">Type a custom name and press Enter</div>`;
+        // Click handlers
+        optionsDiv.querySelectorAll(".td-cf-option").forEach((opt) => {
+          opt.addEventListener("click", () => {
+            addCFRow((opt as HTMLElement).dataset.field || "", "");
+            document.getElementById("td-add-cf-dropdown")!.style.display = "none";
+            (document.getElementById("td-add-cf-search") as HTMLInputElement).value = "";
+          });
+        });
+      }
+
+      document.getElementById("td-add-cf")?.addEventListener("click", (e) => {
+        e.stopPropagation();
+        const dropdown = document.getElementById("td-add-cf-dropdown")!;
+        const isVisible = dropdown.style.display !== "none";
+        dropdown.style.display = isVisible ? "none" : "block";
+        if (!isVisible) {
+          renderFieldDropdown();
+          (document.getElementById("td-add-cf-search") as HTMLInputElement).focus();
+        }
+      });
+
+      document.getElementById("td-add-cf-search")?.addEventListener("input", (e) => {
+        renderFieldDropdown((e.target as HTMLInputElement).value);
+      });
+
+      document.getElementById("td-add-cf-search")?.addEventListener("keydown", (e) => {
+        if (e.key === "Enter") {
+          e.preventDefault();
+          const input = e.target as HTMLInputElement;
+          const val = input.value.trim();
+          if (val) {
+            addCFRow(val, "");
+            document.getElementById("td-add-cf-dropdown")!.style.display = "none";
+            input.value = "";
+          }
+        }
+        if (e.key === "Escape") {
+          document.getElementById("td-add-cf-dropdown")!.style.display = "none";
+        }
+      });
+
+      // Close dropdown on outside click
+      document.addEventListener("click", (e) => {
+        if (!(e.target as Element)?.closest("#td-add-cf-dropdown") && !(e.target as Element)?.closest("#td-add-cf")) {
+          const dd = document.getElementById("td-add-cf-dropdown");
+          if (dd) dd.style.display = "none";
+        }
+        // Also close parent search results
+        if (!(e.target as Element)?.closest("#td-link-parent-search") && !(e.target as Element)?.closest("#td-link-parent-results")) {
+          const pr = document.getElementById("td-link-parent-results");
+          if (pr) pr.style.display = "none";
+        }
+      });
+
+      // Parent search — debounced type-ahead
+      let parentSearchTimer: ReturnType<typeof setTimeout>;
+      const parentSearchInput = document.getElementById("td-link-parent-search") as HTMLInputElement | null;
+      const parentResultsDiv = document.getElementById("td-link-parent-results");
+
+      parentSearchInput?.addEventListener("input", () => {
+        clearTimeout(parentSearchTimer);
+        const q = parentSearchInput.value.trim();
+        if (q.length < 2) {
+          if (parentResultsDiv) parentResultsDiv.style.display = "none";
+          return;
+        }
+        parentSearchTimer = setTimeout(async () => {
+          try {
+            const res = await fetch(`/api/tasks?q=${encodeURIComponent(q)}&limit=10`);
+            if (!res.ok || !parentResultsDiv) return;
+            const data = await res.json();
+            const tasks = (data.tasks ?? []).filter((t: Record<string, unknown>) => t.id !== currentTaskId);
+            if (tasks.length === 0) {
+              parentResultsDiv.innerHTML = `<div class="px-3 py-2 text-xs text-text-muted italic">No matches</div>`;
+            } else {
+              parentResultsDiv.innerHTML = tasks.map((t: Record<string, unknown>) => {
+                const typeIcon = t.task_type === "epic" ? "🎯" : t.task_type === "story" ? "📖" : "✅";
+                return `<div class="td-parent-result px-3 py-2 text-sm cursor-pointer hover:bg-bg-hover flex items-center gap-2" data-id="${t.id}">
+                  <span>${typeIcon}</span>
+                  <span class="truncate">${String(t.title).slice(0, 60)}</span>
+                  <span class="text-xs text-text-muted ml-auto">${String(t.task_type ?? "task")}</span>
+                </div>`;
+              }).join("");
+              // Click handler for each result
+              parentResultsDiv.querySelectorAll(".td-parent-result").forEach((el) => {
+                el.addEventListener("click", async () => {
+                  const newParentId = (el as HTMLElement).dataset.id;
+                  if (newParentId) {
+                    await saveTD("parent_id", newParentId);
+                    parentSearchInput.value = "";
+                    parentResultsDiv.style.display = "none";
+                    // Refresh the panel to show the new parent
+                    openTaskDetail(currentTaskId!);
+                  }
+                });
+              });
+            }
+            parentResultsDiv.style.display = "block";
+          } catch { /* search failed silently */ }
+        }, 300);
+      });
+
+      parentSearchInput?.addEventListener("keydown", (e) => {
+        if (e.key === "Escape" && parentResultsDiv) {
+          parentResultsDiv.style.display = "none";
+          parentSearchInput.value = "";
+        }
       });
 
       // Toggle done
