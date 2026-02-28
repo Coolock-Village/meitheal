@@ -10,7 +10,8 @@ export const GET: APIRoute = async ({ params }) => {
   const result = await client.execute({
     sql: `SELECT id, title, description, status, priority, due_date, labels,
                  framework_payload, calendar_sync_state, board_id, custom_fields,
-                 parent_id, time_tracked, created_at, updated_at
+                 parent_id, time_tracked, start_date, end_date, progress, color,
+                 is_favorite, created_at, updated_at
           FROM tasks WHERE id = ? LIMIT 1`,
     args: [params.id!],
   });
@@ -94,6 +95,22 @@ export const PUT: APIRoute = async ({ params, request }) => {
   if (typeof body.board_id === "string") {
     sanitized.board_id = body.board_id;
   }
+  // Phase 18: Extended fields
+  if (body.start_date !== undefined) {
+    sanitized.start_date = typeof body.start_date === "string" ? body.start_date : null;
+  }
+  if (body.end_date !== undefined) {
+    sanitized.end_date = typeof body.end_date === "string" ? body.end_date : null;
+  }
+  if (typeof body.progress === "number") {
+    sanitized.progress = Math.min(100, Math.max(0, Math.round(body.progress)));
+  }
+  if (body.color !== undefined) {
+    sanitized.color = typeof body.color === "string" ? body.color : null;
+  }
+  if (body.is_favorite !== undefined) {
+    sanitized.is_favorite = body.is_favorite ? 1 : 0;
+  }
 
   const updates: string[] = [];
   const args: InValue[] = [];
@@ -123,7 +140,8 @@ export const PUT: APIRoute = async ({ params, request }) => {
   const updated = await client.execute({
     sql: `SELECT id, title, description, status, priority, due_date, labels,
                  framework_payload, calendar_sync_state, board_id, custom_fields,
-                 parent_id, time_tracked, created_at, updated_at
+                 parent_id, time_tracked, start_date, end_date, progress, color,
+                 is_favorite, created_at, updated_at
           FROM tasks WHERE id = ? LIMIT 1`,
     args: [params.id!],
   });

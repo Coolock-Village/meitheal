@@ -166,6 +166,149 @@ try {
       </main>
     </div>
 
+    <!-- Task Detail Slide-out Panel -->
+    <div id="task-detail-overlay" class="fixed inset-0 bg-black/60 z-50 hidden" role="dialog" aria-modal="true" aria-label="Task detail">
+      <div id="task-detail-panel" class="absolute right-0 top-0 h-full w-full max-w-3xl bg-bg-secondary border-l border-border shadow-lg overflow-y-auto animate-slide-in">
+        <div class="flex items-center justify-between px-6 py-4 border-b border-border">
+          <div class="flex items-center gap-3">
+            <span id="td-id" class="text-xs text-text-muted">#</span>
+            <input id="td-title" class="form-input bg-transparent border-none text-lg font-bold p-0 focus:ring-0" placeholder="Task title" />
+          </div>
+          <button id="td-close" class="btn-secondary px-3 py-1.5 text-sm" aria-label="Close detail">✕</button>
+        </div>
+
+        <div class="flex flex-col lg:flex-row">
+          <!-- Left: Content -->
+          <div class="flex-1 p-6 space-y-6">
+            <!-- Status + Board -->
+            <div class="flex items-center gap-3">
+              <select id="td-status" class="inline-select">
+                <option value="pending">Pending</option>
+                <option value="active">Active</option>
+                <option value="in_progress">In Progress</option>
+                <option value="done">Done</option>
+              </select>
+              <span id="td-board" class="text-xs text-text-muted"></span>
+            </div>
+
+            <!-- Description -->
+            <div>
+              <label class="text-xs text-text-muted font-semibold uppercase tracking-wide mb-2 block">Description</label>
+              <textarea id="td-description" class="form-input min-h-[120px] resize-y" placeholder="Add a description..."></textarea>
+            </div>
+
+            <!-- Labels -->
+            <div>
+              <label class="text-xs text-text-muted font-semibold uppercase tracking-wide mb-2 block">Labels</label>
+              <div id="td-labels" class="flex flex-wrap gap-1"></div>
+            </div>
+
+            <!-- Custom Fields -->
+            <div id="td-custom-fields-section" class="hidden">
+              <label class="text-xs text-text-muted font-semibold uppercase tracking-wide mb-2 block">Custom Fields</label>
+              <div id="td-custom-fields" class="space-y-2"></div>
+            </div>
+
+            <!-- Comments -->
+            <div>
+              <label class="text-xs text-text-muted font-semibold uppercase tracking-wide mb-2 block">Comments</label>
+              <div id="td-comments" class="space-y-3 mb-4"></div>
+              <div class="flex gap-2">
+                <input id="td-comment-input" class="form-input flex-1" placeholder="Add a comment..." />
+                <button id="td-comment-submit" class="btn-primary px-4">Comment</button>
+              </div>
+            </div>
+          </div>
+
+          <!-- Right: Action Sidebar -->
+          <div class="w-full lg:w-64 border-t lg:border-t-0 lg:border-l border-border p-4 space-y-3">
+            <div class="space-y-1">
+              <button id="td-toggle-done" class="w-full text-left px-3 py-2 text-sm rounded-md hover:bg-bg-hover transition-colors">✓ Mark as Done</button>
+              <button id="td-toggle-favorite" class="w-full text-left px-3 py-2 text-sm rounded-md hover:bg-bg-hover transition-colors">⭐ Add to Favorites</button>
+            </div>
+
+            <div class="border-t border-border pt-3">
+              <span class="text-[10px] uppercase tracking-wide text-text-muted font-semibold">Organization</span>
+              <div class="mt-2 space-y-2">
+                <div>
+                  <label class="text-xs text-text-secondary block mb-1">Priority</label>
+                  <select id="td-priority" class="inline-select w-full">
+                    <option value="1">1 — Lowest</option>
+                    <option value="2">2 — Low</option>
+                    <option value="3">3 — Medium</option>
+                    <option value="4">4 — High</option>
+                    <option value="5">5 — Highest</option>
+                  </select>
+                </div>
+                <div>
+                  <label class="text-xs text-text-secondary block mb-1">Progress</label>
+                  <div class="flex items-center gap-2">
+                    <input id="td-progress" type="range" min="0" max="100" value="0" class="flex-1 accent-accent" />
+                    <span id="td-progress-value" class="text-xs text-text-muted w-8 text-right">0%</span>
+                  </div>
+                </div>
+                <div>
+                  <label class="text-xs text-text-secondary block mb-1">Color</label>
+                  <input id="td-color" type="color" value="#10b981" class="w-8 h-8 rounded cursor-pointer border-none" />
+                </div>
+              </div>
+            </div>
+
+            <div class="border-t border-border pt-3">
+              <span class="text-[10px] uppercase tracking-wide text-text-muted font-semibold">Date & Time</span>
+              <div class="mt-2 space-y-2">
+                <div>
+                  <label class="text-xs text-text-secondary block mb-1">Due Date</label>
+                  <input id="td-due-date" type="date" class="form-input text-sm py-1.5" />
+                </div>
+                <div>
+                  <label class="text-xs text-text-secondary block mb-1">Start Date</label>
+                  <input id="td-start-date" type="date" class="form-input text-sm py-1.5" />
+                </div>
+                <div>
+                  <label class="text-xs text-text-secondary block mb-1">End Date</label>
+                  <input id="td-end-date" type="date" class="form-input text-sm py-1.5" />
+                </div>
+              </div>
+            </div>
+
+            <div class="border-t border-border pt-3">
+              <span id="td-rice" class="text-xs text-text-muted"></span>
+            </div>
+
+            <div class="border-t border-border pt-3">
+              <button id="td-delete" class="w-full text-left px-3 py-2 text-sm text-danger rounded-md hover:bg-danger/10 transition-colors">🗑 Delete</button>
+            </div>
+
+            <div class="text-[10px] text-text-muted mt-4">
+              <div id="td-created"></div>
+              <div id="td-updated"></div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Command Palette -->
+    <div id="command-palette-overlay" class="fixed inset-0 bg-black/60 z-[60] hidden" role="dialog" aria-modal="true" aria-label="Command palette">
+      <div class="flex justify-center pt-[15vh]">
+        <div id="command-palette" class="w-full max-w-lg bg-bg-card border border-border rounded-xl shadow-lg overflow-hidden animate-fade-in">
+          <div class="px-4 py-3 border-b border-border">
+            <input id="cp-search" type="text" class="w-full bg-transparent text-text-primary text-lg outline-none" placeholder="Type a command or search..." autocomplete="off" />
+            <p class="text-[10px] text-text-muted mt-1">Search tasks, or use quick actions</p>
+          </div>
+          <div id="cp-results" class="max-h-[50vh] overflow-y-auto">
+            <div class="px-3 py-1.5 text-[10px] uppercase tracking-wide text-text-muted font-semibold">Commands</div>
+            <div class="cp-item px-4 py-2.5 cursor-pointer hover:bg-bg-hover text-sm text-text-primary" data-action="new-task">New task</div>
+            <div class="cp-item px-4 py-2.5 cursor-pointer hover:bg-bg-hover text-sm text-text-primary" data-action="new-board">New board</div>
+            <div id="cp-tasks-section" class="hidden">
+              <div class="px-3 py-1.5 text-[10px] uppercase tracking-wide text-text-muted font-semibold">Tasks</div>
+              <div id="cp-tasks"></div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
     <script>
       // Connection status check
       async function checkHealth() {
@@ -414,6 +557,274 @@ try {
           } catch { /* ignore */ }
         });
       })();
+    </script>
+
+    <script>
+      // === Task Detail Panel ===
+      const tdOverlay = document.getElementById("task-detail-overlay") as HTMLDivElement;
+      let currentTaskId: string | null = null;
+
+      function closeTD() {
+        tdOverlay?.classList.add("hidden");
+        currentTaskId = null;
+        history.pushState(null, "", window.location.pathname);
+      }
+
+      async function openTaskDetail(taskId: string) {
+        if (!tdOverlay) return;
+        currentTaskId = taskId;
+        tdOverlay.classList.remove("hidden");
+        history.pushState(null, "", `#task-${taskId}`);
+
+        try {
+          const res = await fetch(`/api/tasks/${taskId}`);
+          if (!res.ok) return;
+          const t = await res.json() as Record<string, unknown>;
+
+          (document.getElementById("td-id") as HTMLElement).textContent = `#${String(t.id).slice(0, 8)}`;
+          (document.getElementById("td-title") as HTMLInputElement).value = String(t.title ?? "");
+          (document.getElementById("td-status") as HTMLSelectElement).value = String(t.status ?? "pending");
+          (document.getElementById("td-description") as HTMLTextAreaElement).value = String(t.description ?? "");
+          (document.getElementById("td-priority") as HTMLSelectElement).value = String(t.priority ?? 3);
+          const progress = Number(t.progress ?? 0);
+          (document.getElementById("td-progress") as HTMLInputElement).value = String(progress);
+          (document.getElementById("td-progress-value") as HTMLElement).textContent = `${progress}%`;
+          (document.getElementById("td-color") as HTMLInputElement).value = String(t.color ?? "#10b981");
+          (document.getElementById("td-due-date") as HTMLInputElement).value = String(t.due_date ?? "");
+          (document.getElementById("td-start-date") as HTMLInputElement).value = String(t.start_date ?? "");
+          (document.getElementById("td-end-date") as HTMLInputElement).value = String(t.end_date ?? "");
+          (document.getElementById("td-board") as HTMLElement).textContent = String(t.board_id ?? "default");
+
+          const isFav = Number(t.is_favorite ?? 0);
+          (document.getElementById("td-toggle-favorite") as HTMLElement).textContent = isFav ? "★ Favorited" : "⭐ Add to Favorites";
+          const isDone = String(t.status) === "done" || String(t.status) === "complete";
+          (document.getElementById("td-toggle-done") as HTMLElement).textContent = isDone ? "↩ Mark as Undone" : "✓ Mark as Done";
+
+          // Rice score
+          try {
+            const fp = JSON.parse(String(t.framework_payload ?? "{}"));
+            const rice = document.getElementById("td-rice") as HTMLElement;
+            if (fp.rice_score) rice.textContent = `RICE Score: ${fp.rice_score}`;
+            else rice.textContent = "";
+          } catch { /* skip */ }
+
+          // Labels
+          const labelsDiv = document.getElementById("td-labels") as HTMLElement;
+          labelsDiv.innerHTML = "";
+          try {
+            const labels = JSON.parse(String(t.labels ?? "[]"));
+            if (Array.isArray(labels)) {
+              labels.forEach((l: string | { name: string; color?: string }) => {
+                const chip = document.createElement("span");
+                chip.className = "label-chip";
+                if (typeof l === "string") {
+                  chip.textContent = l;
+                } else {
+                  chip.textContent = l.name;
+                  if (l.color) chip.style.borderColor = l.color;
+                }
+                labelsDiv.appendChild(chip);
+              });
+            }
+          } catch { /* skip */ }
+
+          // Custom fields
+          try {
+            const cf = JSON.parse(String(t.custom_fields ?? "{}")) as Record<string, string>;
+            const cfSection = document.getElementById("td-custom-fields-section") as HTMLElement;
+            const cfDiv = document.getElementById("td-custom-fields") as HTMLElement;
+            const keys = Object.keys(cf);
+            if (keys.length > 0) {
+              cfSection.classList.remove("hidden");
+              cfDiv.innerHTML = keys.map(k => `<div class="flex justify-between text-sm"><span class="text-text-muted">${k}</span><span class="text-text-primary">${cf[k]}</span></div>`).join("");
+            } else {
+              cfSection.classList.add("hidden");
+            }
+          } catch { /* skip */ }
+
+          // Timestamps
+          const created = t.created_at ? new Date(Number(t.created_at)).toLocaleDateString() : "";
+          const updated = t.updated_at ? new Date(Number(t.updated_at)).toLocaleDateString() : "";
+          (document.getElementById("td-created") as HTMLElement).textContent = created ? `Created: ${created}` : "";
+          (document.getElementById("td-updated") as HTMLElement).textContent = updated ? `Updated: ${updated}` : "";
+
+          // Load comments
+          loadComments(taskId);
+        } catch (e) { console.error("Failed to load task detail", e); }
+      }
+
+      async function loadComments(taskId: string) {
+        const container = document.getElementById("td-comments") as HTMLElement;
+        try {
+          const res = await fetch(`/api/tasks/${taskId}/comments`);
+          const data = await res.json() as { comments: Array<{ content: string; author: string; created_at: string }> };
+          container.innerHTML = (data.comments || []).map(c =>
+            `<div class="bg-bg-card rounded-md p-3 border border-border">
+              <div class="flex justify-between text-xs text-text-muted mb-1"><span>${c.author}</span><span>${new Date(c.created_at).toLocaleString()}</span></div>
+              <div class="text-sm text-text-primary">${c.content}</div>
+            </div>`
+          ).join("");
+        } catch { container.innerHTML = ""; }
+      }
+
+      async function saveTD(field: string, value: unknown) {
+        if (!currentTaskId) return;
+        await fetch(`/api/tasks/${currentTaskId}`, {
+          method: "PUT",
+          headers: { "content-type": "application/json" },
+          body: JSON.stringify({ [field]: value }),
+        });
+      }
+
+      // Auto-save on change
+      document.getElementById("td-title")?.addEventListener("blur", (e) => saveTD("title", (e.target as HTMLInputElement).value));
+      document.getElementById("td-description")?.addEventListener("blur", (e) => saveTD("description", (e.target as HTMLTextAreaElement).value));
+      document.getElementById("td-status")?.addEventListener("change", (e) => {
+        saveTD("status", (e.target as HTMLSelectElement).value);
+        const isDone = (e.target as HTMLSelectElement).value === "done";
+        (document.getElementById("td-toggle-done") as HTMLElement).textContent = isDone ? "↩ Mark as Undone" : "✓ Mark as Done";
+      });
+      document.getElementById("td-priority")?.addEventListener("change", (e) => saveTD("priority", Number((e.target as HTMLSelectElement).value)));
+      document.getElementById("td-progress")?.addEventListener("input", (e) => {
+        const v = (e.target as HTMLInputElement).value;
+        (document.getElementById("td-progress-value") as HTMLElement).textContent = `${v}%`;
+      });
+      document.getElementById("td-progress")?.addEventListener("change", (e) => saveTD("progress", Number((e.target as HTMLInputElement).value)));
+      document.getElementById("td-color")?.addEventListener("change", (e) => saveTD("color", (e.target as HTMLInputElement).value));
+      document.getElementById("td-due-date")?.addEventListener("change", (e) => saveTD("due_date", (e.target as HTMLInputElement).value || null));
+      document.getElementById("td-start-date")?.addEventListener("change", (e) => saveTD("start_date", (e.target as HTMLInputElement).value || null));
+      document.getElementById("td-end-date")?.addEventListener("change", (e) => saveTD("end_date", (e.target as HTMLInputElement).value || null));
+
+      // Toggle done
+      document.getElementById("td-toggle-done")?.addEventListener("click", () => {
+        const statusEl = document.getElementById("td-status") as HTMLSelectElement;
+        const newStatus = statusEl.value === "done" ? "pending" : "done";
+        statusEl.value = newStatus;
+        saveTD("status", newStatus);
+        (document.getElementById("td-toggle-done") as HTMLElement).textContent = newStatus === "done" ? "↩ Mark as Undone" : "✓ Mark as Done";
+      });
+
+      // Toggle favorite
+      document.getElementById("td-toggle-favorite")?.addEventListener("click", async () => {
+        if (!currentTaskId) return;
+        const btn = document.getElementById("td-toggle-favorite") as HTMLElement;
+        const isFav = btn.textContent?.startsWith("★");
+        await saveTD("is_favorite", isFav ? 0 : 1);
+        btn.textContent = isFav ? "⭐ Add to Favorites" : "★ Favorited";
+      });
+
+      // Delete
+      document.getElementById("td-delete")?.addEventListener("click", async () => {
+        if (!currentTaskId || !confirm("Delete this task?")) return;
+        await fetch(`/api/tasks/${currentTaskId}`, { method: "DELETE" });
+        closeTD();
+        window.location.reload();
+      });
+
+      // Add comment
+      document.getElementById("td-comment-submit")?.addEventListener("click", async () => {
+        const input = document.getElementById("td-comment-input") as HTMLInputElement;
+        if (!input.value.trim() || !currentTaskId) return;
+        await fetch(`/api/tasks/${currentTaskId}/comments`, {
+          method: "POST",
+          headers: { "content-type": "application/json" },
+          body: JSON.stringify({ content: input.value.trim() }),
+        });
+        input.value = "";
+        loadComments(currentTaskId);
+      });
+
+      // Close
+      document.getElementById("td-close")?.addEventListener("click", closeTD);
+      tdOverlay?.addEventListener("click", (e) => { if (e.target === tdOverlay) closeTD(); });
+
+      // Hash navigation
+      function checkHash() {
+        const hash = window.location.hash;
+        if (hash.startsWith("#task-")) {
+          openTaskDetail(hash.replace("#task-", ""));
+        }
+      }
+      window.addEventListener("hashchange", checkHash);
+      checkHash();
+
+      // Global access
+      (window as unknown as Record<string, unknown>).openTaskDetail = openTaskDetail;
+
+      // === Command Palette ===
+      const cpOverlay = document.getElementById("command-palette-overlay") as HTMLDivElement;
+      const cpSearch = document.getElementById("cp-search") as HTMLInputElement;
+      const cpTasksSection = document.getElementById("cp-tasks-section") as HTMLDivElement;
+      const cpTasks = document.getElementById("cp-tasks") as HTMLDivElement;
+      let cpAllTasks: Array<{ id: string; title: string }> = [];
+
+      function openCP() {
+        cpOverlay?.classList.remove("hidden");
+        cpSearch?.focus();
+        // Load tasks for search
+        fetch("/api/tasks?limit=200").then(r => r.json()).then((d: { tasks: Array<{ id: string; title: string }> }) => {
+          cpAllTasks = d.tasks || [];
+        }).catch(() => {});
+      }
+
+      function closeCP() {
+        cpOverlay?.classList.add("hidden");
+        if (cpSearch) cpSearch.value = "";
+        cpTasksSection?.classList.add("hidden");
+      }
+
+      // Ctrl+K / Cmd+K
+      document.addEventListener("keydown", (e) => {
+        if ((e.ctrlKey || e.metaKey) && e.key === "k") {
+          e.preventDefault();
+          if (cpOverlay?.classList.contains("hidden")) openCP();
+          else closeCP();
+        }
+        if (e.key === "Escape") {
+          if (!tdOverlay?.classList.contains("hidden")) closeTD();
+          if (!cpOverlay?.classList.contains("hidden")) closeCP();
+        }
+      });
+
+      cpOverlay?.addEventListener("click", (e) => { if (e.target === cpOverlay) closeCP(); });
+
+      // Search
+      cpSearch?.addEventListener("input", () => {
+        const q = cpSearch.value.toLowerCase().trim();
+        if (!q) { cpTasksSection?.classList.add("hidden"); return; }
+
+        const matches = cpAllTasks.filter(t => t.title.toLowerCase().includes(q)).slice(0, 10);
+        if (matches.length > 0) {
+          cpTasksSection?.classList.remove("hidden");
+          cpTasks.innerHTML = matches.map(t =>
+            `<div class="cp-item px-4 py-2.5 cursor-pointer hover:bg-bg-hover text-sm text-text-primary" data-task-id="${t.id}">${t.title}</div>`
+          ).join("");
+        } else {
+          cpTasksSection?.classList.add("hidden");
+        }
+      });
+
+      // Click handlers
+      document.getElementById("cp-results")?.addEventListener("click", (e) => {
+        const target = (e.target as HTMLElement).closest(".cp-item") as HTMLElement | null;
+        if (!target) return;
+        const action = target.dataset.action;
+        const taskId = target.dataset.taskId;
+
+        closeCP();
+
+        if (action === "new-task") {
+          // Open create modal if on tasks page, or navigate
+          const createBtn = document.querySelector("[data-action='create-task']") as HTMLElement;
+          if (createBtn) createBtn.click();
+          else window.location.href = "/tasks";
+        } else if (action === "new-board") {
+          const boardBtn = document.querySelector(".board-add-btn") as HTMLElement;
+          if (boardBtn) boardBtn.click();
+        } else if (taskId) {
+          openTaskDetail(taskId);
+        }
+      });
     </script>
   </body>
 </html>

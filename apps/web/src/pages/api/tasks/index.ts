@@ -19,7 +19,8 @@ export const GET: APIRoute = async ({ url }) => {
 
   let sql = `SELECT id, title, description, status, priority, due_date, labels,
                     framework_payload, calendar_sync_state, parent_id, time_tracked,
-                    board_id, custom_fields, created_at, updated_at
+                    board_id, custom_fields, start_date, end_date, progress, color,
+                    is_favorite, created_at, updated_at
              FROM tasks`;
   let countSql = "SELECT COUNT(*) as cnt FROM tasks";
   const conditions: string[] = [];
@@ -69,6 +70,11 @@ export const GET: APIRoute = async ({ url }) => {
       time_tracked: Number(r.time_tracked ?? 0),
       board_id: r.board_id ?? "default",
       custom_fields: typeof r.custom_fields === "string" ? r.custom_fields : "{}",
+      start_date: r.start_date ?? null,
+      end_date: r.end_date ?? null,
+      progress: Number(r.progress ?? 0),
+      color: r.color ?? null,
+      is_favorite: Number(r.is_favorite ?? 0),
       created_at: r.created_at,
       updated_at: r.updated_at,
     };
@@ -140,14 +146,23 @@ export const POST: APIRoute = async ({ request }) => {
     try { JSON.parse(body.custom_fields); custom_fields = body.custom_fields; } catch { custom_fields = "{}"; }
   }
 
+  // Phase 18: Extended fields
+  const start_date = typeof body.start_date === "string" ? body.start_date : null;
+  const end_date = typeof body.end_date === "string" ? body.end_date : null;
+  const progress_raw = typeof body.progress === "number" ? body.progress : 0;
+  const progress = Math.min(100, Math.max(0, Math.round(progress_raw)));
+  const color = typeof body.color === "string" ? body.color : null;
+  const is_favorite = body.is_favorite ? 1 : 0;
+
   await client.execute({
     sql: `INSERT INTO tasks (id, title, description, status, priority, due_date, labels,
                              framework_payload, calendar_sync_state, parent_id, time_tracked,
-                             board_id, custom_fields,
+                             board_id, custom_fields, start_date, end_date, progress, color, is_favorite,
                              idempotency_key, request_id, created_at, updated_at)
-          VALUES (?, ?, ?, ?, ?, ?, ?, ?, 'pending', ?, 0, ?, ?, ?, ?, ?, ?)`,
+          VALUES (?, ?, ?, ?, ?, ?, ?, ?, 'pending', ?, 0, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
     args: [id, title, description, status, priority, due_date, labels, framework_payload,
-      parent_id, board_id, custom_fields, crypto.randomUUID(), crypto.randomUUID(), now, now] as InValue[],
+      parent_id, board_id, custom_fields, start_date, end_date, progress, color, is_favorite,
+      crypto.randomUUID(), crypto.randomUUID(), now, now] as InValue[],
   });
 
   return new Response(JSON.stringify({ id, title, description, status, priority, due_date, labels, parent_id, board_id, custom_fields, time_tracked: 0, created_at: now, updated_at: now }), {

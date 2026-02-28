@@ -269,10 +269,40 @@ export async function ensureSchema(): Promise<void> {
     await client.execute("ALTER TABLE tasks ADD COLUMN custom_fields TEXT NOT NULL DEFAULT '{}'");
   }
 
+  // Phase 18: Vikunja card parity — extended task fields
+  if (!(await hasColumn(client, "tasks", "start_date"))) {
+    await client.execute("ALTER TABLE tasks ADD COLUMN start_date TEXT");
+  }
+  if (!(await hasColumn(client, "tasks", "end_date"))) {
+    await client.execute("ALTER TABLE tasks ADD COLUMN end_date TEXT");
+  }
+  if (!(await hasColumn(client, "tasks", "progress"))) {
+    await client.execute("ALTER TABLE tasks ADD COLUMN progress INTEGER NOT NULL DEFAULT 0");
+  }
+  if (!(await hasColumn(client, "tasks", "color"))) {
+    await client.execute("ALTER TABLE tasks ADD COLUMN color TEXT");
+  }
+  if (!(await hasColumn(client, "tasks", "is_favorite"))) {
+    await client.execute("ALTER TABLE tasks ADD COLUMN is_favorite INTEGER NOT NULL DEFAULT 0");
+  }
+
+  // Phase 18: Comments table
+  await client.execute(`
+    CREATE TABLE IF NOT EXISTS comments (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      task_id INTEGER NOT NULL,
+      content TEXT NOT NULL,
+      author TEXT NOT NULL DEFAULT 'user',
+      created_at TEXT NOT NULL DEFAULT (datetime('now')),
+      FOREIGN KEY (task_id) REFERENCES tasks(id) ON DELETE CASCADE
+    )
+  `);
+
   await client.execute("CREATE INDEX IF NOT EXISTS tasks_status_idx ON tasks(status)");
   await client.execute("CREATE INDEX IF NOT EXISTS tasks_priority_idx ON tasks(priority)");
   await client.execute("CREATE INDEX IF NOT EXISTS tasks_parent_id_idx ON tasks(parent_id)");
   await client.execute("CREATE INDEX IF NOT EXISTS tasks_board_id_idx ON tasks(board_id)");
+  await client.execute("CREATE INDEX IF NOT EXISTS comments_task_id_idx ON comments(task_id)");
 
   ensured = true;
 
