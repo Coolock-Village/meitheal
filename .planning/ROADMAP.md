@@ -10,6 +10,9 @@
 | 4 | Cloud Runtime | ✅ Complete | 1 persona loop + 50-persona audit |
 | 5 | Market Parity | ✅ Complete | 3 persona loop iterations (0 findings) |
 | 6 | Functional UI & Feature Parity | 📋 Not started | — |
+| 15 | UX Parity & Board Domain Separation | ✅ Complete | Kanban UX, boards, RICE filters, custom fields |
+| 16 | Astro Optimizations & UX | 📋 Not started | Performance, UX polish |
+| 17 | Full 50-Persona Audit | 📋 Not started | Every domain, function, and addition audited |
 
 ## Analysis Baseline
 
@@ -23,6 +26,7 @@
 **Goal:** Architecture docs, monorepo scaffold, CI/governance, one end-to-end vertical slice.
 
 **Delivered:**
+
 - DDD monorepo with 5 domain packages
 - HA add-on: Dockerfile, ingress auth, Alloy config, Grafana dashboard
 - Vertical slice: task create → framework fields → calendar sync → confirmation → audit trail
@@ -41,6 +45,7 @@
 **RFC:** `docs/decisions/0006-iteration-05-integrations-rfc.md`
 
 **Key deliverables:**
+
 - HMAC-signed webhook emission for all domain events
 - Grocy stock check adapter (ingredient checks on task create)
 - Grafana dashboards for webhook/integration metrics
@@ -65,6 +70,7 @@
 **Goal:** Match Super Productivity + Vikunja core workflows. Passkeys/WebAuthn, rich links, Obsidian sync.
 
 **Parity-driven deliverables:**
+
 - Rich custom fields + forms logic with conditional UI.
 - Portfolio/workload/priority workflow (RICE/DRICE/HEART overlays).
 - Mobile/offline/collaboration parity improvements from PWA foundation.
