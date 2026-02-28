@@ -55,9 +55,25 @@ const priorityColors: Record<number, string> = {
     </div>
   </div>
 
-  <div class="table-filter-bar" id="table-filter-bar" style="display: flex; gap: 12px; padding: 12px 16px; align-items: center; flex-wrap: wrap;">
-    <input type="text" class="form-input" id="table-search" placeholder="Filter..." style="max-width: 200px; padding: 6px 10px; font-size: 13px;" aria-label="Filter table rows" />
-    <select class="form-select" id="table-filter-rice" style="max-width: 140px; padding: 6px 8px; font-size: 13px;" aria-label="Filter by RICE score">
+  <div
+    class="table-filter-bar"
+    id="table-filter-bar"
+    style="display: flex; gap: 12px; padding: 12px 16px; align-items: center; flex-wrap: wrap;"
+  >
+    <input
+      type="text"
+      class="form-input"
+      id="table-search"
+      placeholder="Filter..."
+      style="max-width: 200px; padding: 6px 10px; font-size: 13px;"
+      aria-label="Filter table rows"
+    />
+    <select
+      class="form-select"
+      id="table-filter-rice"
+      style="max-width: 140px; padding: 6px 8px; font-size: 13px;"
+      aria-label="Filter by RICE score"
+    >
       <option value="">All RICE</option>
       <option value="high">High (≥15)</option>
       <option value="medium">Medium (8–14)</option>
@@ -68,7 +84,12 @@ const priorityColors: Record<number, string> = {
     <table class="data-table" id="task-table">
       <thead>
         <tr>
-          <th style="width: 40px;"><input type="checkbox" id="select-all" aria-label="Select all tasks" /></th
+          <th style="width: 40px;"
+            ><input
+              type="checkbox"
+              id="select-all"
+              aria-label="Select all tasks"
+            /></th
           >
           <th class="sortable" data-col="title">Title</th>
           <th class="sortable" data-col="status" style="width: 100px;"
@@ -120,7 +141,12 @@ const priorityColors: Record<number, string> = {
                   !["reach", "impact", "confidence", "effort"].includes(k),
               );
               return (
-                <tr data-id={String(task.id)} data-rice={rice !== null ? String(rice) : ""} data-board={String(task.board_id ?? "default")} class={isDone ? "row-done" : ""}>
+                <tr
+                  data-id={String(task.id)}
+                  data-rice={rice !== null ? String(rice) : ""}
+                  data-board={String(task.board_id ?? "default")}
+                  class={isDone ? "row-done" : ""}
+                >
                   <td>
                     <input
                       type="checkbox"
@@ -264,17 +290,24 @@ const priorityColors: Record<number, string> = {
 
     // Table filter handlers
     function applyTableFilters() {
-      const searchVal = (document.getElementById("table-search") as HTMLInputElement)?.value.toLowerCase() ?? "";
-      const riceFilter = (document.getElementById("table-filter-rice") as HTMLSelectElement)?.value ?? "";
+      const searchVal =
+        (
+          document.getElementById("table-search") as HTMLInputElement
+        )?.value.toLowerCase() ?? "";
+      const riceFilter =
+        (document.getElementById("table-filter-rice") as HTMLSelectElement)
+          ?.value ?? "";
       document.querySelectorAll("#task-table tbody tr").forEach((row) => {
         const el = row as HTMLElement;
-        const title = el.querySelector(".editable-cell")?.textContent?.toLowerCase() ?? "";
+        const title =
+          el.querySelector(".editable-cell")?.textContent?.toLowerCase() ?? "";
         const matchSearch = !searchVal || title.includes(searchVal);
         let matchRice = true;
         if (riceFilter) {
           const riceVal = el.dataset.rice;
-          if (!riceVal) { matchRice = false; }
-          else {
+          if (!riceVal) {
+            matchRice = false;
+          } else {
             const r = Number(riceVal);
             if (riceFilter === "high") matchRice = r >= 15;
             else if (riceFilter === "medium") matchRice = r >= 8 && r < 15;
@@ -284,8 +317,12 @@ const priorityColors: Record<number, string> = {
         el.style.display = matchSearch && matchRice ? "" : "none";
       });
     }
-    document.getElementById("table-search")?.addEventListener("input", applyTableFilters);
-    document.getElementById("table-filter-rice")?.addEventListener("change", applyTableFilters);
+    document
+      .getElementById("table-search")
+      ?.addEventListener("input", applyTableFilters);
+    document
+      .getElementById("table-filter-rice")
+      ?.addEventListener("change", applyTableFilters);
 
     // Inline editing on blur
     document.querySelectorAll(".editable-cell").forEach((cell) => {
@@ -327,7 +364,13 @@ const priorityColors: Record<number, string> = {
             body: JSON.stringify({ [field!]: el.value }),
           });
           showToast("Status updated");
-          setTimeout(() => window.location.reload(), 500);
+          // Optimistic: update row styling based on new status
+          const row = el.closest("tr");
+          if (el.value === "complete" || el.value === "done") {
+            row?.classList.add("row-done");
+          } else {
+            row?.classList.remove("row-done");
+          }
         } catch {
           showToast("Failed", "error");
         }
@@ -391,7 +434,20 @@ const priorityColors: Record<number, string> = {
         );
         await Promise.all(promises);
         showToast(`${checked.length} tasks updated`);
-        setTimeout(() => window.location.reload(), 500);
+        // Optimistic: update rows in place
+        checked.forEach((cb) => {
+          const row = cb.closest("tr");
+          const select = row?.querySelector(
+            "select.inline-select",
+          ) as HTMLSelectElement;
+          if (select) select.value = newStatus;
+          if (newStatus === "complete" || newStatus === "done") {
+            row?.classList.add("row-done");
+          } else {
+            row?.classList.remove("row-done");
+          }
+        });
+        bulkBar.style.display = "none";
       });
 
     // Bulk delete
@@ -407,7 +463,9 @@ const priorityColors: Record<number, string> = {
         );
         await Promise.all(promises);
         showToast(`${checked.length} tasks deleted`);
-        setTimeout(() => window.location.reload(), 500);
+        // Optimistic: remove rows from DOM
+        checked.forEach((cb) => cb.closest("tr")?.remove());
+        bulkBar.style.display = "none";
       });
 
     // Column sorting
