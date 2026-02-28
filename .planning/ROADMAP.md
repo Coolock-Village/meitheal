@@ -35,7 +35,7 @@ Primary Delivery drives completion math and merge/release readiness.
 |------|------|--------|----------|
 | 15 | UX Parity & Board Domain Separation | 📋 Planned | `15-CONTEXT.md` |
 | 16 | Astro Optimizations & UX | 📋 Planned | `16-CONTEXT.md` |
-| 17 | Full 50-Persona Audit | 📋 Planned | `17-CONTEXT.md` |
+| 17 | Full 50-Persona Audit | ✅ Complete | 18 findings, all fixed — input validation, CSP, a11y, SSR queries |
 | 18 | Vikunja Card Parity + E2E | 📋 Planned | `18-CONTEXT.md` |
 
 ## Primary Delivery Details
@@ -45,6 +45,7 @@ Primary Delivery drives completion math and merge/release readiness.
 Goal: establish Astro-first monorepo, DDD package boundaries, HA add-on runtime, observability baseline, and first end-to-end vertical slice.
 
 Execution artifacts:
+
 - `.planning/phases/01-foundation-vertical-slice/01-CONTEXT.md`
 - `.planning/phases/01-foundation-vertical-slice/01-01-PLAN.md`
 - `.planning/phases/01-foundation-vertical-slice/01-01-SUMMARY.md`
@@ -54,6 +55,7 @@ Execution artifacts:
 Goal: integration primitives (webhooks/rate limiting/Grocy/KCS integration docs).
 
 Execution artifacts:
+
 - `.planning/phases/02-integration-deepening/02-CONTEXT.md`
 - `.planning/phases/02-integration-deepening/02-01..02-04-PLAN.md`
 - `.planning/phases/02-integration-deepening/02-01..02-04-SUMMARY.md`
@@ -63,6 +65,7 @@ Execution artifacts:
 Goal: PWA shell, offline store/sync foundations, and operator guidance.
 
 Execution artifacts:
+
 - `.planning/phases/03-pwa-offline-first/03-CONTEXT.md`
 - `.planning/phases/03-pwa-offline-first/03-01..03-03-PLAN.md`
 - `.planning/phases/03-pwa-offline-first/03-01..03-03-SUMMARY.md`
@@ -72,6 +75,7 @@ Execution artifacts:
 Goal: Cloudflare Worker + D1 runtime path and deployment/runbook baseline.
 
 Execution artifacts:
+
 - `.planning/phases/04-cloud-runtime/04-CONTEXT.md`
 - `.planning/phases/04-cloud-runtime/04-01..04-02-PLAN.md`
 - `.planning/phases/04-cloud-runtime/04-01..04-02-SUMMARY.md`
@@ -81,6 +85,7 @@ Execution artifacts:
 Goal: security/auth hardening, worker API maturity, governance/docs closure.
 
 Execution artifacts:
+
 - `.planning/phases/05-market-parity/05-CONTEXT.md`
 - `.planning/phases/05-market-parity/05-01..05-04-PLAN.md`
 - `.planning/phases/05-market-parity/05-01..05-04-SUMMARY.md`
@@ -90,6 +95,7 @@ Execution artifacts:
 Goal: functional UI completion across dashboard/list/kanban/table/labels/projects and polish.
 
 Current state:
+
 - `06-01..06-04-PLAN.md` exist as draft/pre-execution plans.
 - No summary files by design until execution starts.
 - `gsd-tools init progress` reports this phase as `in_progress` heuristically because plans exist; canonical roadmap status remains `planned` under the draft-plan exception in `.planning/README.md`.

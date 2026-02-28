@@ -9,9 +9,9 @@ Local-first task orchestration with HA calendar sync and Vikunja compatibility.
 
 - **Planning model:** dual-track (`Primary Delivery` + `Extension Track`)
 - **Primary Delivery:** 5 of 6 phases complete (`01-05 complete`, `06 planned`)
-- **Extension Track:** 3 of 4 phases executed (`15 complete`, `16 complete`, `17 planned`, `18 complete`)
-- **Overall phase count:** 8 of 10 complete (cross-track count)
-- **Current execution focus:** Phase `17` (50-persona audit) is next executable. Phase `06` remains draft.
+- **Extension Track:** 4 of 4 phases executed (`15 complete`, `16 complete`, `17 complete`, `18 complete`)
+- **Overall phase count:** 9 of 10 complete (cross-track count)
+- **Current execution focus:** Phase `06` remains draft. Extension track complete.
 
 ## Phase Status Snapshot
 
@@ -34,8 +34,11 @@ Local-first task orchestration with HA calendar sync and Vikunja compatibility.
    - Commits: `b4ceca6`, `1dcefce`, `f3da01d`, `de3068d`, `2334221`
    - Execution artifacts: `tailwind.config.mjs`, `src/styles/global.css`, `src/lib/toast.ts`, `src/lib/task-api.ts`, `src/lib/debounce.ts`
    - Validation: `pnpm check` 0 errors, `astro build` 2.16s, tests 97/0, perf:budget pass, schema:drift pass
-3. `17-full-persona-audit` — `planned`
-   - Context: `.planning/phases/17-full-persona-audit/17-CONTEXT.md`
+3. `17-full-persona-audit` — `complete`
+   - Evidence: 12 tasks, 3 waves, 18 findings found and fixed
+   - Commits: `3434bd7` (Wave 1+2 backend+frontend audit fixes)
+   - Findings: labels JSON validation, color hex validation, CSP header, aria-labels, SSR query updates, author XSS strip
+   - Validation: 0 errors, 97 tests, perf:budget pass (81700/81920), schema:drift pass
 4. `18-vikunja-card-parity` — `complete`
    - Evidence: Task detail modal, command palette (Ctrl+K), comments API, DB schema extensions
    - Commits: `3698145`, `f7385e2`, `98f5647`, `193d210`
@@ -80,9 +83,9 @@ Local-first task orchestration with HA calendar sync and Vikunja compatibility.
 
 ## Session Continuity
 
-Last session: 2026-02-28T10:53:00Z
-Stopped at: Phases 15, 16, 18 executed with evidence. Phase 17 is next.
-Resume hint: start with Phase 17 (50-persona audit) or Phase 06 promotion decision.
+Last session: 2026-02-28T11:00:00Z
+Stopped at: Phase 17 audit complete. All extension-track phases (15-18) executed.
+Resume hint: Phase 06 promotion decision, or start iteration-05 per ADR-006.
 
 ---
 *Last updated: 2026-02-28 after Antigravity execution of phases 15, 16, 18*
