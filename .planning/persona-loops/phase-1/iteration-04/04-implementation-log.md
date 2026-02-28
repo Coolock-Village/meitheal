@@ -59,3 +59,24 @@
 - `npx pnpm check`
 - `npx pnpm --filter @meitheal/tests test`
 - Outcome: all targeted/new checks passed; migration splitter edge-case fixtures, ingress spoofing permutations, and release tag/version publish assertion implemented.
+
+9. Continuation pass (OA-401, OA-403, OA-405)
+- `gh run list --workflow CI --branch feat/iteration-2-ha-vertical-slice ...`
+- `gh run view <run_id> --job <perf_job_id> --log`
+- Outcome: captured GitHub-runner perf observations (client bytes 5578, RSS max 132504 KB, p95 max 23.6 ms across 8 runs).
+- Added CI-calibrated perf baseline file: `apps/web/scripts/perf-budget-baseline.json`.
+- Added compat calendar enabled integration test with HA harness: `tests/e2e/vikunja-compat-calendar-sync.spec.ts`.
+- Added upstream-client live verifier script/workflow:
+  - `tests/scripts/verify_vikunja_voice_assistant_compat.py`
+  - `.github/workflows/live-vikunja-voice-assistant.yml`
+- Local live validation command (successful):
+  - build + run Meitheal server with compat token
+  - clone `NeoHuncho/vikunja-voice-assistant`
+  - execute verifier script against `/api/v1` using upstream `VikunjaAPI` client class
+- Verification rerun:
+  - `npx pnpm check`
+  - `npx pnpm --filter @meitheal/tests test`
+  - `MEITHEAL_DB_URL=file:./.data/ci-migrations.db npx pnpm --filter @meitheal/web db:migrate`
+  - `MEITHEAL_DB_URL=file:./.data/ci-migrations.db npx pnpm --filter @meitheal/web db:migrate:check`
+  - `npx pnpm --filter @meitheal/web perf:budget`
+  - `GITHUB_ACTIONS=true MEITHEAL_PERF_BUDGET_RSS_KB_MAX=300000 npx pnpm --filter @meitheal/web perf:budget`

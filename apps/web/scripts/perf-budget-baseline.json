@@ -1,0 +1,16 @@
+{
+  "source": "GitHub Actions CI perf-budgets job history on feat/iteration-2-ha-vertical-slice",
+  "captured_at": "2026-02-28",
+  "runner": "ubuntu-24.04 / node 22",
+  "sample_runs": 8,
+  "observed_max": {
+    "clientBytes": 5578,
+    "rssKb": 132504,
+    "p95Ms": 23.6
+  },
+  "budgets": {
+    "clientBytesMax": 65536,
+    "rssKbMax": 163840,
+    "p95MsMax": 150
+  }
+}

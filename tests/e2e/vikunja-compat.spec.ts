@@ -67,7 +67,12 @@ test("vikunja compatibility flow supports projects, labels, tasks, and assignees
       ...authHeaders,
       "content-type": "application/json"
     },
-    data: { user_id: users[0]?.id ?? 1 }
+    data: {
+      max_permission: null,
+      created: "1970-01-01T00:00:00.000Z",
+      user_id: users[0]?.id ?? 1,
+      task_id: task.id
+    }
   });
   expect(assignResponse.ok()).toBeTruthy();
 });

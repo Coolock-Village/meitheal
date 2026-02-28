@@ -61,12 +61,27 @@ CI gate:
 3. Calendar behavior for compat task create:
 - `compatibility.vikunja_api.calendar_sync_mode: disabled` (default)
 - `compatibility.vikunja_api.calendar_sync_mode: enabled` (optional)
+4. Optional env override for validation/probing:
+- `MEITHEAL_COMPAT_CALENDAR_SYNC_MODE=enabled|disabled`
+5. Live compatibility verifier options:
+- local/manual: `tests/scripts/verify_vikunja_voice_assistant_compat.py`
+- GitHub Actions: `Live Vikunja Voice Assistant Compatibility` workflow (`.github/workflows/live-vikunja-voice-assistant.yml`)
 
 ## Performance and Drift Gates
 
 1. `schema-drift` CI job validates migration SQL against runtime schema expectations.
-2. `perf-budgets` CI job enforces:
+2. `perf-budgets` CI job enforces (GitHub Actions calibrated profile):
+- client bundle total <= 64 KB
+- web process RSS <= 160 MB after warm start
+- task create p95 <= 150 ms in harness
+3. Budget source is `apps/web/scripts/perf-budget-baseline.json`, calibrated from GitHub runner measurements.
+4. Outside GitHub Actions, default local thresholds remain conservative:
 - client bundle total <= 80 KB
-- web process RSS <= 220 MB after warm start
-- task create p95 <= 250 ms in harness
-3. Home Assistant publishing readiness checklist: `docs/kcs/ha-publishing-checklist.md`.
+- web process RSS <= 220 MB
+- task create p95 <= 250 ms
+5. Optional overrides for calibration windows:
+- `MEITHEAL_PERF_BUDGET_CLIENT_BYTES_MAX`
+- `MEITHEAL_PERF_BUDGET_RSS_KB_MAX`
+- `MEITHEAL_PERF_BUDGET_P95_MS_MAX`
+- `MEITHEAL_PERF_BUDGET_FILE`
+6. Home Assistant publishing readiness checklist: `docs/kcs/ha-publishing-checklist.md`.

@@ -10,6 +10,8 @@ Iteration 04 delivers compatibility, publishing readiness, and CI reliability co
 
 ## Carry Forward
 
-- `OA-401` live voice-assistant compatibility validation
-- `OA-403`/`OA-405` perf and calendar-mode test calibration
+- `OA-402` add route-level structured logs for compatibility outcomes
+- `OA-409` wire compatibility dashboard panels
+- `OA-410` validate live-HA workflow across non-UTC calendar entities
+- `OA-411` tighten custom component error payloads
 - `OA-412` plugin-expansion RFC for integrations roadmap

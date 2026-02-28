@@ -1,4 +1,3 @@
-import { getCollection } from "astro:content";
 import { createTaskAndSyncCalendar } from "@domains/tasks/task-sync-service";
 import {
   HomeAssistantCalendarAdapter,
@@ -85,16 +84,48 @@ function toTaskResponse(row: Record<string, unknown>): VikunjaCompatTask {
   };
 }
 
+async function loadConfigEntries(): Promise<Array<{ id: string; data: Record<string, unknown> }>> {
+  try {
+    const content = await import("astro:content");
+    const getCollection = (content as { getCollection?: (name: string) => Promise<unknown[]> }).getCollection;
+    if (typeof getCollection !== "function") {
+      return [];
+    }
+
+    const configs = await getCollection("config");
+    return configs as Array<{ id: string; data: Record<string, unknown> }>;
+  } catch {
+    // Plain Node test/runtime paths may not support astro:* virtual modules.
+    return [];
+  }
+}
+
+function resolveCompatCalendarSyncMode(
+  compatibilityEntry: { data: Record<string, unknown> } | undefined
+): "disabled" | "enabled" {
+  const envOverride = process.env.MEITHEAL_COMPAT_CALENDAR_SYNC_MODE?.trim().toLowerCase();
+  if (envOverride === "disabled" || envOverride === "enabled") {
+    return envOverride;
+  }
+
+  const configured = (
+    compatibilityEntry?.data.compatibility as { vikunja_api?: { calendar_sync_mode?: "disabled" | "enabled" } } | undefined
+  )?.vikunja_api?.calendar_sync_mode;
+  return configured === "enabled" ? "enabled" : "disabled";
+}
+
 async function loadCompatCalendarDefaults() {
   try {
-    const configs = await getCollection("config");
-    const integrationsEntry = configs.find((entry: (typeof configs)[number]) => entry.id === "integrations");
-    const compatibilityEntry = configs.find(
-      (entry: (typeof configs)[number]) =>
-        entry.id === "compatibility" || Boolean(entry.data.compatibility?.vikunja_api)
-    );
-    const calendar = integrationsEntry?.data.integrations?.calendar;
-    const calendarSyncMode = compatibilityEntry?.data.compatibility?.vikunja_api?.calendar_sync_mode ?? "disabled";
+    const configs = await loadConfigEntries();
+    const integrationsEntry = configs.find((entry) => entry.id === "integrations");
+    const compatibilityEntry = configs.find((entry) => entry.id === "compatibility" || Boolean(entry.data.compatibility));
+    const calendar = (integrationsEntry?.data.integrations as { calendar?: {
+      enabled?: boolean;
+      entity_id?: string;
+      default_duration_minutes?: number;
+      timezone?: string;
+    } } | undefined)?.calendar;
+    const calendarSyncMode = resolveCompatCalendarSyncMode(compatibilityEntry);
     const enabled = calendarSyncMode === "enabled";
 
     if (!calendar) {
@@ -108,9 +139,9 @@ async function loadCompatCalendarDefaults() {
 
     return {
       enabled,
-      entityId: calendar.entity_id,
-      defaultDurationMinutes: calendar.default_duration_minutes,
-      timezone: calendar.timezone
+      entityId: calendar.entity_id ?? "calendar.home",
+      defaultDurationMinutes: calendar.default_duration_minutes ?? 30,
+      timezone: calendar.timezone ?? "UTC"
     };
   } catch {
     return {
@@ -207,10 +238,13 @@ export async function listVikunjaProjects(): Promise<VikunjaProject[]> {
   await ensureVikunjaCompatSchema();
   const client = getPersistenceClient();
   const result = await client.execute("SELECT id, title FROM vikunja_projects ORDER BY id ASC");
-  return result.rows.map((row) => ({
-    id: Number((row as Record<string, unknown>).id),
-    title: String((row as Record<string, unknown>).title)
-  }));
+  return result.rows.map((row: unknown) => {
+    const record = row as Record<string, unknown>;
+    return {
+      id: Number(record.id),
+      title: String(record.title)
+    };
+  });
 }
 
 export async function projectExists(projectId: number): Promise<boolean> {
@@ -237,7 +271,7 @@ export async function listVikunjaProjectUsers(projectId: number): Promise<Vikunj
     args: [projectId]
   });
 
-  return result.rows.map((row) => {
+  return result.rows.map((row: unknown) => {
     const record = row as Record<string, unknown>;
     return {
       id: Number(record.id),
@@ -251,7 +285,7 @@ export async function listVikunjaLabels(): Promise<VikunjaLabel[]> {
   await ensureVikunjaCompatSchema();
   const client = getPersistenceClient();
   const result = await client.execute("SELECT id, title, hex_color FROM vikunja_labels ORDER BY id ASC");
-  return result.rows.map((row) => {
+  return result.rows.map((row: unknown) => {
     const record = row as Record<string, unknown>;
     return {
       id: Number(record.id),
@@ -307,7 +341,7 @@ export async function listVikunjaUsers(search?: string, page = 1, perPage = 50):
       sql: "SELECT id, username, name FROM vikunja_users ORDER BY id ASC LIMIT ? OFFSET ?",
       args: [perPage, offset]
     });
-    return result.rows.map((row) => {
+    return result.rows.map((row: unknown) => {
       const record = row as Record<string, unknown>;
       return {
         id: Number(record.id),
@@ -329,7 +363,7 @@ export async function listVikunjaUsers(search?: string, page = 1, perPage = 50):
     args: [like, like, perPage, offset]
   });
 
-  return result.rows.map((row) => {
+  return result.rows.map((row: unknown) => {
     const record = row as Record<string, unknown>;
     return {
       id: Number(record.id),

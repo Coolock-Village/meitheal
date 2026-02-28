@@ -1,7 +1,11 @@
 {
   "extends": "../tsconfig.base.json",
   "compilerOptions": {
-    "types": ["node"]
+    "types": ["node"],
+    "baseUrl": "..",
+    "paths": {
+      "@domains/*": ["apps/web/src/domains/*"]
+    }
   },
-  "include": ["e2e", "governance", "playwright.config.ts"]
+  "include": ["e2e", "governance", "types", "playwright.config.ts"]
 }

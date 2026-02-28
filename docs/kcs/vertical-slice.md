@@ -17,6 +17,9 @@
 - Token-gated Vikunja-compatible create route for voice assistant interoperability.
 - Honors `compatibility.vikunja_api.calendar_sync_mode` (`disabled` default, `enabled` optional).
 - Persists compatibility metadata for labels/assignees/project mapping.
+- Can be validated with upstream `NeoHuncho/vikunja-voice-assistant` client via:
+  - `tests/scripts/verify_vikunja_voice_assistant_compat.py`
+  - `.github/workflows/live-vikunja-voice-assistant.yml`
 
 4. Observability
 - JSON log lines written to stdout for Alloy/Loki ingestion.

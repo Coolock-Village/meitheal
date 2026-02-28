@@ -74,6 +74,11 @@ PR checks currently reported green for required jobs, but PR remains blocked by 
 2. Compatibility remains protocol-level only (no external code copy).
 3. Secrets must remain env-based, not YAML-stored.
 4. Perf budget is enforced fail-closed with current thresholds:
+   CI calibrated profile (`GITHUB_ACTIONS=true`):
+- client <= 64KB
+- RSS <= 160MB
+- p95 task create <= 150ms
+   Local default profile:
 - client <= 80KB
 - RSS <= 220MB
 - p95 task create <= 250ms.
@@ -82,13 +87,11 @@ PR checks currently reported green for required jobs, but PR remains blocked by 
 
 From iteration-04 optimization actions:
 
-1. `OA-401` Validate `/api/v1` against live `vikunja-voice-assistant`.
-2. `OA-405` Add integration test for `calendar_sync_mode=enabled` compatibility path.
-3. `OA-403` Recalibrate perf thresholds using GitHub runner historical data.
-4. `OA-409` Add compatibility dashboard panels.
-5. `OA-410` Validate live-HA workflow across non-UTC calendars.
-6. `OA-411` Improve custom component error payload UX.
-7. `OA-412` Draft iteration-05 integrations RFC (Grocy/Node-RED/n8n deeper adapters).
+1. `OA-402` Add route-level structured logs for compatibility request outcomes.
+2. `OA-409` Add compatibility dashboard panels.
+3. `OA-410` Validate live-HA workflow across non-UTC calendars.
+4. `OA-411` Improve custom component error payload UX.
+5. `OA-412` Draft iteration-05 integrations RFC (Grocy/Node-RED/n8n deeper adapters).
 
 ## Continuation Update (2026-02-28)
 
@@ -98,6 +101,11 @@ Completed in the continuation pass:
 2. `OA-406` ingress spoofing permutation coverage added (`tests/e2e/ingress-header-validation.spec.ts`).
 3. `OA-407` migration splitter edge-case fixtures added (`tests/e2e/migration-splitter.spec.mjs`), splitter extracted to `apps/web/scripts/split-sql-statements.mjs`.
 4. `OA-408` governance test added for `repository.yaml` semantic fields and maintainer format.
+5. `OA-405` compat calendar enabled integration test added (`tests/e2e/vikunja-compat-calendar-sync.spec.ts`) using HA HTTP harness.
+6. `OA-403` perf budgets recalibrated from GitHub-runner measurements and encoded in `apps/web/scripts/perf-budget-baseline.json`.
+7. `OA-401` live compatibility validation completed via upstream `vikunja-voice-assistant` client verifier script:
+   - `tests/scripts/verify_vikunja_voice_assistant_compat.py`
+   - `.github/workflows/live-vikunja-voice-assistant.yml`
 
 Validation rerun after continuation edits:
 
@@ -110,16 +118,16 @@ Validation rerun after continuation edits:
 ## Recommended Next Operator Steps
 
 1. Pull latest branch and inspect PR #1 check runs.
-2. Run live `vikunja-voice-assistant` against Meitheal compat endpoints.
-3. Execute live HA workflow with `HA_TOKEN` secret and real calendar entity.
-4. Close out top 3 TODOs (`OA-401`, `OA-405`, `OA-403`) before merge.
+2. Execute live HA workflow with `HA_TOKEN` secret and real calendar entity.
+3. Run the new `Live Vikunja Voice Assistant Compatibility` workflow against your deployment token.
+4. Close out remaining observability/RFC TODOs (`OA-402`, `OA-409`, `OA-412`) before merge.
 
 ## Copy/Paste Brief for Antigravity
 
 ```
 Context: continue from PR #1 on branch feat/iteration-2-ha-vertical-slice in Coolock-Village/meitheal.
 Read docs/kcs/ANTIGRAVITY_HANDOFF_ITERATION_04.md first.
-Primary objective: complete open optimization actions OA-401/OA-405/OA-403 with CI-safe changes.
+Primary objective: complete open optimization actions OA-402/OA-409/OA-410/OA-411/OA-412 with CI-safe changes.
 Keep Astro-first/native, env-only token auth, DDD boundaries, and HA publishing contract intact.
 Do not regress existing required checks: governance, typecheck-and-tests, ha-harness, migration-check, schema-drift, perf-budgets.
 ```

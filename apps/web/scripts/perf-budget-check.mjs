@@ -8,11 +8,62 @@ import { performance } from "node:perf_hooks";
 
 const execFileAsync = promisify(execFile);
 
-const budgets = {
+const defaultBudgets = {
   clientBytesMax: 80 * 1024,
   rssKbMax: 220 * 1024,
   p95MsMax: 250
 };
+
+function parsePositiveInteger(value) {
+  if (!value) {
+    return undefined;
+  }
+  const parsed = Number.parseInt(value, 10);
+  return Number.isFinite(parsed) && parsed > 0 ? parsed : undefined;
+}
+
+function parsePositiveNumber(value) {
+  if (!value) {
+    return undefined;
+  }
+  const parsed = Number.parseFloat(value);
+  return Number.isFinite(parsed) && parsed > 0 ? parsed : undefined;
+}
+
+async function loadBudgets(scriptDir) {
+  const configuredPath = process.env.MEITHEAL_PERF_BUDGET_FILE;
+  let budgets = { ...defaultBudgets };
+
+  const shouldLoadBaseline = Boolean(configuredPath) || process.env.GITHUB_ACTIONS === "true";
+  if (shouldLoadBaseline) {
+    const baselinePath = configuredPath
+      ? path.resolve(process.cwd(), configuredPath)
+      : path.join(scriptDir, "perf-budget-baseline.json");
+
+    try {
+      const raw = await fs.readFile(baselinePath, "utf8");
+      const parsed = JSON.parse(raw);
+      const fromFile = parsed.budgets;
+      if (fromFile) {
+        budgets = {
+          clientBytesMax: parsePositiveInteger(String(fromFile.clientBytesMax)) ?? budgets.clientBytesMax,
+          rssKbMax: parsePositiveInteger(String(fromFile.rssKbMax)) ?? budgets.rssKbMax,
+          p95MsMax: parsePositiveNumber(String(fromFile.p95MsMax)) ?? budgets.p95MsMax
+        };
+      }
+    } catch {
+      // Missing baseline file should not break CI; defaults remain fail-closed.
+    }
+  }
+
+  budgets = {
+    clientBytesMax: parsePositiveInteger(process.env.MEITHEAL_PERF_BUDGET_CLIENT_BYTES_MAX) ?? budgets.clientBytesMax,
+    rssKbMax: parsePositiveInteger(process.env.MEITHEAL_PERF_BUDGET_RSS_KB_MAX) ?? budgets.rssKbMax,
+    p95MsMax: parsePositiveNumber(process.env.MEITHEAL_PERF_BUDGET_P95_MS_MAX) ?? budgets.p95MsMax
+  };
+
+  return budgets;
+}
 
 async function sizeOfDirectoryBytes(dir) {
   const entries = await fs.readdir(dir, { withFileTypes: true });
@@ -57,6 +108,7 @@ async function getRssKb(pid) {
 
 async function main() {
   const scriptDir = path.dirname(fileURLToPath(import.meta.url));
+  const budgets = await loadBudgets(scriptDir);
   const appRoot = path.resolve(scriptDir, "..");
   const entryFile = path.join(appRoot, "dist/server/entry.mjs");
   await fs.access(entryFile);
