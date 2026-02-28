@@ -54,10 +54,29 @@ const statusLabels: Record<string, string> = {
   done: "Complete",
   todo: "Pending",
 };
+
+// Vikunja-inspired: time-of-day greeting
+const hour = new Date().getHours();
+const greeting =
+  hour < 12 ? "Good Morning" : hour < 18 ? "Good Afternoon" : "Good Evening";
+
+// Relative time helper for due dates
+function relativeTime(dueDate: string): string {
+  const due = new Date(dueDate);
+  const now = new Date();
+  const diffMs = due.getTime() - now.getTime();
+  const absDiffMs = Math.abs(diffMs);
+  const hours = Math.round(absDiffMs / (1000 * 60 * 60));
+  const days = Math.round(absDiffMs / (1000 * 60 * 60 * 24));
+  const prefix = diffMs < 0 ? "Overdue by" : "Due in";
+  if (hours < 1) return diffMs < 0 ? "Overdue" : "Due soon";
+  if (hours < 24) return `${prefix} ${hours} hour${hours !== 1 ? "s" : ""}`;
+  return `${prefix} ${days} day${days !== 1 ? "s" : ""}`;
+}
 ---
 
-<Layout title="Meitheal — Dashboard">
-  <span slot="page-title">Dashboard</span>
+<Layout title={`Meitheal — ${greeting}!`}>
+  <span slot="page-title">{greeting}! ☘</span>
   <button slot="actions" class="btn btn-primary" id="quick-add-btn"
     >+ New Task</button
   >
@@ -156,7 +175,7 @@ const statusLabels: Record<string, string> = {
                   {priorityLabels[Number(task.priority ?? 3)] ?? "Medium"} ·
                   {statusLabels[String(task.status)] ?? String(task.status)}
                   {task.due_date
-                    ? ` · Due ${String(task.due_date).split("T")[0]}`
+                    ? ` · ${relativeTime(String(task.due_date))}`
                     : ""}
                   {String(task.calendar_sync_state) === "confirmed"
                     ? " · 📅 Synced"

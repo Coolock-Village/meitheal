@@ -100,26 +100,107 @@ import Layout from "../layouts/Layout.astro";
       </div>
     </div>
 
-    <!-- Framework Scoring -->
+    <!-- Framework Scoring — Configurable enable/disable -->
     <div class="card">
       <div class="card-header">
         <div>
           <div class="card-title">📊 Framework Scoring</div>
-          <div class="card-subtitle">Configure task scoring frameworks</div>
+          <div class="card-subtitle">
+            Enable/disable and configure scoring frameworks
+          </div>
         </div>
       </div>
-      <div class="form-group">
+      <div id="framework-list">
+        <div class="framework-row" data-framework="rice">
+          <div class="framework-info">
+            <label class="toggle-label">
+              <input
+                type="checkbox"
+                class="framework-toggle"
+                data-fw="rice"
+                checked
+              />
+              <span class="toggle-slider"></span>
+            </label>
+            <div>
+              <strong>RICE</strong>
+              <div class="framework-desc">
+                Reach × Impact × Confidence / Effort
+              </div>
+            </div>
+          </div>
+        </div>
+        <div class="framework-row" data-framework="drice">
+          <div class="framework-info">
+            <label class="toggle-label">
+              <input type="checkbox" class="framework-toggle" data-fw="drice" />
+              <span class="toggle-slider"></span>
+            </label>
+            <div>
+              <strong>DRICE</strong>
+              <div class="framework-desc">Dependencies + RICE</div>
+            </div>
+          </div>
+        </div>
+        <div class="framework-row" data-framework="heart">
+          <div class="framework-info">
+            <label class="toggle-label">
+              <input type="checkbox" class="framework-toggle" data-fw="heart" />
+              <span class="toggle-slider"></span>
+            </label>
+            <div>
+              <strong>HEART</strong>
+              <div class="framework-desc">
+                Happiness, Engagement, Adoption, Retention, Task Success
+              </div>
+            </div>
+          </div>
+        </div>
+        <div class="framework-row" data-framework="kcs">
+          <div class="framework-info">
+            <label class="toggle-label">
+              <input type="checkbox" class="framework-toggle" data-fw="kcs" />
+              <span class="toggle-slider"></span>
+            </label>
+            <div>
+              <strong>KCS</strong>
+              <div class="framework-desc">Knowledge-Centered Support</div>
+            </div>
+          </div>
+        </div>
+        <div class="framework-row" data-framework="ddd">
+          <div class="framework-info">
+            <label class="toggle-label">
+              <input type="checkbox" class="framework-toggle" data-fw="ddd" />
+              <span class="toggle-slider"></span>
+            </label>
+            <div>
+              <strong>DDD</strong>
+              <div class="framework-desc">Domain-Driven Design scoring</div>
+            </div>
+          </div>
+        </div>
+        <div class="framework-row" data-framework="custom">
+          <div class="framework-info">
+            <label class="toggle-label">
+              <input
+                type="checkbox"
+                class="framework-toggle"
+                data-fw="custom"
+              />
+              <span class="toggle-slider"></span>
+            </label>
+            <div>
+              <strong>Custom</strong>
+              <div class="framework-desc">User-defined scoring fields</div>
+            </div>
+          </div>
+        </div>
+      </div>
+      <div class="form-group" style="margin-top: 12px;">
         <label class="form-label">Active Framework</label>
         <select class="form-select" id="scoring-framework">
-          <option value="rice" selected
-            >RICE (Reach × Impact × Confidence / Effort)</option
-          >
-          <option value="drice">DRICE (Dependencies + RICE)</option>
-          <option value="heart"
-            >HEART (Happiness, Engagement, Adoption, Retention, Task Success)</option
-          >
-          <option value="kcs">KCS (Knowledge-Centered Support)</option>
-          <option value="custom">Custom</option>
+          <option value="rice" selected>RICE</option>
         </select>
       </div>
       <div class="form-group">
@@ -196,7 +277,7 @@ import Layout from "../layouts/Layout.astro";
           A Home Assistant-native, Astro-first task and life management engine.
         </p>
         <p>
-          Version: <code>0.1.0</code> · Phase 6: Functional UI & Feature Parity
+          Version: <code>0.1.0</code> · Phase 7: Audit &amp; UX Improvements
         </p>
       </div>
     </div>
@@ -214,6 +295,116 @@ import Layout from "../layouts/Layout.astro";
       container.appendChild(toast);
       setTimeout(() => toast.remove(), 3000);
     }
+
+    // Save a setting to the API
+    async function saveSetting(key: string, value: unknown) {
+      try {
+        await fetch("/api/settings", {
+          method: "PUT",
+          headers: { "content-type": "application/json" },
+          body: JSON.stringify({ key, value }),
+        });
+      } catch {
+        /* ignore */
+      }
+    }
+
+    // Load settings from API on page init
+    async function loadSettings() {
+      try {
+        const res = await fetch("/api/settings");
+        const settings = await res.json();
+
+        // Restore framework toggles
+        if (settings.frameworks_enabled) {
+          const enabled = settings.frameworks_enabled as Record<
+            string,
+            boolean
+          >;
+          document.querySelectorAll(".framework-toggle").forEach((cb) => {
+            const fw = (cb as HTMLInputElement).dataset.fw;
+            if (fw && fw in enabled) {
+              (cb as HTMLInputElement).checked = !!enabled[fw];
+            }
+          });
+        }
+
+        // Restore active framework
+        if (settings.active_framework) {
+          (
+            document.getElementById("scoring-framework") as HTMLSelectElement
+          ).value = String(settings.active_framework);
+        }
+
+        // Restore score display
+        if (settings.score_display) {
+          (
+            document.getElementById("score-display") as HTMLSelectElement
+          ).value = String(settings.score_display);
+        }
+
+        updateFrameworkSelect();
+      } catch {
+        /* API not available */
+      }
+    }
+
+    // Update active framework select options based on enabled toggles
+    function updateFrameworkSelect() {
+      const select = document.getElementById(
+        "scoring-framework",
+      ) as HTMLSelectElement;
+      const current = select.value;
+      const labels: Record<string, string> = {
+        rice: "RICE",
+        drice: "DRICE",
+        heart: "HEART",
+        kcs: "KCS",
+        ddd: "DDD",
+        custom: "Custom",
+      };
+      select.innerHTML = "";
+      document.querySelectorAll(".framework-toggle:checked").forEach((cb) => {
+        const fw = (cb as HTMLInputElement).dataset.fw ?? "";
+        const opt = document.createElement("option");
+        opt.value = fw;
+        opt.textContent = labels[fw] ?? fw;
+        select.appendChild(opt);
+      });
+      if (select.querySelector(`option[value="${current}"]`)) {
+        select.value = current;
+      }
+    }
+
+    // Framework toggle change — save and update select
+    document.querySelectorAll(".framework-toggle").forEach((cb) => {
+      cb.addEventListener("change", () => {
+        const enabled: Record<string, boolean> = {};
+        document.querySelectorAll(".framework-toggle").forEach((c) => {
+          const fw = (c as HTMLInputElement).dataset.fw;
+          if (fw) enabled[fw] = (c as HTMLInputElement).checked;
+        });
+        saveSetting("frameworks_enabled", enabled);
+        updateFrameworkSelect();
+        showToast("Frameworks updated");
+      });
+    });
+
+    // Active framework change
+    document
+      .getElementById("scoring-framework")
+      ?.addEventListener("change", (e) => {
+        saveSetting("active_framework", (e.target as HTMLSelectElement).value);
+        showToast("Active framework saved");
+      });
+
+    // Score display change
+    document
+      .getElementById("score-display")
+      ?.addEventListener("change", (e) => {
+        saveSetting("score_display", (e.target as HTMLSelectElement).value);
+        showToast("Display preference saved");
+      });
 
     // Test HA connection
     document
@@ -239,6 +430,18 @@ import Layout from "../layouts/Layout.astro";
         }
       });
 
+    // Save HA settings
+    document.getElementById("save-ha")?.addEventListener("click", async () => {
+      const haUrl = (document.getElementById("ha-url") as HTMLInputElement)
+        .value;
+      const calEntity = (
+        document.getElementById("calendar-entity") as HTMLInputElement
+      ).value;
+      await saveSetting("ha_url", haUrl);
+      await saveSetting("calendar_entity", calEntity);
+      showToast("HA settings saved");
+    });
+
     // Add custom field
     document
       .getElementById("add-custom-field")
@@ -260,6 +463,9 @@ import Layout from "../layouts/Layout.astro";
       `;
         list.appendChild(row);
       });
+
+    // Init
+    loadSettings();
   </script>
 </Layout>
 
@@ -329,5 +535,63 @@ import Layout from "../layouts/Layout.astro";
     .settings-grid {
       grid-template-columns: 1fr;
     }
+  }
+  .framework-row {
+    padding: 10px 0;
+    border-bottom: 1px solid var(--border);
+  }
+  .framework-row:last-child {
+    border-bottom: none;
+  }
+  .framework-info {
+    display: flex;
+    gap: 12px;
+    align-items: center;
+  }
+  .framework-desc {
+    font-size: 12px;
+    color: var(--text-muted);
+    margin-top: 2px;
+  }
+  /* Toggle switch */
+  .toggle-label {
+    position: relative;
+    display: inline-block;
+    width: 40px;
+    height: 22px;
+    flex-shrink: 0;
+    cursor: pointer;
+  }
+  .toggle-label input {
+    opacity: 0;
+    width: 0;
+    height: 0;
+  }
+  .toggle-slider {
+    position: absolute;
+    inset: 0;
+    background: var(--bg-hover);
+    border: 1px solid var(--border);
+    border-radius: 11px;
+    transition: all 200ms;
+  }
+  .toggle-slider::before {
+    content: "";
+    position: absolute;
+    width: 16px;
+    height: 16px;
+    left: 2px;
+    bottom: 2px;
+    background: var(--text-muted);
+    border-radius: 50%;
+    transition: all 200ms;
+  }
+  .toggle-label input:checked + .toggle-slider {
+    background: var(--accent);
+    border-color: var(--accent);
+  }
+  .toggle-label input:checked + .toggle-slider::before {
+    transform: translateX(18px);
+    background: white;
   }
 </style>
