@@ -1150,8 +1150,19 @@ const typeConfig: Record<
 
       // Swimlane group-by dropdown
       const groupBySelect = document.getElementById("group-by-select");
+
+      // Restore saved group-by mode from localStorage
+      const savedGroupBy = localStorage.getItem("meitheal-kanban-group-by");
+      if (savedGroupBy && groupBySelect) {
+        groupBySelect.value = savedGroupBy;
+        // Trigger change event to apply saved mode
+        groupBySelect.dispatchEvent(new Event("change"));
+      }
+
       groupBySelect?.addEventListener("change", () => {
         const mode = groupBySelect.value;
+        // Persist selection
+        localStorage.setItem("meitheal-kanban-group-by", mode);
 
         if (mode === "board" || mode === "priority") {
           // Future: dynamic swimlane generation for board/priority

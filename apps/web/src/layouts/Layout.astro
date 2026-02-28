@@ -1119,13 +1119,7 @@ try {
               rice.textContent = "";
             }
 
-            // Always show RICE fields when scoring is enabled, with defaults
-            if (riceEnabled || fp.reach !== undefined || fp.impact !== undefined || fp.confidence !== undefined || fp.effort !== undefined) {
-              addCFRow("Reach", String(fp.reach ?? "0"));
-              addCFRow("Impact", String(fp.impact ?? "0"));
-              addCFRow("Confidence", String(fp.confidence ?? "0"));
-              addCFRow("Effort", String(fp.effort ?? "0"));
-            }
+            // RICE fields will be added after custom fields below (to avoid cfDiv.innerHTML="" clearing them)
           } catch {
             /* skip */
           }
@@ -1162,6 +1156,25 @@ try {
           } catch {
             /* skip */
           }
+
+          // RICE fields — add AFTER custom fields are populated (cfDiv.innerHTML cleared above)
+          try {
+            const fp2 = JSON.parse(String(t.framework_payload ?? "{}"));
+            let riceIsEnabled = false;
+            try {
+              const rRes = await fetch("/api/settings");
+              if (rRes.ok) {
+                const s = await rRes.json();
+                riceIsEnabled = s?.frameworks_enabled?.rice === true;
+              }
+            } catch { /* default */ }
+            if (riceIsEnabled || fp2.reach !== undefined || fp2.impact !== undefined || fp2.confidence !== undefined || fp2.effort !== undefined) {
+              addCFRow("Reach", String(fp2.reach ?? "0"));
+              addCFRow("Impact", String(fp2.impact ?? "0"));
+              addCFRow("Confidence", String(fp2.confidence ?? "0"));
+              addCFRow("Effort", String(fp2.effort ?? "0"));
+            }
+          } catch { /* skip */ }
 
           // Timestamps
           const created = t.created_at
