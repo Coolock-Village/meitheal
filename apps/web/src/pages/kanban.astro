@@ -1025,6 +1025,23 @@ const priorityColors: Record<number, string> = {
     gap: 16px;
     min-height: calc(100vh - 140px);
   }
+
+  /* Mobile: stack columns vertically */
+  @media (max-width: 768px) {
+    .kanban-board {
+      grid-template-columns: 1fr;
+      min-height: auto;
+      gap: 12px;
+    }
+  }
+
+  /* Tablet: horizontal scroll with minimum column widths */
+  @media (min-width: 769px) and (max-width: 1024px) {
+    .kanban-board {
+      grid-template-columns: repeat(3, minmax(280px, 1fr));
+      overflow-x: auto;
+    }
+  }
   .kanban-column {
     background: var(--bg-secondary);
     border: 1px solid var(--border);

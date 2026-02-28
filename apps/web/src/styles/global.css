@@ -379,6 +379,25 @@
   /* --- Table view --- */
   .table-container {
     @apply overflow-x-auto;
+    position: relative;
+  }
+
+  /* Scroll shadow indicator for table overflow */
+  .table-container::after {
+    content: '';
+    position: absolute;
+    top: 0;
+    right: 0;
+    bottom: 0;
+    width: 40px;
+    background: linear-gradient(to left, var(--bg-primary) 0%, transparent 100%);
+    pointer-events: none;
+    opacity: 0;
+    transition: opacity 200ms;
+  }
+
+  .table-container.has-scroll::after {
+    opacity: 1;
   }
 
   .data-table {
@@ -458,6 +477,19 @@
   /* --- Dashboard --- */
   .stat-card {
     @apply bg-bg-card border border-border rounded-lg p-4 flex items-center shadow-sm;
+    gap: 12px;
+  }
+
+  .stat-card-danger {
+    border-color: var(--danger) !important;
+    background: rgba(239, 68, 68, 0.08) !important;
+    box-shadow: 0 0 16px rgba(239, 68, 68, 0.15), var(--shadow-sm);
+    animation: pulse-danger 2s ease-in-out infinite;
+  }
+
+  @keyframes pulse-danger {
+    0%, 100% { box-shadow: 0 0 16px rgba(239, 68, 68, 0.15); }
+    50% { box-shadow: 0 0 24px rgba(239, 68, 68, 0.25); }
   }
 
   .stat-value {
@@ -790,6 +822,61 @@
   .kanban-column {
     min-width: 100%;
     max-width: 100%;
+  }
+
+  /* Mobile: stack stats grid 2x2 */
+  .stats-grid {
+    grid-template-columns: repeat(2, 1fr) !important;
+    gap: 8px !important;
+  }
+
+  /* Mobile: stack filter bar vertically */
+  .filter-bar {
+    flex-direction: column;
+    gap: 8px;
+  }
+
+  .filter-bar .form-input,
+  .filter-bar .form-select {
+    max-width: 100% !important;
+  }
+
+  /* Mobile: task actions wrap below content */
+  .task-item {
+    flex-wrap: wrap;
+  }
+
+  .task-badge {
+    margin-left: auto;
+  }
+
+  .task-delete,
+  .task-duplicate,
+  .task-ask-ai {
+    display: none !important;
+  }
+
+  .task-item:active .task-delete,
+  .task-item:active .task-duplicate,
+  .task-item:active .task-ask-ai {
+    display: inline-flex !important;
+  }
+
+  /* Mobile: hide global search, show on focus */
+  .search-input {
+    max-width: 120px;
+    font-size: 13px;
+  }
+
+  /* Mobile: compact header */
+  .page-header {
+    flex-wrap: wrap;
+    gap: 8px;
+    padding: 12px 16px;
+  }
+
+  .page-title {
+    font-size: 16px !important;
   }
 }
 

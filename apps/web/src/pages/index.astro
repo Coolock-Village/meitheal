@@ -103,7 +103,7 @@ function relativeTime(dueDate: string): string {
         <div class="stat-label">Completed</div>
       </div>
     </div>
-    <div class="stat-card">
+    <div class={`stat-card ${stats.overdue > 0 ? "stat-card-danger" : ""}`}>
       <span class="stat-icon">⏰</span>
       <div>
         <div
