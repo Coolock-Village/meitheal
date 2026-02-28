@@ -8,10 +8,10 @@ Local-first task orchestration with HA calendar sync and Vikunja compatibility.
 ## Current Position
 
 - **Planning model:** dual-track (`Primary Delivery` + `Extension Track`)
-- **Primary Delivery:** 5 of 6 phases complete (`01-05 complete`, `06 planned`)
+- **Primary Delivery:** 6 of 6 phases complete (`01-06 complete`)
 - **Extension Track:** 4 of 4 phases complete (`15-18 complete`)
-- **Overall phase count:** 9 of 10 complete
-- **Current execution focus:** decide phase-06 promotion path or start post-phase roadmap from ADR-006.
+- **Overall phase count:** 10 of 10 complete
+- **Current execution focus:** All iteration-2 phases complete. Next: PR #1 triage or iteration-05 per ADR-006.
 
 ## Phase Status Snapshot
 
@@ -22,7 +22,7 @@ Local-first task orchestration with HA calendar sync and Vikunja compatibility.
 3. `03-pwa-offline-first` — `complete`
 4. `04-cloud-runtime` — `complete`
 5. `05-market-parity` — `complete`
-6. `06-functional-ui` — `planned` (draft plans only)
+6. `06-functional-ui` — `complete` (browser-verified, 4 summaries)
 
 ### Extension Track (`15-18`)
 
@@ -44,9 +44,11 @@ Local-first task orchestration with HA calendar sync and Vikunja compatibility.
 
 1. PR #1 check suite still reports failing required checks.
 2. `perf-budgets` currently fails in CI:
+
 - run `22519500812`, job `65242131624`
 - run `22519501663`, job `65242133779`
 - observed `clientBytes=81700` vs budget `65536`.
+
 3. CodeQL check-suite still shows a failing entry while newer dynamic runs have passed; check-suite reconciliation is required before merge.
 
 ## Pending Todo Queue

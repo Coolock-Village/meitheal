@@ -27,7 +27,7 @@ Primary Delivery drives completion math and release readiness.
 | 03 | PWA & Offline-First | ✅ Complete | `03-01..03-03-SUMMARY.md` |
 | 04 | Cloud Runtime | ✅ Complete | `04-01..04-02-SUMMARY.md` |
 | 05 | Market Parity | ✅ Complete | `05-01..05-04-SUMMARY.md` |
-| 06 | Functional UI & Feature Parity | 📋 Planned | `06-01..06-04-PLAN.md` are draft/pre-execution |
+| 06 | Functional UI & Feature Parity | ✅ Complete | `06-01..06-04-SUMMARY.md` browser-verified |
 
 ### Extension Track (`15-18`)
 
@@ -43,6 +43,7 @@ Primary Delivery drives completion math and release readiness.
 ## Phase 01: Foundation & Vertical Slice ✅
 
 Execution artifacts:
+
 - `.planning/phases/01-foundation-vertical-slice/01-CONTEXT.md`
 - `.planning/phases/01-foundation-vertical-slice/01-01-PLAN.md`
 - `.planning/phases/01-foundation-vertical-slice/01-01-SUMMARY.md`
@@ -50,6 +51,7 @@ Execution artifacts:
 ## Phase 02: Integration Deepening ✅
 
 Execution artifacts:
+
 - `.planning/phases/02-integration-deepening/02-CONTEXT.md`
 - `.planning/phases/02-integration-deepening/02-01..02-04-PLAN.md`
 - `.planning/phases/02-integration-deepening/02-01..02-04-SUMMARY.md`
@@ -57,6 +59,7 @@ Execution artifacts:
 ## Phase 03: PWA & Offline-First ✅
 
 Execution artifacts:
+
 - `.planning/phases/03-pwa-offline-first/03-CONTEXT.md`
 - `.planning/phases/03-pwa-offline-first/03-01..03-03-PLAN.md`
 - `.planning/phases/03-pwa-offline-first/03-01..03-03-SUMMARY.md`
@@ -64,6 +67,7 @@ Execution artifacts:
 ## Phase 04: Cloud Runtime ✅
 
 Execution artifacts:
+
 - `.planning/phases/04-cloud-runtime/04-CONTEXT.md`
 - `.planning/phases/04-cloud-runtime/04-01..04-02-PLAN.md`
 - `.planning/phases/04-cloud-runtime/04-01..04-02-SUMMARY.md`
@@ -71,6 +75,7 @@ Execution artifacts:
 ## Phase 05: Market Parity ✅
 
 Execution artifacts:
+
 - `.planning/phases/05-market-parity/05-CONTEXT.md`
 - `.planning/phases/05-market-parity/05-01..05-04-PLAN.md`
 - `.planning/phases/05-market-parity/05-01..05-04-SUMMARY.md`
@@ -78,6 +83,7 @@ Execution artifacts:
 ## Phase 06: Functional UI & Feature Parity 📋
 
 Current state:
+
 - `06-01..06-04-PLAN.md` exist as draft/pre-execution plans.
 - No summary files by design until execution starts.
 - `gsd-tools init progress` reports phase `06` as `in_progress` heuristically because plan files exist; canonical status remains `planned` under the draft-plan exception in `.planning/README.md`.
@@ -87,6 +93,7 @@ Current state:
 ## Phase 15: UX Parity & Board Domain Separation ✅
 
 Execution artifacts:
+
 - `.planning/phases/15-ux-parity-boards/15-CONTEXT.md`
 - `.planning/phases/15-ux-parity-boards/15-01-PLAN.md`
 - `.planning/phases/15-ux-parity-boards/15-01-SUMMARY.md`
@@ -94,6 +101,7 @@ Execution artifacts:
 ## Phase 16: Astro Optimizations & UX ✅
 
 Execution artifacts:
+
 - `.planning/phases/16-astro-optimizations-ux/16-CONTEXT.md`
 - `.planning/phases/16-astro-optimizations-ux/16-01-PLAN.md`
 - `.planning/phases/16-astro-optimizations-ux/16-01-SUMMARY.md`
@@ -101,6 +109,7 @@ Execution artifacts:
 ## Phase 17: Full Persona Audit ✅
 
 Execution artifacts:
+
 - `.planning/phases/17-full-persona-audit/17-CONTEXT.md`
 - `.planning/phases/17-full-persona-audit/17-01-PLAN.md`
 - `.planning/phases/17-full-persona-audit/17-01-SUMMARY.md`
@@ -108,6 +117,7 @@ Execution artifacts:
 ## Phase 18: Vikunja Card Parity + E2E ✅
 
 Execution artifacts:
+
 - `.planning/phases/18-vikunja-card-parity/18-CONTEXT.md`
 - `.planning/phases/18-vikunja-card-parity/18-01-PLAN.md`
 - `.planning/phases/18-vikunja-card-parity/18-01-SUMMARY.md`
