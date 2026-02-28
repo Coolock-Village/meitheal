@@ -571,10 +571,31 @@ try {
           (e.target as HTMLElement)?.contentEditable === "true";
 
         if (e.key === "Escape") {
-          // Blur search input and hide results
+          // Close overlays in priority order: task detail > command palette > search > sidebar
+          const taskOverlay = document.getElementById("task-detail-overlay");
+          const cpOverlay = document.getElementById("command-palette-overlay");
+          const shortcutModal = document.getElementById("shortcut-modal");
+          const sidebar = document.getElementById("sidebar");
+
+          if (shortcutModal && !shortcutModal.classList.contains("hidden")) {
+            shortcutModal.classList.add("hidden");
+            return;
+          }
+          if (taskOverlay && !taskOverlay.classList.contains("hidden")) {
+            taskOverlay.classList.add("hidden");
+            return;
+          }
+          if (cpOverlay && !cpOverlay.classList.contains("hidden")) {
+            cpOverlay.classList.add("hidden");
+            return;
+          }
           if (document.activeElement === searchInput) {
             searchInput?.blur();
             searchResults.style.display = "none";
+            return;
+          }
+          if (sidebar?.classList.contains("open")) {
+            sidebar.classList.remove("open");
             return;
           }
         }
@@ -606,15 +627,8 @@ try {
         }
         if (e.key === "?") {
           e.preventDefault();
-          alert(
-            "Keyboard Shortcuts:\n\n" +
-              "/  — Focus search\n" +
-              "n  — New task\n" +
-              "k  — Kanban board\n" +
-              "t  — Table view\n" +
-              "d  — Dashboard\n" +
-              "Esc — Close modal / blur search",
-          );
+          const modal = document.getElementById("shortcut-modal");
+          if (modal) modal.classList.toggle("hidden");
         }
       });
 
@@ -1214,5 +1228,58 @@ try {
         }
       });
     </script>
+
+    <!-- Keyboard Shortcuts Modal -->
+    <div
+      id="shortcut-modal"
+      class="hidden"
+      style="position:fixed;inset:0;z-index:70;display:flex;align-items:center;justify-content:center;background:rgba(0,0,0,0.6);"
+      onclick="this.classList.add('hidden')"
+    >
+      <div
+        style="background:var(--bg-card);border:1px solid var(--border);border-radius:12px;padding:24px 32px;max-width:360px;width:90%;box-shadow:0 8px 32px rgba(0,0,0,0.4);"
+        onclick="event.stopPropagation()"
+      >
+        <h3 style="margin:0 0 16px;font-size:16px;color:var(--accent);">
+          ⌨ Keyboard Shortcuts
+        </h3>
+        <div
+          style="display:grid;grid-template-columns:auto 1fr;gap:8px 16px;font-size:13px;"
+        >
+          <kbd
+            style="background:var(--bg-secondary);border:1px solid var(--border);border-radius:4px;padding:2px 8px;font-family:monospace;font-size:12px;"
+            >/</kbd
+          ><span>Focus search</span>
+          <kbd
+            style="background:var(--bg-secondary);border:1px solid var(--border);border-radius:4px;padding:2px 8px;font-family:monospace;font-size:12px;"
+            >n</kbd
+          ><span>New task</span>
+          <kbd
+            style="background:var(--bg-secondary);border:1px solid var(--border);border-radius:4px;padding:2px 8px;font-family:monospace;font-size:12px;"
+            >d</kbd
+          ><span>Dashboard</span>
+          <kbd
+            style="background:var(--bg-secondary);border:1px solid var(--border);border-radius:4px;padding:2px 8px;font-family:monospace;font-size:12px;"
+            >k</kbd
+          ><span>Kanban board</span>
+          <kbd
+            style="background:var(--bg-secondary);border:1px solid var(--border);border-radius:4px;padding:2px 8px;font-family:monospace;font-size:12px;"
+            >t</kbd
+          ><span>Table view</span>
+          <kbd
+            style="background:var(--bg-secondary);border:1px solid var(--border);border-radius:4px;padding:2px 8px;font-family:monospace;font-size:12px;"
+            >⌘K</kbd
+          ><span>Command palette</span>
+          <kbd
+            style="background:var(--bg-secondary);border:1px solid var(--border);border-radius:4px;padding:2px 8px;font-family:monospace;font-size:12px;"
+            >?</kbd
+          ><span>This help</span>
+          <kbd
+            style="background:var(--bg-secondary);border:1px solid var(--border);border-radius:4px;padding:2px 8px;font-family:monospace;font-size:12px;"
+            >Esc</kbd
+          ><span>Close modal / blur</span>
+        </div>
+      </div>
+    </div>
   </body>
 </html>
