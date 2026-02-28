@@ -59,9 +59,10 @@ export const GET: APIRoute = async ({ url }) => {
       status: 200,
       headers: { "content-type": "application/json" },
     });
-  } catch {
-    return new Response(JSON.stringify({}), {
-      status: 200,
+  } catch (err) {
+    console.error("[settings] GET failed:", err);
+    return new Response(JSON.stringify({ error: "Failed to load settings" }), {
+      status: 500,
       headers: { "content-type": "application/json" },
     });
   }
@@ -94,7 +95,8 @@ export const PUT: APIRoute = async ({ request }) => {
       status: 200,
       headers: { "content-type": "application/json" },
     });
-  } catch {
+  } catch (err) {
+    console.error("[settings] PUT failed:", err);
     return new Response(JSON.stringify({ error: "Failed to save setting" }), {
       status: 500,
       headers: { "content-type": "application/json" },
