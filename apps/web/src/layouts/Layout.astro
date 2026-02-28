@@ -1756,6 +1756,9 @@ try {
       window.addEventListener("hashchange", checkHash);
       checkHash();
 
+      // Expose openTaskDetail globally for cross-page use (table, index new-task flow)
+      (window as any).openTaskDetail = openTaskDetail;
+
       // Delegated click → open task detail for any task element
       document.body.addEventListener("click", (e) => {
         const target = e.target as HTMLElement;

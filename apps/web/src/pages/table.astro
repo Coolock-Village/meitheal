@@ -198,12 +198,19 @@ const priorityColors: Record<number, string> = {
                     </select>
                   </td>
                   <td>
-                    <span
-                      class="priority-indicator"
+                    <select
+                      class="inline-select"
+                      data-field="priority"
+                      data-id={String(task.id)}
+                      aria-label={`Priority for ${String(task.title)}`}
                       style={`color: ${priorityColors[p]}`}
                     >
-                      {priorityLabels[p]}
-                    </span>
+                      <option value="1" selected={p === 1} style="color: #ef4444;">Critical</option>
+                      <option value="2" selected={p === 2} style="color: #f59e0b;">High</option>
+                      <option value="3" selected={p === 3} style="color: #3b82f6;">Medium</option>
+                      <option value="4" selected={p === 4} style="color: #10b981;">Low</option>
+                      <option value="5" selected={p === 5} style="color: #6b7280;">Minimal</option>
+                    </select>
                   </td>
                   <td style="font-size: 13px; color: var(--text-secondary);">
                     {task.due_date ? String(task.due_date).split("T")[0] : "—"}
@@ -361,18 +368,27 @@ const priorityColors: Record<number, string> = {
         const id = el.dataset.id;
         const field = el.dataset.field;
         try {
+          // Send priority as number (API expects typeof number)
+          const value = field === "priority" ? Number(el.value) : el.value;
           await fetch(`/api/tasks/${id}`, {
             method: "PUT",
             headers: { "content-type": "application/json" },
-            body: JSON.stringify({ [field!]: el.value }),
+            body: JSON.stringify({ [field!]: value }),
           });
-          showToast("Status updated");
+          showToast(field === "priority" ? "Priority updated" : "Status updated");
           // Optimistic: update row styling based on new status
-          const row = el.closest("tr");
-          if (el.value === "complete" || el.value === "done") {
-            row?.classList.add("row-done");
-          } else {
-            row?.classList.remove("row-done");
+          if (field === "status") {
+            const row = el.closest("tr");
+            if (el.value === "complete" || el.value === "done") {
+              row?.classList.add("row-done");
+            } else {
+              row?.classList.remove("row-done");
+            }
+          }
+          // Update priority select color
+          if (field === "priority") {
+            const colors: Record<string, string> = { "1": "#ef4444", "2": "#f59e0b", "3": "#3b82f6", "4": "#10b981", "5": "#6b7280" };
+            el.style.color = colors[el.value] ?? "inherit";
           }
         } catch {
           showToast("Failed", "error");
@@ -423,18 +439,21 @@ const priorityColors: Record<number, string> = {
 
     // +New Task button — creates task via API and inserts a new row
     document.getElementById("create-task-btn")?.addEventListener("click", async () => {
-      const title = prompt("Task title:");
-      if (!title?.trim()) return;
       try {
         const res = await fetch("/api/tasks", {
           method: "POST",
           headers: { "content-type": "application/json" },
-          body: JSON.stringify({ title: title.trim() }),
+          body: JSON.stringify({ title: "Untitled Task" }),
         });
         if (!res.ok) { showToast("Failed to create task", "error"); return; }
-        showToast("Task created");
-        // Reload to show the new row with full server-rendered HTML
-        window.location.reload();
+        const task = await res.json();
+        showToast("Task created — fill in the details");
+        // Open the task detail panel for full editing
+        if (typeof (window as any).openTaskDetail === "function") {
+          (window as any).openTaskDetail(task.id);
+        } else {
+          window.location.reload();
+        }
       } catch {
         showToast("Network error", "error");
       }
