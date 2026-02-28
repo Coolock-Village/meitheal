@@ -14,7 +14,7 @@ export const POST: APIRoute = async ({ request }) => {
         const data = await request.json();
 
         if (!data || typeof data !== "object" || Array.isArray(data)) {
-            return new Response("Invalid settings payload format. Expected a key-value object.", { status: 400 });
+            return new Response(JSON.stringify({ error: "Invalid settings payload format. Expected a key-value object." }), { status: 400, headers: { "Content-Type": "application/json" } });
         }
 
         await ensureSchema();
@@ -55,6 +55,6 @@ export const POST: APIRoute = async ({ request }) => {
 
     } catch (error) {
         console.error("Failed to import settings:", error);
-        return new Response("Import failed: payload could not be processed.", { status: 500 });
+        return new Response(JSON.stringify({ error: "Import failed: payload could not be processed." }), { status: 500, headers: { "Content-Type": "application/json" } });
     }
 };

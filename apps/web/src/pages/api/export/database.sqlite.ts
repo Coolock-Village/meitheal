@@ -7,14 +7,14 @@ export const GET: APIRoute = async () => {
         // Resolve DB path - matching the store.ts resolveDbUrl output for the file approach
         const dbUrl = process.env.MEITHEAL_DB_URL ?? "file:./.data/meitheal.db";
         if (!dbUrl.startsWith("file:")) {
-            return new Response("Database is not file-based (Remote connection). Extraction unavailable.", { status: 400 });
+            return new Response(JSON.stringify({ error: "Database is not file-based (Remote connection). Extraction unavailable." }), { status: 400, headers: { "content-type": "application/json" } });
         }
 
         const dbPath = dbUrl.slice("file:".length);
         const absolutePath = path.isAbsolute(dbPath) ? dbPath : path.join(process.cwd(), dbPath);
 
         if (!existsSync(absolutePath)) {
-            return new Response("Database file not found on server.", { status: 404 });
+            return new Response(JSON.stringify({ error: "Database file not found on server." }), { status: 404, headers: { "content-type": "application/json" } });
         }
 
         // Read the binary sqlite file to a buffer
@@ -31,6 +31,6 @@ export const GET: APIRoute = async () => {
 
     } catch (error) {
         console.error("Failed to export database:", error);
-        return new Response("Export failed", { status: 500 });
+        return new Response(JSON.stringify({ error: "Export failed" }), { status: 500, headers: { "content-type": "application/json" } });
     }
 };

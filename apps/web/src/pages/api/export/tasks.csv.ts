@@ -10,7 +10,7 @@ export const GET: APIRoute = async () => {
         const allTasks = result.rows;
 
         if (allTasks.length === 0) {
-            return new Response("No tasks to export.", { status: 204 });
+            return new Response(JSON.stringify({ error: "No tasks to export." }), { status: 204, headers: { "content-type": "application/json" } });
         }
 
         const headers = [
@@ -51,6 +51,6 @@ export const GET: APIRoute = async () => {
         });
     } catch (error) {
         console.error("Failed to export tasks as CSV:", error);
-        return new Response("Export failed", { status: 500 });
+        return new Response(JSON.stringify({ error: "Export failed" }), { status: 500, headers: { "content-type": "application/json" } });
     }
 };
