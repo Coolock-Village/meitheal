@@ -9,9 +9,9 @@ Local-first task orchestration with HA calendar sync and Vikunja compatibility.
 
 - **Planning model:** dual-track (`Primary Delivery` + `Extension Track`)
 - **Primary Delivery:** 6 of 6 phases complete (`01-06 complete`)
-- **Extension Track:** 4 of 4 phases complete (`15-18 complete`)
-- **Overall phase count:** 10 of 10 complete
-- **Current execution focus:** All iteration-2 phases complete. Next: PR #1 triage or iteration-05 per ADR-006.
+- **Extension Track:** 5 of 6 phases complete (`15-19 complete`, `20 planned`)
+- **Overall phase count:** 11 of 12 complete
+- **Current execution focus:** Phase 20 (Deep Production Polish). 40 waves of optimization.
 
 ## Phase Status Snapshot
 
@@ -30,6 +30,8 @@ Local-first task orchestration with HA calendar sync and Vikunja compatibility.
 2. `16-astro-optimizations-ux` — `complete`
 3. `17-full-persona-audit` — `complete`
 4. `18-vikunja-card-parity` — `complete`
+5. `19-kanban-overhaul` — `complete`
+6. `20-deep-production-polish` — `planned`
 
 ## Recent Decisions
 
@@ -49,7 +51,7 @@ Local-first task orchestration with HA calendar sync and Vikunja compatibility.
 - run `22519501663`, job `65242133779`
 - observed `clientBytes=81700` vs budget `65536`.
 
-3. CodeQL check-suite still shows a failing entry while newer dynamic runs have passed; check-suite reconciliation is required before merge.
+1. CodeQL check-suite still shows a failing entry while newer dynamic runs have passed; check-suite reconciliation is required before merge.
 
 ## Pending Todo Queue
 

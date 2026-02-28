@@ -37,7 +37,8 @@ Primary Delivery drives completion math and release readiness.
 | 16 | Astro Optimizations & UX | ✅ Complete | `16-01-PLAN.md`, `16-01-SUMMARY.md` |
 | 17 | Full 50-Persona Audit | ✅ Complete | `17-01-PLAN.md`, `17-01-SUMMARY.md` |
 | 18 | Vikunja Card Parity + E2E | ✅ Complete | `18-01-PLAN.md`, `18-01-SUMMARY.md` |
-| 19 | Kanban Board Overhaul | 📋 Planned | `19-01..19-03-PLAN.md`, 50-persona audit |
+| 19 | Kanban Board Overhaul | ✅ Complete | `19-01..19-03-PLAN.md`, `19-01..19-03-SUMMARY.md` |
+| 20 | Deep Production Polish & Infinite Waves | 📋 Planned | `20-01..20-04-PLAN.md` (to be generated) |
 
 ## Primary Delivery Details
 
@@ -122,6 +123,22 @@ Execution artifacts:
 - `.planning/phases/18-vikunja-card-parity/18-CONTEXT.md`
 - `.planning/phases/18-vikunja-card-parity/18-01-PLAN.md`
 - `.planning/phases/18-vikunja-card-parity/18-01-SUMMARY.md`
+
+## Phase 19: Kanban Board Overhaul ✅
+
+Execution artifacts:
+
+- `.planning/phases/19-kanban-overhaul/19-CONTEXT.md`
+- `.planning/phases/19-kanban-overhaul/19-01..19-03-PLAN.md`
+- `.planning/phases/19-kanban-overhaul/19-01..19-03-SUMMARY.md`
+
+## Phase 20: Deep Production Polish & Infinite Waves 📋
+
+Current state:
+
+- Planned out 40 waves of optimization per autonomous directive.
+- Covering empty states, API hardening, offline sync, ARIA labels, form validation.
+- Execution plans `20-01` through `20-04` mapped.
 
 ## Open Blockers (Roadmap-Level)
 

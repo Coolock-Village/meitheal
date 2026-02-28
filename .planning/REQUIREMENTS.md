@@ -34,6 +34,10 @@
 | R-301 | Cloudflare Workers adapter + D1 | 4 | P0 | ADR-002 |
 | R-401 | Passkeys / WebAuthn | 5 | P0 | README.md |
 | R-402 | Rich link unfurl with caching | 5 | P1 | README.md |
+| R-501 | Empty states for all dashboard/tasks views | 20 | P0 | `autonomous.md` |
+| R-502 | Strict input sanitization & rate limiting headers | 20 | P0 | `autonomous.md` |
+| R-503 | Advanced robust offline sync architecture | 20 | P1 | `autonomous.md` |
+| R-504 | Global accessibility focus traps & contrast | 20 | P1 | `autonomous.md` |
 
 ## Out of Scope
 
