@@ -169,10 +169,26 @@ Current state:
 - Execution plans `24-01` mapped out and executed across Wave 23 (Triage) and Wave 24 (CI Config Update).
 - Increased Astro `clientBytesMax` to `150,000` to support IDB, SQLite-WASM, and Lucide payloads.
 
+## Phase 25: Autonomous Optimization Sweep 🧹
+
+Current state:
+
+- [x] Phase 25 Completed successfully.
+- Deduplicated competing attachment implementations in `Layout.astro` (-85 lines, XSS fix).
+- Removed 48 lines of orphaned CSS from `global.css`.
+- Normalized 7 API error responses to JSON format across export/import endpoints.
+
+## Phase 26: Deep Visual Audit 🔍
+
+Current state:
+
+- [x] Phase 26 Completed successfully.
+- Browser-verified all 4 main pages (Dashboard, Kanban, Tasks, Settings).
+- Confirmed stat cards, filters, RICE badges, WIP limits, and framework scoring all render correctly.
+
 ## Open Blockers (Roadmap-Level)
 
-1. PR #1 check suite still reports failing required checks for CodeQL.
-2. CodeQL check-suite reports a failing entry even though newer dynamic analysis runs have succeeded; required-check reconciliation is still needed.
+None — all PR #1 checks (perf-budgets, typecheck-and-tests, CodeQL, governance, schema-drift, ha-harness, migration-check) are passing.
 
 ---
-*Last updated: 2026-02-28 during extension-track reconciliation pass*
+*Last updated: 2026-02-28 during Phase 25-26 autonomous optimization sweep*
