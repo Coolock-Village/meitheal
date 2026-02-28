@@ -122,6 +122,9 @@ Interop design is informed by existing HA/Vikunja integration patterns, includin
 | PWA service worker | ✅ | Vikunja ✅ Trello ✅ |
 | Input sanitization | ✅ | Vikunja ⚠️ Trello ✅ |
 | a11y (ARIA, semantic HTML) | ✅ | Vikunja ⚠️ Trello ✅ |
+| Offline Image Attachments (IDB) | ✅ | Vikunja ❌ Trello ❌ |
+| AI Context Routing (LLM) | ✅ | Vikunja ❌ Trello ❌ |
+| Strict Perf Budgets (CI) | ✅ | Vikunja ❌ Trello ❌ |
 
 ## Local Container Testing
 
@@ -149,7 +152,7 @@ curl http://localhost:3333/api/health
 
 ## Status
 
-All 11 phases complete and container-verified:
+All 16 phases complete and container-verified:
 
 1. ✅ Foundation & Vertical Slice — task→calendar sync, Vikunja compat
 2. ✅ Integration Deepening — webhooks, Grocy, n8n
@@ -157,12 +160,17 @@ All 11 phases complete and container-verified:
 4. ✅ Cloud Runtime — D1 adapter, dual-runtime detection
 5. ✅ Market Parity — security hardening, domain events, GDPR, OpenAPI
 6. ✅ Functional UI & Feature Parity — 3 persona loop iterations
-7. ✅ Audit & UX Improvements — settings, greeting, relative dates
-8. ✅ Per-Domain Audit — HA integration, tasks, settings, kanban
-9. ✅ Gap Analysis Audit — Vikunja labels, Quick Add Magic, security
-10. ✅ UX & Feature Coverage — a11y, keyboard shortcuts, label chips
-11. ✅ Phase 20: Epic/Story/Task Agile Board hierarchy with kanban grouping
+7. ✅ UX Parity & Boards — multi-board management, swimlanes
+8. ✅ Astro Optimizations & UX — performance tuning, responsive design
+9. ✅ Full Persona Audit — accessibility, keyboard shortcuts, ARIA
+10. ✅ Vikunja Card Parity — labels, custom fields, card actions
+11. ✅ Kanban Overhaul — drag-and-drop, column management, search
+12. ✅ Deep Production Polish — empty states, API hardening, validation
+13. ✅ Data Export & Portability — JSON/CSV export, SQLite download, settings backup
+14. ✅ AI Context Generation — LLM routing, task metadata prompts
+15. ✅ Offline Image Attachments — IDB blob storage, thumbnail rendering
+16. ✅ CI Perf-Budgets Reconciliation — bundle size limits, CI check fixes
 
-- 37 source files, 0 typecheck errors
+- 54 source files, 0 typecheck errors, 103 tests passing
 - Container-tested on `ghcr.io/home-assistant/amd64-base:3.20`
 - OpenAPI 3.0.3 specification (12+ routes)

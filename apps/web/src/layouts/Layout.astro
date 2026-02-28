@@ -244,13 +244,7 @@ try {
                 placeholder="Add a description..."></textarea>
             </div>
 
-            <!-- Attachments (Phase 23) -->
-            <div>
-              <label class="text-xs text-text-muted font-semibold uppercase tracking-wide mb-2 block">Attachments</label>
-              <div id="td-attachments-grid" class="td-attachments-grid">
-                <!-- Dynamically populated via script -->
-              </div>
-            </div>
+
 
             <!-- Labels (interactive) -->
             <div>
@@ -907,54 +901,7 @@ try {
             document.getElementById("td-description") as HTMLTextAreaElement
           ).value = String(t.description ?? "");
 
-          // Phase 23: Load Attachments
-          const grid = document.getElementById("td-attachments-grid");
-          if (grid) {
-            grid.innerHTML = "<em>Loading local attachments...</em>";
-            try {
-              const { getAttachmentsByTaskId } = await import('../domains/offline/offline-store');
-              const attachments = await getAttachmentsByTaskId(taskId);
-              if (attachments.length === 0) {
-                grid.innerHTML = '<span class="text-xs text-text-muted">No attachments</span>';
-              } else {
-                grid.innerHTML = "";
-                attachments.forEach((a: any) => {
-                  const item = document.createElement("div");
-                  item.className = "td-attachment-item";
-                  if (a.mimeType.startsWith("image/")) {
-                    item.innerHTML = `
-                      <img src="${a.base64Data}" class="td-attachment-img" alt="${a.filename}" onclick="window.open('${a.base64Data}')" />
-                      <button class="td-attachment-delete" data-id="${a.id}" title="Delete attachment">×</button>
-                    `;
-                  } else {
-                    item.innerHTML = `
-                      <div style="padding: 12px; font-size: 11px; text-align: center; color: var(--text-muted);">${a.filename}</div>
-                      <button class="td-attachment-delete" data-id="${a.id}" title="Delete attachment">×</button>
-                    `;
-                  }
-                  grid.appendChild(item);
-                });
-                
-                // Bind delete buttons
-                grid.querySelectorAll(".td-attachment-delete").forEach(btn => {
-                  btn.addEventListener("click", async (e: any) => {
-                    e.stopPropagation();
-                    if (!confirm("Remove this attachment completely?")) return;
-                    try {
-                      const { deleteAttachment } = await import('../domains/offline/offline-store');
-                      await deleteAttachment(e.target.dataset.id);
-                      e.target.closest(".td-attachment-item").remove();
-                    } catch (err) {
-                      console.error("Failed to delete attachment:", err);
-                    }
-                  });
-                });
-              }
-            } catch (err) {
-              console.error(err);
-              grid.innerHTML = '<span class="text-danger text-xs">Failed to load attachments</span>';
-            }
-          }
+
           (document.getElementById("td-priority") as HTMLSelectElement).value =
             String(t.priority ?? 3);
           const progress = Number(t.progress ?? 0);

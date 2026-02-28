@@ -9,8 +9,8 @@ A clean-room OSS Life OS built on Astro SSR for households, homelabs, and commun
 ## Planning State Alignment
 
 - Planning contract: `.planning/README.md`
-- Roadmap model: dual-track (`Primary Delivery 01-06`, `Extension Track 15-18`)
-- Current completion: primary `5/6`, extension `0/4`
+- Roadmap model: dual-track (`Primary Delivery 01-06`, `Extension Track 15-24`)
+- Current completion: primary `6/6`, extension `10/10`
 
 ## Requirements
 
@@ -27,10 +27,10 @@ A clean-room OSS Life OS built on Astro SSR for households, homelabs, and commun
 
 ### Active (next execution targets)
 
-- Clear PR #1 blockers (`perf-budgets`, CodeQL check-suite reconciliation)
-- Decide and execute phase `06` draft plans or replace with fresh execution plans
-- Promote extension-track phases (`15-18`) only when execution artifacts are ready
+- Reconcile CodeQL check-suite on PR #1
 - Continue HA publishing compliance checks (repository/add-on contracts)
+- Run live HA and Vikunja compat workflows on deployed environment
+- Continue autonomous P0-P6 production optimization sweeps
 
 ### Out of Scope (current cycle)
 

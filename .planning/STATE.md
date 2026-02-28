@@ -9,9 +9,9 @@ Local-first task orchestration with HA calendar sync and Vikunja compatibility.
 
 - **Planning model:** dual-track (`Primary Delivery` + `Extension Track`)
 - **Primary Delivery:** 6 of 6 phases complete (`01-06 complete`)
-- **Extension Track:** 7 of 8 phases complete (`15-21 complete`, `22 planned`)
-- **Overall phase count:** 14 of 15 complete
-- **Current execution focus:** Phase 24 (Performance Budgets).
+- **Extension Track:** 10 of 10 phases complete (`15-24 complete`)
+- **Overall phase count:** 16 of 16 complete
+- **Current execution focus:** Phase 25 (Autonomous GSD Sweep — P0-P6 production polish).
 
 ## Phase Status Snapshot
 
@@ -35,7 +35,7 @@ Local-first task orchestration with HA calendar sync and Vikunja compatibility.
 7. `21-data-export-portability` — `complete`
 8. `22-ai-context-generation` — `complete`
 9. `23-offline-image-uploads` — `complete`
-10. `24-perf-budgets-ci` — `planned`
+10. `24-perf-budgets-ci` — `complete`
 
 ## Recent Decisions
 
@@ -46,30 +46,19 @@ Local-first task orchestration with HA calendar sync and Vikunja compatibility.
 | 2026-02-28 | Execute extension-track phases `15-18` | Implemented via commit series and reconciled with phase summaries |
 | 2026-02-28 | Normalize phase-17 plan naming | `17-PLAN.md` -> `17-01-PLAN.md` for consistency |
 
-## Known Blockers / Concerns
-
-1. PR #1 check suite still reports failing required checks.
-2. `perf-budgets` currently fails in CI:
-
-- run `22519500812`, job `65242131624`
-- run `22519501663`, job `65242133779`
-- observed `clientBytes=81700` vs budget `65536`.
-
-1. CodeQL check-suite still shows a failing entry while newer dynamic runs have passed; check-suite reconciliation is required before merge.
-
 ## Pending Todo Queue
 
-1. Resolve PR #1 failing checks (`perf-budgets`, CodeQL status reconciliation).
-2. Decide whether to execute phase `06` draft plans or replace with a fresh phase-06 plan set.
-3. Run live HA workflow with real calendar entity and `HA_TOKEN`.
-4. Run live Vikunja voice-assistant compatibility workflow on deployed environment.
-5. Monitor perf-budget headroom and reduce client bundle size before further UI expansion.
+1. Reconcile CodeQL check-suite status on PR #1.
+2. Run live HA workflow with real calendar entity and `HA_TOKEN`.
+3. Run live Vikunja voice-assistant compatibility workflow on deployed environment.
+4. Evaluate Phase 06 draft plans for relevance.
+5. Continue autonomous optimization sweeps.
 
 ## Session Continuity
 
-Last session: 2026-02-28T15:25:00Z
-Stopped at: GSD Persona Audit completed for Phases 21-23. All P0-P4 issues resolved.
-Resume hint: Phase 24 (Performance Budgets) is next. PR #1 checks still need triage.
+Last session: 2026-02-28T15:30:00Z
+Stopped at: Phase 25 autonomous GSD cycle — P0-P6 sweep in progress.
+Resume hint: continue with P2-P6 items from task.md or move to CodeQL reconciliation. PR #1 checks still need triage.
 
 ---
 *Last updated: 2026-02-28 during Phase 21-23 persona audit pass*
