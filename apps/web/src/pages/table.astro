@@ -2,6 +2,7 @@
 import Layout from "../layouts/Layout.astro";
 import { t } from "../i18n/translations";
 import type { Locale } from "../lib/locale";
+import { formatTicketKey } from "../lib/ticket-key";
 import {
   ensureSchema,
   getPersistenceClient,
@@ -9,14 +10,14 @@ import {
 
 // i18n: resolve locale from cookie
 const cookieLocale = Astro.cookies.get("meitheal-locale")?.value;
-const locale: Locale = (cookieLocale === "ga" ? "ga" : "en");
+const locale: Locale = cookieLocale === "ga" ? "ga" : "en";
 
 let tasks: Record<string, unknown>[] = [];
 try {
   await ensureSchema();
   const client = getPersistenceClient();
   const result = await client.execute(
-    "SELECT id, title, description, status, priority, due_date, labels, framework_payload, calendar_sync_state, board_id, custom_fields, start_date, end_date, progress, color, is_favorite, task_type, parent_id, created_at, updated_at FROM tasks ORDER BY created_at DESC",
+    "SELECT id, title, description, status, priority, due_date, labels, framework_payload, calendar_sync_state, board_id, custom_fields, start_date, end_date, progress, color, is_favorite, task_type, parent_id, ticket_number, created_at, updated_at FROM tasks ORDER BY created_at DESC",
   );
   tasks = result.rows as Record<string, unknown>[];
 } catch (e) {
@@ -52,7 +53,9 @@ const priorityColors: Record<number, string> = {
         aria-label="Table view">⊞</a
       >
     </div>
-    <button class="btn btn-primary" id="create-task-btn">{t("tasks.new_task", locale)}</button>
+    <button class="btn btn-primary" id="create-task-btn"
+      >{t("tasks.new_task", locale)}</button
+    >
   </div>
 
   <div
@@ -91,7 +94,10 @@ const priorityColors: Record<number, string> = {
               aria-label="Select all tasks"
             /></th
           >
-          <th class="sortable" data-col="title">{t("table.col_title", locale)}</th>
+          <th class="sortable" data-col="key" style="width: 90px;">Key</th>
+          <th class="sortable" data-col="title"
+            >{t("table.col_title", locale)}</th
+          >
           <th class="sortable" data-col="type" style="width: 70px;">Type</th>
           <th class="sortable" data-col="status" style="width: 100px;"
             >{t("table.col_status", locale)}</th
@@ -102,8 +108,12 @@ const priorityColors: Record<number, string> = {
           <th class="sortable" data-col="due_date" style="width: 120px;"
             >{t("table.col_due_date", locale)}</th
           >
-          <th class="sortable" data-col="rice" style="width: 80px;">{t("table.col_rice", locale)}</th>
-          <th style="width: 70px;" title={t("table.col_calendar", locale)}>📅</th>
+          <th class="sortable" data-col="rice" style="width: 80px;"
+            >{t("table.col_rice", locale)}</th
+          >
+          <th style="width: 70px;" title={t("table.col_calendar", locale)}
+            >📅</th
+          >
           <th style="width: 100px;">{t("table.col_custom_fields", locale)}</th>
           <th style="width: 80px;">{t("table.col_actions", locale)}</th>
         </tr>
@@ -113,7 +123,7 @@ const priorityColors: Record<number, string> = {
           tasks.length === 0 ? (
             <tr>
               <td
-                colspan="10"
+                colspan="11"
                 style="text-align: center; padding: 40px; color: var(--text-muted);"
               >
                 {t("table.no_tasks", locale)}
@@ -139,9 +149,16 @@ const priorityColors: Record<number, string> = {
                   : null;
               const customFields = (() => {
                 try {
-                  const cf = typeof task.custom_fields === "string" ? JSON.parse(String(task.custom_fields)) : {};
-                  return Object.entries(cf).filter(([_, v]) => v !== null && v !== undefined);
-                } catch { return []; }
+                  const cf =
+                    typeof task.custom_fields === "string"
+                      ? JSON.parse(String(task.custom_fields))
+                      : {};
+                  return Object.entries(cf).filter(
+                    ([_, v]) => v !== null && v !== undefined,
+                  );
+                } catch {
+                  return [];
+                }
               })();
               return (
                 <tr
@@ -157,6 +174,15 @@ const priorityColors: Record<number, string> = {
                       data-id={String(task.id)}
                       aria-label={`Select task: ${String(task.title)}`}
                     />
+                  </td>
+                  <td>
+                    <span
+                      class="ticket-key-badge"
+                      title={`Task ${formatTicketKey(Number(task.ticket_number)) ?? String(task.id).slice(0, 8)}`}
+                    >
+                      {formatTicketKey(Number(task.ticket_number)) ??
+                        `#${String(task.id).slice(0, 8)}`}
+                    </span>
                   </td>
                   <td>
                     <span
@@ -178,7 +204,11 @@ const priorityColors: Record<number, string> = {
                       style="font-size: 14px;"
                       title={String(task.task_type ?? "task")}
                     >
-                      {String(task.task_type) === "epic" ? "🎯" : String(task.task_type) === "story" ? "📖" : "✅"}
+                      {String(task.task_type) === "epic"
+                        ? "🎯"
+                        : String(task.task_type) === "story"
+                          ? "📖"
+                          : "✅"}
                     </span>
                   </td>
                   <td>
@@ -213,11 +243,41 @@ const priorityColors: Record<number, string> = {
                       aria-label={`Priority for ${String(task.title)}`}
                       style={`color: ${priorityColors[p]}`}
                     >
-                      <option value="1" selected={p === 1} style="color: #ef4444;">{t("priority.critical", locale)}</option>
-                      <option value="2" selected={p === 2} style="color: #f59e0b;">{t("priority.high", locale)}</option>
-                      <option value="3" selected={p === 3} style="color: #3b82f6;">{t("priority.medium", locale)}</option>
-                      <option value="4" selected={p === 4} style="color: #10b981;">{t("priority.low", locale)}</option>
-                      <option value="5" selected={p === 5} style="color: #6b7280;">{t("priority.minimal", locale)}</option>
+                      <option
+                        value="1"
+                        selected={p === 1}
+                        style="color: #ef4444;"
+                      >
+                        {t("priority.critical", locale)}
+                      </option>
+                      <option
+                        value="2"
+                        selected={p === 2}
+                        style="color: #f59e0b;"
+                      >
+                        {t("priority.high", locale)}
+                      </option>
+                      <option
+                        value="3"
+                        selected={p === 3}
+                        style="color: #3b82f6;"
+                      >
+                        {t("priority.medium", locale)}
+                      </option>
+                      <option
+                        value="4"
+                        selected={p === 4}
+                        style="color: #10b981;"
+                      >
+                        {t("priority.low", locale)}
+                      </option>
+                      <option
+                        value="5"
+                        selected={p === 5}
+                        style="color: #6b7280;"
+                      >
+                        {t("priority.minimal", locale)}
+                      </option>
                     </select>
                   </td>
                   <td style="font-size: 13px; color: var(--text-secondary);">
@@ -289,11 +349,18 @@ const priorityColors: Record<number, string> = {
     <button
       class="btn btn-danger"
       id="bulk-delete"
-      style="padding: 6px 12px; font-size: 13px;">{t("table.delete_selected", locale)}</button
+      style="padding: 6px 12px; font-size: 13px;"
+      >{t("table.delete_selected", locale)}</button
     >
   </div>
 
-  <div id="toast-container" class="toast-container" aria-live="polite" role="status"></div>
+  <div
+    id="toast-container"
+    class="toast-container"
+    aria-live="polite"
+    role="status"
+  >
+  </div>
 
   <script>
     import { showToast } from "../lib/toast";
@@ -375,7 +442,9 @@ const priorityColors: Record<number, string> = {
             headers: { "content-type": "application/json" },
             body: JSON.stringify({ [field!]: value }),
           });
-          showToast(field === "priority" ? "Priority updated" : "Status updated");
+          showToast(
+            field === "priority" ? "Priority updated" : "Status updated",
+          );
           // Optimistic: update row styling based on new status
           if (field === "status") {
             const row = el.closest("tr");
@@ -387,7 +456,13 @@ const priorityColors: Record<number, string> = {
           }
           // Update priority select color
           if (field === "priority") {
-            const colors: Record<string, string> = { "1": "#ef4444", "2": "#f59e0b", "3": "#3b82f6", "4": "#10b981", "5": "#6b7280" };
+            const colors: Record<string, string> = {
+              "1": "#ef4444",
+              "2": "#f59e0b",
+              "3": "#3b82f6",
+              "4": "#10b981",
+              "5": "#6b7280",
+            };
             el.style.color = colors[el.value] ?? "inherit";
           }
         } catch {
@@ -438,26 +513,31 @@ const priorityColors: Record<number, string> = {
     });
 
     // +New Task button — creates task via API and inserts a new row
-    document.getElementById("create-task-btn")?.addEventListener("click", async () => {
-      try {
-        const res = await fetch("/api/tasks", {
-          method: "POST",
-          headers: { "content-type": "application/json" },
-          body: JSON.stringify({ title: "Untitled Task" }),
-        });
-        if (!res.ok) { showToast("Failed to create task", "error"); return; }
-        const task = await res.json();
-        showToast("Task created — fill in the details");
-        // Open the task detail panel for full editing
-        if (typeof (window as any).openTaskDetail === "function") {
-          (window as any).openTaskDetail(task.id);
-        } else {
-          window.location.reload();
+    document
+      .getElementById("create-task-btn")
+      ?.addEventListener("click", async () => {
+        try {
+          const res = await fetch("/api/tasks", {
+            method: "POST",
+            headers: { "content-type": "application/json" },
+            body: JSON.stringify({ title: "Untitled Task" }),
+          });
+          if (!res.ok) {
+            showToast("Failed to create task", "error");
+            return;
+          }
+          const task = await res.json();
+          showToast("Task created — fill in the details");
+          // Open the task detail panel for full editing
+          if (typeof (window as any).openTaskDetail === "function") {
+            (window as any).openTaskDetail(task.id);
+          } else {
+            window.location.reload();
+          }
+        } catch {
+          showToast("Network error", "error");
         }
-      } catch {
-        showToast("Network error", "error");
-      }
-    });
+      });
 
     // Bulk status change
     document
@@ -747,5 +827,17 @@ const priorityColors: Record<number, string> = {
   .view-btn.active {
     background: var(--accent-light);
     color: var(--accent);
+  }
+  .ticket-key-badge {
+    display: inline-block;
+    padding: 2px 8px;
+    border-radius: 4px;
+    font-size: 11px;
+    font-weight: 600;
+    font-family: "JetBrains Mono", monospace;
+    color: var(--accent);
+    background: rgba(16, 185, 129, 0.1);
+    white-space: nowrap;
+    cursor: help;
   }
 </style>

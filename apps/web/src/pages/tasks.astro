@@ -2,6 +2,7 @@
 import Layout from "../layouts/Layout.astro";
 import { t } from "../i18n/translations";
 import type { Locale } from "../lib/locale";
+import { formatTicketKey } from "../lib/ticket-key";
 import {
   ensureSchema,
   getPersistenceClient,
@@ -16,7 +17,7 @@ try {
   await ensureSchema();
   const client = getPersistenceClient();
   const result = await client.execute(
-    "SELECT id, title, description, status, priority, due_date, labels, framework_payload, calendar_sync_state, board_id, custom_fields, start_date, end_date, progress, color, is_favorite, task_type, parent_id, created_at, updated_at FROM tasks ORDER BY created_at DESC",
+    "SELECT id, title, description, status, priority, due_date, labels, framework_payload, calendar_sync_state, board_id, custom_fields, start_date, end_date, progress, color, is_favorite, task_type, parent_id, ticket_number, created_at, updated_at FROM tasks ORDER BY created_at DESC",
   );
   tasks = result.rows as Record<string, unknown>[];
 } catch (e) {
@@ -183,6 +184,11 @@ const statusLabels: Record<string, string> = {
               />
               <div class="task-content">
                 <div class={`task-title ${isDone ? "done" : ""}`}>
+                  {formatTicketKey(Number(task.ticket_number)) && (
+                    <span style="font-size:10px;font-family:'JetBrains Mono',monospace;color:var(--accent);opacity:0.7;margin-right:6px;">
+                      {formatTicketKey(Number(task.ticket_number))}
+                    </span>
+                  )}
                   {String(task.title)}
                 </div>
                 <div class="task-meta">

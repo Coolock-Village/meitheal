@@ -140,9 +140,15 @@ export function getNextOccurrence(
       }
       break;
 
-    case "MONTHLY":
+    case "MONTHLY": {
+      const origDay = next.getDate();
       next.setMonth(next.getMonth() + rule.interval);
+      // Handle month-end overflow (e.g., Jan 31 → Feb 28)
+      if (next.getDate() !== origDay) {
+        next.setDate(0); // Sets to last day of previous month
+      }
       break;
+    }
 
     case "YEARLY":
       next.setFullYear(next.getFullYear() + rule.interval);
