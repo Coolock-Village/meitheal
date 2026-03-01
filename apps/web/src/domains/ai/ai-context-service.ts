@@ -17,9 +17,38 @@ interface TaskWithExtras extends OfflineTask {
 }
 
 export async function askAIForTask(taskId: string): Promise<void> {
-    const raw = await getTask(taskId);
+    let raw = await getTask(taskId);
+
+    // Fallback: fetch from server API if not in offline store
     if (!raw) {
-        throw new Error(`Task ${taskId} not found in local store.`);
+        try {
+            const res = await fetch(`/api/v1/tasks/${taskId}`);
+            if (res.ok) {
+                const data = await res.json();
+                if (data) {
+                    raw = {
+                        id: data.id ?? taskId,
+                        title: data.title ?? "Untitled",
+                        description: data.description ?? "",
+                        status: data.status ?? "todo",
+                        dueDate: data.due_date ?? null,
+                        labels: data.labels ?? "",
+                        createdAt: data.created_at ?? new Date().toISOString(),
+                        updatedAt: data.updated_at ?? new Date().toISOString(),
+                        syncedAt: new Date().toISOString(),
+                        synced: true,
+                        taskType: data.task_type,
+                        priority: data.priority,
+                    } as unknown as TaskWithExtras;
+                }
+            }
+        } catch (err) {
+            console.warn("Failed to fetch task from server:", err);
+        }
+    }
+
+    if (!raw) {
+        throw new Error(`Task ${taskId} not found in local store or server.`);
     }
     const task = raw as TaskWithExtras;
 
