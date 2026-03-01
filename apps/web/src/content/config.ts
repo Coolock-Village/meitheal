@@ -5,10 +5,16 @@ const scoringFieldSchema = z.object({
   key: z.string().min(1),
   label: z.string().min(1),
   description: z.string().optional(),
-  type: z.enum(["number", "select", "boolean", "text"]),
+  help_text: z.string().optional(),
+  type: z.enum(["number", "select", "boolean", "text", "matrix"]),
+  ui_type: z.enum(["slider", "select", "radio", "checkbox"]).optional(),
   min: z.number().optional(),
   max: z.number().optional(),
-  weight: z.number().default(1)
+  weight: z.number().default(1),
+  options: z.array(z.object({
+    value: z.union([z.string(), z.number()]),
+    label: z.string()
+  })).optional()
 });
 
 const frameworks = defineCollection({
@@ -16,7 +22,13 @@ const frameworks = defineCollection({
   schema: z.object({
     name: z.string(),
     version: z.string(),
-    formula: z.string(),
+    archetype: z.enum(["formula", "matrix", "workflow", "taxonomy"]).default("formula"),
+    formula: z.string().optional(),
+    badge_thresholds: z.array(z.object({
+      min: z.number(),
+      label: z.string(),
+      color: z.string()
+    })).optional(),
     fields: z.array(scoringFieldSchema)
   })
 });

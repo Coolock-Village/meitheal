@@ -2,6 +2,8 @@
 import "../styles/global.css";
 import { t } from "../i18n/translations";
 import type { Locale } from "../lib/locale";
+import Sidebar from "../components/layout/Sidebar.astro";
+import TopNavigation from "../components/layout/TopNavigation.astro";
 
 // i18n: resolve locale from cookie for SSR
 const cookieLocale = Astro.cookies.get("meitheal-locale")?.value;
@@ -73,165 +75,12 @@ Astro.response.headers.set("X-XSS-Protection", "1; mode=block");
     <a href="#main-content" class="skip-to-content"
       >{t("nav.skip_to_content", locale)}</a
     >
-    <nav
-      class="sidebar"
-      id="sidebar"
-      role="navigation"
-      aria-label="Main navigation"
-    >
-      <div class="sidebar-header">
-        <div class="logo">
-          <span class="logo-icon">☘</span>
-          <span class="logo-text">Meitheal</span>
-        </div>
-      </div>
-      <ul class="nav-links">
-        <li>
-          <a
-            href="/"
-            class="nav-link"
-            data-page="dashboard"
-            aria-label={t("nav.dashboard", locale)}
-            ><span class="nav-icon">📊</span> {t("nav.dashboard", locale)}</a
-          >
-        </li>
-        <li>
-          <a
-            href="/tasks"
-            class="nav-link"
-            data-page="tasks"
-            aria-label={`Tasks (${taskCounts.total} total)`}
-            ><span class="nav-icon">✅</span>
-            {t("nav.tasks", locale)}
-            <span class="nav-badge" aria-label={`${taskCounts.total} tasks`}
-              >{taskCounts.total}</span
-            ></a
-          >
-        </li>
-        <li>
-          <a
-            href="/kanban"
-            class="nav-link"
-            data-page="kanban"
-            aria-label={`Kanban board (${taskCounts.active} active)`}
-            ><span class="nav-icon">▦</span>
-            {t("nav.kanban", locale)}
-            <span
-              class="nav-badge"
-              aria-label={`${taskCounts.active} active tasks`}
-              >{taskCounts.active}</span
-            ></a
-          >
-        </li>
-        <li>
-          <a
-            href="/table"
-            class="nav-link"
-            data-page="table"
-            aria-label={t("nav.table", locale)}
-            ><span class="nav-icon">⊞</span> {t("nav.table", locale)}</a
-          >
-        </li>
-        <li>
-          <a
-            href="/today"
-            class="nav-link"
-            data-page="today"
-            aria-label={t("nav.today", locale)}
-            ><span class="nav-icon">☀️</span> {t("nav.today", locale)}</a
-          >
-        </li>
-        <li>
-          <a
-            href="/upcoming"
-            class="nav-link"
-            data-page="upcoming"
-            aria-label={t("nav.upcoming", locale)}
-            ><span class="nav-icon">📅</span> {t("nav.upcoming", locale)}</a
-          >
-        </li>
-        <li>
-          <a
-            href="/calendar"
-            class="nav-link"
-            data-page="calendar"
-            aria-label={t("nav.calendar", locale)}
-            ><span class="nav-icon">🗓️</span> {t("nav.calendar", locale)}</a
-          >
-        </li>
-        <li>
-          <a
-            href="/settings"
-            class="nav-link"
-            data-page="settings"
-            aria-label={t("nav.settings", locale)}
-            ><span class="nav-icon">⚙</span> {t("nav.settings", locale)}</a
-          >
-        </li>
-      </ul>
-      <div
-        class="board-switcher"
-        id="board-switcher"
-        role="region"
-        aria-label="Board selector"
-      >
-        <div class="board-switcher-label">{t("sidebar.board", locale)}</div>
-        <select
-          class="board-select"
-          id="board-select"
-          aria-label="Select active board"
-        >
-          <option value="default"
-            >📋 {t("sidebar.default_board", locale)}</option
-          >
-        </select>
-        <button
-          class="board-add-btn"
-          id="add-board-btn"
-          title={t("sidebar.create_board", locale)}
-          aria-label={t("sidebar.create_board", locale)}>+</button
-        >
-      </div>
-      <div class="sidebar-footer">
-        <div
-          class="status-indicator"
-          id="connection-status"
-          role="status"
-          aria-live="polite"
-        >
-          <span class="status-dot" aria-hidden="true"></span>
-          <span class="status-text">{t("status.checking", locale)}</span>
-        </div>
-      </div>
-    </nav>
+    <Sidebar locale={locale} taskCounts={taskCounts} />
     <div class="main-content">
-      <header class="topbar">
-        <button
-          class="menu-toggle"
-          id="menu-toggle"
-          aria-label={t("topbar.toggle_menu", locale)}>☰</button
-        >
-        <h1 class="page-title"><slot name="page-title" /></h1>
-        <div class="search-container" id="search-container">
-          <input
-            type="search"
-            class="search-input"
-            id="global-search"
-            placeholder={t("topbar.search_placeholder", locale)}
-            aria-label={t("topbar.search_placeholder", locale)}
-            autocomplete="off"
-          />
-          <div
-            class="search-results"
-            id="search-results"
-            style="display: none;"
-          >
-          </div>
-        </div>
-        <div class="topbar-actions">
-          <slot name="actions" />
-        </div>
-      </header>
+      <TopNavigation locale={locale}>
+        <Fragment slot="page-title"><slot name="page-title" /></Fragment>
+        <Fragment slot="actions"><slot name="actions" /></Fragment>
+      </TopNavigation>
       <main class="content" role="main" id="main-content">
         <slot />
       </main>

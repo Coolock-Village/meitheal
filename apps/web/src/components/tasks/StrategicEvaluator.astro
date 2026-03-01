@@ -1,0 +1,310 @@
+---
+import { getCollection } from "astro:content";
+const frameworks = await getCollection("frameworks");
+
+// Map mapping from task type -> framework ID
+// In a full implementation, this could be read from settings.
+const defaultMapping: Record<string, string> = {
+  story: "rice",
+  epic: "ddd",
+  task: "heart"
+};
+---
+
+<div id="strategic-evaluator-modal" class="fixed inset-0 bg-black/60 z-[70] hidden items-center justify-center p-4">
+  <div class="bg-bg-card border border-border rounded-xl shadow-2xl w-full max-w-xl overflow-hidden flex flex-col max-h-[90vh] animate-fade-in">
+    <div class="px-6 py-4 border-b border-border flex justify-between items-center bg-bg-secondary">
+      <div>
+        <div class="flex items-center gap-3">
+          <h3 id="se-title" class="font-bold text-lg m-0">Strategic Lens</h3>
+          <span id="se-archetype-badge" class="text-[10px] uppercase font-bold tracking-wider px-2 py-0.5 rounded bg-bg-hover text-text-muted"></span>
+        </div>
+        <p id="se-desc" class="text-xs text-text-muted mt-1 leading-tight">Evaluate this task against the active framework.</p>
+      </div>
+      <button id="se-close" class="text-text-muted hover:text-text-primary px-2 py-1 text-xl leading-none">&times;</button>
+    </div>
+    
+    <div id="se-content" class="p-6 overflow-y-auto flex-1 space-y-6">
+      <!-- Dynamic inputs mapped from YAML schema will be injected here -->
+    </div>
+    
+    <div class="px-6 py-4 border-t border-border bg-bg-secondary flex justify-between items-center">
+      <button id="se-ask-ai" class="btn btn-ghost text-sm text-accent flex items-center gap-2 px-3 py-1.5 rounded-md hover:bg-accent/10 transition-colors">
+        <span>🤖</span> Auto-Score
+      </button>
+      <div class="flex items-center gap-4">
+        <div id="se-live-result" class="text-sm font-bold flex items-center gap-2"></div>
+        <button id="se-save" class="btn-primary px-5 py-2 text-sm">Accept & Save</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script define:vars={{ frameworks, defaultMapping }}>
+  // 1. Core State
+  let currentTaskId = null;
+  let currentTaskType = null;
+  let currentActiveFramework = null;
+  let currentPayload = {};
+  
+  // 2. DOM Elements
+  const modal = document.getElementById("strategic-evaluator-modal");
+  const closeBtn = document.getElementById("se-close");
+  const contentEl = document.getElementById("se-content");
+  const titleEl = document.getElementById("se-title");
+  const archetypeBadge = document.getElementById("se-archetype-badge");
+  const liveResult = document.getElementById("se-live-result");
+  const saveBtn = document.getElementById("se-save");
+  const askAiBtn = document.getElementById("se-ask-ai");
+  const evalTriggerBtn = document.getElementById("td-evaluate-btn");
+  const badgeContainer = document.getElementById("td-strategic-badge");
+  const activeFrameworkNameLabel = document.getElementById("td-active-framework-name");
+
+  // Format Helper
+  function safeMathEval(formula, variables) {
+    try {
+      let calc = formula;
+      for (const [k, v] of Object.entries(variables)) {
+        calc = calc.replace(new RegExp(`\\b${k}\\b`, 'gi'), v || 0);
+      }
+      return new Function(`return ${calc}`)();
+    } catch {
+      return 0;
+    }
+  }
+  
+  function getBadgeForScore(framework, score) {
+    if (!framework.data.badge_thresholds || framework.data.badge_thresholds.length === 0) return null;
+    // Sort thresholds descending
+    const sorted = [...framework.data.badge_thresholds].sort((a,b) => b.min - a.min);
+    for (const t of sorted) {
+      if (score >= t.min) return t;
+    }
+    return sorted[sorted.length - 1]; // return lowest
+  }
+
+  // Generate UI Component from Schema
+  function renderField(field, value) {
+    const val = value !== undefined ? value : (field.min || 0);
+    let html = `<div class="se-field" data-key="${field.key}">
+      <div class="flex justify-between items-center mb-1">
+        <label class="text-sm font-semibold text-text-primary">${field.label}</label>
+        <span class="text-xs font-mono text-accent se-field-val-display" id="val-display-${field.key}">${val}</span>
+      </div>
+      <p class="text-[11px] text-text-muted mb-2 leading-snug">${field.help_text || field.description || ''}</p>
+    `;
+
+    if (field.ui_type === "slider" || field.type === "number") {
+      html += `<input type="range" class="w-full accent-accent se-input" data-key="${field.key}" min="${field.min || 0}" max="${field.max || 100}" value="${val}" step="${field.type === 'number' && field.max > 10 ? 1 : 0.1}" />`;
+    } else if (field.ui_type === "radio" && field.options) {
+      html += `<div class="flex flex-col gap-2 mt-2">`;
+      for (const opt of field.options) {
+        const isChecked = String(val) === String(opt.value) ? "checked" : "";
+        html += `<label class="flex items-center gap-2 cursor-pointer text-sm bg-bg-primary border border-border px-3 py-2 rounded hover:border-accent transition-colors">
+          <input type="radio" name="se-radio-${field.key}" class="accent-accent se-input" data-key="${field.key}" value="${opt.value}" ${isChecked}>
+          <span>${opt.label}</span>
+        </label>`;
+      }
+      html += `</div>`;
+    } else if (field.ui_type === "select" && field.options) {
+      html += `<select class="form-input w-full text-sm py-2 se-input" data-key="${field.key}">`;
+      for (const opt of field.options) {
+        const isSel = String(val) === String(opt.value) ? "selected" : "";
+        html += `<option value="${opt.value}" ${isSel}>${opt.label}</option>`;
+      }
+      html += `</select>`;
+    } else {
+      html += `<input type="text" class="form-input w-full text-sm py-2 se-input" data-key="${field.key}" value="${val}" />`;
+    }
+
+    html += `</div>`;
+    return html;
+  }
+
+  function updateLiveResult() {
+    if (!currentActiveFramework) return;
+    
+    // Gather values
+    const vars = {};
+    document.querySelectorAll(".se-input").forEach(el => {
+      const k = el.getAttribute("data-key");
+      const v = el.type === "radio" ? (el.checked ? el.value : null) : el.value;
+      if (v !== null) vars[k] = isNaN(Number(v)) ? v : Number(v);
+      
+      // Update display text
+      const display = document.getElementById(`val-display-${k}`);
+      if (display && el.type !== "radio") display.textContent = v;
+    });
+    
+    Object.assign(currentPayload, vars);
+
+    if (currentActiveFramework.data.archetype === "formula" && currentActiveFramework.data.formula) {
+      const score = Math.round(safeMathEval(currentActiveFramework.data.formula, currentPayload));
+      currentPayload.score = score;
+      
+      const badge = getBadgeForScore(currentActiveFramework, score);
+      if (badge) {
+        liveResult.innerHTML = `<span class="text-text-muted font-normal mr-2">Calculated:</span> <span class="text-2xl">${score}</span> <span class="px-2 py-0.5 text-xs rounded bg-${badge.color}/10 text-${badge.color} border border-${badge.color}/20 ml-2">${badge.label}</span>`;
+      } else {
+        liveResult.innerHTML = `<span class="text-text-muted font-normal mr-2">Score:</span> <span class="text-2xl">${score}</span>`;
+      }
+    } else if (currentActiveFramework.data.archetype === "matrix" || currentActiveFramework.data.archetype === "taxonomy") {
+      liveResult.innerHTML = `<span class="text-text-muted text-xs italic">Dimension mapping active</span>`;
+    } else if (currentActiveFramework.data.archetype === "workflow") {
+      liveResult.innerHTML = `<span class="text-text-muted text-xs italic">Workflow state advancing</span>`;
+    }
+  }
+
+  // 3. Open/Close Modal
+  function openEvaluator() {
+    if (!currentActiveFramework) return;
+    
+    titleEl.textContent = currentActiveFramework.data.name;
+    archetypeBadge.textContent = currentActiveFramework.data.archetype;
+    
+    contentEl.innerHTML = currentActiveFramework.data.fields.map(f => renderField(f, currentPayload[f.key])).join("");
+    
+    // Bind change listeners
+    contentEl.querySelectorAll(".se-input").forEach(el => {
+      el.addEventListener("input", updateLiveResult);
+      el.addEventListener("change", updateLiveResult);
+    });
+    
+    updateLiveResult();
+    modal.classList.remove("hidden");
+    modal.classList.add("flex");
+  }
+
+  function closeEvaluator() {
+    modal.classList.add("hidden");
+    modal.classList.remove("flex");
+  }
+
+  closeBtn?.addEventListener("click", closeEvaluator);
+  modal?.addEventListener("click", e => { if(e.target === modal) closeEvaluator(); });
+
+  // 4. Save Logic
+  saveBtn?.addEventListener("click", async () => {
+    saveBtn.disabled = true;
+    saveBtn.textContent = "Saving...";
+    
+    currentPayload._frameworkId = currentActiveFramework.id;
+    currentPayload._evaluatedAt = new Date().toISOString();
+
+    try {
+      const res = await fetch(`/api/tasks/${currentTaskId}`, {
+        method: "PUT",
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify({ framework_payload: JSON.stringify(currentPayload) })
+      });
+      
+      if (res.ok) {
+        renderSidebarBadge();
+        closeEvaluator();
+        // Optional global event notification
+        window.dispatchEvent(new CustomEvent("meitheal-sync", { detail: { type: "framework-saved" } }));
+      }
+    } catch (e) {
+      console.error("Failed to save evaluation", e);
+    } finally {
+      saveBtn.disabled = false;
+      saveBtn.textContent = "Accept & Save";
+    }
+  });
+
+  // 5. Sidebar Integrator (Exposed Globally so Layout.astro can call it when Task Detail opens)
+  window.attachStrategicLens = function(taskId, taskType, frameworkPayloadStr) {
+    currentTaskId = taskId;
+    currentTaskType = taskType || "task";
+    
+    // Try to parse existing payload
+    try {
+      currentPayload = JSON.parse(frameworkPayloadStr || "{}");
+    } catch {
+      currentPayload = {};
+    }
+    
+    // Determine active framework
+    const fwId = currentPayload._frameworkId || defaultMapping[currentTaskType] || "heart";
+    currentActiveFramework = frameworks.find(f => f.id === fwId);
+    
+    if (currentActiveFramework) {
+      if (activeFrameworkNameLabel) {
+        activeFrameworkNameLabel.textContent = currentActiveFramework.data.name;
+        activeFrameworkNameLabel.classList.remove("hidden");
+      }
+      renderSidebarBadge();
+    }
+  };
+  
+  function renderSidebarBadge() {
+    if (!badgeContainer || !currentActiveFramework) return;
+    
+    if (currentActiveFramework.data.archetype === "formula" && currentPayload.score !== undefined) {
+      const score = currentPayload.score;
+      const badge = getBadgeForScore(currentActiveFramework, score);
+      
+      if (badge) {
+        badgeContainer.innerHTML = `<div class="px-3 py-2 rounded-md bg-${badge.color}/10 border border-${badge.color}/20 flex items-center justify-between">
+          <span class="text-xs font-bold text-${badge.color} uppercase tracking-wider">${badge.label}</span>
+          <span class="font-mono font-bold text-${badge.color}">${score}</span>
+        </div>`;
+      } else {
+        badgeContainer.innerHTML = `<span class="text-xs font-mono text-text-muted">Score: ${score}</span>`;
+      }
+      badgeContainer.classList.remove("hidden");
+    } else if (currentPayload._evaluatedAt) {
+      badgeContainer.innerHTML = `<div class="px-3 py-2 rounded-md bg-bg-hover border border-border flex items-center justify-between">
+        <span class="text-xs font-bold text-text-muted uppercase tracking-wider">Evaluated</span>
+        <span class="text-lg">✅</span>
+      </div>`;
+      badgeContainer.classList.remove("hidden");
+    } else {
+      badgeContainer.classList.add("hidden");
+    }
+  }
+
+  evalTriggerBtn?.addEventListener("click", openEvaluator);
+
+  // 6. AI Auto-Score Hook
+  askAiBtn?.addEventListener("click", () => {
+    // Basic heuristics / mock simulation for Auto-Score
+    // Real implementation would pass task description to an LLM endpoint.
+    askAiBtn.textContent = "⚙️ Simulating AI...";
+    askAiBtn.disabled = true;
+    
+    setTimeout(() => {
+      contentEl.querySelectorAll(".se-input").forEach(el => {
+        if (el.type === "range") {
+          // prefill at 60-80% mark
+          const min = Number(el.min) || 0;
+          const max = Number(el.max) || 100;
+          el.value = Math.floor(min + (max - min) * 0.75);
+        } else if (el.type === "radio") {
+          const name = el.getAttribute("name");
+          const inputs = document.querySelectorAll(`[name="${name}"]`);
+          if (inputs.length > 0) inputs[Math.floor(inputs.length / 2)].checked = true;
+        } else if (el.tagName === "SELECT") {
+          const opts = el.options;
+          if (opts.length > 0) el.value = opts[Math.floor(opts.length / 2)].value;
+        }
+        updateLiveResult();
+      });
+      askAiBtn.innerHTML = `<span>✨</span> Auto-Scored`;
+      
+      // Inject AI justification context block
+      if (!document.getElementById("se-ai-justification")) {
+        const just = document.createElement("div");
+        just.id = "se-ai-justification";
+        just.className = "mt-4 p-3 bg-accent/10 border border-accent/20 rounded-md text-xs text-text-secondary leading-relaxed";
+        just.innerHTML = `<strong class="text-accent block mb-1">AI Logic:</strong> Based on the task description, effort appears medium (requires cross-system coordination). Reach is high. I've pre-filled the sliders. Please review and adjust.`;
+        contentEl.prepend(just);
+      }
+      
+      setTimeout(() => {
+        askAiBtn.disabled = false;
+        askAiBtn.innerHTML = `<span>🤖</span> Auto-Score`;
+      }, 2000);
+    }, 1200);
+  });
+</script>

@@ -1,0 +1,212 @@
+---
+import { t } from "../../i18n/translations";
+import type { Locale } from "../../lib/locale";
+
+interface Props {
+  locale: Locale;
+}
+
+const { locale } = Astro.props;
+---
+
+<header
+  class="topbar sticky top-0 z-30 flex items-center justify-between px-6 py-4 bg-bg-primary/80 backdrop-blur-md border-b border-border/50"
+>
+  <div class="flex items-center gap-4">
+    <button
+      class="menu-toggle md:hidden p-2 rounded-md hover:bg-hover text-text-secondary transition-colors"
+      id="menu-toggle"
+      aria-label={t("topbar.toggle_menu", locale)}
+    >
+      <svg
+        xmlns="http://www.w3.org/2000/svg"
+        width="20"
+        height="20"
+        viewBox="0 0 24 24"
+        fill="none"
+        stroke="currentColor"
+        stroke-width="2"
+        stroke-linecap="round"
+        stroke-linejoin="round"
+        ><line x1="4" x2="20" y1="12" y2="12"></line><line
+          x1="4"
+          x2="20"
+          y1="6"
+          y2="6"></line><line x1="4" x2="20" y1="18" y2="18"></line></svg
+      >
+    </button>
+    <h1
+      class="page-title text-xl font-semibold tracking-tight text-text-primary m-0 hidden sm:block"
+    >
+      <slot name="page-title" />
+    </h1>
+  </div>
+
+  <div
+    class="search-container flex-1 max-w-md mx-4 relative"
+    id="search-container"
+  >
+    <div class="relative group">
+      <div
+        class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none text-text-muted group-focus-within:text-accent transition-colors"
+      >
+        <svg
+          xmlns="http://www.w3.org/2000/svg"
+          width="16"
+          height="16"
+          viewBox="0 0 24 24"
+          fill="none"
+          stroke="currentColor"
+          stroke-width="2"
+          stroke-linecap="round"
+          stroke-linejoin="round"
+          ><circle cx="11" cy="11" r="8"></circle><path d="m21 21-4.3-4.3"
+          ></path></svg
+        >
+      </div>
+      <input
+        type="search"
+        class="search-input w-full bg-bg-secondary/50 border border-border rounded-lg py-2 pl-9 pr-12 text-sm focus:outline-none focus:ring-2 focus:ring-accent/50 focus:border-accent focus:bg-bg-primary transition-all placeholder:text-text-muted"
+        id="global-search"
+        placeholder={t("topbar.search_placeholder", locale)}
+        aria-label={t("topbar.search_placeholder", locale)}
+        autocomplete="off"
+      />
+      <div
+        class="absolute inset-y-0 right-0 pr-2 flex items-center pointer-events-none"
+      >
+        <kbd
+          class="hidden sm:inline-block border border-border bg-bg-primary text-text-muted rounded px-1.5 text-[10px] font-mono font-medium"
+          >Cmd K</kbd
+        >
+      </div>
+    </div>
+    <div
+      class="search-results absolute top-full left-0 right-0 mt-2 bg-bg-secondary border border-border rounded-lg shadow-xl overflow-y-auto max-h-96 z-50 text-sm hidden"
+      id="search-results"
+    >
+    </div>
+  </div>
+
+  <div class="topbar-actions flex items-center gap-2">
+    <slot name="actions" />
+  </div>
+</header>
+
+<script>
+  // Mobile menu toggle
+  document.getElementById("menu-toggle")?.addEventListener("click", () => {
+    document.getElementById("sidebar")?.classList.toggle("open");
+  });
+
+  // Global search
+  const searchInput = document.getElementById(
+    "global-search",
+  ) as HTMLInputElement;
+  const searchResults = document.getElementById("search-results")!;
+  let searchTimeout: ReturnType<typeof setTimeout> | null = null;
+
+  searchInput?.addEventListener("input", (e) => {
+    const target = e.target as HTMLInputElement;
+    const q = target.value.trim();
+    if (searchTimeout) clearTimeout(searchTimeout);
+
+    if (!q) {
+      searchResults.style.display = "none";
+      return;
+    }
+
+    searchTimeout = setTimeout(async () => {
+      try {
+        const res = await fetch(
+          `/api/tasks?q=${encodeURIComponent(q)}&limit=8`,
+        );
+        const data = await res.json();
+        if (data.tasks.length === 0) {
+          searchResults.innerHTML =
+            '<div class="search-empty">No tasks found</div>';
+        } else {
+          searchResults.innerHTML = data.tasks
+            .map(
+              (t: any) =>
+                `<div class="search-item" data-task-id="${String(t.id ?? "")}" style="cursor:pointer;">
+                  <strong>${String(t.title ?? "")}</strong>
+                  <span class="search-meta">${String(t.status ?? "pending")} · P${t.priority ?? 3}</span>
+                </div>`,
+            )
+            .join("");
+        }
+        searchResults.style.display = "block";
+      } catch {
+        searchResults.style.display = "none";
+      }
+    }, 300);
+  });
+
+  // Search Results Routing
+  searchResults?.addEventListener("click", (e) => {
+    const item = (e.target as HTMLElement)?.closest(
+      ".search-item",
+    ) as HTMLElement;
+    if (!item) return;
+    const taskId = item.dataset.taskId;
+    if (!taskId) return;
+    searchResults.style.display = "none";
+    searchInput.value = "";
+    // If we're on a page with the task detail panel available, open it natively
+    if (typeof (window as any).openTaskDetail === "function") {
+      (window as any).openTaskDetail(taskId);
+    } else {
+      window.location.href = `/tasks#task-${taskId}`; // Redirect to tasks list and open panel using new anchor syntax
+    }
+  });
+
+  // Dismiss on click outside
+  document.addEventListener("click", (e) => {
+    if (!(e.target as HTMLElement)?.closest("#search-container")) {
+      searchResults.style.display = "none";
+    }
+  });
+
+  // CMD+K and Esc bindings
+  document.addEventListener("keydown", (e) => {
+    const tag = (e.target as HTMLElement)?.tagName;
+    const isEditing =
+      ["INPUT", "TEXTAREA", "SELECT"].includes(tag) ||
+      (e.target as HTMLElement)?.contentEditable === "true";
+
+    if (e.key === "k" && (e.metaKey || e.ctrlKey)) {
+      e.preventDefault();
+      searchInput?.focus();
+      return;
+    }
+
+    if (e.key === "Escape") {
+      if (document.activeElement === searchInput) {
+        searchInput?.blur();
+        searchResults.style.display = "none";
+        return;
+      }
+      const sidebar = document.getElementById("sidebar");
+      if (sidebar?.classList.contains("open")) {
+        sidebar.classList.remove("open");
+        return;
+      }
+    }
+  });
+</script>
+
+<style>
+  .search-item {
+    @apply px-4 py-3 border-b border-border/50 hover:bg-hover transition-colors flex flex-col gap-1;
+  }
+  .search-item:last-child {
+    @apply border-b-0;
+  }
+  .search-meta {
+    @apply text-xs text-text-muted capitalize;
+  }
+  .search-empty {
+    @apply px-4 py-6 text-center text-text-muted text-sm italic;
+  }
+</style>

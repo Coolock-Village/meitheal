@@ -1,7 +1,7 @@
-name: RICE
-version: 1.1.0
+name: DRICE
+version: 1.0.0
 archetype: formula
-formula: "(reach * impact * confidence) / effort"
+formula: "(reach * impact * confidence) / (effort * dependencies)"
 badge_thresholds:
   - min: 80
     label: "Do Now (High Value)"
@@ -20,7 +20,7 @@ fields:
     min: 0
     max: 1000000
     weight: 1
-    help_text: "How many people will this impact in a given period? (e.g. 500 users/month)"
+    help_text: "How many people will this impact in a given period?"
   - key: impact
     label: Impact
     type: number
@@ -44,4 +44,12 @@ fields:
     min: 1
     max: 1000
     weight: 1
-    help_text: "How many person-months will this take? (e.g. 0.5 = 2 weeks)"
+    help_text: "How many person-months will this take?"
+  - key: dependencies
+    label: Dependencies
+    type: number
+    ui_type: slider
+    min: 1
+    max: 10
+    weight: 1
+    help_text: "How many external dependencies or blocked teams are required? (1 = None, 2+ = Multiple blocks)"
