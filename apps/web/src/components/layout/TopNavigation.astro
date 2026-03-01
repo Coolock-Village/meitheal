@@ -170,11 +170,6 @@ const { locale } = Astro.props;
 
   // CMD+K and Esc bindings
   document.addEventListener("keydown", (e) => {
-    const tag = (e.target as HTMLElement)?.tagName;
-    const isEditing =
-      ["INPUT", "TEXTAREA", "SELECT"].includes(tag) ||
-      (e.target as HTMLElement)?.contentEditable === "true";
-
     if (e.key === "k" && (e.metaKey || e.ctrlKey)) {
       e.preventDefault();
       searchInput?.focus();

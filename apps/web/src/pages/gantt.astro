@@ -7,7 +7,6 @@ import {
   ensureSchema,
   getPersistenceClient,
 } from "@domains/tasks/persistence/store";
-import { formatTicketKey } from "../lib/ticket-key";
 
 interface TaskRecord {
   id: string;
@@ -86,8 +85,6 @@ const ganttTasks = tasks.map(task => {
 
 // Grouping logic based on Meitheal's DDD (Phase 20 typed epics)
 const epics = ganttTasks.filter(t => String(t.task_type) === 'epic');
-const stories = ganttTasks.filter(t => String(t.task_type) === 'story');
-const regularTasks = ganttTasks.filter(t => String(t.task_type) === 'task' || !['epic', 'story'].includes(String(t.task_type)));
 
 ---
 <Layout title={`Meitheal — Gantt`}>

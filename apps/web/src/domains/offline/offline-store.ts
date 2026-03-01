@@ -93,7 +93,7 @@ async function getDb(): Promise<IDBDatabase> {
 export async function putTask(task: OfflineTask): Promise<void> {
   if (navigator.storage && navigator.storage.estimate) {
     try {
-      const { usage, quota } = await navigator.storage.estimate()
+      const { usage } = await navigator.storage.estimate()
       const usageMB = (usage || 0) / (1024 * 1024)
       if (usageMB > 100) {
         console.warn(`[offline-store] Storage usage (${usageMB.toFixed(2)} MB) exceeds 100MB threshold`)
