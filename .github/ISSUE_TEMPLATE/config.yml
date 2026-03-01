@@ -1,0 +1,11 @@
+blank_issues_enabled: false
+contact_links:
+  - name: 💬 Questions & Discussion
+    url: https://github.com/Coolock-Village/meitheal/discussions
+    about: Ask questions, share ideas, or start a discussion
+  - name: 🏠 Home Assistant Community
+    url: https://community.home-assistant.io/
+    about: General Home Assistant questions (not Meitheal-specific bugs)
+  - name: 📖 Documentation
+    url: https://github.com/Coolock-Village/meitheal/tree/main/docs
+    about: Browse KCS runbooks, ADRs, and project documentation

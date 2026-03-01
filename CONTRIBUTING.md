@@ -1,95 +1,250 @@
 # Contributing to Meitheal
 
+> **Meitheal** (pronounced *MEH-hal*) is the Irish word for a cooperative work team — neighbours coming together to get things done. That spirit defines how we build this project.
+
+Contributions are welcome! Whether you're fixing a bug, improving docs, or adding a feature, this guide explains how we work.
+
+## Table of Contents
+
+- [Code of Conduct](#code-of-conduct)
+- [Our Rules](#our-rules)
+- [Architecture](#architecture)
+- [Getting Started](#getting-started)
+- [Coding Conventions](#coding-conventions)
+- [Testing](#testing)
+- [Pull Request Process](#pull-request-process)
+- [HA Add-on Development](#ha-add-on-development)
+- [AI Contributors](#ai-contributors)
+
+## Code of Conduct
+
+Be kind, be constructive. We're a community project built by volunteers. Treat every contributor — human or AI — with respect.
+
+## Our Rules
+
+These are non-negotiable. PRs that violate them will be asked to revise.
+
+### 1. Astro-First
+
+Meitheal is built on [Astro](https://astro.build/) SSR. Prefer official Astro integrations before custom solutions. Don't introduce alternative frameworks unless there's no Astro-native option.
+
+### 2. Domain-Driven Design (DDD)
+
+Every feature belongs to a **bounded context**. There are 5:
+
+| Context | Package | Scope |
+|---------|---------|-------|
+| Auth | `domain-auth` | Ingress, tokens, passkeys |
+| Tasks | `domain-tasks` | Task CRUD, boards, kanban |
+| Strategy | `domain-strategy` | Frameworks, scoring, evaluation |
+| Observability | `domain-observability` | Logging, auditing, metrics |
+| Integrations | `integration-core` | Calendar sync, webhooks, adapters |
+
+**Rules:**
+- Domain logic goes in `packages/domain-*/`, NOT in pages or API routes
+- Cross-context imports must use public package APIs, never deep path imports
+- Use ubiquitous language — say "task" not "todo", "board" not "project"
+
+### 3. Knowledge-Centered Support (KCS)
+
+Every behavior change requires a documentation update **in the same commit**:
+- New features → update relevant KCS runbook or create a new one
+- Architectural decisions → write an ADR in `docs/decisions/`
+- Error messages must enable self-service debugging
+
+### 4. Home Assistant First
+
+HA add-on compatibility is a first-class constraint:
+- Ingress auth must work in all code paths
+- AppArmor profile must remain restrictive
+- `config.yaml` and `repository.yaml` must stay HA-publishing-compliant
+- Test with the HA Supervisor, not just standalone
+
+### 5. CodeRabbit Triage
+
+CodeRabbitAI reviews every PR. Treat findings as required triage:
+- **Accept** and implement the fix, OR
+- **Document** the reject rationale in the PR comment
+
+## Architecture
+
+```
+meitheal/
+├── apps/web/              # Astro SSR app (pages, API routes, middleware)
+├── packages/domain-*/     # Pure domain logic (5 bounded contexts)
+├── packages/integration-core/  # Adapter interfaces + implementations
+├── meitheal-hub/          # HA OS add-on (Dockerfile, AppArmor, config)
+├── tests/                 # Playwright test suite
+│   ├── e2e/               # Integration + E2E tests
+│   └── governance/        # Repo standards enforcement
+├── docs/                  # ADRs, KCS runbooks, analysis
+└── .planning/             # Internal planning artifacts
+```
+
+**Data flow:** SQLite via Drizzle ORM → domain events with idempotency keys → adapter pattern for integrations.
+
 ## Getting Started
 
+### Prerequisites
+
+- Node.js 22+
+- pnpm 9+
+- Git
+
+### Setup
+
 ```bash
-# Clone the repo
 git clone https://github.com/Coolock-Village/meitheal.git
 cd meitheal
-
-# Install dependencies (pnpm required)
 pnpm install
-
-# Run the dev server
-pnpm --filter web dev
-
-# Run type checks
-pnpm check
-
-# Run tests
-pnpm test
 ```
 
-## Branch Naming
+### Development
 
-Use feature branches from `main`:
-
-- `feat/<description>` — new features
-- `fix/<description>` — bug fixes
-- `docs/<description>` — documentation only
-- `chore/<description>` — tooling, CI, dependencies
-
-## Commit Messages
-
-Use conventional commits with emoji prefixes:
-
-```text
-feat(scope): description
-fix(scope): description
-docs(scope): description
-chore(scope): description
-test(scope): description
+```bash
+pnpm --filter web dev      # Start dev server (http://localhost:3000)
+pnpm check                 # Typecheck all packages (must pass with 0 errors)
+pnpm --filter @meitheal/tests test   # Run full test suite
 ```
 
-Examples:
+## Coding Conventions
 
-```text
-feat(offline): Add IDB attachment store for image uploads
-fix(ux): Suppress keyboard shortcuts when task detail is open
-docs(kcs): Update PWA guide with attachment documentation
+### Style
+
+| Rule | Value |
+|------|-------|
+| Semicolons | No |
+| Quotes | Double |
+| Indent | 2 spaces |
+| Exports | Named only (no default exports) |
+
+### Naming
+
+| Thing | Convention | Example |
+|-------|-----------|---------|
+| Files | kebab-case | `task-sync-service.ts` |
+| Functions | camelCase | `createTask()` |
+| Types | PascalCase | `TaskAggregate` |
+| Test specs | `<name>.spec.ts` | `ha-calendar-adapter.spec.ts` |
+
+### Import Order
+
+1. Node builtins (`node:fs/promises`)
+2. Framework (`astro`, `astro:content`)
+3. External packages (`drizzle-orm`, `zod`)
+4. Workspace packages (`@meitheal/domain-tasks`)
+5. Local/relative (`./task`, `@domains/auth/ingress`)
+
+### Patterns
+
+- **Discriminated unions** for API results: `{ ok: true } | { ok: false, errorCode }`
+- **Command objects** for complex inputs: `CreateTaskCommand`
+- **AbortController** timeouts on all external calls
+- **Structured JSON logging** — single object per line, Loki-compatible
+
+## Testing
+
+### CI Jobs (all must pass)
+
+| Job | What it checks |
+|-----|---------------|
+| `typecheck-and-tests` | `astro check` + full Playwright suite |
+| `migration-check` | Drizzle migration pipeline |
+| `schema-drift` | Schema matches migrations |
+| `governance` | Required files exist |
+| `ha-harness` | HA calendar adapter tests |
+| `perf-budgets` | Bundle size, RSS, p95 latency |
+
+### Running Locally
+
+```bash
+# All tests
+pnpm --filter @meitheal/tests test
+
+# Specific spec
+pnpm --filter @meitheal/tests test e2e/ingress-header-validation.spec.ts
+
+# E2E browser tests (requires running server)
+E2E_BASE_URL=http://localhost:3000 pnpm --filter @meitheal/tests test e2e/pages.spec.ts
 ```
 
-## Monorepo Structure
+### Writing Tests
 
-- `apps/web` — Astro PWA frontend + API routes
-- `apps/api` — Cloudflare Workers adapter
-- `packages/domain-*` — Pure domain logic (DDD bounded contexts)
-- `meitheal-hub` — Home Assistant OS add-on
-- `tests/e2e` — Playwright e2e tests
-- `tests/governance` — Repo standards enforcement
-- `docs/` — ADRs, KCS runbooks, methodology docs
+- Tests import domain logic directly from workspace packages
+- HA tests use a local HTTP server harness to simulate the HA API
+- Persistence tests use temp SQLite files — no shared state between specs
+- Browser-dependent tests must include `test.skip(shouldSkipBrowserSpecs(), ...)`
 
-## Development Guidelines
+## Pull Request Process
 
-1. **DDD boundaries** — domain logic goes in `packages/domain-*`, not in pages
-2. **KCS compliance** — update docs when behavior changes (same commit)
-3. **Astro-first** — prefer Astro integrations over custom solutions
-4. **Type safety** — `pnpm check` must pass with 0 errors before committing
-5. **Test coverage** — add tests for new features in `tests/e2e/`
+### Branch Naming
+
+```
+feat/<description>    # New features
+fix/<description>     # Bug fixes
+docs/<description>    # Documentation only
+chore/<description>   # Tooling, CI, dependencies
+```
+
+### Commit Messages
+
+Conventional commits with emoji prefixes:
+
+```
+🆕 feat(tasks): add board drag-and-drop reordering
+🐛 fix(auth): handle missing ingress headers gracefully
+📝 docs(kcs): update operations runbook for webhook config
+🔧 chore(ci): raise perf budget for theme system growth
+🧪 test(e2e): add regression assertions for ingress edge cases
+```
+
+### Before Opening a PR
+
+1. `pnpm check` passes with **0 errors**
+2. `pnpm --filter @meitheal/tests test` passes
+3. KCS docs updated if behavior changed (same commit)
+4. No cross-context deep imports
+5. HA add-on compatibility preserved (if touching `meitheal-hub/`)
+
+### Review
+
+- All 6 CI jobs must pass
+- CodeRabbit findings must be triaged (accept/reject with rationale)
+- At least one maintainer approval required
 
 ## HA Add-on Development
 
-The HA add-on lives in `meitheal-hub/`:
+The add-on lives in `meitheal-hub/`:
 
 ```bash
-# Build the add-on container locally
-docker build -t meitheal-hub --build-arg BUILD_FROM=ghcr.io/home-assistant/amd64-base:latest meitheal-hub
+# Build locally
+docker build -t meitheal-hub \
+  --build-arg BUILD_FROM=ghcr.io/home-assistant/amd64-base:latest \
+  meitheal-hub
 
-# Run locally (outside HA Supervisor)
+# Run outside HA Supervisor
 docker run -p 3000:3000 -v $(pwd)/data:/data meitheal-hub /run-local.sh
 ```
 
 Key files:
 
-- `config.yaml` — add-on manifest (ingress, API roles, AppArmor, options)
-- `apparmor.txt` — security profile (auto-enforced by Supervisor)
-- `translations/en.yaml` — English option descriptions for HA UI
-- `run.sh` — Supervisor entrypoint
-- `run-local.sh` — Local dev entrypoint (no bashio)
+| File | Purpose |
+|------|---------|
+| `config.yaml` | Add-on manifest (ingress, auth, AppArmor, options) |
+| `apparmor.txt` | Security profile (enforced by Supervisor) |
+| `translations/en.yaml` | English option descriptions for HA UI |
+| `run.sh` | Supervisor entrypoint |
+| `run-local.sh` | Local dev entrypoint (no bashio) |
+| `repository.yaml` | HA add-on repository definition (repo root) |
 
-## Pull Request Process
+## AI Contributors
 
-1. Create a feature branch
-2. Make changes, ensuring `pnpm check` and `pnpm test` pass
-3. Push and open a PR against `main`
-4. PR must pass all 6 CI jobs before merge
+AI systems are welcome. See:
+
+- [AI_POLICY.md](AI_POLICY.md) — licensing, API access, training permissions
+- [AGENTS.md](AGENTS.md) — mandatory rules for all contributors (human + AI)
+- [WEBMCP.md](WEBMCP.md) — machine-readable protocol integration
+
+---
+
+*Questions? Open a [discussion](https://github.com/Coolock-Village/meitheal/discussions).*

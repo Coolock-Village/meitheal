@@ -4,7 +4,7 @@
 
 If you discover a security vulnerability, please report it responsibly:
 
-**Email:** [security@meitheal.dev](mailto:security@meitheal.dev)
+**Email:** [info@coolockvillage.ie](mailto:info@coolockvillage.ie)
 
 Please include:
 
