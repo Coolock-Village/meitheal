@@ -31,6 +31,32 @@ export async function exportLocalDataAsJson(): Promise<void> {
     triggerDownload(blob, `meitheal-local-export-${new Date().toISOString().split("T")[0]}.json`);
 }
 
+/**
+ * Export all local tasks as a CSV file.
+ * Includes BOM for Excel UTF-8 compatibility.
+ */
+export async function exportLocalDataAsCsv(): Promise<void> {
+    const tasks = await getAllTasks();
+
+    const headers = ["id", "title", "description", "status", "priority", "due_date", "labels", "created_at", "updated_at"];
+
+    const escapeCsv = (val: unknown): string => {
+        if (val === null || val === undefined) return '""';
+        const str = String(val);
+        if (str.includes(',') || str.includes('\n') || str.includes('"')) {
+            return `"${str.replace(/"/g, '""')}"`;
+        }
+        return `"${str}"`;
+    };
+
+    const rows = tasks.map(t => headers.map(h => escapeCsv((t as unknown as Record<string, unknown>)[h])).join(","));
+    // BOM for Excel UTF-8 compatibility
+    const csvContent = "\uFEFF" + [headers.join(","), ...rows].join("\n");
+
+    const blob = new Blob([csvContent], { type: "text/csv;charset=utf-8" });
+    triggerDownload(blob, `meitheal-local-export-${new Date().toISOString().split("T")[0]}.csv`);
+}
+
 function triggerDownload(blob: Blob, filename: string): void {
     const url = URL.createObjectURL(blob);
     const a = document.createElement("a");

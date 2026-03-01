@@ -18,7 +18,8 @@ export const GET: APIRoute = async () => {
             `SELECT id, title, description, status, priority, due_date, labels,
                     framework_payload, calendar_sync_state, board_id, custom_fields,
                     parent_id, time_tracked, start_date, end_date, progress, color,
-                    is_favorite, task_type, ticket_number, created_at, updated_at
+                    is_favorite, task_type, ticket_number, recurrence_rule,
+                    checklists, reminder_at, created_at, updated_at
              FROM tasks ORDER BY updated_at DESC`
         );
         const allTasks = result.rows.map(row => {

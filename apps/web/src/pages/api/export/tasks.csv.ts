@@ -11,7 +11,8 @@ export const GET: APIRoute = async () => {
             `SELECT id, title, description, status, priority, due_date, labels,
                     framework_payload, calendar_sync_state, board_id, custom_fields,
                     parent_id, time_tracked, start_date, end_date, progress, color,
-                    is_favorite, task_type, ticket_number, created_at, updated_at
+                    is_favorite, task_type, ticket_number, recurrence_rule,
+                    checklists, reminder_at, created_at, updated_at
              FROM tasks ORDER BY updated_at DESC`
         );
         const allTasks = result.rows;
@@ -29,7 +30,8 @@ export const GET: APIRoute = async () => {
 
         const headers = [
             "ticket_key", "id", "parent_id", "title", "description", "status", "priority",
-            "task_type", "board_id", "labels", "due_date", "created_at", "updated_at"
+            "task_type", "board_id", "labels", "due_date", "recurrence_rule",
+            "checklists", "reminder_at", "created_at", "updated_at"
         ];
 
         const escapeCsv = (val: unknown) => {
@@ -53,11 +55,15 @@ export const GET: APIRoute = async () => {
             escapeCsv(t.board_id),
             escapeCsv(t.labels),
             escapeCsv(t.due_date),
+            escapeCsv(t.recurrence_rule),
+            escapeCsv(t.checklists),
+            escapeCsv(t.reminder_at),
             escapeCsv(t.created_at),
             escapeCsv(t.updated_at)
         ].join(","));
 
-        const csvContent = [headers.join(","), ...rows].join("\n");
+        // BOM for Excel UTF-8 compatibility
+        const csvContent = "\uFEFF" + [headers.join(","), ...rows].join("\n");
 
         return new Response(csvContent, {
             status: 200,
