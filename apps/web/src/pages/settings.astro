@@ -456,8 +456,22 @@ import Layout from "../layouts/Layout.astro";
           A Home Assistant-native, Astro-first task and life management engine.
         </p>
         <p>
-          Version: <code>0.2.0</code> · Phase 26: UX Polish
+          Version: <code>0.3.0</code> · Phase 32: Deep Audit
         </p>
+      </div>
+    </div>
+
+    <!-- Danger Zone -->
+    <div class="card" style="border-color: var(--danger); border-width: 2px;">
+      <div class="card-header">
+        <div>
+          <div class="card-title" style="color: var(--danger);">⚠ Danger Zone</div>
+          <div class="card-subtitle">Irreversible actions — proceed with caution</div>
+        </div>
+      </div>
+      <div style="display: flex; gap: 8px; flex-wrap: wrap;">
+        <button class="btn" id="purge-tasks" style="border-color: var(--danger); color: var(--danger);">🗑 Purge All Tasks</button>
+        <button class="btn" id="reset-settings" style="border-color: var(--danger); color: var(--danger);">🔄 Reset Settings</button>
       </div>
     </div>
   </div>
@@ -771,6 +785,28 @@ import Layout from "../layouts/Layout.astro";
       saveBtn.innerHTML = origText;
       saveBtn.disabled = false;
       showToast("AI settings saved");
+    });
+
+    // ───── Danger Zone ─────
+    document.getElementById("purge-tasks")?.addEventListener("click", async () => {
+      if (!confirm("⚠ This will permanently delete ALL tasks. Are you sure?")) return;
+      if (!confirm("This action is IRREVERSIBLE. Type 'yes' in the next prompt to confirm.")) return;
+      const typed = prompt("Type YES to confirm purge:");
+      if (typed?.toUpperCase() !== "YES") { showToast("Purge cancelled", "error"); return; }
+      try {
+        const res = await fetch("/api/tasks?purge=all", { method: "DELETE" });
+        if (res.ok) { showToast("All tasks purged"); setTimeout(() => window.location.reload(), 1000); }
+        else showToast("Purge failed", "error");
+      } catch { showToast("Network error", "error"); }
+    });
+
+    document.getElementById("reset-settings")?.addEventListener("click", async () => {
+      if (!confirm("⚠ This will reset ALL settings to defaults. Continue?")) return;
+      try {
+        const res = await fetch("/api/settings?reset=all", { method: "DELETE" });
+        if (res.ok) { showToast("Settings reset to defaults"); setTimeout(() => window.location.reload(), 1000); }
+        else showToast("Reset failed", "error");
+      } catch { showToast("Network error", "error"); }
     });
 
     // Init

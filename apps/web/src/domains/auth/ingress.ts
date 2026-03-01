@@ -19,3 +19,20 @@ export function shouldEnforceIngressHeaders(url: string, ingressPath: string | u
 export function getMissingRequiredIngressHeaders(requiredHeaders: string[], headers: Headers): string[] {
   return requiredHeaders.filter((header) => !headers.get(header));
 }
+
+/**
+ * Extract the authenticated Home Assistant user ID from ingress headers.
+ * The Supervisor injects `X-Hass-User-Id` on every proxied ingress request
+ * after validating the user's session token.
+ */
+export function getHassUserId(headers: Headers): string | undefined {
+  return headers.get("x-hass-user-id") ?? undefined;
+}
+
+/**
+ * Check whether the authenticated HA user has admin privileges.
+ * The Supervisor injects `X-Hass-Is-Admin` as "true" or "false".
+ */
+export function isHassAdmin(headers: Headers): boolean {
+  return headers.get("x-hass-is-admin") === "true";
+}

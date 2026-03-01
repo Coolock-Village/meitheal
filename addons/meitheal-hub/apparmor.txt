@@ -1,0 +1,83 @@
+#include <tunables/global>
+
+profile meitheal-hub flags=(attach_disconnected,mediate_deleted) {
+  #include <abstractions/base>
+
+  # ── Network ──
+  # Node.js web server needs TCP/UDP; deny raw/packet sockets.
+  network inet tcp,
+  network inet udp,
+  network inet6 tcp,
+  network inet6 udp,
+  network inet icmp,
+  network inet6 icmp,
+  deny network raw,
+  deny network packet,
+
+  # ── File access ──
+  # General read access (Node.js runtime, shared libs, etc.)
+  file,
+  umount,
+
+  # Allow Node.js and app execution
+  /usr/bin/node ix,
+  /usr/local/bin/node ix,
+  /opt/meitheal/** r,
+  /opt/meitheal/node_modules/.pnpm/**/node_modules/** r,
+
+  # Allow read/write to persistent data (SQLite DB)
+  /data/** rwk,
+
+  # Allow tmpfs writes
+  /tmp/** rwk,
+
+  # Allow run.sh execution
+  /run.sh ix,
+  /run-local.sh ix,
+
+  # ── Deny writes to system paths ──
+  deny /bin/** wl,
+  deny /boot/** wl,
+  deny /dev/** wl,
+  deny /home/** wl,
+  deny /lib/** wl,
+  deny /lib64/** wl,
+  deny /media/** wl,
+  deny /mnt/** wl,
+  deny /root/** wl,
+  deny /sbin/** wl,
+  deny /srv/** wl,
+
+  # ── Deny shell access ──
+  deny /bin/dash mrwklx,
+  deny /bin/sh mrwklx,
+  deny /usr/bin/top mrwklx,
+
+  # ── Capabilities ──
+  # Minimal capabilities for Node.js server
+  capability chown,
+  capability dac_override,
+  capability setuid,
+  capability setgid,
+  capability net_bind_service,
+
+  # ── Proc/sys restrictions ──
+  deny @{PROC}/* w,
+  deny @{PROC}/{[^1-9],[^1-9][^0-9],[^1-9s][^0-9y][^0-9s],[^1-9][^0-9][^0-9][^0-9]*}/** w,
+  deny @{PROC}/sys/[^k]** w,
+  deny @{PROC}/sys/kernel/{?,??,[^s][^h][^m]**} w,
+  deny @{PROC}/sysrq-trigger rwklx,
+  deny @{PROC}/mem rwklx,
+  deny @{PROC}/kmem rwklx,
+  deny @{PROC}/kcore rwklx,
+
+  deny mount,
+
+  deny /sys/[^f]*/** wklx,
+  deny /sys/f[^s]*/** wklx,
+  deny /sys/fs/[^c]*/** wklx,
+  deny /sys/fs/c[^g]*/** wklx,
+  deny /sys/fs/cg[^r]*/** wklx,
+  deny /sys/firmware/** rwklx,
+  deny /sys/kernel/security/** rwklx,
+}

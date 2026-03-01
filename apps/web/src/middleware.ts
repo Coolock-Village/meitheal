@@ -2,9 +2,11 @@ import type { MiddlewareHandler } from "astro";
 import { getCollection } from "astro:content";
 import {
   defaultIngressHeaders,
+  getHassUserId,
   getIngressPath,
   getMissingRequiredIngressHeaders,
   hasHassioToken,
+  isHassAdmin,
   normalizeIngressHeaders,
   shouldEnforceIngressHeaders
 } from "@domains/auth/ingress";
@@ -71,6 +73,10 @@ export const onRequest: MiddlewareHandler = async ({ request, locals }, next) =>
   locals.ingressPath = ingressPath;
   locals.hassioTokenPresent = hasHassioToken(request.headers);
 
+  // Extract authenticated HA user identity from Supervisor ingress headers
+  locals.hassUserId = getHassUserId(request.headers);
+  locals.hassIsAdmin = isHassAdmin(request.headers);
+
   // Rate limiting (API routes only)
   const url = new URL(request.url);
   const ip = request.headers.get("x-forwarded-for")?.split(",")[0]?.trim()
@@ -115,9 +121,14 @@ export const onRequest: MiddlewareHandler = async ({ request, locals }, next) =>
   }
 
   // Security response headers (OWASP best practices)
+  // When accessed via HA ingress, allow the HA frontend to embed us in an iframe.
+  const frameAncestors = ingressPath
+    ? "'self' homeassistant.local:* *.homeassistant.local:* homeassistant:*"
+    : "'self'";
+
   const securityHeaders: Record<string, string> = {
     "X-Content-Type-Options": "nosniff",
-    "X-Frame-Options": "SAMEORIGIN", // Allow HA ingress iframe
+    "X-Frame-Options": ingressPath ? "ALLOW-FROM homeassistant.local" : "SAMEORIGIN",
     "Referrer-Policy": "strict-origin-when-cross-origin",
     "Permissions-Policy": "camera=(), microphone=(), geolocation=()",
     "X-XSS-Protection": "1; mode=block",
@@ -131,7 +142,7 @@ export const onRequest: MiddlewareHandler = async ({ request, locals }, next) =>
       "object-src 'none'",
       "base-uri 'self'",
       "form-action 'self'",
-      "frame-ancestors 'self'",
+      `frame-ancestors ${frameAncestors}`,
       "upgrade-insecure-requests",
     ].join("; "),
   };
