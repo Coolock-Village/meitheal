@@ -12,8 +12,9 @@ export function exportTimestamp(): string {
 
 /**
  * Build an export filename with a human-readable format.
- * Example: "Meitheal Settings — 2026-03-01_16-47.json"
+ * Example: "Meitheal Settings - 2026-03-01_16-47.json"
+ * Note: Uses ASCII hyphen (not em dash) for HTTP header compatibility.
  */
 export function exportFilename(label: string, ext: string): string {
-  return `Meitheal ${label} — ${exportTimestamp()}.${ext}`;
+  return `Meitheal ${label} - ${exportTimestamp()}.${ext}`;
 }

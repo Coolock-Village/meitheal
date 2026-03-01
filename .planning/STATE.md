@@ -48,6 +48,7 @@ Local-first task orchestration with HA calendar sync and Vikunja compatibility.
 
 | Date | Decision | Context |
 |------|----------|---------|
+| 2026-03-01 | Regional Settings & Advanced Sidebar Config | Plumbed `timezone`, `weekStart`, and `date_format` via Astro.locals for global SSR/CSR application. Updated Sidebar config to support reordering and custom labels. |
 | 2026-02-28 | Adopt dual-track phase model | Preserve mixed numbering `01-06` + `15-18` without data loss |
 | 2026-02-28 | Keep phase `06` as planned | Existing `06-*` plans remain draft/pre-execution |
 | 2026-02-28 | Execute extension-track phases `15-18` | Implemented via commit series and reconciled with phase summaries |

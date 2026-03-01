@@ -3,11 +3,21 @@ import Layout from "../layouts/Layout.astro";
 import TaskViewTabs from "../components/tasks/TaskViewTabs.astro";
 import { t } from "../i18n/translations";
 import type { Locale } from "../lib/locale";
+import { formatRegionalDate } from "../lib/date";
 import { formatTicketKey } from "../lib/ticket-key";
 import {
   ensureSchema,
   getPersistenceClient,
 } from "@domains/tasks/persistence/store";
+
+const {
+  ingressPath,
+  hassioTokenPresent,
+  hassUserId,
+  timezone,
+  weekStart,
+  dateFormat,
+} = Astro.locals;
 
 // i18n: resolve locale from cookie
 const cookieLocale = Astro.cookies.get("meitheal-locale")?.value;
@@ -419,7 +429,10 @@ const typeConfig: Record<
                             : dueStatus === "today"
                               ? "🟡"
                               : "📅"}{" "}
-                          {dueDate?.toLocaleDateString()}
+                          {formatRegionalDate(dueDate, {
+                            format: dateFormat as any,
+                            timezone,
+                          })}
                         </span>
                       ) : null}
                       {childCount > 0 && (

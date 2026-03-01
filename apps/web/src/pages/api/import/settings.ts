@@ -13,6 +13,7 @@ const ALLOWED_KEYS = new Set([
     "default-board", "theme", "default-view", "wip-limit",
     "show-description", "column-order", "locale",
     "sidebar-collapsed", "sidebar_config",
+    "timezone", "week_start", "date_format",
     "kanban-group-by", "task-detail-width",
     // ── Notifications ──
     "enable-notifications", "notification-sound", "notification-vibrate",

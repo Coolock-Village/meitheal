@@ -5,6 +5,9 @@ import {
   ensureSchema,
   getPersistenceClient,
 } from "@domains/tasks/persistence/store";
+
+const { weekStart = "monday" } = Astro.locals;
+
 // Get current month from query param or default to today
 const url = new URL(Astro.request.url);
 const yearParam = url.searchParams.get("year");
@@ -16,7 +19,21 @@ const month = monthParam ? parseInt(monthParam, 10) : now.getMonth(); // 0-index
 
 const firstDay = new Date(year, month, 1);
 const lastDay = new Date(year, month + 1, 0);
-const startDayOfWeek = firstDay.getDay(); // 0=Sun
+
+let startDayOfWeek = firstDay.getDay(); // 0=Sun
+let weekLabels = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
+let isWeekendFn: (dow: number) => boolean = (dow: number) => dow === 0 || dow === 6;
+
+if (weekStart === "monday") {
+  startDayOfWeek = (startDayOfWeek + 6) % 7;
+  weekLabels = ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"];
+  isWeekendFn = (dow: number) => dow === 5 || dow === 6;
+} else if (weekStart === "saturday") {
+  startDayOfWeek = (startDayOfWeek + 1) % 7;
+  weekLabels = ["Sat", "Sun", "Mon", "Tue", "Wed", "Thu", "Fri"];
+  isWeekendFn = (dow: number) => dow === 0 || dow === 1;
+}
+
 const daysInMonth = lastDay.getDate();
 
 const monthName = firstDay.toLocaleDateString("en-US", {
@@ -96,7 +113,7 @@ for (let week = 0; week < 6; week++) {
       dateStr,
       isCurrentMonth,
       isToday: dateStr === todayStr,
-      isWeekend: dow === 0 || dow === 6,
+      isWeekend: isWeekendFn(dow),
       taskCount: dayData?.count ?? 0,
       colors: dayData?.colors ?? [],
     });
@@ -143,10 +160,8 @@ for (let week = 0; week < 6; week++) {
 
   <div class="calendar-grid">
     {
-      ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"].map((d, i) => (
-        <div
-          class={`cal-header ${i === 0 || i === 6 ? "cal-header-weekend" : ""}`}
-        >
+      weekLabels.map((d, i) => (
+        <div class={`cal-header ${isWeekendFn(i) ? "cal-header-weekend" : ""}`}>
           {d}
         </div>
       ))

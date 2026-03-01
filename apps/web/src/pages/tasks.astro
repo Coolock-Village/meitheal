@@ -538,76 +538,7 @@ const statusLabels: Record<string, string> = {
       if (e.target === modal) modal.classList.remove("open");
     });
 
-    // Edit task on click
-    document.querySelectorAll(".task-item").forEach((item) => {
-      item.addEventListener("click", async (e) => {
-        const target = e.target as HTMLElement;
-        if (
-          target.classList.contains("task-checkbox") ||
-          target.classList.contains("task-delete")
-        )
-          return;
-        const id = (item as HTMLElement).dataset.id;
-        if (!id) return;
-        try {
-          const res = await fetch(`/api/tasks/${id}`);
-          if (!res.ok) return;
-          const task = await res.json();
-          editingId = id;
-          (document.getElementById("modal-title") as HTMLElement).textContent =
-            "Edit Task";
-          (
-            document.getElementById("save-task-btn") as HTMLElement
-          ).textContent = "Save Changes";
-          (
-            document.getElementById("task-title-input") as HTMLInputElement
-          ).value = task.title ?? "";
-          (
-            document.getElementById("task-desc-input") as HTMLTextAreaElement
-          ).value = task.description ?? "";
-          (
-            document.getElementById("task-priority-input") as HTMLSelectElement
-          ).value = String(task.priority ?? 3);
-          (
-            document.getElementById("task-status-input") as HTMLSelectElement
-          ).value = task.status ?? "pending";
-          (
-            document.getElementById("task-due-input") as HTMLInputElement
-          ).value = task.due_date ?? "";
-          // RICE fields
-          const fp =
-            typeof task.framework_payload === "string"
-              ? JSON.parse(task.framework_payload)
-              : (task.framework_payload ?? {});
-          (document.getElementById("rice-reach") as HTMLInputElement).value =
-            fp.reach ?? "";
-          (document.getElementById("rice-impact") as HTMLSelectElement).value =
-            fp.impact ?? "";
-          (
-            document.getElementById("rice-confidence") as HTMLSelectElement
-          ).value = fp.confidence ?? "";
-          (document.getElementById("rice-effort") as HTMLInputElement).value =
-            fp.effort ?? "";
-          // Populate labels
-          try {
-            const lbls =
-              typeof task.labels === "string" ? JSON.parse(task.labels) : [];
-            (
-              document.getElementById("task-labels-input") as HTMLInputElement
-            ).value = Array.isArray(lbls) ? lbls.join(", ") : "";
-          } catch {
-            (
-              document.getElementById("task-labels-input") as HTMLInputElement
-            ).value = "";
-          }
-          // Populate custom fields
-          populateCustomFields(task.custom_fields);
-          modal.classList.add("open");
-        } catch {
-          /* ignore */
-        }
-      });
-    });
+    // Task clicks are handled by Layout.astro's delegated openTaskDetail handler
 
     // Save task
     document

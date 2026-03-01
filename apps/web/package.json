@@ -23,6 +23,8 @@
     "@meitheal/domain-tasks": "workspace:*",
     "@meitheal/integration-core": "workspace:*",
     "astro": "^5.18.0",
+    "date-fns": "^4.1.0",
+    "date-fns-tz": "^3.2.0",
     "dompurify": "^3.3.1",
     "drizzle-orm": "^0.45.1",
     "marked": "^17.0.3",

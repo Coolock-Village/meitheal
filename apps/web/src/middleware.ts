@@ -11,6 +11,7 @@ import {
   shouldEnforceIngressHeaders
 } from "@domains/auth/ingress";
 import { createLogger, defaultRedactionPatterns } from "@meitheal/domain-observability";
+import { getPersistenceClient, ensureSchema } from "@domains/tasks/persistence/store";
 
 const logger = createLogger({
   service: "meitheal-web",
@@ -88,6 +89,23 @@ export const onRequest: MiddlewareHandler = async ({ request, locals }, next) =>
   // Extract authenticated HA user identity from Supervisor ingress headers
   locals.hassUserId = getHassUserId(request.headers);
   locals.hassIsAdmin = isHassAdmin(request.headers);
+
+  // Load regional settings for SSR
+  locals.timezone = "Europe/Dublin";
+  locals.weekStart = "monday";
+  locals.dateFormat = "relative";
+  try {
+    await ensureSchema();
+    const db = getPersistenceClient();
+    const res = await db.execute("SELECT key, value FROM settings WHERE key IN ('timezone', 'week_start', 'date_format')");
+    for (const row of res.rows) {
+      if (row.key === "timezone" && typeof row.value === "string") locals.timezone = row.value;
+      if (row.key === "week_start" && typeof row.value === "string") locals.weekStart = row.value;
+      if (row.key === "date_format" && typeof row.value === "string") locals.dateFormat = row.value;
+    }
+  } catch {
+    /* ignore db errors, defaults used */
+  }
 
   // Rate limiting (API routes only)
   const url = new URL(request.url);

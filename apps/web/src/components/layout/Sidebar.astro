@@ -21,7 +21,12 @@ interface NavItemDef {
 }
 
 const NAV_ITEMS: Record<string, NavItemDef> = {
-  kanban: { href: "/", i18nKey: "nav.home", icon: "kanban", matchExact: true },
+  kanban: {
+    href: "/",
+    i18nKey: "nav.kanban",
+    icon: "kanban",
+    matchExact: true,
+  },
   tasks: {
     href: "/tasks",
     i18nKey: "nav.tasks",

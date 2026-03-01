@@ -6,5 +6,8 @@ declare namespace App {
     hassioTokenPresent: boolean;
     hassUserId: string | undefined;
     hassIsAdmin: boolean;
+    timezone: string;
+    weekStart: string;
+    dateFormat: string;
   }
 }

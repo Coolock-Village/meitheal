@@ -14,6 +14,13 @@ import dtGa from "../i18n/ga.json";
 const cookieLocale = Astro.cookies.get("meitheal-locale")?.value;
 const locale: Locale = cookieLocale === "ga" ? "ga" : "en";
 
+// Regional settings from middleware (SSR)
+const {
+  timezone = "Europe/Dublin",
+  weekStart = "monday",
+  dateFormat = "relative",
+} = Astro.locals;
+
 export interface Props {
   title?: string;
   description?: string;
@@ -85,8 +92,12 @@ Astro.response.headers.set("X-XSS-Protection", "1; mode=block");
       rel="stylesheet"
     />
     <ViewTransitions fallback="swap" />
-    <!-- Inject localization maps into the window for client-scripts like toast.ts -->
-    <script is:inline define:vars={{ locale, dtEn, dtGa }}>
+    <!-- Inject localization and settings maps into the window for client-scripts like toast.ts -->
+    <script
+      is:inline
+      define:vars={{ locale, dtEn, dtGa, timezone, weekStart, dateFormat }}
+    >
+      window.mSettings = { timezone, weekStart, dateFormat };
       window.mI18n = {
         locale,
         get: function (key) {
@@ -1356,12 +1367,16 @@ Astro.response.headers.set("X-XSS-Protection", "1; mode=block");
                 showToast("common.id_copied", "success");
               };
             }
-            const tdIdEl = document.getElementById("td-id") as HTMLElement;
-            tdIdEl.textContent = t.ticket_key
-              ? String(t.ticket_key)
-              : `#${String(t.id).slice(0, 8)}`;
-            tdIdEl.title = `${t.ticket_key ? String(t.ticket_key) + " • " : ""}Full ID: ${t.id}`;
-            tdIdEl.classList.remove("hidden");
+            const tdIdEl = document.getElementById(
+              "td-id",
+            ) as HTMLElement | null;
+            if (tdIdEl) {
+              tdIdEl.textContent = t.ticket_key
+                ? String(t.ticket_key)
+                : `#${String(t.id).slice(0, 8)}`;
+              tdIdEl.title = `${t.ticket_key ? String(t.ticket_key) + " • " : ""}Full ID: ${t.id}`;
+              tdIdEl.classList.remove("hidden");
+            }
 
             (document.getElementById("td-title") as HTMLInputElement).value =
               String(t.title ?? "");
@@ -1378,8 +1393,10 @@ Astro.response.headers.set("X-XSS-Protection", "1; mode=block");
               "5": "#6b7280",
             };
             const pVal = String(t.priority ?? 3);
-            priorityDot.style.color = priorityColors[pVal] || "#eab308";
-            priorityDot.title = `Priority ${pVal}`;
+            if (priorityDot) {
+              priorityDot.style.color = priorityColors[pVal] || "#eab308";
+              priorityDot.title = `Priority ${pVal}`;
+            }
 
             // If the task's status isn't in the dropdown, add it as an option
             const taskStatus = String(t.status ?? "pending");
@@ -1439,7 +1456,22 @@ Astro.response.headers.set("X-XSS-Protection", "1; mode=block");
               else if (diffDays === 0) relText = "Today";
               else if (diffDays === 1) relText = "Tomorrow";
               else relText = `in ${diffDays}d`;
-              dueDisplay.textContent = `${dueDate.toLocaleDateString()} (${relText})`;
+              // Use window global regional formatting or fallback
+              let fmtDate = dueDate.toLocaleDateString();
+              const df = (window as any).mSettings?.dateFormat;
+              if (df === "absolute-iso") {
+                fmtDate = dueVal.split("T")[0] ?? dueVal;
+              } else if (df === "absolute-eu") {
+                fmtDate = `${String(dueDate.getDate()).padStart(2, "0")}/${String(dueDate.getMonth() + 1).padStart(2, "0")}/${dueDate.getFullYear()}`;
+              } else if (df === "absolute-us") {
+                fmtDate = `${String(dueDate.getMonth() + 1).padStart(2, "0")}/${String(dueDate.getDate()).padStart(2, "0")}/${dueDate.getFullYear()}`;
+              }
+
+              if (df === "relative") {
+                dueDisplay.textContent = relText;
+              } else {
+                dueDisplay.textContent = `${fmtDate} (${relText})`;
+              }
               dueDisplay.style.color =
                 diffDays < 0
                   ? "var(--danger)"

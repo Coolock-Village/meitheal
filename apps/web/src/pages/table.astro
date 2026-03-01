@@ -4,6 +4,7 @@ import TaskViewTabs from "../components/tasks/TaskViewTabs.astro";
 import EmptyState from "../components/ui/EmptyState.astro";
 import { t } from "../i18n/translations";
 import type { Locale } from "../lib/locale";
+import { formatRegionalDate } from "../lib/date";
 import { formatTicketKey } from "../lib/ticket-key";
 import {
   ensureSchema,
@@ -13,6 +14,9 @@ import {
 // i18n: resolve locale from cookie
 const cookieLocale = Astro.cookies.get("meitheal-locale")?.value;
 const locale: Locale = cookieLocale === "ga" ? "ga" : "en";
+
+const { ingressPath, hassioTokenPresent, hassUserId, timezone, dateFormat } =
+  Astro.locals;
 
 let tasks: Record<string, unknown>[] = [];
 try {
@@ -275,9 +279,12 @@ const priorityColors: Record<number, string> = {
                         </option>
                       </select>
                     </td>
-                    <td style="font-size: 13px; color: var(--text-secondary);">
+                    <td class="text-sm td-due">
                       {task.due_date
-                        ? String(task.due_date).split("T")[0]
+                        ? formatRegionalDate(String(task.due_date), {
+                            format: dateFormat as any,
+                            timezone,
+                          })
                         : "—"}
                     </td>
                     <td>
