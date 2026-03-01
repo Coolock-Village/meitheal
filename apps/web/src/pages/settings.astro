@@ -1121,6 +1121,7 @@ const locale: Locale = cookieLocale === "ga" ? "ga" : "en";
     });
 
     import { exportLocalDataAsJson } from "../domains/offline/export-service";
+    import { confirmDialog } from "../lib/confirm-dialog";
 
     document
       .getElementById("export-json-btn")
@@ -1188,6 +1189,38 @@ const locale: Locale = cookieLocale === "ga" ? "ga" : "en";
       /<script/gi,
       /<\/style/gi,
       /<\/script/gi,
+    ];
+
+    /** Sanitize CSS content by stripping dangerous patterns */
+    function sanitizeCSS(css: string): string {
+      let safe = css;
+      for (const pattern of DANGEROUS_CSS_PATTERNS) {
+        safe = safe.replace(pattern, "/* [removed] */");
+      }
+      return safe;
+    }
+
+    /** Show/hide the custom theme section */
+    function showCustomThemeSection(show: boolean): void {
+      const section = document.getElementById("custom-theme-section");
+      if (section) section.style.display = show ? "block" : "none";
+    }
+
+    /** Update the custom theme loaded display */
+    function updateCustomThemeDisplay(filename: string | null): void {
+      const emptyEl = document.getElementById("custom-theme-empty");
+      const loadedEl = document.getElementById("custom-theme-loaded");
+      const nameEl = document.getElementById("custom-theme-filename");
+      if (!emptyEl || !loadedEl || !nameEl) return;
+      if (filename) {
+        emptyEl.style.display = "none";
+        loadedEl.style.display = "flex";
+        nameEl.textContent = filename;
+      } else {
+        emptyEl.style.display = "flex";
+        loadedEl.style.display = "none";
+        nameEl.textContent = "";
+      }
     }
 
     // Save a setting to the API
