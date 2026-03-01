@@ -5,6 +5,7 @@ description: "The cooperative task and life engine for your home"
 url: "https://github.com/Coolock-Village/meitheal"
 github: "Coolock-Village/meitheal"
 docs_url: "https://github.com/Coolock-Village/meitheal/tree/main/meitheal-hub/DOCS.md"
+image: "ghcr.io/coolock-village/meitheal-hub-{arch}"
 arch:
   - aarch64
   - amd64
