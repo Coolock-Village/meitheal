@@ -2246,9 +2246,20 @@ try {
           .getElementById("td-delete")
           ?.addEventListener("click", async () => {
             if (!currentTaskId || !confirm("Delete this task?")) return;
-            await fetch(`/api/tasks/${currentTaskId}`, { method: "DELETE" });
-            closeTD();
-            window.location.reload();
+            try {
+              const res = await fetch(`/api/tasks/${currentTaskId}`, {
+                method: "DELETE",
+              });
+              // Treat 204 (deleted) and 404 (already gone) as success
+              if (res.ok || res.status === 404) {
+                closeTD();
+                window.location.reload();
+              }
+            } catch {
+              // Network error — still close and reload to re-sync
+              closeTD();
+              window.location.reload();
+            }
           });
 
         // Add comment

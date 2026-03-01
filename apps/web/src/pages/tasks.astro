@@ -767,12 +767,19 @@ const statusLabels: Record<string, string> = {
       ?.addEventListener("click", async () => {
         if (!deletingId) return;
         try {
-          await fetch(`/api/tasks/${deletingId}`, { method: "DELETE" });
-          showToast("Task deleted");
-          deleteModal.classList.remove("open");
-          document
-            .querySelector(`.task-item[data-id="${deletingId}"]`)
-            ?.remove();
+          const res = await fetch(`/api/tasks/${deletingId}`, {
+            method: "DELETE",
+          });
+          // Treat 204 (deleted) and 404 (already gone) as success
+          if (res.ok || res.status === 404) {
+            showToast("Task deleted");
+            deleteModal.classList.remove("open");
+            document
+              .querySelector(`.task-item[data-id="${deletingId}"]`)
+              ?.remove();
+          } else {
+            showToast("Failed to delete", "error");
+          }
         } catch {
           showToast("Failed to delete", "error");
         }
