@@ -473,6 +473,20 @@ try {
                     class="form-input text-sm py-1.5"
                   />
                 </div>
+                <div>
+                  <label class="text-xs text-text-secondary block mb-1"
+                    >Time Tracked (min)</label
+                  >
+                  <input
+                    id="td-time-tracked"
+                    type="number"
+                    min="0"
+                    step="1"
+                    value="0"
+                    class="form-input text-sm py-1.5 w-full"
+                    placeholder="0"
+                  />
+                </div>
               </div>
             </div>
 
@@ -1109,6 +1123,8 @@ try {
             String(t.start_date ?? "");
           (document.getElementById("td-end-date") as HTMLInputElement).value =
             String(t.end_date ?? "");
+          (document.getElementById("td-time-tracked") as HTMLInputElement).value =
+            String(t.time_tracked ?? 0);
           // Populate board dropdown
           const boardSelect = document.getElementById("td-board") as HTMLSelectElement;
           const currentBoardId = String(t.board_id ?? "default");
@@ -1422,6 +1438,11 @@ try {
         .getElementById("td-end-date")
         ?.addEventListener("change", (e) =>
           saveTD("end_date", (e.target as HTMLInputElement).value || null),
+        );
+      document
+        .getElementById("td-time-tracked")
+        ?.addEventListener("change", (e) =>
+          saveTD("time_tracked", Number((e.target as HTMLInputElement).value) || 0),
         );
 
       // ───── Labels interactive ─────
