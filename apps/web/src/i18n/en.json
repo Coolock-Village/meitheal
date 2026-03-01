@@ -135,7 +135,12 @@
         "favorite": "Favorite",
         "edit_task": "Edit task",
         "duplicate": "Duplicate",
-        "wip_limit": "WIP limit: {limit}"
+        "wip_limit": "WIP limit: {limit}",
+        "show_all_types": "Show all types",
+        "toggle_epics": "Toggle Epics",
+        "toggle_stories": "Toggle Stories",
+        "toggle_tasks": "Toggle Tasks",
+        "group_by_tooltip": "Group swimlanes by"
     },
     "table": {
         "title": "Table View",

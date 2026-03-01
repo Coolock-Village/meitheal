@@ -122,9 +122,9 @@ const locale: Locale = cookieLocale === "ga" ? "ga" : "en";
     <div class="card">
       <div class="card-header">
         <div>
-          <div class="card-title">📊 Framework Scoring</div>
+          <div class="card-title">{t("settings.frameworks_title", locale)}</div>
           <div class="card-subtitle">
-            Enable/disable and configure scoring frameworks
+            {t("settings.frameworks_subtitle", locale)}
           </div>
         </div>
       </div>
@@ -235,10 +235,11 @@ const locale: Locale = cookieLocale === "ga" ? "ga" : "en";
     <div class="card" style="grid-column: 1 / -1;">
       <div class="card-header">
         <div>
-          <div class="card-title">🔗 Integrations</div>
+          <div class="card-title">
+            {t("settings.integrations_title", locale)}
+          </div>
           <div class="card-subtitle">
-            Connect Meitheal to external services for automation, sync, and
-            enhanced workflows
+            {t("settings.integrations_subtitle", locale)}
           </div>
         </div>
       </div>
@@ -533,18 +534,34 @@ const locale: Locale = cookieLocale === "ga" ? "ga" : "en";
     <div class="card">
       <div class="card-header">
         <div>
-          <div class="card-title">⌨ Keyboard Shortcuts</div>
-          <div class="card-subtitle">Navigate quickly through the app</div>
+          <div class="card-title">{t("settings.shortcuts_title", locale)}</div>
+          <div class="card-subtitle">
+            {t("settings.shortcuts_subtitle", locale)}
+          </div>
         </div>
       </div>
       <div class="shortcut-grid">
-        <div class="shortcut-row"><kbd>n</kbd><span>New task</span></div>
-        <div class="shortcut-row"><kbd>/</kbd><span>Search</span></div>
-        <div class="shortcut-row"><kbd>l</kbd><span>List view</span></div>
-        <div class="shortcut-row"><kbd>k</kbd><span>Kanban view</span></div>
-        <div class="shortcut-row"><kbd>t</kbd><span>Table view</span></div>
-        <div class="shortcut-row"><kbd>Esc</kbd><span>Close modal</span></div>
-        <div class="shortcut-row"><kbd>?</kbd><span>Show shortcuts</span></div>
+        <div class="shortcut-row">
+          <kbd>n</kbd><span>{t("settings.shortcut_new_task", locale)}</span>
+        </div>
+        <div class="shortcut-row">
+          <kbd>/</kbd><span>{t("settings.shortcut_search", locale)}</span>
+        </div>
+        <div class="shortcut-row">
+          <kbd>l</kbd><span>{t("settings.shortcut_list", locale)}</span>
+        </div>
+        <div class="shortcut-row">
+          <kbd>k</kbd><span>{t("settings.shortcut_kanban", locale)}</span>
+        </div>
+        <div class="shortcut-row">
+          <kbd>t</kbd><span>{t("settings.shortcut_table", locale)}</span>
+        </div>
+        <div class="shortcut-row">
+          <kbd>Esc</kbd><span>{t("settings.shortcut_close", locale)}</span>
+        </div>
+        <div class="shortcut-row">
+          <kbd>?</kbd><span>{t("settings.shortcut_help", locale)}</span>
+        </div>
       </div>
     </div>
 
@@ -552,9 +569,9 @@ const locale: Locale = cookieLocale === "ga" ? "ga" : "en";
     <div class="card">
       <div class="card-header">
         <div>
-          <div class="card-title">🌐 Language</div>
+          <div class="card-title">{t("settings.language_title", locale)}</div>
           <div class="card-subtitle">
-            Interface language — content stays in its original language
+            {t("settings.language_subtitle", locale)}
           </div>
         </div>
       </div>
@@ -575,9 +592,9 @@ const locale: Locale = cookieLocale === "ga" ? "ga" : "en";
     <div class="card">
       <div class="card-header">
         <div>
-          <div class="card-title">💾 Data Portability</div>
+          <div class="card-title">{t("settings.data_title", locale)}</div>
           <div class="card-subtitle">
-            Meitheal is local-first. You own your data.
+            {t("settings.data_subtitle", locale)}
           </div>
         </div>
       </div>
@@ -660,8 +677,10 @@ const locale: Locale = cookieLocale === "ga" ? "ga" : "en";
     <div class="card">
       <div class="card-header">
         <div>
-          <div class="card-title">ℹ About Meitheal</div>
-          <div class="card-subtitle">The cooperative task and life engine</div>
+          <div class="card-title">{t("settings.about_title", locale)}</div>
+          <div class="card-subtitle">
+            {t("settings.about_subtitle", locale)}
+          </div>
         </div>
       </div>
       <div
@@ -685,10 +704,10 @@ const locale: Locale = cookieLocale === "ga" ? "ga" : "en";
       <div class="card-header">
         <div>
           <div class="card-title" style="color: var(--danger);">
-            ⚠ Danger Zone
+            {t("settings.danger_title", locale)}
           </div>
           <div class="card-subtitle">
-            Irreversible actions — proceed with caution
+            {t("settings.danger_subtitle", locale)}
           </div>
         </div>
       </div>

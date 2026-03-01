@@ -135,7 +135,12 @@
         "favorite": "Ceanán",
         "edit_task": "Cuir tasc in eagar",
         "duplicate": "Dúblach",
-        "wip_limit": "Teorainn OAP: {limit}"
+        "wip_limit": "Teorainn OAP: {limit}",
+        "show_all_types": "Taispeáin gach cineál",
+        "toggle_epics": "Scoránaigh Eipicí",
+        "toggle_stories": "Scoránaigh Scéalta",
+        "toggle_tasks": "Scoránaigh Tascanna",
+        "group_by_tooltip": "Grúpáil snámhlána de réir"
     },
     "table": {
         "title": "Amharc Tábla",

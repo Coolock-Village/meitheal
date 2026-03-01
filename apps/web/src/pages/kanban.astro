@@ -9,7 +9,7 @@ import {
 
 // i18n: resolve locale from cookie
 const cookieLocale = Astro.cookies.get("meitheal-locale")?.value;
-const locale: Locale = (cookieLocale === "ga" ? "ga" : "en");
+const locale: Locale = cookieLocale === "ga" ? "ga" : "en";
 
 await ensureSchema();
 const client = getPersistenceClient();
@@ -17,18 +17,22 @@ const client = getPersistenceClient();
 let tasks: Record<string, unknown>[] = [];
 let commentCounts: Record<string, number> = {};
 try {
-    const result = await client.execute(
-      "SELECT id, title, description, status, priority, due_date, labels, framework_payload, calendar_sync_state, board_id, custom_fields, start_date, end_date, progress, color, is_favorite, task_type, parent_id, created_at, updated_at FROM tasks ORDER BY priority ASC, created_at DESC",
-    );
+  const result = await client.execute(
+    "SELECT id, title, description, status, priority, due_date, labels, framework_payload, calendar_sync_state, board_id, custom_fields, start_date, end_date, progress, color, is_favorite, task_type, parent_id, created_at, updated_at FROM tasks ORDER BY priority ASC, created_at DESC",
+  );
   tasks = result.rows as Record<string, unknown>[];
   // Comment count aggregation (competitor parity: Jira/Asana/Linear show comment counts)
   try {
-    const ccResult = await client.execute("SELECT task_id, COUNT(*) as cnt FROM comments GROUP BY task_id");
+    const ccResult = await client.execute(
+      "SELECT task_id, COUNT(*) as cnt FROM comments GROUP BY task_id",
+    );
     for (const row of ccResult.rows) {
       const r = row as Record<string, unknown>;
       commentCounts[String(r.task_id)] = Number(r.cnt);
     }
-  } catch { /* comments table may not exist yet */ }
+  } catch {
+    /* comments table may not exist yet */
+  }
 } catch (e) {
   /* DB not available */
 }
@@ -122,26 +126,34 @@ const typeConfig: Record<
   <span slot="page-title">{t("kanban.title", locale)}</span>
   <div slot="actions" style="display: flex; gap: 8px; align-items: center;">
     <div class="view-switcher" role="group" aria-label="View mode">
-      <a href="/tasks" class="view-btn" title="List view" aria-label="List view"
-        >☰</a
+      <a
+        href="/tasks"
+        class="view-btn"
+        title={t("tasks.list_view", locale)}
+        aria-label={t("tasks.list_view", locale)}>☰</a
       >
       <a
         href="/kanban"
         class="view-btn active"
-        title="Kanban board"
-        aria-label="Kanban board">▦</a
+        title={t("tasks.kanban_board", locale)}
+        aria-label={t("tasks.kanban_board", locale)}>▦</a
       >
       <a
         href="/table"
         class="view-btn"
-        title="Table view"
-        aria-label="Table view">⊞</a
+        title={t("tasks.table_view", locale)}
+        aria-label={t("tasks.table_view", locale)}>⊞</a
       >
     </div>
-    <button class="btn btn-ghost" id="manage-lanes-btn" title={t("kanban.manage_swimlanes", locale)}
+    <button
+      class="btn btn-ghost"
+      id="manage-lanes-btn"
+      title={t("kanban.manage_swimlanes", locale)}
       >{t("kanban.manage_lanes", locale)}</button
     >
-    <button class="btn btn-primary" id="kanban-new-task-btn">{t("kanban.new_task", locale)}</button>
+    <button class="btn btn-primary" id="kanban-new-task-btn"
+      >{t("kanban.new_task", locale)}</button
+    >
   </div>
 
   <!-- Phase 20: Type filter + grouping toolbar -->
@@ -154,35 +166,46 @@ const typeConfig: Record<
       <button
         class="type-filter-btn active"
         data-type="all"
-        title="Show all types"
+        title={t("kanban.show_all_types", locale)}
       >
         📋 {t("kanban.all_types", locale)}
       </button>
       <button
         class="type-filter-btn active"
         data-type="epic"
-        title="Toggle Epics"
+        title={t("kanban.toggle_epics", locale)}
       >
-        <span class="type-dot" style="background: #8b5cf6;"></span> {t("kanban.epics", locale)}
+        <span class="type-dot" style="background: #8b5cf6;"></span>
+        {t("kanban.epics", locale)}
       </button>
       <button
         class="type-filter-btn active"
         data-type="story"
-        title="Toggle Stories"
+        title={t("kanban.toggle_stories", locale)}
       >
-        <span class="type-dot" style="background: #3b82f6;"></span> {t("kanban.stories", locale)}
+        <span class="type-dot" style="background: #3b82f6;"></span>
+        {t("kanban.stories", locale)}
       </button>
       <button
         class="type-filter-btn active"
         data-type="task"
-        title="Toggle Tasks"
+        title={t("kanban.toggle_tasks", locale)}
       >
-        <span class="type-dot" style="background: #10b981;"></span> {t("kanban.tasks_label", locale)}
+        <span class="type-dot" style="background: #10b981;"></span>
+        {t("kanban.tasks_label", locale)}
       </button>
     </div>
     <div class="type-group-toggle">
-      <label class="text-xs text-text-muted" for="group-by-select" style="margin-right: 4px;">≡ {t("kanban.group", locale)}</label>
-      <select id="group-by-select" class="inline-select" title="Group swimlanes by">
+      <label
+        class="text-xs text-text-muted"
+        for="group-by-select"
+        style="margin-right: 4px;">≡ {t("kanban.group", locale)}</label
+      >
+      <select
+        id="group-by-select"
+        class="inline-select"
+        title={t("kanban.group_by_tooltip", locale)}
+      >
         <option value="none">{t("kanban.group_none", locale)}</option>
         <option value="type" selected>{t("kanban.group_type", locale)}</option>
         <option value="board">{t("kanban.group_board", locale)}</option>
@@ -304,7 +327,9 @@ const typeConfig: Record<
                     ? JSON.parse(String(task.framework_payload))
                     : {};
                 // Phase 20: Sub-task indicator (ADHD Optimization)
-                const childCount = tasks.filter((t) => t.parent_id === task.id).length;
+                const childCount = tasks.filter(
+                  (t) => t.parent_id === task.id,
+                ).length;
                 const rice =
                   fp.reach && fp.impact && fp.confidence && fp.effort
                     ? Math.round(
@@ -360,14 +385,21 @@ const typeConfig: Record<
                         {String(task.title)}
                       </div>
                       {Number(task.is_favorite ?? 0) === 1 && (
-                        <span class="kanban-fav" title="Favorite">
+                        <span
+                          class="kanban-fav"
+                          title={t("kanban.favorite", locale)}
+                        >
                           ★
                         </span>
                       )}
                     </div>
                     {/* Attachment Placeholder */}
-                    <img class="kanban-attachment hidden" data-task-id={String(task.id)} alt="Attachment" />
-                    
+                    <img
+                      class="kanban-attachment hidden"
+                      data-task-id={String(task.id)}
+                      alt="Attachment"
+                    />
+
                     {task.description && String(task.description).trim() && (
                       <div class="kanban-card-desc">
                         {String(task.description).slice(0, 80)}
@@ -398,7 +430,11 @@ const typeConfig: Record<
                         </span>
                       ) : null}
                       {childCount > 0 && (
-                        <span class="kanban-card-due" title={`${childCount} sub-tasks`} style="color:var(--text-primary);">
+                        <span
+                          class="kanban-card-due"
+                          title={`${childCount} sub-tasks`}
+                          style="color:var(--text-primary);"
+                        >
                           ↳ {childCount} sub-tasks
                         </span>
                       )}
@@ -406,12 +442,19 @@ const typeConfig: Record<
                         <span class="kanban-rice-badge">RICE: {rice}</span>
                       ) : null}
                       {String(task.calendar_sync_state) === "confirmed" && (
-                        <span class="kanban-sync-badge" title="Calendar synced">
+                        <span
+                          class="kanban-sync-badge"
+                          title={t("kanban.calendar_synced", locale)}
+                        >
                           📅✓
                         </span>
                       )}
                       {(commentCounts[String(task.id)] ?? 0) > 0 && (
-                        <span class="kanban-card-due" title={`${commentCounts[String(task.id)] ?? 0} comments`} style="color:var(--text-primary);">
+                        <span
+                          class="kanban-card-due"
+                          title={`${commentCounts[String(task.id)] ?? 0} comments`}
+                          style="color:var(--text-primary);"
+                        >
                           💬 {commentCounts[String(task.id)] ?? 0}
                         </span>
                       )}
@@ -511,7 +554,7 @@ const typeConfig: Record<
                       <button
                         class="card-action-btn card-edit-btn"
                         data-id={String(task.id)}
-                        title="Edit task"
+                        title={t("kanban.edit_task", locale)}
                       >
                         ✏️
                       </button>
@@ -523,14 +566,14 @@ const typeConfig: Record<
                         }
                         data-status={String(task.status ?? "pending")}
                         data-priority={String(p)}
-                        title="Ask AI"
+                        title={t("tasks.ask_ai", locale)}
                       >
                         🤖
                       </button>
                       <button
                         class="card-action-btn card-dup-btn"
                         data-id={String(task.id)}
-                        title="Duplicate"
+                        title={t("kanban.duplicate", locale)}
                       >
                         ⧉
                       </button>
@@ -539,7 +582,9 @@ const typeConfig: Record<
                 );
               })}
               {colTasks.length === 0 && (
-                <div class="kanban-empty">{t("kanban.drop_tasks_here", locale)}</div>
+                <div class="kanban-empty">
+                  {t("kanban.drop_tasks_here", locale)}
+                </div>
               )}
             </div>
             <button
@@ -555,7 +600,13 @@ const typeConfig: Record<
     }
   </div>
 
-  <div id="toast-container" class="toast-container" aria-live="polite" role="status"></div>
+  <div
+    id="toast-container"
+    class="toast-container"
+    aria-live="polite"
+    role="status"
+  >
+  </div>
 
   <script is:inline>
     async function handleDrop(e) {
@@ -569,22 +620,26 @@ const typeConfig: Record<
       // WIP Limit enforcement
       const wipLimit = parseInt(col.dataset.wipLimit || "0");
       const targetCardsContainer = col.querySelector(".kanban-cards");
-      const currentCardCount = targetCardsContainer ? targetCardsContainer.querySelectorAll(".kanban-card").length : 0;
-      
+      const currentCardCount = targetCardsContainer
+        ? targetCardsContainer.querySelectorAll(".kanban-card").length
+        : 0;
+
       const card = document.querySelector(`.kanban-card[data-id="${taskId}"]`);
       if (!card) return;
 
       const oldCol = card.closest(".kanban-column");
       if (oldCol !== col && wipLimit > 0 && currentCardCount >= wipLimit) {
-        alert(`Cannot move task: WIP limit of ${wipLimit} reached for this lane.`);
+        alert(
+          `Cannot move task: WIP limit of ${wipLimit} reached for this lane.`,
+        );
         return;
       }
 
       // T-1902: Optimistic DOM update — no page reload
       // Phase 20: Detect drop into specific swimlane
       const targetSwimlane = e.target.closest(".swimlane-group");
-      const targetCards = targetSwimlane 
-        ? targetSwimlane.querySelector(".swimlane-cards") 
+      const targetCards = targetSwimlane
+        ? targetSwimlane.querySelector(".swimlane-cards")
         : col.querySelector(".kanban-cards");
 
       if (targetCards) {
@@ -790,27 +845,33 @@ const typeConfig: Record<
     });
 
     // Header "+ New Task" button → trigger first visible column's add button
-    document.getElementById("kanban-new-task-btn")?.addEventListener("click", () => {
-      // Find the first visible add button (skip hidden ones in collapsed swimlanes)
-      const allAddBtns = document.querySelectorAll(".kanban-column .kanban-add-btn");
-      let firstAddBtn = null;
-      for (const btn of allAddBtns) {
-        if (btn instanceof HTMLElement && btn.offsetParent !== null) {
-          firstAddBtn = btn;
-          break;
-        }
-      }
-      if (firstAddBtn) {
-        firstAddBtn.click();
-        setTimeout(() => {
-          const input = firstAddBtn.parentElement?.querySelector(".kanban-inline-add input");
-          if (input instanceof HTMLInputElement) {
-            input.scrollIntoView({ behavior: "smooth", block: "nearest" });
-            input.focus();
+    document
+      .getElementById("kanban-new-task-btn")
+      ?.addEventListener("click", () => {
+        // Find the first visible add button (skip hidden ones in collapsed swimlanes)
+        const allAddBtns = document.querySelectorAll(
+          ".kanban-column .kanban-add-btn",
+        );
+        let firstAddBtn = null;
+        for (const btn of allAddBtns) {
+          if (btn instanceof HTMLElement && btn.offsetParent !== null) {
+            firstAddBtn = btn;
+            break;
           }
-        }, 50);
-      }
-    });
+        }
+        if (firstAddBtn) {
+          firstAddBtn.click();
+          setTimeout(() => {
+            const input = firstAddBtn.parentElement?.querySelector(
+              ".kanban-inline-add input",
+            );
+            if (input instanceof HTMLInputElement) {
+              input.scrollIntoView({ behavior: "smooth", block: "nearest" });
+              input.focus();
+            }
+          }, 50);
+        }
+      });
 
     // Lane management (API-backed, server-persisted)
     const manageLanesBtn = document.getElementById("manage-lanes-btn");
@@ -1140,15 +1201,17 @@ const typeConfig: Record<
       function applyTypeFilters() {
         // Find visible types using safe match
         const btnTypes = Array.from(
-          document.querySelectorAll(".type-filter-btn.active")
+          document.querySelectorAll(".type-filter-btn.active"),
         ).map((b) => b.getAttribute("data-type") || "");
 
         // 1. Filter flat cards
         document.querySelectorAll(".flat-card").forEach((c) => {
-          const ct = String(c.getAttribute("data-task-type") || "task").toLowerCase();
+          const ct = String(
+            c.getAttribute("data-task-type") || "task",
+          ).toLowerCase();
           // Graceful fallback: treat invalid types as "task" for filtering
           const safeType = ["epic", "story", "task"].includes(ct) ? ct : "task";
-          
+
           if (btnTypes.includes("all") || btnTypes.includes(safeType)) {
             c.style.display = "";
           } else {
@@ -1306,20 +1369,25 @@ const typeConfig: Record<
     (async function renderThumbnails() {
       if (!window.indexedDB) return;
       try {
-        const { getAttachmentsByTaskId } = await import('../domains/offline/offline-store');
-        document.querySelectorAll('img.kanban-attachment').forEach(async (img) => {
-          const taskId = img.getAttribute('data-task-id');
-          if (!taskId) return;
-          const attachments = await getAttachmentsByTaskId(taskId);
-          if (attachments.length > 0) {
-            // Get the first image
-            const cover = attachments.find((a) => a.mimeType.startsWith("image/"));
-            if (cover) {
-              img.setAttribute("src", cover.base64Data);
-              img.classList.remove("hidden");
+        const { getAttachmentsByTaskId } =
+          await import("../domains/offline/offline-store");
+        document
+          .querySelectorAll("img.kanban-attachment")
+          .forEach(async (img) => {
+            const taskId = img.getAttribute("data-task-id");
+            if (!taskId) return;
+            const attachments = await getAttachmentsByTaskId(taskId);
+            if (attachments.length > 0) {
+              // Get the first image
+              const cover = attachments.find((a) =>
+                a.mimeType.startsWith("image/"),
+              );
+              if (cover) {
+                img.setAttribute("src", cover.base64Data);
+                img.classList.remove("hidden");
+              }
             }
-          }
-        });
+          });
       } catch (e) {
         console.warn("Failed to load attachments on Kanban:", e);
       }
@@ -1817,5 +1885,4 @@ const typeConfig: Record<
     margin-bottom: 0;
     padding-bottom: 0;
   }
-
 </style>

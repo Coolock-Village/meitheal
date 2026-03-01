@@ -9,7 +9,7 @@ import {
 
 // i18n: resolve locale from cookie
 const cookieLocale = Astro.cookies.get("meitheal-locale")?.value;
-const locale: Locale = (cookieLocale === "ga" ? "ga" : "en");
+const locale: Locale = cookieLocale === "ga" ? "ga" : "en";
 
 let tasks: Record<string, unknown>[] = [];
 try {
@@ -70,7 +70,9 @@ const statusLabels: Record<string, string> = {
         aria-label={t("tasks.table_view", locale)}>⊞</a
       >
     </div>
-    <button class="btn btn-primary" id="create-task-btn">{t("tasks.new_task", locale)}</button>
+    <button class="btn btn-primary" id="create-task-btn"
+      >{t("tasks.new_task", locale)}</button
+    >
   </div>
 
   <!-- Filters -->
@@ -250,8 +252,8 @@ const statusLabels: Record<string, string> = {
               <button
                 class="task-duplicate"
                 data-id={String(task.id)}
-                title="Duplicate task"
-                aria-label="Duplicate task"
+                title={t("tasks.duplicate_task", locale)}
+                aria-label={t("tasks.duplicate_task", locale)}
               >
                 ⧉
               </button>
@@ -263,16 +265,16 @@ const statusLabels: Record<string, string> = {
                 }
                 data-status={String(task.status ?? "pending")}
                 data-priority={String(task.priority ?? 3)}
-                title="Ask AI about this task"
-                aria-label="Ask AI"
+                title={t("tasks.ask_ai", locale)}
+                aria-label={t("tasks.ask_ai", locale)}
               >
                 🤖
               </button>
               <button
                 class="task-delete"
                 data-id={String(task.id)}
-                title="Delete task"
-                aria-label="Delete task"
+                title={t("tasks.delete", locale)}
+                aria-label={t("tasks.delete", locale)}
               >
                 ×
               </button>
@@ -286,11 +288,15 @@ const statusLabels: Record<string, string> = {
   <!-- Create/Edit Modal -->
   <div class="modal-overlay" id="task-modal">
     <div class="modal">
-      <div class="modal-title" id="modal-title">{t("tasks.new_task_modal", locale)}</div>
+      <div class="modal-title" id="modal-title">
+        {t("tasks.new_task_modal", locale)}
+      </div>
       <form id="task-form">
         <input type="hidden" id="task-id" />
         <div class="form-group">
-          <label class="form-label" for="task-title-input">{t("tasks.title_label", locale)}</label>
+          <label class="form-label" for="task-title-input"
+            >{t("tasks.title_label", locale)}</label
+          >
           <input
             type="text"
             class="form-input"
@@ -300,7 +306,9 @@ const statusLabels: Record<string, string> = {
           />
         </div>
         <div class="form-group">
-          <label class="form-label" for="task-desc-input">{t("tasks.description", locale)}</label>
+          <label class="form-label" for="task-desc-input"
+            >{t("tasks.description", locale)}</label
+          >
           <textarea
             class="form-input"
             id="task-desc-input"
@@ -309,7 +317,9 @@ const statusLabels: Record<string, string> = {
         </div>
         <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 12px;">
           <div class="form-group">
-            <label class="form-label" for="task-priority-input">{t("tasks.priority_label", locale)}</label>
+            <label class="form-label" for="task-priority-input"
+              >{t("tasks.priority_label", locale)}</label
+            >
             <select class="form-select" id="task-priority-input">
               <option value="1">🔴 Critical</option>
               <option value="2">🟠 High</option>
@@ -319,16 +329,23 @@ const statusLabels: Record<string, string> = {
             </select>
           </div>
           <div class="form-group">
-            <label class="form-label" for="task-status-input">{t("tasks.status_label", locale)}</label>
+            <label class="form-label" for="task-status-input"
+              >{t("tasks.status_label", locale)}</label
+            >
             <select class="form-select" id="task-status-input">
-              <option value="pending">{t("task_status.pending", locale)}</option>
+              <option value="pending">{t("task_status.pending", locale)}</option
+              >
               <option value="active">{t("task_status.active", locale)}</option>
-              <option value="complete">{t("task_status.complete", locale)}</option>
+              <option value="complete"
+                >{t("task_status.complete", locale)}</option
+              >
             </select>
           </div>
         </div>
         <div class="form-group">
-          <label class="form-label" for="task-due-input">{t("tasks.due_date", locale)}</label>
+          <label class="form-label" for="task-due-input"
+            >{t("tasks.due_date", locale)}</label
+          >
           <input type="datetime-local" class="form-input" id="task-due-input" />
         </div>
         <div class="form-group">
@@ -464,13 +481,23 @@ const statusLabels: Record<string, string> = {
         {t("tasks.cannot_undo", locale)}
       </p>
       <div class="modal-actions">
-        <button class="btn btn-ghost" id="cancel-delete">{t("tasks.cancel", locale)}</button>
-        <button class="btn btn-danger" id="confirm-delete">{t("tasks.delete", locale)}</button>
+        <button class="btn btn-ghost" id="cancel-delete"
+          >{t("tasks.cancel", locale)}</button
+        >
+        <button class="btn btn-danger" id="confirm-delete"
+          >{t("tasks.delete", locale)}</button
+        >
       </div>
     </div>
   </div>
 
-  <div id="toast-container" class="toast-container" aria-live="polite" role="status"></div>
+  <div
+    id="toast-container"
+    class="toast-container"
+    aria-live="polite"
+    role="status"
+  >
+  </div>
 
   <script>
     import { showToast } from "../lib/toast";
