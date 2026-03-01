@@ -317,6 +317,7 @@ export async function ensureSchema(): Promise<void> {
     )
   `);
   await client.execute("CREATE INDEX IF NOT EXISTS activity_log_task_id_idx ON task_activity_log(task_id)");
+  await client.execute("CREATE INDEX IF NOT EXISTS activity_log_created_at_idx ON task_activity_log(created_at)");
 
   // Phase 18: Comments table
   await client.execute(`
