@@ -6,14 +6,20 @@ import {
 } from "@domains/tasks/persistence/store";
 
 let tasks: Record<string, unknown>[] = [];
+let favorites: Record<string, unknown>[] = [];
 let stats = { total: 0, active: 0, completed: 0, overdue: 0 };
 
 try {
   await ensureSchema();
   const client = getPersistenceClient();
   const result = await client.execute(
-    "SELECT id, title, description, status, priority, due_date, labels, calendar_sync_state, created_at, updated_at FROM tasks ORDER BY created_at DESC LIMIT 10",
+    "SELECT id, title, description, status, priority, due_date, labels, calendar_sync_state, is_favorite, created_at, updated_at FROM tasks ORDER BY created_at DESC LIMIT 10",
   );
+  // Favorites
+  const favResult = await client.execute(
+    "SELECT id, title, status, priority, due_date, is_favorite FROM tasks WHERE is_favorite = 1 AND status != 'complete' AND status != 'done' ORDER BY updated_at DESC LIMIT 5",
+  );
+  favorites = favResult.rows as Record<string, unknown>[];
   tasks = result.rows as Record<string, unknown>[];
 
   const countResult = await client.execute(
@@ -54,6 +60,18 @@ const statusLabels: Record<string, string> = {
   done: "Complete",
   todo: "Pending",
 };
+
+function dueDateLabel(dateStr: string): string {
+  if (!dateStr) return "";
+  const d = new Date(dateStr);
+  const now = new Date();
+  const diffMs = d.getTime() - now.getTime();
+  const diffDays = Math.ceil(diffMs / (1000 * 60 * 60 * 24));
+  if (diffDays < 0) return "Overdue";
+  if (diffDays === 0) return "Due today";
+  if (diffDays === 1) return "Due tomorrow";
+  return `Due ${d.toLocaleDateString("en-IE", { month: "short", day: "numeric" })}`;
+}
 
 // Vikunja-inspired: time-of-day greeting
 const hour = new Date().getHours();
@@ -116,6 +134,35 @@ function relativeTime(dueDate: string): string {
       </div>
     </div>
   </div>
+
+  {favorites.length > 0 && (
+    <div class="card" style="margin-bottom: 20px;">
+      <div class="card-header">
+        <div>
+          <div class="card-title">⭐ Favorites</div>
+          <div class="card-subtitle">{favorites.length} pinned task{favorites.length !== 1 ? "s" : ""}</div>
+        </div>
+      </div>
+      <div class="task-list">
+        {favorites.map((fav) => (
+          <div class="task-item" data-id={String(fav.id)} style="cursor:pointer;">
+            <div class="task-title">
+              <span class="priority-dot" style={`color: ${
+                Number(fav.priority) === 1 ? "#ef4444" :
+                Number(fav.priority) === 2 ? "#f97316" :
+                Number(fav.priority) === 4 ? "#22c55e" :
+                Number(fav.priority) === 5 ? "#6b7280" : "#eab308"
+              }`}>●</span>
+              {String(fav.title)}
+            </div>
+            {fav.due_date && (
+              <span class="text-xs text-text-muted">{relativeTime(String(fav.due_date))}</span>
+            )}
+          </div>
+        ))}
+      </div>
+    </div>
+  )}
 
   <div class="card" style="margin-bottom: 20px;">
     <div class="card-header">

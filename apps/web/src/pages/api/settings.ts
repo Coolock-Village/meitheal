@@ -110,3 +110,28 @@ export const PUT: APIRoute = async ({ request }) => {
     });
   }
 };
+
+export const DELETE: APIRoute = async ({ url }) => {
+  try {
+    const reset = url.searchParams.get("reset");
+    if (reset !== "all") {
+      return new Response(JSON.stringify({ error: "Use ?reset=all to confirm reset" }), {
+        status: 400,
+        headers: { "content-type": "application/json" },
+      });
+    }
+    await ensureSettingsTable();
+    const client = getPersistenceClient();
+    await client.execute("DELETE FROM settings");
+    return new Response(JSON.stringify({ reset: true }), {
+      status: 200,
+      headers: { "content-type": "application/json" },
+    });
+  } catch (err) {
+    console.error("[settings] DELETE/reset failed:", err);
+    return new Response(JSON.stringify({ error: "Failed to reset settings" }), {
+      status: 500,
+      headers: { "content-type": "application/json" },
+    });
+  }
+};

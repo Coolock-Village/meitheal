@@ -218,3 +218,31 @@ export const POST: APIRoute = async ({ request }) => {
     headers: { "content-type": "application/json" },
   });
 };
+
+export const DELETE: APIRoute = async ({ url }) => {
+  try {
+    const purge = url.searchParams.get("purge");
+    if (purge !== "all") {
+      return new Response(JSON.stringify({ error: "Use ?purge=all to confirm purge" }), {
+        status: 400,
+        headers: { "content-type": "application/json" },
+      });
+    }
+    await ensureSchema();
+    const client = getPersistenceClient();
+    // Cascade-delete related data first, then tasks
+    await client.execute("DELETE FROM task_activity_log");
+    await client.execute("DELETE FROM comments");
+    await client.execute("DELETE FROM tasks");
+    return new Response(JSON.stringify({ purged: true }), {
+      status: 200,
+      headers: { "content-type": "application/json" },
+    });
+  } catch (err) {
+    console.error("[tasks] DELETE/purge failed:", err);
+    return new Response(JSON.stringify({ error: "Failed to purge tasks" }), {
+      status: 500,
+      headers: { "content-type": "application/json" },
+    });
+  }
+};
