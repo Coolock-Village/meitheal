@@ -1,4 +1,5 @@
 import { test, expect } from "@playwright/test";
+import { shouldSkipBrowserSpecs } from "./_helpers";
 
 /**
  * Offline Image Attachment CRUD Tests (Phase 23)
@@ -9,6 +10,7 @@ import { test, expect } from "@playwright/test";
  */
 
 test.describe("Offline Attachment CRUD", () => {
+    test.skip(shouldSkipBrowserSpecs(), "Set E2E_BASE_URL to run browser specs");
     test("saveAttachment stores and retrieves by taskId", async ({ page }) => {
         await page.goto("/");
         await page.waitForLoadState("networkidle");

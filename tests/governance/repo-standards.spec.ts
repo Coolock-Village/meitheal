@@ -3,6 +3,7 @@ import { join } from "node:path";
 import { test, expect } from "@playwright/test";
 
 const repoRoot = join(process.cwd(), "..");
+const addonRoot = join(repoRoot, "meitheal-hub");
 
 const requiredFiles = [
   "README.md",
@@ -12,13 +13,13 @@ const requiredFiles = [
   "SECURITY.md",
   "CONTRIBUTING.md",
   "AI_POLICY.md",
-  "repository.yaml",
+  "addons/repository.yaml",
   ".coderabbit.yaml",
   ".zeroclaw/soul.md",
   ".skills/core-workflows/SKILL.md",
-  "addons/meitheal-hub/README.md",
-  "addons/meitheal-hub/DOCS.md",
-  "addons/meitheal-hub/config.yaml",
+  "meitheal-hub/README.md",
+  "meitheal-hub/DOCS.md",
+  "meitheal-hub/config.yaml",
   "docs/decisions/0001-legal-and-naming-strategy.md",
   "docs/decisions/0002-target-architecture.md",
   "docs/kcs/operations-runbook.md",
@@ -40,13 +41,13 @@ test("readme enforces Astro and HA first principles", () => {
 });
 
 test("addon config includes publishing image contract", () => {
-  const addonConfig = readFileSync(join(repoRoot, "addons/meitheal-hub/config.yaml"), "utf8");
+  const addonConfig = readFileSync(join(addonRoot, "config.yaml"), "utf8");
   expect(addonConfig).toContain("image:");
   expect(addonConfig).toContain("{arch}");
 });
 
 test("repository metadata keeps Home Assistant publishing fields", () => {
-  const repositoryConfig = readFileSync(join(repoRoot, "repository.yaml"), "utf8");
+  const repositoryConfig = readFileSync(join(repoRoot, "addons/repository.yaml"), "utf8");
   expect(repositoryConfig).toMatch(/^name:\s*".+"/m);
   expect(repositoryConfig).toMatch(/^url:\s*"https:\/\/github\.com\/Coolock-Village\/meitheal"/m);
 

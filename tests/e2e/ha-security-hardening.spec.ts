@@ -12,7 +12,7 @@ test.describe("Phase 27: HA Security Hardening", () => {
             const path = await import("node:path");
             const profilePath = path.resolve(
                 path.dirname(new URL(import.meta.url).pathname),
-                "../../addons/meitheal-hub/apparmor.txt"
+                "../../meitheal-hub/apparmor.txt"
             );
             const content = await fs.readFile(profilePath, "utf-8");
 
@@ -49,7 +49,7 @@ test.describe("Phase 27: HA Security Hardening", () => {
             const path = await import("node:path");
             const configPath = path.resolve(
                 path.dirname(new URL(import.meta.url).pathname),
-                "../../addons/meitheal-hub/config.yaml"
+                "../../meitheal-hub/config.yaml"
             );
             const content = await fs.readFile(configPath, "utf-8");
 
@@ -68,7 +68,7 @@ test.describe("Phase 27: HA Security Hardening", () => {
             const path = await import("node:path");
             const transPath = path.resolve(
                 path.dirname(new URL(import.meta.url).pathname),
-                "../../addons/meitheal-hub/translations/en.yaml"
+                "../../meitheal-hub/translations/en.yaml"
             );
             const content = await fs.readFile(transPath, "utf-8");
 
@@ -114,7 +114,7 @@ test.describe("Phase 27: HA Security Hardening", () => {
             const path = await import("node:path");
             const dockerPath = path.resolve(
                 path.dirname(new URL(import.meta.url).pathname),
-                "../../addons/meitheal-hub/Dockerfile"
+                "../../meitheal-hub/Dockerfile"
             );
             const content = await fs.readFile(dockerPath, "utf-8");
 

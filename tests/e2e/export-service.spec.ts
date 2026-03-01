@@ -1,4 +1,5 @@
 import { test, expect } from "@playwright/test";
+import { shouldSkipBrowserSpecs } from "./_helpers";
 
 /**
  * Client-Side Export Service Tests (Phase 21/23)
@@ -9,6 +10,7 @@ import { test, expect } from "@playwright/test";
  */
 
 test.describe("Export Service", () => {
+    test.skip(shouldSkipBrowserSpecs(), "Set E2E_BASE_URL to run browser specs");
     test("tasks and attachments can be bundled for export", async ({ page }) => {
         await page.goto("/");
         await page.waitForLoadState("networkidle");

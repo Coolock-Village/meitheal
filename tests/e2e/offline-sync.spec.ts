@@ -1,6 +1,8 @@
 import { test, expect } from "@playwright/test";
+import { shouldSkipBrowserSpecs } from "./_helpers";
 
 test.describe("Offline Sync Queue", () => {
+  test.skip(shouldSkipBrowserSpecs(), "Set E2E_BASE_URL to run browser specs");
   test("queues operations in IndexedDB when offline", async ({ page, context }) => {
     await page.goto("/");
     await page.waitForLoadState("networkidle");
