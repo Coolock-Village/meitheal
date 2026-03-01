@@ -42,7 +42,7 @@ jobs:
           password: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Log in to Docker Hub
-        if: ${{ secrets.DOCKERHUB_USERNAME != '' }}
+        continue-on-error: true
         uses: docker/login-action@v3
         with:
           username: ${{ secrets.DOCKERHUB_USERNAME }}
@@ -92,7 +92,7 @@ jobs:
             ghcr.io/${{ steps.meta.outputs.owner_lc }}/meitheal-hub-${{ matrix.arch }}:latest
 
       - name: Push to Docker Hub
-        if: ${{ secrets.DOCKERHUB_USERNAME != '' }}
+        continue-on-error: true
         uses: docker/build-push-action@v6
         with:
           context: .
