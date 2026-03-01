@@ -1217,10 +1217,10 @@ Astro.response.headers.set("X-XSS-Protection", "1; mode=block");
             // Populate status dropdown from lanes API
             const statusSelect = document.getElementById(
               "td-status",
-            ) as HTMLSelectElement;
+            ) as HTMLSelectElement | null;
             try {
               const lanesRes = await fetch("/api/lanes");
-              if (lanesRes.ok) {
+              if (lanesRes.ok && statusSelect) {
                 const lanesData = await lanesRes.json();
                 const lanes = lanesData.lanes || [];
                 statusSelect.innerHTML = "";
@@ -1549,9 +1549,11 @@ Astro.response.headers.set("X-XSS-Protection", "1; mode=block");
                 : "⭐ Add to Favorites";
             const isDone =
               String(t.status) === "done" || String(t.status) === "complete";
-            (
-              document.getElementById("td-toggle-done") as HTMLElement
-            ).textContent = isDone ? "↩ Mark as Undone" : "✓ Mark as Done";
+            const tdToggleDone = document.getElementById("td-toggle-done");
+            if (tdToggleDone)
+              tdToggleDone.textContent = isDone
+                ? "↩ Mark as Undone"
+                : "✓ Mark as Done";
 
             // Load settings-defined custom fields
             _settingsFields = [];
@@ -1975,9 +1977,11 @@ Astro.response.headers.set("X-XSS-Protection", "1; mode=block");
           ?.addEventListener("change", (e) => {
             saveTD("status", (e.target as HTMLSelectElement).value);
             const isDone = (e.target as HTMLSelectElement).value === "done";
-            (
-              document.getElementById("td-toggle-done") as HTMLElement
-            ).textContent = isDone ? "↩ Mark as Undone" : "✓ Mark as Done";
+            const doneBtn = document.getElementById("td-toggle-done");
+            if (doneBtn)
+              doneBtn.textContent = isDone
+                ? "↩ Mark as Undone"
+                : "✓ Mark as Done";
           });
         document
           .getElementById("td-priority")
@@ -1998,9 +2002,8 @@ Astro.response.headers.set("X-XSS-Protection", "1; mode=block");
           .getElementById("td-progress")
           ?.addEventListener("input", (e) => {
             const v = (e.target as HTMLInputElement).value;
-            (
-              document.getElementById("td-progress-value") as HTMLElement
-            ).textContent = `${v}%`;
+            const progEl = document.getElementById("td-progress-value");
+            if (progEl) progEl.textContent = `${v}%`;
           });
         document
           .getElementById("td-progress")
@@ -2369,10 +2372,10 @@ Astro.response.headers.set("X-XSS-Protection", "1; mode=block");
             const newStatus = statusEl.value === "done" ? "pending" : "done";
             statusEl.value = newStatus;
             saveTD("status", newStatus);
-            (
-              document.getElementById("td-toggle-done") as HTMLElement
-            ).textContent =
-              newStatus === "done" ? "↩ Mark as Undone" : "✓ Mark as Done";
+            const tdDoneBtn = document.getElementById("td-toggle-done");
+            if (tdDoneBtn)
+              tdDoneBtn.textContent =
+                newStatus === "done" ? "↩ Mark as Undone" : "✓ Mark as Done";
           });
 
         // Toggle favorite
@@ -2524,9 +2527,13 @@ Astro.response.headers.set("X-XSS-Protection", "1; mode=block");
 
         // Hash navigation
         function checkHash() {
-          const hash = window.location.hash;
-          if (hash.startsWith("#task-")) {
-            openTaskDetail(hash.replace("#task-", ""));
+          try {
+            const hash = window.location.hash;
+            if (hash.startsWith("#task-")) {
+              openTaskDetail(hash.replace("#task-", ""));
+            }
+          } catch (err) {
+            console.warn("[Meitheal] Hash navigation error:", err);
           }
         }
         window.addEventListener("hashchange", checkHash);
