@@ -28,6 +28,13 @@ All notable changes to Meitheal are documented in this file.
 - **Dynamic CSP** — `frame-ancestors` adjusts for HA ingress iframe embedding
 - **Translations** — English option descriptions in `translations/en.yaml`
 - **tmpfs** — `/tmp` mounted as tmpfs for ephemeral storage
+- **Activity Log UI** — collapsible `<details>` section in task detail panel, lazy-loaded on expand
+- **Duplicate Task Button** — 📋 button in task detail action sidebar (POST + auto-open clone)
+- **Time Tracked Input** — editable minutes-tracked field in Date & Time section
+- **Danger Zone** — settings page section for purge all tasks (triple-confirm) and reset settings
+- **Command Palette Nav** — Go to Dashboard/Kanban/Table/Settings + Export CSV commands
+- **Command Search Filtering** — typing in command palette filters both commands and tasks
+- **Version Bump** — `0.3.0` Phase 32: Deep Audit
 
 ### Fixed
 
