@@ -20,6 +20,14 @@ All notable changes to Meitheal are documented in this file.
 - **Kanban Group-By Persistence** — localStorage for group selection
 - **Shared API Helpers** — `apiError()` / `apiJson()` in `lib/api-response.ts`
 - **ADRs 0008-0011** — Phase 27-30 architectural decisions
+- **AppArmor Profile** — restrictive `apparmor.txt` for HA add-on container security
+- **HA Ingress User Identity** — extract `X-Hass-User-Id` and `X-Hass-Is-Admin` from Supervisor headers
+- **Auth API** — `auth_api: true` enables Supervisor auth backend validation
+- **Panel Admin** — sidebar panel restricted to HA admin users
+- **Non-root Container** — Dockerfile runs as `meitheal` user instead of root
+- **Dynamic CSP** — `frame-ancestors` adjusts for HA ingress iframe embedding
+- **Translations** — English option descriptions in `translations/en.yaml`
+- **tmpfs** — `/tmp` mounted as tmpfs for ephemeral storage
 
 ### Fixed
 

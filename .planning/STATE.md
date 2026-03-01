@@ -9,9 +9,9 @@ Local-first task orchestration with HA calendar sync and Vikunja compatibility.
 
 - **Planning model:** dual-track (`Primary Delivery` + `Extension Track`)
 - **Primary Delivery:** 6 of 6 phases complete (`01-06 complete`)
-- **Extension Track:** 10 of 10 phases complete (`15-24 complete`)
-- **Overall phase count:** 16 of 16 complete
-- **Current execution focus:** Phase 25 (Autonomous GSD Sweep — P0-P6 production polish).
+- **Extension Track:** 11 of 11 phases complete (`15-24, 27 complete`)
+- **Overall phase count:** 17 of 17 complete
+- **Current execution focus:** Phase 27 (HA Security Hardening — AppArmor, ingress auth, publishing readiness).
 
 ## Phase Status Snapshot
 

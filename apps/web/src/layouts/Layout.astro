@@ -565,6 +565,41 @@ try {
             >
               New board
             </div>
+            <div
+              class="px-3 py-1.5 text-[10px] uppercase tracking-wide text-text-muted font-semibold"
+            >
+              Navigate
+            </div>
+            <div
+              class="cp-item px-4 py-2.5 cursor-pointer hover:bg-bg-hover text-sm text-text-primary"
+              data-action="go-dashboard"
+            >
+              📊 Go to Dashboard
+            </div>
+            <div
+              class="cp-item px-4 py-2.5 cursor-pointer hover:bg-bg-hover text-sm text-text-primary"
+              data-action="go-kanban"
+            >
+              📋 Go to Kanban Board
+            </div>
+            <div
+              class="cp-item px-4 py-2.5 cursor-pointer hover:bg-bg-hover text-sm text-text-primary"
+              data-action="go-table"
+            >
+              📄 Go to Table View
+            </div>
+            <div
+              class="cp-item px-4 py-2.5 cursor-pointer hover:bg-bg-hover text-sm text-text-primary"
+              data-action="go-settings"
+            >
+              ⚙ Go to Settings
+            </div>
+            <div
+              class="cp-item px-4 py-2.5 cursor-pointer hover:bg-bg-hover text-sm text-text-primary"
+              data-action="export-csv"
+            >
+              📥 Export Tasks CSV
+            </div>
             <div id="cp-tasks-section" class="hidden">
               <div
                 class="px-3 py-1.5 text-[10px] uppercase tracking-wide text-text-muted font-semibold"
@@ -1925,9 +1960,24 @@ try {
         if (e.target === cpOverlay) closeCP();
       });
 
-      // Search
+      // Search — filters both commands and tasks
       cpSearch?.addEventListener("input", () => {
         const q = cpSearch.value.toLowerCase().trim();
+        // Filter static command items
+        document.querySelectorAll("#cp-results > .cp-item[data-action]").forEach((el) => {
+          const text = (el as HTMLElement).textContent?.toLowerCase() ?? "";
+          (el as HTMLElement).style.display = !q || text.includes(q) ? "" : "none";
+        });
+        // Also hide section headers if all children hidden
+        document.querySelectorAll("#cp-results > div:not(.cp-item):not(#cp-tasks-section)").forEach((header) => {
+          const next = header.nextElementSibling;
+          if (next?.classList.contains("cp-item") && (next as HTMLElement).style.display === "none") {
+            (header as HTMLElement).style.display = "none";
+          } else {
+            (header as HTMLElement).style.display = "";
+          }
+        });
+
         if (!q) {
           cpTasksSection?.classList.add("hidden");
           return;
@@ -1972,6 +2022,16 @@ try {
             ".board-add-btn",
           ) as HTMLElement;
           if (boardBtn) boardBtn.click();
+        } else if (action === "go-dashboard") {
+          window.location.href = "/";
+        } else if (action === "go-kanban") {
+          window.location.href = "/kanban";
+        } else if (action === "go-table") {
+          window.location.href = "/table";
+        } else if (action === "go-settings") {
+          window.location.href = "/settings";
+        } else if (action === "export-csv") {
+          window.location.href = "/api/export/tasks.csv";
         } else if (taskId) {
           openTaskDetail(taskId);
         }
