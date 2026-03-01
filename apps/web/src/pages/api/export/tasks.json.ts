@@ -1,5 +1,6 @@
 import type { APIRoute } from "astro";
 import { ensureSchema, getPersistenceClient } from "@domains/tasks/persistence/store";
+import { formatTicketKey } from "../../../lib/ticket-key";
 
 /**
  * Export Tasks as JSON
@@ -17,10 +18,14 @@ export const GET: APIRoute = async () => {
             `SELECT id, title, description, status, priority, due_date, labels,
                     framework_payload, calendar_sync_state, board_id, custom_fields,
                     parent_id, time_tracked, start_date, end_date, progress, color,
-                    is_favorite, task_type, created_at, updated_at
+                    is_favorite, task_type, ticket_number, created_at, updated_at
              FROM tasks ORDER BY updated_at DESC`
         );
-        const allTasks = result.rows;
+        const allTasks = result.rows.map(row => {
+            const r = row as Record<string, unknown>;
+            const tn = r.ticket_number != null ? Number(r.ticket_number) : null;
+            return { ...r, ticket_key: formatTicketKey(tn) };
+        });
 
         // Generate JSON payload
         const dataStr = JSON.stringify(allTasks, null, 2);

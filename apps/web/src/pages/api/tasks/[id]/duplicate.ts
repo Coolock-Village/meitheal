@@ -2,6 +2,7 @@ import type { APIRoute } from "astro";
 import type { InValue } from "@libsql/client";
 import { ensureSchema, getPersistenceClient } from "@domains/tasks/persistence/store";
 import { apiError, apiJson } from "../../../../lib/api-response";
+import { formatTicketKey } from "../../../../lib/ticket-key";
 import { createLogger, defaultRedactionPatterns } from "@meitheal/domain-observability";
 
 const logger = createLogger({
@@ -43,12 +44,16 @@ export const POST: APIRoute = async ({ params }) => {
         const now = Date.now();
         const newTitle = `${String(row.title)} (copy)`;
 
+        // Assign next sequential ticket_number
+        const nextNumResult = await client.execute("SELECT COALESCE(MAX(ticket_number), 0) + 1 AS next_num FROM tasks");
+        const ticket_number = Number((nextNumResult.rows[0] as Record<string, unknown>)?.next_num ?? 1);
+
         await client.execute({
             sql: `INSERT INTO tasks (id, title, description, status, priority, due_date, labels,
                                framework_payload, calendar_sync_state, board_id, custom_fields,
                                parent_id, start_date, end_date, progress, color, is_favorite,
-                               task_type, time_tracked, idempotency_key, request_id, created_at, updated_at)
-            VALUES (?, ?, ?, ?, ?, ?, ?, ?, 'pending', ?, ?, ?, ?, ?, ?, ?, ?, ?, 0, ?, ?, ?, ?)`,
+                               task_type, time_tracked, ticket_number, idempotency_key, request_id, created_at, updated_at)
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?, 'pending', ?, ?, ?, ?, ?, ?, ?, ?, ?, 0, ?, ?, ?, ?, ?)`,
             args: [
                 newId, newTitle, row.description ?? "", "pending", row.priority ?? 3,
                 row.due_date ?? null, row.labels ?? "[]", row.framework_payload ?? "{}",
@@ -56,7 +61,7 @@ export const POST: APIRoute = async ({ params }) => {
                 row.parent_id ?? null, row.start_date ?? null, row.end_date ?? null,
                 row.progress ?? 0, row.color ?? null, row.is_favorite ?? 0,
                 row.task_type ?? "task",
-                crypto.randomUUID(), crypto.randomUUID(), now, now,
+                ticket_number, crypto.randomUUID(), crypto.randomUUID(), now, now,
             ] as InValue[],
         });
 
@@ -71,6 +76,8 @@ export const POST: APIRoute = async ({ params }) => {
 
         return apiJson({
             id: newId,
+            ticket_number,
+            ticket_key: formatTicketKey(ticket_number),
             title: newTitle,
             source_id: sourceId,
             created_at: now,

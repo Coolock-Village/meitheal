@@ -413,12 +413,20 @@ export async function ensureSchema(): Promise<void> {
   await client.execute("CREATE INDEX IF NOT EXISTS tasks_priority_idx ON tasks(priority)");
   await client.execute("CREATE INDEX IF NOT EXISTS tasks_parent_id_idx ON tasks(parent_id)");
   await client.execute("CREATE INDEX IF NOT EXISTS tasks_board_id_idx ON tasks(board_id)");
+  // Human-readable ticket IDs — auto-incrementing ticket_number
+  if (!(await hasColumn(client, "tasks", "ticket_number"))) {
+    await client.execute("ALTER TABLE tasks ADD COLUMN ticket_number INTEGER");
+    // Backfill existing tasks with sequential numbers based on insertion order (rowid)
+    await client.execute("UPDATE tasks SET ticket_number = rowid WHERE ticket_number IS NULL");
+  }
+
   await client.execute("CREATE INDEX IF NOT EXISTS tasks_task_type_idx ON tasks(task_type)");
   await client.execute("CREATE INDEX IF NOT EXISTS tasks_created_at_idx ON tasks(created_at)");
   await client.execute("CREATE INDEX IF NOT EXISTS tasks_due_date_idx ON tasks(due_date)");
   await client.execute("CREATE INDEX IF NOT EXISTS tasks_updated_at_idx ON tasks(updated_at)");
   await client.execute("CREATE INDEX IF NOT EXISTS tasks_is_favorite_idx ON tasks(is_favorite)");
   await client.execute("CREATE INDEX IF NOT EXISTS tasks_reminder_at_idx ON tasks(reminder_at)");
+  await client.execute("CREATE UNIQUE INDEX IF NOT EXISTS tasks_ticket_number_idx ON tasks(ticket_number)");
   await client.execute("CREATE INDEX IF NOT EXISTS comments_task_id_idx ON comments(task_id)");
 
   ensured = true;

@@ -45,11 +45,21 @@ export const POST: APIRoute = async ({ request }) => {
   try {
     await ensureSchema();
     const client = getPersistenceClient();
-    const body = await request.json();
 
-    const { task_id, action } = body as {
+    let body: Record<string, unknown>;
+    try {
+      body = await request.json() as Record<string, unknown>;
+    } catch {
+      return new Response(
+        JSON.stringify({ error: "Invalid JSON body" }),
+        { status: 400, headers: { "Content-Type": "application/json" } },
+      );
+    }
+
+    const { task_id, action, snooze_minutes } = body as {
       task_id?: string;
       action?: "dismiss" | "snooze";
+      snooze_minutes?: number;
     };
 
     if (!task_id) {
@@ -59,15 +69,25 @@ export const POST: APIRoute = async ({ request }) => {
       );
     }
 
+    if (action && !['dismiss', 'snooze'].includes(action)) {
+      return new Response(
+        JSON.stringify({ error: "action must be 'dismiss' or 'snooze'" }),
+        { status: 400, headers: { "Content-Type": "application/json" } },
+      );
+    }
+
     if (action === "snooze") {
-      // Snooze by 1 hour
-      const snoozeTime = new Date(Date.now() + 60 * 60 * 1000).toISOString();
+      // Configurable snooze: default 60 min, accept 15/30/60/240/1440
+      const minutes = [15, 30, 60, 240, 1440].includes(Number(snooze_minutes))
+        ? Number(snooze_minutes)
+        : 60;
+      const snoozeTime = new Date(Date.now() + minutes * 60 * 1000).toISOString();
       await client.execute({
         sql: "UPDATE tasks SET reminder_at = ?, updated_at = ? WHERE id = ?",
         args: [snoozeTime, Date.now(), task_id],
       });
       return new Response(
-        JSON.stringify({ snoozed_until: snoozeTime }),
+        JSON.stringify({ snoozed_until: snoozeTime, minutes }),
         { status: 200, headers: { "Content-Type": "application/json" } },
       );
     }
@@ -83,6 +103,7 @@ export const POST: APIRoute = async ({ request }) => {
       headers: { "Content-Type": "application/json" },
     });
   } catch (error) {
+    console.error("[reminders] POST error:", error);
     return new Response(
       JSON.stringify({ error: "Failed to process reminder action" }),
       { status: 500, headers: { "Content-Type": "application/json" } },

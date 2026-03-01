@@ -33,7 +33,16 @@ export const POST: APIRoute = async ({ request }) => {
   try {
     await ensureSchema();
     const client = getPersistenceClient();
-    const body = await request.json();
+
+    let body: Record<string, unknown>;
+    try {
+      body = await request.json() as Record<string, unknown>;
+    } catch {
+      return new Response(
+        JSON.stringify({ error: "Invalid JSON body" }),
+        { status: 400, headers: { "Content-Type": "application/json" } },
+      );
+    }
 
     const { name, query_json, icon } = body as {
       name?: string;
@@ -44,6 +53,13 @@ export const POST: APIRoute = async ({ request }) => {
     if (!name || typeof name !== "string" || name.trim().length === 0) {
       return new Response(
         JSON.stringify({ error: "name is required" }),
+        { status: 400, headers: { "Content-Type": "application/json" } },
+      );
+    }
+
+    if (name.trim().length > 100) {
+      return new Response(
+        JSON.stringify({ error: "name must be 100 characters or fewer" }),
         { status: 400, headers: { "Content-Type": "application/json" } },
       );
     }
@@ -78,6 +94,7 @@ export const POST: APIRoute = async ({ request }) => {
       { status: 201, headers: { "Content-Type": "application/json" } },
     );
   } catch (error) {
+    console.error("[saved-filters] POST error:", error);
     return new Response(
       JSON.stringify({ error: "Failed to create saved filter" }),
       { status: 500, headers: { "Content-Type": "application/json" } },

@@ -2,6 +2,7 @@ import type { APIRoute } from "astro";
 import type { InValue } from "@libsql/client";
 import { ensureSchema, getPersistenceClient } from "@domains/tasks/persistence/store";
 import { stripHtml } from "../../../lib/strip-html";
+import { formatTicketKey } from "../../../lib/ticket-key";
 import { VALID_TASK_TYPES } from "@meitheal/domain-tasks";
 import type { TaskType } from "@meitheal/domain-tasks";
 
@@ -23,7 +24,7 @@ export const GET: APIRoute = async ({ url }) => {
   let sql = `SELECT id, title, description, status, priority, due_date, labels,
                     framework_payload, calendar_sync_state, parent_id, time_tracked,
                     board_id, custom_fields, start_date, end_date, progress, color,
-                    is_favorite, task_type, created_at, updated_at
+                    is_favorite, task_type, ticket_number, created_at, updated_at
              FROM tasks`;
   let countSql = "SELECT COUNT(*) as cnt FROM tasks";
   const conditions: string[] = [];
@@ -71,8 +72,11 @@ export const GET: APIRoute = async ({ url }) => {
   const total = Number((countResult.rows[0] as Record<string, unknown>)?.cnt ?? 0);
   const tasks = result.rows.map((row) => {
     const r = row as Record<string, unknown>;
+    const ticketNum = r.ticket_number != null ? Number(r.ticket_number) : null;
     return {
       id: r.id,
+      ticket_number: ticketNum,
+      ticket_key: formatTicketKey(ticketNum),
       title: r.title,
       description: r.description ?? "",
       status: r.status,
@@ -125,6 +129,10 @@ export const POST: APIRoute = async ({ request }) => {
 
   const id = crypto.randomUUID();
   const now = Date.now();
+
+  // Assign next sequential ticket_number for human-readable key (MTH-N)
+  const nextNumResult = await client.execute("SELECT COALESCE(MAX(ticket_number), 0) + 1 AS next_num FROM tasks");
+  const ticket_number = Number((nextNumResult.rows[0] as Record<string, unknown>)?.next_num ?? 1);
 
   // Validate priority (1-5)
   const rawPriority = typeof body.priority === "number" ? body.priority : 3;
@@ -206,14 +214,15 @@ export const POST: APIRoute = async ({ request }) => {
     sql: `INSERT INTO tasks (id, title, description, status, priority, due_date, labels,
                              framework_payload, calendar_sync_state, parent_id, time_tracked,
                              board_id, custom_fields, start_date, end_date, progress, color, is_favorite,
-                             task_type, idempotency_key, request_id, created_at, updated_at)
-          VALUES (?, ?, ?, ?, ?, ?, ?, ?, 'pending', ?, 0, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+                             task_type, ticket_number, idempotency_key, request_id, created_at, updated_at)
+          VALUES (?, ?, ?, ?, ?, ?, ?, ?, 'pending', ?, 0, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
     args: [id, title, description, status, priority, due_date, labels, framework_payload,
       parent_id, board_id, custom_fields, start_date, end_date, progress, color, is_favorite,
-      task_type, crypto.randomUUID(), crypto.randomUUID(), now, now] as InValue[],
+      task_type, ticket_number, crypto.randomUUID(), crypto.randomUUID(), now, now] as InValue[],
   });
 
-  return new Response(JSON.stringify({ id, title, description, status, priority, due_date, labels, parent_id, board_id, custom_fields, time_tracked: 0, start_date, end_date, progress, color, is_favorite, task_type, created_at: now, updated_at: now }), {
+  const ticket_key = formatTicketKey(ticket_number);
+  return new Response(JSON.stringify({ id, ticket_number, ticket_key, title, description, status, priority, due_date, labels, parent_id, board_id, custom_fields, time_tracked: 0, start_date, end_date, progress, color, is_favorite, task_type, created_at: now, updated_at: now }), {
     status: 201,
     headers: { "content-type": "application/json" },
   });

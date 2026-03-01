@@ -1,5 +1,6 @@
 import type { APIRoute } from "astro";
 import { ensureSchema, getPersistenceClient } from "@domains/tasks/persistence/store";
+import { formatTicketKey } from "../../../lib/ticket-key";
 
 export const GET: APIRoute = async () => {
     try {
@@ -10,14 +11,14 @@ export const GET: APIRoute = async () => {
             `SELECT id, title, description, status, priority, due_date, labels,
                     framework_payload, calendar_sync_state, board_id, custom_fields,
                     parent_id, time_tracked, start_date, end_date, progress, color,
-                    is_favorite, task_type, created_at, updated_at
+                    is_favorite, task_type, ticket_number, created_at, updated_at
              FROM tasks ORDER BY updated_at DESC`
         );
         const allTasks = result.rows;
 
         if (allTasks.length === 0) {
             // Return CSV with headers only (204 should not have a body)
-            return new Response("id,parent_id,title,description,status,priority,task_type,board_id,labels,due_date,created_at,updated_at\n", {
+            return new Response("ticket_key,id,parent_id,title,description,status,priority,task_type,board_id,labels,due_date,created_at,updated_at\n", {
                 status: 200,
                 headers: {
                     "Content-Type": "text/csv; charset=utf-8",
@@ -27,7 +28,7 @@ export const GET: APIRoute = async () => {
         }
 
         const headers = [
-            "id", "parent_id", "title", "description", "status", "priority",
+            "ticket_key", "id", "parent_id", "title", "description", "status", "priority",
             "task_type", "board_id", "labels", "due_date", "created_at", "updated_at"
         ];
 
@@ -41,6 +42,7 @@ export const GET: APIRoute = async () => {
         };
 
         const rows = allTasks.map(t => [
+            escapeCsv(formatTicketKey(t.ticket_number != null ? Number(t.ticket_number) : null)),
             escapeCsv(t.id),
             escapeCsv(t.parent_id),
             escapeCsv(t.title),
