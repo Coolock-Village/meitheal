@@ -798,6 +798,18 @@ const locale: Locale = cookieLocale === "ga" ? "ga" : "en";
           </select>
         </div>
         <div class="form-group" style="margin-top: 12px;">
+          <label class="form-label" for="theme-select">🎨 Theme</label>
+          <select
+            class="form-select"
+            id="theme-select"
+            style="max-width: 240px;"
+          >
+            <option value="dark">Dark</option>
+            <option value="light">Light</option>
+            <option value="auto">Auto (System)</option>
+          </select>
+        </div>
+        <div class="form-group" style="margin-top: 12px;">
           <label class="form-label" for="timezone-select">Timezone</label>
           <select
             class="form-select"
@@ -1138,6 +1150,23 @@ const locale: Locale = cookieLocale === "ga" ? "ga" : "en";
           (
             document.getElementById("locale-select") as HTMLSelectElement
           ).value = stored;
+        }
+
+        // Restore theme
+        const savedTheme =
+          settings.theme || localStorage.getItem("meitheal-theme") || "dark";
+        localStorage.setItem("meitheal-theme", String(savedTheme));
+        const themeEl = document.getElementById(
+          "theme-select",
+        ) as HTMLSelectElement;
+        if (themeEl) themeEl.value = String(savedTheme);
+        if (savedTheme !== "dark") {
+          document.documentElement.setAttribute(
+            "data-theme",
+            String(savedTheme),
+          );
+        } else {
+          document.documentElement.removeAttribute("data-theme");
         }
 
         // Restore timezone
@@ -1983,6 +2012,27 @@ const locale: Locale = cookieLocale === "ga" ? "ga" : "en";
             : "Language changed to English",
         );
         setTimeout(() => window.location.reload(), 800);
+      });
+
+    // Theme selector — instant apply + persist
+    document
+      .getElementById("theme-select")
+      ?.addEventListener("change", async (e) => {
+        const theme = (e.target as HTMLSelectElement).value;
+        localStorage.setItem("meitheal-theme", theme);
+        if (theme === "dark") {
+          document.documentElement.removeAttribute("data-theme");
+        } else {
+          document.documentElement.setAttribute("data-theme", theme);
+        }
+        await saveSetting("theme", theme);
+        showToast(
+          theme === "dark"
+            ? "Theme: Dark"
+            : theme === "light"
+              ? "Theme: Light"
+              : "Theme: Auto (System)",
+        );
       });
 
     // Timezone selector — persist to API + localStorage

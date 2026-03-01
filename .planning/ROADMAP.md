@@ -188,9 +188,66 @@ Current state:
 - Browser-verified all 4 main pages (Dashboard, Kanban, Tasks, Settings).
 - Confirmed stat cards, filters, RICE badges, WIP limits, and framework scoring all render correctly.
 
+## Phase 31: UX Ascendancy & Protocol Integration ✅
+
+Execution artifacts:
+
+- `.planning/phases/31-ux-ascendancy/31-01-PLAN.md`
+- `.planning/phases/31-webmcp-a2a/`
+
+## Phase 32: UX Breakage & Clashing Audit 📋
+
+Current state:
+- Planned. Focus on identifying and fixing items clashing or running off the page or into the sidebar across all viewport sizes.
+
+## Phase 33: Unification of Flow & UX 📋
+
+Current state:
+- Planned. Focus on smooth transitions, consistent modal usage, and unified empty states/loading indicators.
+
+## Phase 34: Shared Component Extraction (Astro Native) 📋
+
+Current state:
+- Planned. Focus on extracting inline HTML/CSS into reusable, Astro-first shared components.
+
+## Phase 35: Modular Menu & Sidebar Systems 📋
+
+Current state:
+- Planned. Make the sidebar and top navigation modular, easily customizable, and extensible.
+
+## Phase 36: Theme & Styling Engine Extensibility 📋
+
+Current state:
+- Planned. Refactor CSS into extractable theme layers to ensure adding new themes is frictionless.
+
+## Phase 37: Language & Localization Architecture 📋
+
+Current state:
+- Planned. Standardize the UI for easy addition of new languages and externalized strings.
+
+## Phase 38: Settings Export Alignment 📋
+
+Current state:
+- Planned. Ensure the order of fields, menu customizations, and UI preferences are fully serialized in settings import/export.
+
+## Phase 39: HA OS Addon Production Readiness 📋
+
+Current state:
+- Planned. Finalize metadata, build configurations, and app structure for Home Assistant Addon repository guidelines.
+
+## Phase 40: Mobile Responsiveness Finalization 📋
+
+Current state:
+- Planned. Implement holistic responsive design fixes to ensure zero scrollbar bleed and perfect mobile UX.
+
+## Phase 41: Design System Deep Polish 📋
+
+Current state:
+- Planned. Final cycle of visual alignment, typography audits, and micro-interactions.
+
 ## Open Blockers (Roadmap-Level)
 
 None — all PR #1 checks (perf-budgets, typecheck-and-tests, CodeQL, governance, schema-drift, ha-harness, migration-check) are passing.
 
 ---
-*Last updated: 2026-02-28 during Phase 25-26 autonomous optimization sweep*
+*Last updated: 2026-03-01 during Phase 32-41 autonomous design/UX initialization*
