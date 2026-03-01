@@ -47,7 +47,7 @@ const locale: Locale = cookieLocale === "ga" ? "ga" : "en";
       <div class="grid grid-cols-2 gap-4">
         <div class="form-group">
           <label for="new-task-priority" class="form-label"
-            >{t("tasks.priority", locale)}</label
+            >{t("tasks.priority_label", locale)}</label
           >
           <select class="form-select bg-bg-input" id="new-task-priority">
             <option value="1">Urgent (1)</option>
@@ -58,7 +58,7 @@ const locale: Locale = cookieLocale === "ga" ? "ga" : "en";
         </div>
         <div class="form-group">
           <label for="new-task-status" class="form-label"
-            >{t("tasks.status", locale)}</label
+            >{t("tasks.status_label", locale)}</label
           >
           <select class="form-select bg-bg-input" id="new-task-status">
             <option value="pending" selected>Pending</option>
@@ -130,36 +130,15 @@ const locale: Locale = cookieLocale === "ga" ? "ga" : "en";
     }, 50);
   };
 
-  // Re-bind all create buttons globally
-  const bindCreateButtons = () => {
-    document
-      .querySelectorAll("#create-task-btn, .kanban-add-btn")
-      .forEach((btn) => {
-        // Remove old listeners by cloning
-        const newBtn = btn.cloneNode(true) as HTMLElement;
-        btn.parentNode?.replaceChild(newBtn, btn);
-
-        newBtn.addEventListener("click", (e) => {
-          e.preventDefault();
-
-          // If it's a kanban add button, auto-set the status
-          const statusVal = newBtn.getAttribute("data-status");
-          if (statusVal) {
-            const statusSelect = document.getElementById(
-              "new-task-status",
-            ) as HTMLSelectElement;
-            if (statusSelect) statusSelect.value = statusVal;
-          }
-
-          (window as any).openNewTaskModal();
-        });
-      });
-  };
-
-  bindCreateButtons();
-
-  // Re-bind on view transitions
-  document.addEventListener("astro:page-load", bindCreateButtons);
+  // Use event delegation on document.body to catch all create-task-btn clicks
+  // without cloning DOM nodes (which breaks other scripts' references).
+  document.body.addEventListener("click", (e) => {
+    const target = (e.target as HTMLElement).closest("#create-task-btn");
+    if (target) {
+      e.preventDefault();
+      (window as any).openNewTaskModal();
+    }
+  });
 
   // Form Submission
   form?.addEventListener("submit", async (e) => {
