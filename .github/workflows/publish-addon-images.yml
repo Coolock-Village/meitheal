@@ -42,6 +42,7 @@ jobs:
           password: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Log in to Docker Hub
+        if: ${{ secrets.DOCKERHUB_USERNAME != '' }}
         uses: docker/login-action@v3
         with:
           username: ${{ secrets.DOCKERHUB_USERNAME }}
@@ -89,5 +90,17 @@ jobs:
           tags: |
             ghcr.io/${{ steps.meta.outputs.owner_lc }}/meitheal-hub-${{ matrix.arch }}:${{ steps.meta.outputs.tag }}
             ghcr.io/${{ steps.meta.outputs.owner_lc }}/meitheal-hub-${{ matrix.arch }}:latest
+
+      - name: Push to Docker Hub
+        if: ${{ secrets.DOCKERHUB_USERNAME != '' }}
+        uses: docker/build-push-action@v6
+        with:
+          context: .
+          file: meitheal-hub/Dockerfile
+          build-args: |
+            BUILD_FROM=${{ steps.meta.outputs.build_from }}
+          push: true
+          platforms: ${{ matrix.platform }}
+          tags: |
             coolockvillage/meitheal-hub-${{ matrix.arch }}:${{ steps.meta.outputs.tag }}
             coolockvillage/meitheal-hub-${{ matrix.arch }}:latest
