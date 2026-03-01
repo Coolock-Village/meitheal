@@ -90,7 +90,7 @@ const epics = ganttTasks.filter(t => String(t.task_type) === 'epic');
 <Layout title={`Meitheal — Gantt`}>
   <span slot="page-title">📊 Timeline</span>
   <div slot="actions">
-    <button class="btn btn-primary" id="create-task-btn"
+    <button type="button" class="btn btn-primary" id="create-task-btn"
       >{t("tasks.new_task", locale)}</button
     >
   </div>

@@ -94,8 +94,11 @@ function relativeTime(dueDate: string): string {
 
 <Layout title={`Meitheal — ${greeting}!`}>
   <span slot="page-title">{greeting}! ☘</span>
-  <button slot="actions" class="btn btn-primary" id="quick-add-btn"
-    >{t("dashboard.new_task", locale)}</button
+  <button
+    type="button"
+    slot="actions"
+    class="btn btn-primary"
+    id="quick-add-btn">{t("dashboard.new_task", locale)}</button
   >
 
   <div class="stats-grid">
@@ -411,33 +414,14 @@ function relativeTime(dueDate: string): string {
       });
     });
 
-    // Header "+ New Task" button → focus Quick Add input
-    document
-      .getElementById("quick-add-btn")
-      ?.addEventListener("click", async () => {
-        try {
-          const activeBoard = (window as any).__activeBoard ?? "default";
-          const res = await fetch("/api/tasks", {
-            method: "POST",
-            headers: { "content-type": "application/json" },
-            body: JSON.stringify({
-              title: "Untitled Task",
-              board_id: activeBoard === "all" ? "default" : activeBoard,
-            }),
-          });
-          if (!res.ok) {
-            showToast("common.failed_create", "error");
-            return;
-          }
-          const task = await res.json();
-          showToast("common.task_created");
-          if (typeof (window as any).openTaskDetail === "function") {
-            (window as any).openTaskDetail(task.id);
-          }
-        } catch {
-          showToast("common.network_error", "error");
-        }
-      });
+    // Header "+ New Task" button → open unified New Task modal
+    document.getElementById("quick-add-btn")?.addEventListener("click", () => {
+      if (typeof (window as any).openNewTaskModal === "function") {
+        (window as any).openNewTaskModal();
+      } else {
+        (document.getElementById("quick-title") as HTMLInputElement)?.focus();
+      }
+    });
 
     // Keyboard shortcut: n -> focus quick add
     document.addEventListener("keydown", (e) => {

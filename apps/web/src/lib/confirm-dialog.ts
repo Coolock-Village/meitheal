@@ -63,13 +63,13 @@ export function confirmDialog(options: ConfirmOptions): Promise<boolean> {
         color: var(--text-secondary, #94a3b8); text-align: center;
       ">${options.message}</p>
       <div style="display: flex; gap: 12px; justify-content: center;">
-        <button id="confirm-cancel" style="
+        <button type="button" id="confirm-cancel" style="
           padding: 8px 20px; border-radius: 8px; font-size: 14px; cursor: pointer;
           background: transparent; border: 1px solid var(--border, #334155);
           color: var(--text-secondary, #94a3b8);
           transition: background 0.15s, border-color 0.15s;
         ">${options.cancelText ?? "Cancel"}</button>
-        <button id="confirm-ok" style="
+        <button type="button" id="confirm-ok" style="
           padding: 8px 20px; border-radius: 8px; font-size: 14px; cursor: pointer;
           background: ${accentColor}; border: 1px solid ${accentColor};
           color: #fff; font-weight: 500;

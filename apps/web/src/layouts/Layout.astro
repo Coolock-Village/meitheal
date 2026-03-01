@@ -6,6 +6,7 @@ import type { Locale } from "../lib/locale";
 import Sidebar from "../components/layout/Sidebar.astro";
 import TopNavigation from "../components/layout/TopNavigation.astro";
 import StrategicEvaluator from "../components/tasks/StrategicEvaluator.astro";
+import NewTaskModal from "../components/tasks/NewTaskModal.astro";
 
 import dtEn from "../i18n/en.json";
 import dtGa from "../i18n/ga.json";
@@ -139,6 +140,9 @@ Astro.response.headers.set("X-XSS-Protection", "1; mode=block");
       </main>
     </div>
 
+    <!-- Global New Task Modal -->
+    <NewTaskModal />
+
     <!-- Task Detail Slide-out Panel -->
     <div
       id="task-detail-overlay"
@@ -168,7 +172,7 @@ Astro.response.headers.set("X-XSS-Protection", "1; mode=block");
               >
               <input
                 id="td-title"
-                class="form-input bg-transparent border-none text-2xl font-bold p-0 focus:ring-0 leading-tight"
+                class="form-input bg-transparent border border-transparent hover:border-border hover:bg-bg-hover focus:bg-bg-input focus:border-border focus:ring-1 focus:ring-accent text-2xl font-bold px-2 py-1 -ml-2 rounded transition-colors leading-tight"
                 placeholder="Task title"
               />
               <span
@@ -1271,7 +1275,7 @@ Astro.response.headers.set("X-XSS-Protection", "1; mode=block");
                 );
                 linkParentDisplay.innerHTML = `
                 <a href="#" class="text-xs text-accent hover:underline td-parent-link" data-id="${t.parent_id}">${parentTitle}</a>
-                <button class="text-xs text-danger hover:text-red-400 ml-1 td-unlink-parent" title="Remove parent">✕</button>
+                <button type="button" class="text-xs text-danger hover:text-red-400 ml-1 td-unlink-parent" title="Remove parent">✕</button>
               `;
                 linkParentDisplay
                   .querySelector(".td-parent-link")

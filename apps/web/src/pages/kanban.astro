@@ -779,19 +779,7 @@ const typeConfig: Record<
       });
     });
 
-    // T-1903: Click anywhere on kanban card → open inline detail panel
-    document.querySelectorAll(".kanban-card").forEach((card) => {
-      card.addEventListener("click", (e) => {
-        // Don't open if clicking action buttons or dragging
-        if (e.target.closest(".card-action-btn")) return;
-        const id = card.dataset.id;
-        if (id && typeof window.openTaskDetail === "function") {
-          window.openTaskDetail(id);
-        } else if (id) {
-          window.location.href = `/tasks#edit-${id}`;
-        }
-      });
-    });
+    // T-1903: Click anywhere on kanban card is natively handled by Layout.astro delegated click listener.
 
     // Quick add from kanban column — uses inline form, not prompt()
     document.querySelectorAll(".kanban-add-btn").forEach((btn) => {

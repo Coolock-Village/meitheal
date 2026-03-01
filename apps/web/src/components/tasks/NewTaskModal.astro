@@ -1,0 +1,257 @@
+---
+import { t } from "../../i18n/translations";
+import type { Locale } from "../../lib/locale";
+
+const cookieLocale = Astro.cookies.get("meitheal-locale")?.value;
+const locale: Locale = cookieLocale === "ga" ? "ga" : "en";
+---
+
+<div id="new-task-overlay" class="modal-overlay hidden relative z-[200]">
+  <div class="modal-content max-w-lg w-full p-6 animate-slide-in">
+    <div
+      class="modal-header flex items-center justify-between mb-4 border-b border-border pb-3"
+    >
+      <h2 class="text-xl font-bold text-text-primary" id="new-task-title">
+        {t("tasks.new_task", locale)}
+      </h2>
+      <button
+        type="button"
+        class="btn-icon text-xl text-text-muted hover:text-text-primary"
+        id="close-new-task-modal">✕</button
+      >
+    </div>
+
+    <form id="new-task-form" class="space-y-4">
+      <div class="form-group">
+        <label for="new-task-title-input" class="form-label"
+          >{t("tasks.title", locale)} <span class="text-accent">*</span></label
+        >
+        <input
+          type="text"
+          class="form-input bg-bg-input"
+          id="new-task-title-input"
+          placeholder="What needs to be done? (Use #tags or 'today')"
+          required
+          autofocus
+        />
+      </div>
+
+      <div class="form-group">
+        <label for="new-task-desc-input" class="form-label">Description</label>
+        <textarea
+          class="form-input bg-bg-input resize-y min-h-[80px]"
+          id="new-task-desc-input"
+          placeholder="Optional description (Markdown supported)"></textarea>
+      </div>
+
+      <div class="grid grid-cols-2 gap-4">
+        <div class="form-group">
+          <label for="new-task-priority" class="form-label"
+            >{t("tasks.priority", locale)}</label
+          >
+          <select class="form-select bg-bg-input" id="new-task-priority">
+            <option value="1">Urgent (1)</option>
+            <option value="2">High (2)</option>
+            <option value="3" selected>Medium (3)</option>
+            <option value="4">Low (4)</option>
+          </select>
+        </div>
+        <div class="form-group">
+          <label for="new-task-status" class="form-label"
+            >{t("tasks.status", locale)}</label
+          >
+          <select class="form-select bg-bg-input" id="new-task-status">
+            <option value="pending" selected>Pending</option>
+            <option value="in_progress">In Progress</option>
+            <option value="done">Done</option>
+          </select>
+        </div>
+      </div>
+
+      <div class="form-group">
+        <label for="new-task-labels" class="form-label">Labels</label>
+        <input
+          type="text"
+          class="form-input bg-bg-input"
+          id="new-task-labels"
+          placeholder="bug, feature (comma separated)"
+        />
+      </div>
+
+      <div
+        class="modal-actions pt-4 border-t border-border flex justify-end gap-3 mt-6"
+      >
+        <button type="button" class="btn btn-ghost" id="cancel-new-task"
+          >{t("tasks.cancel", locale)}</button
+        >
+        <button type="submit" class="btn btn-primary shadow-lg shadow-accent/20"
+          >Create Task</button
+        >
+      </div>
+    </form>
+  </div>
+</div>
+
+<script>
+  // Handle smart task extraction mapping
+  const nextWeekday = (day: number) => {
+    const d = new Date();
+    const diff = (day - d.getDay() + 7) % 7 || 7;
+    d.setDate(d.getDate() + diff);
+    return d;
+  };
+
+  const overlay = document.getElementById("new-task-overlay");
+  const closeBtn = document.getElementById("close-new-task-modal");
+  const cancelBtn = document.getElementById("cancel-new-task");
+  const form = document.getElementById("new-task-form") as HTMLFormElement;
+
+  function closeNewTaskModal() {
+    overlay?.classList.add("hidden");
+    form?.reset();
+  }
+
+  closeBtn?.addEventListener("click", closeNewTaskModal);
+  cancelBtn?.addEventListener("click", closeNewTaskModal);
+  overlay?.addEventListener("click", (e) => {
+    if (e.target === overlay) closeNewTaskModal();
+  });
+
+  // Expose global open method
+  (window as any).openNewTaskModal = () => {
+    // If the detail panel is open, close it to avoid dual modal
+    document.getElementById("task-detail-panel")?.classList.remove("open");
+    document.getElementById("task-detail-overlay")?.classList.add("hidden");
+
+    form?.reset();
+    overlay?.classList.remove("hidden");
+    setTimeout(() => {
+      document.getElementById("new-task-title-input")?.focus();
+    }, 50);
+  };
+
+  // Re-bind all create buttons globally
+  const bindCreateButtons = () => {
+    document
+      .querySelectorAll("#create-task-btn, .kanban-add-btn")
+      .forEach((btn) => {
+        // Remove old listeners by cloning
+        const newBtn = btn.cloneNode(true) as HTMLElement;
+        btn.parentNode?.replaceChild(newBtn, btn);
+
+        newBtn.addEventListener("click", (e) => {
+          e.preventDefault();
+
+          // If it's a kanban add button, auto-set the status
+          const statusVal = newBtn.getAttribute("data-status");
+          if (statusVal) {
+            const statusSelect = document.getElementById(
+              "new-task-status",
+            ) as HTMLSelectElement;
+            if (statusSelect) statusSelect.value = statusVal;
+          }
+
+          (window as any).openNewTaskModal();
+        });
+      });
+  };
+
+  bindCreateButtons();
+
+  // Re-bind on view transitions
+  document.addEventListener("astro:page-load", bindCreateButtons);
+
+  // Form Submission
+  form?.addEventListener("submit", async (e) => {
+    e.preventDefault();
+    const titleInput = document.getElementById(
+      "new-task-title-input",
+    ) as HTMLInputElement;
+    let title = titleInput.value.trim();
+    if (!title) return;
+
+    const extractedLabels: string[] = [];
+    let extractedDue: string | null = null;
+
+    // Extract #tags
+    title = title
+      .replace(/#(\w+)/g, (_match, label) => {
+        extractedLabels.push(label);
+        return "";
+      })
+      .trim();
+
+    // Extract date semantics
+    const dateKeywords: Record<string, () => Date> = {
+      today: () => new Date(),
+      tomorrow: () => {
+        const d = new Date();
+        d.setDate(d.getDate() + 1);
+        return d;
+      },
+      "next week": () => {
+        const d = new Date();
+        d.setDate(d.getDate() + 7);
+        return d;
+      },
+      monday: () => nextWeekday(1),
+      tuesday: () => nextWeekday(2),
+      wednesday: () => nextWeekday(3),
+      thursday: () => nextWeekday(4),
+      friday: () => nextWeekday(5),
+    };
+
+    for (const [kw, getDate] of Object.entries(dateKeywords)) {
+      const regex = new RegExp(`\\b${kw}\\b`, "i");
+      if (regex.test(title)) {
+        extractedDue = getDate().toISOString().slice(0, 16);
+        title = title.replace(regex, "").trim();
+        break;
+      }
+    }
+
+    const manualLabels = (
+      document.getElementById("new-task-labels") as HTMLInputElement
+    ).value
+      .split(",")
+      .map((l) => l.trim())
+      .filter((l) => l.length > 0);
+
+    const allLabels = [...new Set([...manualLabels, ...extractedLabels])];
+    const finalTitle = title || titleInput.value.trim();
+
+    const body = {
+      title: finalTitle,
+      description: (
+        document.getElementById("new-task-desc-input") as HTMLTextAreaElement
+      ).value.trim(),
+      priority: parseInt(
+        (document.getElementById("new-task-priority") as HTMLSelectElement)
+          .value,
+        10,
+      ),
+      status: (document.getElementById("new-task-status") as HTMLSelectElement)
+        .value,
+      labels: JSON.stringify(allLabels),
+      due_date: extractedDue,
+    };
+
+    try {
+      const res = await fetch("/api/tasks", {
+        method: "POST",
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify(body),
+      });
+
+      if (res.ok) {
+        closeNewTaskModal();
+        window.location.reload();
+      } else {
+        alert("Failed to create task");
+      }
+    } catch (err) {
+      console.error(err);
+      alert("Error creating task");
+    }
+  });
+</script>

@@ -550,33 +550,6 @@ const priorityColors: Record<number, string> = {
       cb.addEventListener("change", updateBulkBar);
     });
 
-    // +New Task button — creates task via API and inserts a new row
-    document
-      .getElementById("create-task-btn")
-      ?.addEventListener("click", async () => {
-        try {
-          const res = await fetch("/api/tasks", {
-            method: "POST",
-            headers: { "content-type": "application/json" },
-            body: JSON.stringify({ title: "Untitled Task" }),
-          });
-          if (!res.ok) {
-            showToast("common.failed_create", "error");
-            return;
-          }
-          const task = await res.json();
-          showToast("common.task_created");
-          // Open the task detail panel for full editing
-          if (typeof (window as any).openTaskDetail === "function") {
-            (window as any).openTaskDetail(task.id);
-          } else {
-            window.location.reload();
-          }
-        } catch {
-          showToast("common.network_error", "error");
-        }
-      });
-
     // Bulk status change
     document
       .getElementById("bulk-status")
