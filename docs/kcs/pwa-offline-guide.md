@@ -18,13 +18,45 @@ Meitheal uses a **service worker** to cache the app shell and intercept network 
 | Edit tasks | ✅ | Saved locally, synced when online |
 | Delete tasks | ✅ | Marked for deletion, synced when online |
 | Image attachments | ✅ | Stored as Base64 in IDB `task_attachments` store |
+| Notifications | ✅ | Overdue alerts work offline (fired from client) |
+| Cross-tab sync | ✅ | BroadcastChannel works entirely client-side |
 | Calendar sync | ❌ | Requires network (HA API call) |
 | Webhook delivery | ❌ | Requires network |
+
+## Web API Integrations
+
+Meitheal leverages modern browser APIs for a native-like experience:
+
+| API | Module | Purpose |
+|-----|--------|---------|
+| Notifications + Permissions | `domains/offline/notifications.ts` | Task reminders, overdue alerts |
+| Web Locks | `domains/offline/sync-lock.ts` | Single-tab sync queue safety |
+| BroadcastChannel | `domains/offline/tab-sync.ts` | Cross-tab state sync |
+| Web Share | `lib/web-share.ts` | Native OS share dialog |
+| Clipboard | `lib/clipboard.ts` | Copy task URL/markdown |
+| Vibration | `lib/haptics.ts` | Tactile feedback on mobile |
+| IntersectionObserver | `lib/lazy-load.ts` | Deferred rendering |
+| Screen Wake Lock | `lib/wake-lock.ts` | Keep screen on in focus mode |
+| PerformanceObserver | `lib/perf-observer.ts` | Web Vitals (LCP/FID/CLS) |
+| prefers-color-scheme | `lib/theme-watcher.ts` | OS dark/light detection |
+| ResizeObserver | `lib/responsive-observer.ts` | Adaptive sidebar collapse |
+| Badging | `Layout.astro` | Pending task count on app icon |
+| Page Visibility | `sync-engine.ts` | Throttle sync when tab hidden |
+| StorageManager | `offline-store.ts` | Quota monitoring |
+
+All APIs use **feature detection** with graceful fallbacks — unsupported browsers get silent no-ops.
+
+## Manifest Features
+
+The web app manifest (`manifest.webmanifest`) includes:
+
+- **Shortcuts**: New Task, Kanban Board, Settings — appear in long-press/right-click on app icon
+- **Share Target**: Receive shared content from other apps (text → new task)
 
 ## Sync Status Indicator
 
 | Icon | State | Meaning |
-|------|-------|---------|
+|------|-------|------------|
 | ✓ | Synced | All changes saved to server |
 | ↻ | Syncing | Upload in progress |
 | ● | Pending | Changes queued, waiting for connectivity |
@@ -45,6 +77,7 @@ When the same task is edited on multiple devices:
 - **IndexedDB tasks**: warning at 50MB, guidance at 100MB
 - **IndexedDB attachments**: large images are Base64-encoded (~1.37x file size); monitor total IDB usage
 - **Precache**: ≤ 1MB budget for static assets
+- **StorageManager**: quota monitoring logs warnings when usage exceeds 80%
 
 ## Troubleshooting
 
@@ -56,7 +89,10 @@ When the same task is edited on multiple devices:
 | Clearing all offline data | Browser settings → Clear site data |
 | Force sync | Navigate to any page while online |
 | Attachment not showing | Check browser IDB storage quota in DevTools |
+| Notification not showing | Check notification permissions in browser settings |
+| Theme not matching OS | Clear `meitheal-theme` from localStorage |
 
 ---
 
-*Last updated: 2026-02-28 — Phase 23 Offline Image Attachments*
+*Last updated: 2026-03-01 — Phase 30 Web API Integration*
+

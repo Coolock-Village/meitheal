@@ -9,9 +9,9 @@ Local-first task orchestration with HA calendar sync and Vikunja compatibility.
 
 - **Planning model:** dual-track (`Primary Delivery` + `Extension Track`)
 - **Primary Delivery:** 6 of 6 phases complete (`01-06 complete`)
-- **Extension Track:** 12 of 12 phases complete (`15-24, 27-28 complete`)
-- **Overall phase count:** 18 of 18 complete
-- **Current execution focus:** Phase 28 (Structured Logging & API Polish — 50-iteration autonomous sweep).
+- **Extension Track:** 15 of 15 phases complete (`15-24, 27-30 complete`)
+- **Overall phase count:** 21 of 21 complete
+- **Current execution focus:** Phase 30 (Web API Integration — 23 browser APIs, HA REST deepening, PWA enhancements).
 
 ## Phase Status Snapshot
 
@@ -37,6 +37,13 @@ Local-first task orchestration with HA calendar sync and Vikunja compatibility.
 9. `23-offline-image-uploads` — `complete`
 10. `24-perf-budgets-ci` — `complete`
 
+### Global Track (`27-30`)
+
+1. `27-security-accessibility` — `complete`
+2. `28-structured-logging` — `complete`
+3. `29-astro-optimization-audit` — `complete`
+4. `30-web-api-integration` — `complete` (23 browser APIs, 14 modules)
+
 ## Recent Decisions
 
 | Date | Decision | Context |
@@ -56,8 +63,19 @@ Local-first task orchestration with HA calendar sync and Vikunja compatibility.
 
 ## Session Continuity
 
-Last session: 2026-02-28T15:30:00Z
-Stopped at: Phase 25 autonomous GSD cycle — P0-P6 sweep in progress.
+Last session: 2026-03-01T11:55:00Z
+Stopped at: Phase 30 Web API Integration — all 23 features implemented, docs updated, build clean.
+
+### Phase 30 Summary
+
+- 14 new modules across `lib/` and `domains/offline/`
+- APIs: Notifications, Permissions, Web Share, Clipboard, Vibration, Badging, Web Locks, BroadcastChannel, IntersectionObserver, PerformanceObserver, Screen Wake Lock, prefers-color-scheme, ResizeObserver, StorageManager, Page Visibility
+- Manifest: shortcuts + share_target
+- SW: notificationclick handler
+- Settings: Calendar entity auto-populated from `/api/ha/calendars`
+- Dashboard: overdue notification check on load
+- Build: 0 errors, 0 warnings, 70 files
+
 Resume hint: continue with P2-P6 items from task.md or move to CodeQL reconciliation. PR #1 checks still need triage.
 
 ---

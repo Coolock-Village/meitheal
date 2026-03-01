@@ -125,6 +125,17 @@ Interop design is informed by existing HA/Vikunja integration patterns, includin
 | Offline Image Attachments (IDB) | ✅ | Vikunja ❌ Trello ❌ |
 | AI Context Routing (LLM) | ✅ | Vikunja ❌ Trello ❌ |
 | Strict Perf Budgets (CI) | ✅ | Vikunja ❌ Trello ❌ |
+| Web Notifications (overdue/reminders) | ✅ | Vikunja ❌ Trello ✅ |
+| Web Share API (native OS sharing) | ✅ | Vikunja ❌ Trello ✅ |
+| Clipboard API (copy task URL/markdown) | ✅ | Vikunja ❌ Trello ✅ |
+| Badging API (pending task count) | ✅ | Vikunja ❌ Trello ❌ |
+| Haptic feedback (Vibration API) | ✅ | Vikunja ❌ Trello ❌ |
+| Web Locks (sync safety) | ✅ | Vikunja ❌ Trello ❌ |
+| Cross-tab sync (BroadcastChannel) | ✅ | Vikunja ❌ Trello ✅ |
+| Web Vitals monitoring (PerformanceObserver) | ✅ | Vikunja ❌ Trello ❌ |
+| Screen Wake Lock (focus mode) | ✅ | Vikunja ❌ Trello ❌ |
+| OS theme detection (prefers-color-scheme) | ✅ | Vikunja ✅ Trello ✅ |
+| Manifest shortcuts + share target | ✅ | Vikunja ❌ Trello ❌ |
 
 ## Local Container Testing
 
@@ -152,7 +163,7 @@ curl http://localhost:3333/api/health
 
 ## Status
 
-All 16 phases complete and container-verified:
+All 19 phases complete and container-verified:
 
 1. ✅ Foundation & Vertical Slice — task→calendar sync, Vikunja compat
 2. ✅ Integration Deepening — webhooks, Grocy, n8n
@@ -170,7 +181,10 @@ All 16 phases complete and container-verified:
 14. ✅ AI Context Generation — LLM routing, task metadata prompts
 15. ✅ Offline Image Attachments — IDB blob storage, thumbnail rendering
 16. ✅ CI Perf-Budgets Reconciliation — bundle size limits, CI check fixes
+17. ✅ Structured Logging & API Polish — 50-iteration autonomous sweep
+18. ✅ i18n — Irish language support, locale framework
+19. ✅ Web API Integration — 23 browser APIs, HA REST deepening, PWA enhancements
 
-- 54 source files, 0 typecheck errors, 103 tests passing
+- 70+ source files, 0 typecheck errors
 - Container-tested on `ghcr.io/home-assistant/amd64-base:3.20`
 - OpenAPI 3.0.3 specification (12+ routes)
