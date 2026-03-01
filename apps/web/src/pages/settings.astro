@@ -589,9 +589,20 @@ import Layout from "../layouts/Layout.astro";
           ).value = String(settings.score_display);
         }
 
+        // Restore locale
+        if (settings.locale) {
+          (document.getElementById("locale-select") as HTMLSelectElement).value = String(settings.locale);
+        } else {
+          // Fall back to localStorage / cookie
+          const stored = localStorage.getItem("meitheal-locale") || "en";
+          (document.getElementById("locale-select") as HTMLSelectElement).value = stored;
+        }
+
         updateFrameworkSelect();
       } catch {
-        /* API not available */
+        /* API not available — try localStorage fallback for locale */
+        const stored = localStorage.getItem("meitheal-locale") || "en";
+        (document.getElementById("locale-select") as HTMLSelectElement).value = stored;
       }
     }
 
@@ -819,6 +830,28 @@ import Layout from "../layouts/Layout.astro";
         if (res.ok) { showToast("Settings reset to defaults"); setTimeout(() => window.location.reload(), 1000); }
         else showToast("Reset failed", "error");
       } catch { showToast("Network error", "error"); }
+    });
+
+    // Language selector — persist to API, cookie, localStorage
+    document.getElementById("locale-select")?.addEventListener("change", async (e) => {
+      const locale = (e.target as HTMLSelectElement).value;
+      // Store in localStorage
+      localStorage.setItem("meitheal-locale", locale);
+      // Set cookie for SSR
+      document.cookie = `meitheal-locale=${locale};path=/;max-age=31536000;SameSite=Lax`;
+      // Persist to settings API
+      try {
+        await fetch("/api/settings", {
+          method: "PUT",
+          headers: { "content-type": "application/json" },
+          body: JSON.stringify({ key: "locale", value: locale }),
+        });
+      } catch { /* ignore API errors */ }
+      // Dispatch event for any listening components
+      window.dispatchEvent(new CustomEvent("meitheal:locale-changed", { detail: { locale } }));
+      // Reload to get SSR-rendered translations
+      showToast(locale === "ga" ? "Teanga athraithe go Gaeilge" : "Language changed to English");
+      setTimeout(() => window.location.reload(), 800);
     });
 
     // Init
