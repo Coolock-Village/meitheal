@@ -31,9 +31,6 @@ LABEL io.hass.type="addon"
 RUN apk add --no-cache nodejs npm curl ca-certificates bash
 RUN npm install -g pnpm@10.8.0
 
-# Create non-root user for defense-in-depth
-RUN addgroup -S meitheal && adduser -S meitheal -G meitheal
-
 WORKDIR /opt/meitheal
 
 # Copy monorepo scaffolding
@@ -57,9 +54,7 @@ COPY --from=builder /build/meitheal-hub/run.sh /run.sh
 COPY --from=builder /build/meitheal-hub/run-local.sh /run-local.sh
 RUN chmod +x /run.sh /run-local.sh
 
-# Ensure data directory exists and is writable by meitheal user
-RUN mkdir -p /data && chown -R meitheal:meitheal /data /opt/meitheal
-
-USER meitheal
+# Ensure data directory exists
+RUN mkdir -p /data
 
 CMD ["/run.sh"]
