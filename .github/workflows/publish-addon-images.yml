@@ -87,6 +87,8 @@ jobs:
             BUILD_FROM=${{ steps.meta.outputs.build_from }}
           push: true
           platforms: ${{ matrix.platform }}
+          cache-from: type=gha,scope=${{ matrix.arch }}
+          cache-to: type=gha,mode=max,scope=${{ matrix.arch }}
           tags: |
             ghcr.io/${{ steps.meta.outputs.owner_lc }}/meitheal-hub-${{ matrix.arch }}:${{ steps.meta.outputs.tag }}
             ghcr.io/${{ steps.meta.outputs.owner_lc }}/meitheal-hub-${{ matrix.arch }}:latest
@@ -101,6 +103,7 @@ jobs:
             BUILD_FROM=${{ steps.meta.outputs.build_from }}
           push: true
           platforms: ${{ matrix.platform }}
+          cache-from: type=gha,scope=${{ matrix.arch }}
           tags: |
             coolockvillage/meitheal-hub-${{ matrix.arch }}:${{ steps.meta.outputs.tag }}
             coolockvillage/meitheal-hub-${{ matrix.arch }}:latest

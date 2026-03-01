@@ -15,6 +15,7 @@ export default defineConfig({
   compressHTML: true,
   prefetch: true,
   vite: {
+    base: "./",
     define: {
       __MEITHEAL_ASTRO_FIRST__: true,
     },
