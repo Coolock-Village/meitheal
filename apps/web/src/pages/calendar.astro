@@ -22,7 +22,8 @@ const lastDay = new Date(year, month + 1, 0);
 
 let startDayOfWeek = firstDay.getDay(); // 0=Sun
 let weekLabels = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
-let isWeekendFn: (dow: number) => boolean = (dow: number) => dow === 0 || dow === 6;
+let isWeekendFn: (dow: number) => boolean = (dow: number) =>
+  dow === 0 || dow === 6;
 
 if (weekStart === "monday") {
   startDayOfWeek = (startDayOfWeek + 6) % 7;
@@ -131,6 +132,12 @@ for (let week = 0; week < 6; week++) {
     <a href="/today" class="btn btn-ghost" style="font-size: 13px;">☀️ Today</a>
     <a href="/upcoming" class="btn btn-ghost" style="font-size: 13px;"
       >📅 Upcoming</a
+    >
+    <button
+      type="button"
+      class="btn btn-primary"
+      id="create-task-btn"
+      style="font-size: 13px;">+ New Task</button
     >
   </div>
 

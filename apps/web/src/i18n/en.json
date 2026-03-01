@@ -69,6 +69,7 @@
     "tasks": {
         "title": "Tasks",
         "list_view": "List view",
+        "kanban_board": "Kanban Board",
         "nav.kanban": "Kanban Board",
         "nav.dashboard": "Dashboard",
         "table_view": "Table view",
