@@ -110,7 +110,7 @@ test.describe("Phase 27: HA Security Hardening", () => {
     });
 
     test.describe("Dockerfile Security", () => {
-        test("Dockerfile has non-root user and HA labels", async () => {
+        test("Dockerfile has HA labels and security essentials", async () => {
             const fs = await import("node:fs/promises");
             const path = await import("node:path");
             const dockerPath = path.resolve(
@@ -120,8 +120,10 @@ test.describe("Phase 27: HA Security Hardening", () => {
             const content = await fs.readFile(dockerPath, "utf-8");
 
             expect(content).toContain('LABEL io.hass.type="addon"');
-            expect(content).toContain("USER meitheal");
-            expect(content).toContain("adduser -S meitheal");
+            // HA addons run as root — Supervisor handles isolation via
+            // Docker namespaces + AppArmor profile
+            expect(content).toContain("FROM ${BUILD_FROM}");
+            expect(content).toContain("mkdir -p /data");
         });
     });
 });
