@@ -516,12 +516,16 @@ export async function persistInitialPlan(plan: CreateTaskPlan): Promise<void> {
   const now = Date.now();
 
   await withTransaction(async (client) => {
+    // Assign next sequential ticket_number for human-readable key (MTH-N)
+    const nextNumResult = await client.execute("SELECT COALESCE(MAX(ticket_number), 0) + 1 AS next_num FROM tasks");
+    const ticketNumber = Number((nextNumResult.rows[0] as Record<string, unknown>)?.next_num ?? 1);
+
     await client.execute({
       sql: `
         INSERT INTO tasks(
           id, title, status, framework_payload, calendar_sync_state,
-          idempotency_key, request_id, created_at, updated_at
-        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
+          ticket_number, idempotency_key, request_id, created_at, updated_at
+        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
       `,
       args: [
         plan.aggregate.task.id,
@@ -529,6 +533,7 @@ export async function persistInitialPlan(plan: CreateTaskPlan): Promise<void> {
         plan.aggregate.task.status,
         JSON.stringify(plan.aggregate.task.frameworkPayload),
         plan.aggregate.calendarSyncState,
+        ticketNumber,
         plan.aggregate.idempotencyKey,
         plan.aggregate.requestId,
         now,
