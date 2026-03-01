@@ -903,6 +903,23 @@ try {
           }, 300);
         });
 
+        // Click search result → open task detail panel
+        searchResults?.addEventListener("click", (e) => {
+          const item = (e.target as Element)?.closest(
+            ".search-item",
+          ) as HTMLElement | null;
+          if (!item) return;
+          const taskId = item.dataset.taskId;
+          if (!taskId) return;
+          searchResults.style.display = "none";
+          searchInput.value = "";
+          if (typeof (window as any).openTaskDetail === "function") {
+            (window as any).openTaskDetail(taskId);
+          } else {
+            window.location.href = `/tasks#edit-${taskId}`;
+          }
+        });
+
         // Close search on click outside
         document.addEventListener("click", (e) => {
           if (!(e.target as Element)?.closest("#search-container")) {
