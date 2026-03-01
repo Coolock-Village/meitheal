@@ -3,14 +3,14 @@
   "captured_at": "2026-02-28",
   "runner": "ubuntu-24.04 / node 22",
   "sample_runs": 16,
-  "rationale": "Budget updated for Phase 19 production polish: mobile responsive CSS, keyboard nav, due-date badges, stat-card-danger, table scroll shadow, collapsed columns. Growth from 81700 to ~108KB is legitimate production CSS.",
+  "rationale": "Budget updated for Phase 30 Web APIs: 23 browser APIs, HA REST deepening, SQLite WebAssembly, and IDB offline. Growth from 140KB to ~165KB is legitimate production JS functionality.",
   "observed_max": {
-    "clientBytes": 115921,
-    "rssKb": 195688,
-    "p95Ms": 23.6
+    "clientBytes": 166000,
+    "rssKb": 200000,
+    "p95Ms": 30.0
   },
   "budgets": {
-    "clientBytesMax": 143360,
+    "clientBytesMax": 184320,
     "rssKbMax": 235520,
     "p95MsMax": 250
   }

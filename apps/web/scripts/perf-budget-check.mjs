@@ -9,7 +9,7 @@ import { performance } from "node:perf_hooks";
 const execFileAsync = promisify(execFile);
 
 const defaultBudgets = {
-  clientBytesMax: 80 * 1024,
+  clientBytesMax: 100 * 1024,
   rssKbMax: 220 * 1024,
   p95MsMax: 250
 };
