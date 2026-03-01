@@ -364,6 +364,7 @@ const priorityColors: Record<number, string> = {
 
   <script>
     import { showToast } from "../lib/toast";
+    import { confirmDialog } from "../lib/confirm-dialog";
 
     // Table filter handlers
     function applyTableFilters() {
@@ -475,7 +476,13 @@ const priorityColors: Record<number, string> = {
     document.querySelectorAll(".delete-row").forEach((btn) => {
       btn.addEventListener("click", async () => {
         const id = (btn as HTMLElement).dataset.id;
-        if (!confirm("Delete this task?")) return;
+        const ok = await confirmDialog({
+          message: "This task will be permanently deleted.",
+          variant: "danger",
+          confirmText: "Delete",
+          title: "Delete Task",
+        });
+        if (!ok) return;
         try {
           await fetch(`/api/tasks/${id}`, { method: "DELETE" });
           showToast("Deleted");
@@ -579,7 +586,13 @@ const priorityColors: Record<number, string> = {
       .getElementById("bulk-delete")
       ?.addEventListener("click", async () => {
         const checked = document.querySelectorAll(".row-check:checked");
-        if (!confirm(`Delete ${checked.length} tasks?`)) return;
+        const ok = await confirmDialog({
+          message: `Delete ${checked.length} selected tasks? This cannot be undone.`,
+          variant: "danger",
+          confirmText: `Delete ${checked.length} Tasks`,
+          title: "Bulk Delete",
+        });
+        if (!ok) return;
         try {
           const promises = Array.from(checked).map((cb) =>
             fetch(`/api/tasks/${(cb as HTMLElement).dataset.id}`, {

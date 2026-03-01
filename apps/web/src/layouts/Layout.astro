@@ -802,6 +802,9 @@ try {
         </div>
       </div>
       <script>
+        import { confirmDialog } from "../lib/confirm-dialog";
+        // Expose for is:inline scripts (kanban)
+        (window as any).confirmDialog = confirmDialog;
         // Connection status check
         async function checkHealth() {
           const indicator = document.getElementById("connection-status");
@@ -1648,7 +1651,13 @@ try {
               delBtn.innerHTML = "🗑";
               delBtn.onclick = async (e) => {
                 e.stopPropagation();
-                if (confirm("Delete this attachment?")) {
+                const ok = await confirmDialog({
+                  message: "Delete this attachment?",
+                  variant: "danger",
+                  confirmText: "Delete",
+                  title: "Delete Attachment",
+                });
+                if (ok) {
                   await deleteAttachment(att.id);
                   loadAttachments(taskId);
                 }
@@ -1857,34 +1866,57 @@ try {
           return result;
         }
 
-        function saveCF() {
+        let _saveCFTimer: ReturnType<typeof setTimeout> | null = null;
+
+        function updateRiceDisplay() {
           const all = getCFFromUI();
-          // Split RICE keys → framework_payload, rest → custom_fields
           const ricePayload: Record<string, number> = {};
-          const cfPayload: Record<string, string> = {};
           let hasRice = false;
           for (const [k, v] of Object.entries(all)) {
             if (RICE_KEYS.includes(k)) {
               ricePayload[k.toLowerCase()] = Number(v) || 0;
               hasRice = true;
-            } else {
-              cfPayload[k] = v;
             }
           }
-          saveTD("custom_fields", JSON.stringify(cfPayload));
-          if (hasRice) {
-            // Compute RICE score: (Reach × Impact × Confidence) / Effort
+          const riceEl = document.getElementById("td-rice");
+          if (hasRice && riceEl) {
             const r = ricePayload.reach ?? 0;
             const i = ricePayload.impact ?? 0;
             const c = ricePayload.confidence ?? 0;
             const e = ricePayload.effort ?? 1;
-            ricePayload.rice_score = Math.round((r * i * c) / Math.max(e, 1));
-            saveTD("framework_payload", JSON.stringify(ricePayload));
-            // Update the RICE score display
-            const riceEl = document.getElementById("td-rice");
-            if (riceEl)
-              riceEl.textContent = `RICE Score: ${ricePayload.rice_score}`;
+            const score = Math.round((r * i * c) / Math.max(e, 1));
+            riceEl.textContent = `RICE Score: ${score}`;
           }
+        }
+
+        function saveCF() {
+          // Update RICE display instantly
+          updateRiceDisplay();
+          // Debounce the actual API save
+          if (_saveCFTimer) clearTimeout(_saveCFTimer);
+          _saveCFTimer = setTimeout(() => {
+            const all = getCFFromUI();
+            const ricePayload: Record<string, number> = {};
+            const cfPayload: Record<string, string> = {};
+            let hasRice = false;
+            for (const [k, v] of Object.entries(all)) {
+              if (RICE_KEYS.includes(k)) {
+                ricePayload[k.toLowerCase()] = Number(v) || 0;
+                hasRice = true;
+              } else {
+                cfPayload[k] = v;
+              }
+            }
+            saveTD("custom_fields", JSON.stringify(cfPayload));
+            if (hasRice) {
+              const r = ricePayload.reach ?? 0;
+              const i = ricePayload.impact ?? 0;
+              const c = ricePayload.confidence ?? 0;
+              const e = ricePayload.effort ?? 1;
+              ricePayload.rice_score = Math.round((r * i * c) / Math.max(e, 1));
+              saveTD("framework_payload", JSON.stringify(ricePayload));
+            }
+          }, 400);
         }
 
         function addCFRow(key: string, value: string) {
@@ -1899,7 +1931,9 @@ try {
           <input type="text" class="form-input td-cf-val text-sm py-1" placeholder="Value" value="${value.replace(/"/g, "&quot;")}" style="flex:1;" />
           <button type="button" class="td-cf-remove" style="color:var(--danger);font-size:16px;cursor:pointer;background:none;border:none;padding:0 4px;">&times;</button>
         `;
-          row.querySelector(".td-cf-val")!.addEventListener("blur", saveCF);
+          const valInput = row.querySelector(".td-cf-val")!;
+          valInput.addEventListener("blur", saveCF);
+          valInput.addEventListener("input", saveCF);
           row.querySelector(".td-cf-remove")!.addEventListener("click", () => {
             row.remove();
             saveCF();
@@ -2245,7 +2279,14 @@ try {
         document
           .getElementById("td-delete")
           ?.addEventListener("click", async () => {
-            if (!currentTaskId || !confirm("Delete this task?")) return;
+            if (!currentTaskId) return;
+            const ok = await confirmDialog({
+              message: "This task will be permanently deleted.",
+              variant: "danger",
+              confirmText: "Delete Task",
+              title: "Delete Task",
+            });
+            if (!ok) return;
             try {
               const res = await fetch(`/api/tasks/${currentTaskId}`, {
                 method: "DELETE",

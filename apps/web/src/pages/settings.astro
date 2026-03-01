@@ -856,6 +856,7 @@ const locale: Locale = cookieLocale === "ga" ? "ga" : "en";
 
   <script>
     import { exportLocalDataAsJson } from "../domains/offline/export-service";
+    import { confirmDialog } from "../lib/confirm-dialog";
 
     // Export Tasks Binding
     document
@@ -1562,14 +1563,14 @@ const locale: Locale = cookieLocale === "ga" ? "ga" : "en";
     document
       .getElementById("purge-tasks")
       ?.addEventListener("click", async () => {
-        if (!confirm("⚠ This will permanently delete ALL tasks. Are you sure?"))
-          return;
-        if (
-          !confirm(
-            "This action is IRREVERSIBLE. Type 'yes' in the next prompt to confirm.",
-          )
-        )
-          return;
+        const ok = await confirmDialog({
+          title: "Purge All Tasks",
+          message:
+            "This will permanently delete ALL tasks. This action is irreversible.",
+          variant: "danger",
+          confirmText: "Purge Everything",
+        });
+        if (!ok) return;
         const typed = prompt("Type YES to confirm purge:");
         if (typed?.toUpperCase() !== "YES") {
           showToast("Purge cancelled", "error");
@@ -1589,8 +1590,13 @@ const locale: Locale = cookieLocale === "ga" ? "ga" : "en";
     document
       .getElementById("reset-settings")
       ?.addEventListener("click", async () => {
-        if (!confirm("⚠ This will reset ALL settings to defaults. Continue?"))
-          return;
+        const ok = await confirmDialog({
+          title: "Reset Settings",
+          message: "This will reset ALL settings to their default values.",
+          variant: "warning",
+          confirmText: "Reset All",
+        });
+        if (!ok) return;
         try {
           const res = await fetch("/api/settings?reset=all", {
             method: "DELETE",

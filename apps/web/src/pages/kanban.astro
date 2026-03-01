@@ -961,8 +961,13 @@ const typeConfig: Record<
       laneList.querySelectorAll(".lane-remove").forEach((btn) => {
         btn.addEventListener("click", async () => {
           const laneId = btn.dataset.id;
-          if (!confirm("Delete this lane? Tasks in it will move to Pending."))
-            return;
+          const ok = await window.confirmDialog({
+            message: "Tasks in this lane will move to Pending.",
+            variant: "warning",
+            confirmText: "Delete Lane",
+            title: "Delete Lane",
+          });
+          if (!ok) return;
           try {
             await fetch(`/api/lanes/${laneId}`, { method: "DELETE" });
             window.location.reload();
