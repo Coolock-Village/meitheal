@@ -1,0 +1,20 @@
+---
+interface Props {
+  type: string | null | undefined;
+  size?: number; // font-size in px, defaults to 14
+}
+
+const { type, size = 14 } = Astro.props;
+const typeStr = String(type || "task").toLowerCase();
+
+const iconMap: Record<string, string> = {
+  epic: "🎯",
+  story: "📖",
+  task: "✅",
+};
+
+const icon = iconMap[typeStr] || "✅";
+---
+<span style={`font-size: ${size}px; line-height: 1;`} title={typeStr}>
+  {icon}
+</span>

@@ -1,0 +1,36 @@
+---
+import { t } from "../../i18n/translations";
+import type { Locale } from "../../lib/locale";
+
+interface Props {
+  priority: number | string;
+}
+
+const { priority } = Astro.props;
+const p = Number(priority) || 3;
+
+// i18n
+const cookieLocale = Astro.cookies.get("meitheal-locale")?.value;
+const locale: Locale = cookieLocale === "ga" ? "ga" : "en";
+
+const priorityLabels: Record<number, string> = {
+  1: t("priority.critical", locale),
+  2: t("priority.high", locale),
+  3: t("priority.medium", locale),
+  4: t("priority.low", locale),
+  5: t("priority.minimal", locale),
+};
+const priorityColors: Record<number, string> = {
+  1: "#ef4444",
+  2: "#f59e0b",
+  3: "#3b82f6",
+  4: "#10b981",
+  5: "#6b7280",
+};
+
+const label = priorityLabels[p] ?? "Medium";
+const color = priorityColors[p] ?? "#6b7280";
+---
+<span style={`color: ${color}; font-weight: 500;`}>
+  {label}
+</span>

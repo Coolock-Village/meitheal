@@ -13,7 +13,7 @@
 
 1. Open Home Assistant → **Settings** → **Add-ons** → **Add-on Store**.
 2. Click **⋮** (top-right) → **Repositories**.
-3. Add: `https://github.com/Coolock-Village/meitheal`
+3. Add: `https://github.com/Coolock-Village/meitheal/tree/main/addons`
 4. Close the dialog, then search for **Meitheal Hub**.
 5. Click **Install** → **Start** → **Open Web UI**.
 

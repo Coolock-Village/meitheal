@@ -2,6 +2,8 @@
 import Layout from "../layouts/Layout.astro";
 import TaskViewTabs from "../components/tasks/TaskViewTabs.astro";
 import EmptyState from "../components/ui/EmptyState.astro";
+import TaskTypeIcon from "../components/ui/TaskTypeIcon.astro";
+import RiceBadge from "../components/ui/RiceBadge.astro";
 import { t } from "../i18n/translations";
 import type { Locale } from "../lib/locale";
 import { formatRegionalDate } from "../lib/date";
@@ -209,16 +211,7 @@ const priorityColors: Record<number, string> = {
                       )}
                     </td>
                     <td style="text-align: center;">
-                      <span
-                        style="font-size: 14px;"
-                        title={String(task.task_type ?? "task")}
-                      >
-                        {String(task.task_type) === "epic"
-                          ? "🎯"
-                          : String(task.task_type) === "story"
-                            ? "📖"
-                            : "✅"}
-                      </span>
+                      <TaskTypeIcon type={String(task.task_type)} />
                     </td>
                     <td>
                       <select
@@ -299,11 +292,7 @@ const priorityColors: Record<number, string> = {
                     </td>
                     <td style="text-align: center;">
                       {rice ? (
-                        <span
-                          class={`rice-badge ${rice >= 50 ? "rice-high" : rice >= 20 ? "rice-med" : "rice-low"}`}
-                        >
-                          {rice}
-                        </span>
+                        <RiceBadge rice={rice} />
                       ) : (
                         <span style="color: var(--text-muted);">—</span>
                       )}

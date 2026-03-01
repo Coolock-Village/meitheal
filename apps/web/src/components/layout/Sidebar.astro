@@ -8,8 +8,14 @@ import {
 } from "@domains/tasks/persistence/store";
 
 const currentPath = Astro.url.pathname;
-const cookieLocale = Astro.cookies.get("meitheal-locale")?.value;
-const locale: Locale = cookieLocale === "ga" ? "ga" : "en";
+export interface Props {
+  locale?: Locale;
+  taskCounts?: { total: number; active: number; pending: number };
+}
+const {
+  locale = Astro.cookies.get("meitheal-locale")?.value === "ga" ? "ga" : "en",
+  taskCounts = { total: 0, active: 0, pending: 0 },
+} = Astro.props;
 
 /** Default nav item definitions */
 interface NavItemDef {
@@ -49,6 +55,13 @@ const DEFAULT_ORDER: NavKey[] = [
   "calendar",
 ];
 
+interface CustomNavItem {
+  id: string;
+  href: string;
+  icon: string;
+  label: string;
+}
+
 /** Sidebar configuration from settings DB */
 interface SidebarConfig {
   /** Visibility toggles (legacy format preserved) */
@@ -57,6 +70,8 @@ interface SidebarConfig {
   order?: string[];
   /** Custom labels per nav key */
   labels?: Record<string, string>;
+  /** Custom dynamically added nav items */
+  customItems?: CustomNavItem[];
 }
 
 let sidebarConfig: SidebarConfig = {
@@ -88,8 +103,25 @@ try {
       sidebarConfig = { ...sidebarConfig, ...parsed };
     }
   }
-} catch {
+} catch (e) {
+  console.error("[Sidebar.astro] Failed to load sidebar_config:", e);
   // DB fallback — use defaults
+}
+
+/** Inject custom items into NAV_ITEMS before processing */
+if (Array.isArray(sidebarConfig.customItems)) {
+  sidebarConfig.customItems.forEach((c) => {
+    if (c.id && c.href) {
+      NAV_ITEMS[c.id] = {
+        href: c.href,
+        i18nKey: "",
+        icon: c.icon || "link",
+        matchExact: false, // Default matching
+      };
+      if (!sidebarConfig.labels) sidebarConfig.labels = {};
+      sidebarConfig.labels[c.id] = c.label || c.id;
+    }
+  });
 }
 
 /** Build ordered, filtered nav item list */
@@ -127,7 +159,9 @@ const navItems = order
       <span class="text-2xl" aria-hidden="true">☘️</span> Meitheal
     </a>
   </div>
-  <ul class="nav-list flex-1 flex flex-col gap-1 list-none m-0 p-0">
+  <ul
+    class="nav-list flex-1 flex flex-col gap-1 list-none m-0 p-0 overflow-y-auto w-full"
+  >
     {
       navItems.map((item) => (
         <li>
@@ -147,7 +181,7 @@ const navItems = order
                 id={`nav-count-${item.key}`}
                 aria-hidden="true"
               >
-                0
+                {taskCounts.active}
               </span>
             )}
           </a>

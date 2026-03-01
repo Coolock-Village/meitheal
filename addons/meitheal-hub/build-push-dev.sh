@@ -10,7 +10,7 @@
 #
 # After pushing, on your HA Green:
 #   1. Go to Settings → Add-ons → Add-on Store → ⋮ → Repositories
-#   2. Add: https://github.com/Coolock-Village/meitheal
+#   2. Add: https://github.com/Coolock-Village/meitheal/tree/main/addons
 #   3. Find "Meitheal Hub" → Install → Start → Open Web UI
 #
 set -euo pipefail
@@ -65,7 +65,7 @@ echo "=== Done! ==="
 echo ""
 echo "To install on HA Green:"
 echo "  1. Settings → Add-ons → Add-on Store → ⋮ → Repositories"
-echo "  2. Add: https://github.com/Coolock-Village/meitheal"
+echo "  2. Add: https://github.com/Coolock-Village/meitheal/tree/main/addons"
 echo "  3. Find 'Meitheal Hub' → Install → Start"
 echo ""
 echo "To update after code changes, re-run this script and restart the add-on in HA."

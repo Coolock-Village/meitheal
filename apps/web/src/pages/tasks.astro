@@ -2,6 +2,9 @@
 import Layout from "../layouts/Layout.astro";
 import TaskViewTabs from "../components/tasks/TaskViewTabs.astro";
 import EmptyState from "../components/ui/EmptyState.astro";
+import StatusBadge from "../components/ui/StatusBadge.astro";
+import PriorityLabel from "../components/ui/PriorityLabel.astro";
+import RiceBadge from "../components/ui/RiceBadge.astro";
 import { t } from "../i18n/translations";
 import type { Locale } from "../lib/locale";
 import { formatTicketKey } from "../lib/ticket-key";
@@ -33,29 +36,6 @@ try {
 } catch (e) {
   // DB not available
 }
-
-const priorityLabels: Record<number, string> = {
-  1: t("priority.critical", locale),
-  2: t("priority.high", locale),
-  3: t("priority.medium", locale),
-  4: t("priority.low", locale),
-  5: t("priority.minimal", locale),
-};
-const priorityColors: Record<number, string> = {
-  1: "#ef4444",
-  2: "#f59e0b",
-  3: "#3b82f6",
-  4: "#10b981",
-  5: "#6b7280",
-};
-const statusLabels: Record<string, string> = {
-  pending: t("task_status.pending", locale),
-  active: t("task_status.active", locale),
-  in_progress: t("task_status.active", locale),
-  complete: t("task_status.complete", locale),
-  done: t("task_status.complete", locale),
-  todo: t("task_status.pending", locale),
-};
 ---
 
 <Layout title={`Meitheal — ${t("tasks.title", locale)}`}>
@@ -192,17 +172,21 @@ const statusLabels: Record<string, string> = {
                   )}
                   <span style="font-weight: 500;">{String(task.title)}</span>
                 </div>
-                <div class="task-meta">
-                  <span style={`color: ${priorityColors[p] ?? "#6b7280"}`}>
-                    {priorityLabels[p] ?? "Medium"}
-                  </span>
-                  {task.due_date
-                    ? ` · Due ${String(task.due_date).split("T")[0]}`
-                    : ""}
-                  {String(task.calendar_sync_state) === "confirmed"
-                    ? " · 📅"
-                    : ""}
-                  {rice ? ` · RICE: ${rice}` : ""}
+                <div
+                  class="task-meta"
+                  style="display: flex; gap: 4px; align-items: center;"
+                >
+                  <PriorityLabel priority={p} />
+                  {task.due_date ? (
+                    <span style="margin-left: 4px;">
+                      · Due {String(task.due_date).split("T")[0]}
+                    </span>
+                  ) : null}
+                  {String(task.calendar_sync_state) === "confirmed" ? (
+                    <span style="margin-left: 4px;">· 📅</span>
+                  ) : null}
+                  {rice ? <span style="margin-left: 4px;">·</span> : null}
+                  <RiceBadge rice={rice} />
                 </div>
                 {(() => {
                   try {
@@ -253,9 +237,7 @@ const statusLabels: Record<string, string> = {
                   return null;
                 })()}
               </div>
-              <span class={`task-badge badge-${isDone ? "done" : s}`}>
-                {statusLabels[s] ?? s}
-              </span>
+              <StatusBadge status={s} />
               <button
                 class="task-duplicate"
                 data-id={String(task.id)}
