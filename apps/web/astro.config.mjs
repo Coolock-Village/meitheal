@@ -3,7 +3,7 @@ import node from "@astrojs/node";
 import tailwind from "@astrojs/tailwind";
 
 export default defineConfig({
-  site: "https://meitheal.local",
+  site: process.env.SITE_URL || "http://localhost:3000",
   output: "server",
   adapter: node({ mode: "standalone" }),
   integrations: [
