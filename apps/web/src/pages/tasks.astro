@@ -480,24 +480,6 @@ const statusLabels: Record<string, string> = {
     </div>
   </div>
 
-  <!-- Delete Confirmation -->
-  <div class="modal-overlay" id="delete-modal">
-    <div class="modal">
-      <div class="modal-title">{t("tasks.delete_task", locale)}</div>
-      <p style="color: var(--text-secondary); margin-bottom: 16px;">
-        {t("tasks.cannot_undo", locale)}
-      </p>
-      <div class="modal-actions">
-        <button class="btn btn-ghost" id="cancel-delete"
-          >{t("tasks.cancel", locale)}</button
-        >
-        <button class="btn btn-danger" id="confirm-delete"
-          >{t("tasks.delete", locale)}</button
-        >
-      </div>
-    </div>
-  </div>
-
   <div
     id="toast-container"
     class="toast-container"
@@ -511,9 +493,7 @@ const statusLabels: Record<string, string> = {
 
     // Modal controls
     const modal = document.getElementById("task-modal")!;
-    const deleteModal = document.getElementById("delete-modal")!;
     let editingId: string | null = null;
-    let deletingId: string | null = null;
 
     document
       .getElementById("create-task-btn")
@@ -685,28 +665,29 @@ const statusLabels: Record<string, string> = {
         }
       });
 
+    import { confirmDialog } from "../lib/confirm-dialog";
+
     // Delete
     document.querySelectorAll(".task-delete").forEach((btn) => {
-      btn.addEventListener("click", (e) => {
+      btn.addEventListener("click", async (e) => {
         e.stopPropagation();
-        deletingId = (btn as HTMLElement).dataset.id ?? null;
-        deleteModal.classList.add("open");
-      });
-    });
-    document
-      .getElementById("cancel-delete")
-      ?.addEventListener("click", () => deleteModal.classList.remove("open"));
-    document
-      .getElementById("confirm-delete")
-      ?.addEventListener("click", async () => {
-        if (!deletingId) return;
+        const id = (btn as HTMLElement).dataset.id;
+        if (!id) return;
+
+        const ok = await confirmDialog({
+          title: "Delete Task?",
+          message: "This action cannot be undone.",
+          variant: "danger",
+          confirmText: "Delete",
+        });
+
+        if (!ok) return;
+
         try {
-          const res = await fetch(`/api/tasks/${deletingId}`, {
+          const res = await fetch(`/api/tasks/${id}`, {
             method: "DELETE",
           });
-          // Treat 204 (deleted) and 404 (already gone) as success
           if (res.ok || res.status === 404) {
-            deleteModal.classList.remove("open");
             showToast("common.task_deleted");
             setTimeout(() => window.location.reload(), 800);
           } else {
@@ -716,6 +697,7 @@ const statusLabels: Record<string, string> = {
           showToast("common.failed_delete", "error");
         }
       });
+    });
 
     // Checkbox toggle
     document.querySelectorAll(".task-checkbox").forEach((cb) => {
@@ -958,7 +940,6 @@ Can you help me break this down, suggest next steps, estimate effort, or identif
     document.addEventListener("keydown", (e) => {
       if (e.key === "Escape") {
         modal.classList.remove("open");
-        deleteModal.classList.remove("open");
       }
     });
 

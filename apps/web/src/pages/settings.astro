@@ -199,7 +199,7 @@ const locale: Locale = cookieLocale === "ga" ? "ga" : "en";
               >
             </div>
             <select
-              class="form-select framework-mapping-select h-24"
+              class="form-select framework-mapping-select h-32"
               data-task-type="epic"
               multiple
             >
@@ -219,7 +219,7 @@ const locale: Locale = cookieLocale === "ga" ? "ga" : "en";
               <span class="text-xs text-text-muted">User-facing features</span>
             </div>
             <select
-              class="form-select framework-mapping-select h-24"
+              class="form-select framework-mapping-select h-32"
               data-task-type="story"
               multiple
             >
@@ -239,7 +239,7 @@ const locale: Locale = cookieLocale === "ga" ? "ga" : "en";
               <span class="text-xs text-text-muted">Standard work items</span>
             </div>
             <select
-              class="form-select framework-mapping-select h-24"
+              class="form-select framework-mapping-select h-32"
               data-task-type="task"
               multiple
             >
@@ -259,7 +259,7 @@ const locale: Locale = cookieLocale === "ga" ? "ga" : "en";
               <span class="text-xs text-text-muted">Knowledge articles</span>
             </div>
             <select
-              class="form-select framework-mapping-select h-24"
+              class="form-select framework-mapping-select h-32"
               data-task-type="documentation"
               multiple
             >
@@ -1459,7 +1459,7 @@ const locale: Locale = cookieLocale === "ga" ? "ga" : "en";
         btn.textContent = "Saving...";
         btn.disabled = true;
 
-        await saveSetting("sidebar_config", JSON.stringify(config));
+        await saveSetting("sidebar_config", config);
 
         btn.textContent = oText;
         btn.disabled = false;
@@ -2078,10 +2078,15 @@ const locale: Locale = cookieLocale === "ga" ? "ga" : "en";
   }
   .custom-field-row {
     display: flex;
-    gap: 8px;
+    gap: 6px;
     align-items: center;
-    padding: 8px 0;
+    padding: 4px 0;
     border-bottom: 1px solid var(--border);
+  }
+  .custom-field-row .form-input,
+  .custom-field-row .form-select {
+    padding: 4px 8px;
+    font-size: 13px;
   }
   .custom-field-row:last-child {
     border-bottom: none;

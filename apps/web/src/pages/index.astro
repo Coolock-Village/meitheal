@@ -1,5 +1,6 @@
 ---
 import Layout from "../layouts/Layout.astro";
+import EmptyState from "../components/ui/EmptyState.astro";
 import { t } from "../i18n/translations";
 import type { Locale } from "../lib/locale";
 import {
@@ -201,11 +202,12 @@ function relativeTime(dueDate: string): string {
     <form
       id="quick-add-form"
       class="max-w-xl"
-      style="display: flex; gap: 10px;"
+      style="display: flex; gap: 10px; align-items: stretch;"
     >
       <input
         type="text"
         class="form-input"
+        style="flex: 1;"
         id="quick-title"
         placeholder={t("dashboard.quick_add_placeholder", locale)}
         autocomplete="off"
@@ -240,13 +242,14 @@ function relativeTime(dueDate: string): string {
     <div class="task-list" id="task-list">
       {
         tasks.length === 0 ? (
-          <div class="empty-state">
-            <div class="empty-icon">☘</div>
-            <div class="empty-text">{t("dashboard.no_tasks_yet", locale)}</div>
-            <div class="empty-sub">
-              {t("dashboard.create_first_task", locale)}
-            </div>
-          </div>
+          <EmptyState
+            title={t("dashboard.no_tasks_yet", locale)}
+            description={t("dashboard.create_first_task", locale)}
+          >
+            <span slot="icon" style="font-size: 48px; line-height: 1;">
+              ☘
+            </span>
+          </EmptyState>
         ) : (
           tasks.map((task) => (
             <div class="task-item" data-id={String(task.id)}>

@@ -101,7 +101,11 @@ const priorityColors: Record<number, string> = {
                 <th class="sortable" data-col="title">
                   {t("table.col_title", locale)}
                 </th>
-                <th class="sortable" data-col="type" style="width: 70px;">
+                <th
+                  class="sortable"
+                  data-col="type"
+                  style="width: 70px; text-align: center;"
+                >
                   Type
                 </th>
                 <th class="sortable" data-col="status" style="width: 100px;">
@@ -113,11 +117,15 @@ const priorityColors: Record<number, string> = {
                 <th class="sortable" data-col="due_date" style="width: 120px;">
                   {t("table.col_due_date", locale)}
                 </th>
-                <th class="sortable" data-col="rice" style="width: 80px;">
+                <th
+                  class="sortable"
+                  data-col="rice"
+                  style="width: 80px; text-align: center;"
+                >
                   {t("table.col_rice", locale)}
                 </th>
                 <th
-                  style="width: 70px;"
+                  style="width: 70px; text-align: center;"
                   title={t("table.col_calendar", locale)}
                 >
                   📅
@@ -125,7 +133,9 @@ const priorityColors: Record<number, string> = {
                 <th style="width: 100px;">
                   {t("table.col_custom_fields", locale)}
                 </th>
-                <th style="width: 80px;">{t("table.col_actions", locale)}</th>
+                <th style="width: 80px; text-align: center;">
+                  {t("table.col_actions", locale)}
+                </th>
               </tr>
             </thead>
             <tbody>
@@ -198,7 +208,7 @@ const priorityColors: Record<number, string> = {
                         </div>
                       )}
                     </td>
-                    <td>
+                    <td style="text-align: center;">
                       <span
                         style="font-size: 14px;"
                         title={String(task.task_type ?? "task")}
@@ -287,7 +297,7 @@ const priorityColors: Record<number, string> = {
                           })
                         : "—"}
                     </td>
-                    <td>
+                    <td style="text-align: center;">
                       {rice ? (
                         <span
                           class={`rice-badge ${rice >= 50 ? "rice-high" : rice >= 20 ? "rice-med" : "rice-low"}`}
@@ -298,7 +308,7 @@ const priorityColors: Record<number, string> = {
                         <span style="color: var(--text-muted);">—</span>
                       )}
                     </td>
-                    <td>
+                    <td style="text-align: center;">
                       {String(task.calendar_sync_state) === "confirmed" ? (
                         <span
                           title="Calendar synced"
@@ -327,7 +337,7 @@ const priorityColors: Record<number, string> = {
                         ? customFields.map(([k, v]) => `${k}: ${v}`).join(", ")
                         : "—"}
                     </td>
-                    <td>
+                    <td style="text-align: center;">
                       <button
                         class="btn-icon delete-row"
                         data-id={String(task.id)}

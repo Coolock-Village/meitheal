@@ -75,8 +75,18 @@ try {
     "SELECT value FROM settings WHERE key = 'sidebar_config'",
   );
   if (res.rows.length > 0) {
-    const parsed = JSON.parse(String(res.rows[0]?.value));
-    sidebarConfig = { ...sidebarConfig, ...parsed };
+    let parsed = JSON.parse(String(res.rows[0]?.value));
+    // Handle double-encoded JSON (API stores JSON.stringify'd values)
+    if (typeof parsed === "string") {
+      try {
+        parsed = JSON.parse(parsed);
+      } catch {
+        /* not double-encoded */
+      }
+    }
+    if (parsed && typeof parsed === "object") {
+      sidebarConfig = { ...sidebarConfig, ...parsed };
+    }
   }
 } catch {
   // DB fallback — use defaults
