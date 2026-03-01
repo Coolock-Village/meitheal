@@ -3,6 +3,7 @@ import type { InValue } from "@libsql/client";
 import { ensureSchema, getPersistenceClient } from "@domains/tasks/persistence/store";
 import { stripHtml } from "../../../lib/strip-html";
 import { formatTicketKey } from "../../../lib/ticket-key";
+import { dispatchTaskEvent } from "../../../lib/webhook-dispatcher";
 import { VALID_TASK_TYPES } from "@meitheal/domain-tasks";
 import type { TaskType } from "@meitheal/domain-tasks";
 
@@ -222,7 +223,11 @@ export const POST: APIRoute = async ({ request }) => {
   });
 
   const ticket_key = formatTicketKey(ticket_number);
-  return new Response(JSON.stringify({ id, ticket_number, ticket_key, title, description, status, priority, due_date, labels, parent_id, board_id, custom_fields, time_tracked: 0, start_date, end_date, progress, color, is_favorite, task_type, created_at: now, updated_at: now }), {
+  const taskPayload = { id, ticket_number, ticket_key, title, description, status, priority, due_date, labels, parent_id, board_id, custom_fields, time_tracked: 0, start_date, end_date, progress, color, is_favorite, task_type, created_at: now, updated_at: now };
+  
+  dispatchTaskEvent("task.created", taskPayload, typeof body.request_id === "string" ? body.request_id : undefined).catch(() => {});
+
+  return new Response(JSON.stringify(taskPayload), {
     status: 201,
     headers: { "content-type": "application/json" },
   });

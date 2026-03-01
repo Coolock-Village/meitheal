@@ -3,6 +3,7 @@ import type { InValue } from "@libsql/client";
 import { ensureSchema, getPersistenceClient } from "@domains/tasks/persistence/store";
 import { stripHtml } from "../../../lib/strip-html";
 import { formatTicketKey } from "../../../lib/ticket-key";
+import { dispatchTaskEvent } from "../../../lib/webhook-dispatcher";
 import { VALID_TASK_TYPES } from "@meitheal/domain-tasks";
 import type { TaskType } from "@meitheal/domain-tasks";
 
@@ -263,8 +264,11 @@ export const PUT: APIRoute = async ({ params, request }) => {
 
   const updatedRow = updated.rows[0] as Record<string, unknown>;
   const updTicketNum = updatedRow?.ticket_number != null ? Number(updatedRow.ticket_number) : null;
+  const taskPayload = { ...updatedRow, ticket_key: formatTicketKey(updTicketNum) };
 
-  return new Response(JSON.stringify({ ...updatedRow, ticket_key: formatTicketKey(updTicketNum) }), {
+  dispatchTaskEvent("task.updated", taskPayload, typeof body.request_id === "string" ? body.request_id : undefined).catch(() => {});
+
+  return new Response(JSON.stringify(taskPayload), {
     status: 200,
     headers: { "content-type": "application/json" },
   });
@@ -293,6 +297,8 @@ export const DELETE: APIRoute = async ({ params }) => {
 
   const resolvedId = existing.rows[0]!.id as string;
   await client.execute({ sql: "DELETE FROM tasks WHERE id = ?", args: [resolvedId] });
+
+  dispatchTaskEvent("task.deleted", { id: resolvedId }).catch(() => {});
 
   return new Response(null, { status: 204 });
 };
