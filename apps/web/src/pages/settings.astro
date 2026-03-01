@@ -1238,11 +1238,20 @@ const locale: Locale = cookieLocale === "ga" ? "ga" : "en";
 
     // Load settings from API on page init
     async function loadSettings() {
+      let settings: Record<string, any> = {};
       try {
         const res = await fetch("/api/settings");
-        const settings = await res.json();
+        settings = await res.json();
+      } catch (e) {
+        console.error("[Settings] Failed to load settings from API:", e);
+        // Fall back to localStorage for locale
+        const stored = localStorage.getItem("meitheal-locale") || "en";
+        (document.getElementById("locale-select") as HTMLSelectElement).value =
+          stored;
+        return;
+      }
 
-        // Restore contextual framework mappings (arrays)
+      try {
         if (settings.framework_mapping) {
           const mapping = settings.framework_mapping as Record<
             string,
@@ -1278,8 +1287,11 @@ const locale: Locale = cookieLocale === "ga" ? "ga" : "en";
             document.getElementById("locale-select") as HTMLSelectElement
           ).value = stored;
         }
+      } catch (e) {
+        console.error("[Settings] Framework mapping error:", e);
+      }
 
-        // Restore theme using theme-watcher for proper class + data-theme handling
+      try {
         const savedTheme =
           settings.theme || localStorage.getItem("meitheal-theme") || "dark";
         const themeEl = document.getElementById(
@@ -1303,8 +1315,11 @@ const locale: Locale = cookieLocale === "ga" ? "ga" : "en";
         if (settings.custom_theme_name) {
           updateCustomThemeDisplay(String(settings.custom_theme_name));
         }
+      } catch (e) {
+        console.error("[Settings] Theme restore error:", e);
+      }
 
-        // Restore timezone
+      try {
         const tz =
           settings.timezone ||
           localStorage.getItem("meitheal-timezone") ||
@@ -1333,7 +1348,11 @@ const locale: Locale = cookieLocale === "ga" ? "ga" : "en";
           "date-format-select",
         ) as HTMLSelectElement;
         if (dfEl) dfEl.value = df;
+      } catch (e) {
+        console.error("[Settings] UI settings error:", e);
+      }
 
+      try {
         // Restore sidebar config
         const DEFAULT_SIDEBAR = [
           "dashboard",
@@ -1501,11 +1520,8 @@ const locale: Locale = cookieLocale === "ga" ? "ga" : "en";
             /* skip */
           }
         }
-      } catch {
-        /* API not available — try localStorage fallback for locale */
-        const stored = localStorage.getItem("meitheal-locale") || "en";
-        (document.getElementById("locale-select") as HTMLSelectElement).value =
-          stored;
+      } catch (e) {
+        console.error("[Settings] Sidebar/custom fields error:", e);
       }
     }
 
