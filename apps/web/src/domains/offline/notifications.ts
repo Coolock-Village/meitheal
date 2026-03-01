@@ -64,8 +64,8 @@ export async function showTaskNotification(notification: TaskNotification): Prom
     const opts: NotificationOptions = {
       body: notification.body,
       tag: notification.tag ?? "meitheal-general",
-      icon: "/icons/icon-192x192.png",
-      badge: "/icons/icon-192x192.png",
+      icon: "/icon-192.png",
+      badge: "/icon-192.png",
       data: { url: notification.url ?? "/" },
     }
     if (notification.requireInteraction) {
@@ -118,6 +118,39 @@ export async function checkOverdueTasks(tasks: TaskForCheck[]): Promise<void> {
         title: "⏰ Overdue Task",
         body: task.title,
         tag: `overdue-${task.id}`,
+        url: `/tasks?open=${task.id}`,
+      })
+      notified.add(task.id)
+    }
+  }
+
+  sessionStorage.setItem(notifiedKey, JSON.stringify([...notified]))
+}
+
+/**
+ * Check for tasks due within the next hour and fire reminder notifications.
+ * Uses sessionStorage deduplication (same as overdue check).
+ */
+export async function checkUpcomingReminders(tasks: TaskForCheck[]): Promise<void> {
+  const permission = await getNotificationPermission()
+  if (permission !== "granted") return
+
+  const now = new Date()
+  const oneHourFromNow = new Date(now.getTime() + 60 * 60 * 1000)
+  const notifiedKey = "meitheal_notified_upcoming"
+  const notified = new Set(JSON.parse(sessionStorage.getItem(notifiedKey) ?? "[]"))
+
+  for (const task of tasks) {
+    if (notified.has(task.id)) continue
+    if (task.status === "done" || task.status === "complete") continue
+
+    const due = new Date(task.dueDate)
+    if (due > now && due <= oneHourFromNow) {
+      const minutesUntilDue = Math.round((due.getTime() - now.getTime()) / 60000)
+      await showTaskNotification({
+        title: "📋 Task Due Soon",
+        body: `${task.title} — due in ${minutesUntilDue} minutes`,
+        tag: `upcoming-${task.id}`,
         url: `/tasks?open=${task.id}`,
       })
       notified.add(task.id)

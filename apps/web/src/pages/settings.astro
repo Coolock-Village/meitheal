@@ -1205,6 +1205,172 @@ const locale: Locale = cookieLocale === "ga" ? "ga" : "en";
       showToast("n8n settings saved");
     });
 
+    // ───── Grocy Save ─────
+    document
+      .getElementById("save-grocy")
+      ?.addEventListener("click", async () => {
+        const url = (document.getElementById("grocy-url") as HTMLInputElement)
+          .value;
+        const key = (document.getElementById("grocy-key") as HTMLInputElement)
+          .value;
+        const syncMode = (
+          document.getElementById("grocy-sync-mode") as HTMLSelectElement
+        ).value;
+
+        if (!url) {
+          showToast("Grocy URL is required", "error");
+          return;
+        }
+
+        const btn = document.getElementById("save-grocy") as HTMLButtonElement;
+        btn.textContent = "Saving...";
+        btn.disabled = true;
+
+        await saveSetting("grocy_url", url);
+        if (key) await saveSetting("grocy_api_key", key);
+        await saveSetting("grocy_sync_mode", syncMode);
+
+        const statusEl = document.getElementById("grocy-status");
+        if (statusEl) {
+          statusEl.textContent = "Configured";
+          statusEl.className = "badge badge-active";
+        }
+
+        btn.textContent = "Save Grocy Settings";
+        btn.disabled = false;
+        showToast("Grocy settings saved");
+      });
+
+    // ───── Calendar Save + Test ─────
+    document.getElementById("save-cal")?.addEventListener("click", async () => {
+      const entity = (document.getElementById("cal-entity") as HTMLInputElement)
+        .value;
+      const caldav = (document.getElementById("caldav-url") as HTMLInputElement)
+        .value;
+
+      const btn = document.getElementById("save-cal") as HTMLButtonElement;
+      btn.textContent = "Saving...";
+      btn.disabled = true;
+
+      await saveSetting("cal_entity", entity);
+      if (caldav) await saveSetting("caldav_url", caldav);
+
+      const statusEl = document.getElementById("cal-status");
+      if (statusEl && entity) {
+        statusEl.textContent = "Configured";
+        statusEl.className = "badge badge-active";
+      }
+
+      btn.textContent = "Save Calendar Settings";
+      btn.disabled = false;
+      showToast("Calendar settings saved");
+    });
+
+    document.getElementById("test-cal")?.addEventListener("click", async () => {
+      const btn = document.getElementById("test-cal") as HTMLButtonElement;
+      btn.textContent = "Testing...";
+      btn.disabled = true;
+
+      try {
+        const res = await fetch("/api/ha/connection");
+        const data = (await res.json()) as Record<string, unknown>;
+        const components = Array.isArray(data.components)
+          ? (data.components as string[])
+          : [];
+        const hasCalendar = components.includes("calendar");
+        showToast(
+          data.connected
+            ? hasCalendar
+              ? "✅ Calendar integration available"
+              : "⚠ HA connected but no calendar component found"
+            : `❌ ${data.message ?? "HA not reachable"}`,
+          data.connected && hasCalendar ? "success" : "error",
+        );
+      } catch {
+        showToast("❌ Calendar sync test failed", "error");
+      }
+
+      btn.textContent = "Test Sync";
+      btn.disabled = false;
+    });
+
+    // ───── Restore Integration Settings ─────
+    (async function restoreIntegrationSettings() {
+      try {
+        const res = await fetch("/api/settings");
+        if (!res.ok) return;
+        const s = (await res.json()) as Record<string, unknown>;
+
+        // Grocy
+        if (s.grocy_url)
+          (document.getElementById("grocy-url") as HTMLInputElement).value =
+            String(s.grocy_url);
+        if (s.grocy_sync_mode)
+          (
+            document.getElementById("grocy-sync-mode") as HTMLSelectElement
+          ).value = String(s.grocy_sync_mode);
+        if (s.grocy_url) {
+          const el = document.getElementById("grocy-status");
+          if (el) {
+            el.textContent = "Configured";
+            el.className = "badge badge-active";
+          }
+        }
+
+        // Calendar
+        if (s.cal_entity)
+          (document.getElementById("cal-entity") as HTMLInputElement).value =
+            String(s.cal_entity);
+        if (s.caldav_url)
+          (document.getElementById("caldav-url") as HTMLInputElement).value =
+            String(s.caldav_url);
+
+        // n8n
+        if (s.n8n_webhook_url) {
+          (
+            document.getElementById("n8n-webhook-url") as HTMLInputElement
+          ).value = String(s.n8n_webhook_url);
+          const el = document.getElementById("n8n-status");
+          if (el) {
+            el.textContent = "Configured";
+            el.className = "badge badge-active";
+          }
+        }
+        if (Array.isArray(s.n8n_events)) {
+          document.querySelectorAll(".n8n-event").forEach((cb) => {
+            (cb as HTMLInputElement).checked = (
+              s.n8n_events as string[]
+            ).includes((cb as HTMLInputElement).value);
+          });
+        }
+
+        // Webhook
+        if (s.webhook_endpoint)
+          (
+            document.getElementById("webhook-endpoint") as HTMLInputElement
+          ).value = String(s.webhook_endpoint);
+        if (s.webhook_format)
+          (
+            document.getElementById("webhook-format") as HTMLSelectElement
+          ).value = String(s.webhook_format);
+        if (s.webhook_endpoint) {
+          const el = document.getElementById("webhook-status");
+          if (el) {
+            el.textContent = "Active";
+            el.className = "badge badge-active";
+          }
+        } else {
+          const el = document.getElementById("webhook-status");
+          if (el) {
+            el.textContent = "Not configured";
+            el.className = "badge badge-pending";
+          }
+        }
+      } catch {
+        /* settings not available */
+      }
+    })();
+
     // ───── Danger Zone ─────
     document
       .getElementById("purge-tasks")
