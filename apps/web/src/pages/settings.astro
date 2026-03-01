@@ -540,87 +540,94 @@ const locale: Locale = cookieLocale === "ga" ? "ga" : "en";
               tools, and tool discovery.
             </div>
           </div>
-          <span class="badge badge-pending" id="agent-protocols-status"
-            >Not configured</span
+          <span class="badge badge-active" id="agent-protocols-status"
+            >Active</span
           >
         </div>
         <div class="integration-config">
           <!-- A2A -->
-          <div class="form-group">
+          <div
+            class="form-group"
+            style="padding-bottom: 16px; border-bottom: 1px solid var(--border);"
+          >
             <div
               style="display: flex; align-items: center; gap: 12px; margin-bottom: 8px;"
             >
-              <label
-                class="form-label"
-                style="margin-bottom: 0;"
-                for="agent-a2a-enabled">A2A (Agent-to-Agent)</label
-              >
-              <input type="checkbox" id="agent-a2a-enabled" checked />
+              <label class="toggle-label">
+                <input type="checkbox" id="agent-a2a-enabled" checked />
+                <span class="toggle-slider"></span>
+              </label>
+              <div>
+                <strong style="font-size: 14px;">A2A (Agent-to-Agent)</strong>
+                <div
+                  style="color: var(--text-muted); font-size: 12px; margin-top: 2px;"
+                >
+                  Serve an Agent Card at <code
+                    >/.well-known/agent-card.json</code
+                  > so other AI agents can discover and delegate tasks to Meitheal.
+                  <a
+                    href="/api/a2a/agent-card"
+                    target="_blank"
+                    style="color: var(--accent);">View Agent Card →</a
+                  >
+                </div>
+              </div>
             </div>
-            <small
-              class="form-help-text"
-              style="color: var(--text-muted); font-size: 12px;"
-            >
-              Serve an Agent Card at <code>/.well-known/agent-card.json</code> so
-              other AI agents can discover and delegate tasks to Meitheal via the
-              A2A protocol.
-              <a
-                href="/api/a2a/agent-card"
-                target="_blank"
-                style="color: var(--accent);">View Agent Card →</a
-              >
-            </small>
           </div>
 
           <!-- WebMCP -->
-          <div class="form-group">
+          <div
+            class="form-group"
+            style="padding-top: 16px; padding-bottom: 16px; border-bottom: 1px solid var(--border);"
+          >
             <div
               style="display: flex; align-items: center; gap: 12px; margin-bottom: 8px;"
             >
-              <label
-                class="form-label"
-                style="margin-bottom: 0;"
-                for="agent-webmcp-enabled">WebMCP (Browser Agent)</label
-              >
-              <input type="checkbox" id="agent-webmcp-enabled" />
+              <label class="toggle-label">
+                <input type="checkbox" id="agent-webmcp-enabled" />
+                <span class="toggle-slider"></span>
+              </label>
+              <div>
+                <strong style="font-size: 14px;">WebMCP (Browser Agent)</strong>
+                <span
+                  style="font-size: 10px; padding: 2px 6px; background: var(--accent); color: #fff; border-radius: 4px; margin-left: 6px; vertical-align: middle;"
+                  >Experimental</span
+                >
+                <div
+                  style="color: var(--text-muted); font-size: 12px; margin-top: 2px;"
+                >
+                  Register Meitheal tools with your browser's AI assistant
+                  (Chrome EPP). Allows browser agents to create tasks, search,
+                  and navigate boards.
+                </div>
+              </div>
             </div>
-            <small
-              class="form-help-text"
-              style="color: var(--text-muted); font-size: 12px;"
-            >
-              Register Meitheal tools with your browser's AI assistant (Chrome
-              EPP). Allows browser agents to create tasks, search, and navigate
-              boards.
-              <span style="opacity: 0.7;"
-                >🧪 Experimental — requires Chrome with AI APIs.</span
-              >
-            </small>
           </div>
 
           <!-- MCP Discovery -->
-          <div class="form-group">
+          <div class="form-group" style="padding-top: 16px;">
             <div
               style="display: flex; align-items: center; gap: 12px; margin-bottom: 8px;"
             >
-              <label
-                class="form-label"
-                style="margin-bottom: 0;"
-                for="agent-mcp-enabled">MCP Discovery</label
-              >
-              <input type="checkbox" id="agent-mcp-enabled" checked />
+              <label class="toggle-label">
+                <input type="checkbox" id="agent-mcp-enabled" checked />
+                <span class="toggle-slider"></span>
+              </label>
+              <div>
+                <strong style="font-size: 14px;">MCP Discovery</strong>
+                <div
+                  style="color: var(--text-muted); font-size: 12px; margin-top: 2px;"
+                >
+                  Serve tool definitions at <code>/.well-known/mcp.json</code> for
+                  MCP-compatible clients.
+                  <a
+                    href="/.well-known/mcp.json"
+                    target="_blank"
+                    style="color: var(--accent);">View MCP manifest →</a
+                  >
+                </div>
+              </div>
             </div>
-            <small
-              class="form-help-text"
-              style="color: var(--text-muted); font-size: 12px;"
-            >
-              Serve tool definitions at <code>/.well-known/mcp.json</code> for MCP-compatible
-              clients.
-              <a
-                href="/.well-known/mcp.json"
-                target="_blank"
-                style="color: var(--accent);">View MCP manifest →</a
-              >
-            </small>
           </div>
 
           <button

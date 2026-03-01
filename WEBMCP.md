@@ -3,7 +3,7 @@
 Meitheal implements three complementary agent protocols for AI interoperability:
 
 | Protocol | Layer | Spec |
-|----------|-------|------|
+| -------- | ----- | ---- |
 | **A2A** (Agent-to-Agent) | Server-side agent interop | [a2a-protocol.org](https://a2a-protocol.org/latest/) |
 | **WebMCP** | Browser agent ↔ Web app | [Chrome EPP](https://developer.chrome.com/blog/webmcp-epp) |
 | **MCP** (Model Context Protocol) | Static tool discovery | [modelcontextprotocol.io](https://modelcontextprotocol.io/) |
@@ -11,7 +11,7 @@ Meitheal implements three complementary agent protocols for AI interoperability:
 ## Discovery Endpoints
 
 | Endpoint | Protocol | Type |
-|----------|----------|------|
+| -------- | -------- | ---- |
 | `/.well-known/agent-card.json` | A2A | Static Agent Card (fallback) |
 | `/api/a2a/agent-card` | A2A | Dynamic Agent Card (reflects config) |
 | `/.well-known/mcp.json` | MCP | Tool discovery manifest |
@@ -32,7 +32,7 @@ The Agent Card describes Meitheal's capabilities and is served at two locations:
 ### Skills
 
 | Skill ID | Description | Requires |
-|----------|-------------|----------|
+| -------- | ----------- | -------- |
 | `task-management` | CRUD operations on tasks | — |
 | `task-search` | Search/filter tasks | — |
 | `framework-scoring` | Apply RICE/HEART/KCS scoring | — |
@@ -42,7 +42,7 @@ The Agent Card describes Meitheal's capabilities and is served at two locations:
 
 ### API Routes
 
-```
+```text
 POST /api/a2a/message:send    — Send a message to Meitheal
 GET  /api/a2a/tasks/{id}      — Get task status
 POST /api/a2a/tasks/{id}:cancel — Cancel a running task
@@ -82,7 +82,7 @@ WebMCP exposes Meitheal functionality as tools for browser-native AI agents (Chr
 When WebMCP is enabled in Settings, the following tools are registered:
 
 | Tool | Description |
-|------|-------------|
+| ---- | ----------- |
 | `createTask` | Create a new task |
 | `searchTasks` | Search/filter tasks |
 | `navigateToBoard` | Switch board views |
