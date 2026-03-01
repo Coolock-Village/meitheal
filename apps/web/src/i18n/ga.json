@@ -70,6 +70,8 @@
         "title": "Tascanna",
         "list_view": "Amharc liosta",
         "kanban_board": "Clár Kanban",
+        "nav.kanban": "Clár Kanban",
+        "nav.dashboard": "Deais",
         "table_view": "Amharc tábla",
         "new_task": "+ Tasc Nua",
         "search_placeholder": "Cuardaigh tascanna... (brúigh /)",

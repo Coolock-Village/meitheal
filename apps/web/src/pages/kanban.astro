@@ -138,12 +138,13 @@ const typeConfig: Record<
   <span slot="page-title">{t("kanban.title", locale)}</span>
   <div slot="actions" style="display: flex; gap: 8px; align-items: center;">
     <button
+      type="button"
       class="btn btn-ghost"
       id="manage-lanes-btn"
       title={t("kanban.manage_swimlanes", locale)}
       >{t("kanban.manage_lanes", locale)}</button
     >
-    <button class="btn btn-primary" id="kanban-new-task-btn"
+    <button type="button" class="btn btn-primary" id="kanban-new-task-btn"
       >{t("kanban.new_task", locale)}</button
     >
   </div>
@@ -158,6 +159,7 @@ const typeConfig: Record<
   >
     <div class="type-filters">
       <button
+        type="button"
         class="type-filter-btn active"
         data-type="all"
         title={t("kanban.show_all_types", locale)}
@@ -165,6 +167,7 @@ const typeConfig: Record<
         📋 {t("kanban.all_types", locale)}
       </button>
       <button
+        type="button"
         class="type-filter-btn active"
         data-type="epic"
         title={t("kanban.toggle_epics", locale)}
@@ -173,6 +176,7 @@ const typeConfig: Record<
         {t("kanban.epics", locale)}
       </button>
       <button
+        type="button"
         class="type-filter-btn active"
         data-type="story"
         title={t("kanban.toggle_stories", locale)}
@@ -181,6 +185,7 @@ const typeConfig: Record<
         {t("kanban.stories", locale)}
       </button>
       <button
+        type="button"
         class="type-filter-btn active"
         data-type="task"
         title={t("kanban.toggle_tasks", locale)}
@@ -222,6 +227,7 @@ const typeConfig: Record<
           style="flex: 1; font-size: 13px;"
         />
         <button
+          type="button"
           class="btn btn-primary"
           id="add-lane-btn"
           style="font-size: 13px;">{t("kanban.add_lane", locale)}</button
@@ -300,6 +306,7 @@ const typeConfig: Record<
                       {/* Cards moved here by JS when grouping is active */}
                     </div>
                     <button
+                      type="button"
                       class="kanban-add-btn swimlane-add-btn"
                       style="margin-top: 8px; font-size: 13px; color: var(--text-muted); background: none; border: 1px dashed var(--border); width: 100%; text-align: left; padding: 6px 12px; border-radius: 6px;"
                       data-status={col.key}
@@ -401,6 +408,7 @@ const typeConfig: Record<
                       class="kanban-attachment hidden"
                       data-task-id={String(task.id)}
                       alt="Attachment"
+                      loading="lazy"
                     />
 
                     {task.description && String(task.description).trim() && (

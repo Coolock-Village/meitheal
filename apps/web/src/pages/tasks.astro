@@ -480,6 +480,9 @@ try {
     document
       .getElementById("create-task-btn")
       ?.addEventListener("click", () => {
+        // Close task detail panel to prevent overlap
+        document.getElementById("task-detail-panel")?.classList.remove("open");
+
         editingId = null;
         (document.getElementById("modal-title") as HTMLElement).textContent =
           "New Task";

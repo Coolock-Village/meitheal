@@ -44,7 +44,7 @@ const priorityColors: Record<number, string> = {
 <Layout title={`Meitheal — ${t("table.title", locale)}`}>
   <span slot="page-title">{t("table.title", locale)}</span>
   <div slot="actions" style="display: flex; gap: 8px; align-items: center;">
-    <button class="btn btn-primary" id="create-task-btn"
+    <button type="button" class="btn btn-primary" id="create-task-btn"
       >{t("tasks.new_task", locale)}</button
     >
   </div>
@@ -90,36 +90,58 @@ const priorityColors: Record<number, string> = {
           <table class="data-table" id="task-table">
             <thead>
               <tr>
-                <th style="width: 40px;">
+                <th scope="col" style="width: 40px;">
                   <input
                     type="checkbox"
                     id="select-all"
                     aria-label="Select all tasks"
                   />
                 </th>
-                <th class="sortable" data-col="key" style="width: 90px;">
+                <th
+                  scope="col"
+                  class="sortable"
+                  data-col="key"
+                  style="width: 90px;"
+                >
                   Key
                 </th>
-                <th class="sortable" data-col="title">
+                <th scope="col" class="sortable" data-col="title">
                   {t("table.col_title", locale)}
                 </th>
                 <th
+                  scope="col"
                   class="sortable"
                   data-col="type"
                   style="width: 70px; text-align: center;"
                 >
                   Type
                 </th>
-                <th class="sortable" data-col="status" style="width: 100px;">
+                <th
+                  scope="col"
+                  class="sortable"
+                  data-col="status"
+                  style="width: 100px;"
+                >
                   {t("table.col_status", locale)}
                 </th>
-                <th class="sortable" data-col="priority" style="width: 100px;">
+                <th
+                  scope="col"
+                  class="sortable"
+                  data-col="priority"
+                  style="width: 100px;"
+                >
                   {t("table.col_priority", locale)}
                 </th>
-                <th class="sortable" data-col="due_date" style="width: 120px;">
+                <th
+                  scope="col"
+                  class="sortable"
+                  data-col="due_date"
+                  style="width: 120px;"
+                >
                   {t("table.col_due_date", locale)}
                 </th>
                 <th
+                  scope="col"
                   class="sortable"
                   data-col="rice"
                   style="width: 80px; text-align: center;"
@@ -127,15 +149,16 @@ const priorityColors: Record<number, string> = {
                   {t("table.col_rice", locale)}
                 </th>
                 <th
+                  scope="col"
                   style="width: 70px; text-align: center;"
                   title={t("table.col_calendar", locale)}
                 >
                   📅
                 </th>
-                <th style="width: 100px;">
+                <th scope="col" style="width: 100px;">
                   {t("table.col_custom_fields", locale)}
                 </th>
-                <th style="width: 80px; text-align: center;">
+                <th scope="col" style="width: 80px; text-align: center;">
                   {t("table.col_actions", locale)}
                 </th>
               </tr>

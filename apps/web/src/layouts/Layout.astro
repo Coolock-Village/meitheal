@@ -78,7 +78,10 @@ Astro.response.headers.set("X-XSS-Protection", "1; mode=block");
       })();
     </script>
     <meta charset="utf-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta
+      name="viewport"
+      content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=0"
+    />
     <title>{title}</title>
     <meta name="description" content={description} />
     <meta property="og:title" content={title} />
@@ -175,6 +178,7 @@ Astro.response.headers.set("X-XSS-Protection", "1; mode=block");
                 title="Task ID"></span>
             </div>
             <button
+              type="button"
               id="td-close"
               class="btn-secondary px-3 py-1.5 text-sm"
               aria-label="Close detail">✕</button
@@ -271,8 +275,8 @@ Astro.response.headers.set("X-XSS-Protection", "1; mode=block");
                 >
                   <span>Checklists</span>
                   <button
-                    id="td-add-checklist-item"
                     type="button"
+                    id="td-add-checklist-item"
                     class="text-xs text-accent hover:text-accent-hover transition-colors"
                     >+ Add Item</button
                   >
@@ -440,8 +444,10 @@ Astro.response.headers.set("X-XSS-Protection", "1; mode=block");
                     class="form-input flex-1"
                     placeholder="Add a comment..."
                   />
-                  <button id="td-comment-submit" class="btn-primary px-4"
-                    >Comment</button
+                  <button
+                    type="button"
+                    id="td-comment-submit"
+                    class="btn-primary px-4">Comment</button
                   >
                 </div>
               </div>
@@ -1433,9 +1439,8 @@ Astro.response.headers.set("X-XSS-Protection", "1; mode=block");
             const progress = Number(t.progress ?? 0);
             (document.getElementById("td-progress") as HTMLInputElement).value =
               String(progress);
-            (
-              document.getElementById("td-progress-value") as HTMLElement
-            ).textContent = `${progress}%`;
+            const progValEl = document.getElementById("td-progress-value");
+            if (progValEl) progValEl.textContent = `${progress}%`;
 
             // Progress bar fill
             const progressBarFill = document.getElementById(
@@ -1533,9 +1538,11 @@ Astro.response.headers.set("X-XSS-Protection", "1; mode=block");
             ).value = String(t.task_type ?? "task");
 
             const isFav = Number(t.is_favorite ?? 0);
-            (
-              document.getElementById("td-toggle-favorite") as HTMLElement
-            ).textContent = isFav ? "★ Favorited" : "⭐ Add to Favorites";
+            const favBtn = document.getElementById("td-fav-btn");
+            if (favBtn)
+              favBtn.textContent = isFav
+                ? "★ Favorited"
+                : "⭐ Add to Favorites";
             const isDone =
               String(t.status) === "done" || String(t.status) === "complete";
             (
@@ -1622,10 +1629,11 @@ Astro.response.headers.set("X-XSS-Protection", "1; mode=block");
             const updated = t.updated_at
               ? new Date(Number(t.updated_at)).toLocaleDateString()
               : "";
-            (document.getElementById("td-updated") as HTMLElement).textContent =
-              updated ? `Updated: ${updated}` : "";
-
-            // Render Checklists
+            const tdUpdated = document.getElementById("td-updated");
+            if (tdUpdated)
+              tdUpdated.textContent =
+                "Last updated " +
+                new Date(Number(t.updated_at)).toLocaleString();
             const checklistsContainer = document.getElementById(
               "td-checklists",
             ) as HTMLElement;

@@ -133,6 +133,7 @@ const locale: Locale = cookieLocale === "ga" ? "ga" : "en";
             >
           </div>
           <button
+            type="button"
             class="btn btn-primary"
             id="save-sidebar"
             style="font-size: 13px; margin-top: 16px;"
@@ -152,7 +153,7 @@ const locale: Locale = cookieLocale === "ga" ? "ga" : "en";
               {t("settings.custom_fields_subtitle", locale)}
             </div>
           </div>
-          <button class="btn btn-ghost" id="add-custom-field"
+          <button type="button" class="btn btn-ghost" id="add-custom-field"
             >+ Add Field</button
           >
         </div>
@@ -350,11 +351,13 @@ const locale: Locale = cookieLocale === "ga" ? "ga" : "en";
             </div>
             <div style="display: flex; gap: 8px; align-items: center;">
               <button
+                type="button"
                 class="btn btn-primary"
                 id="save-cal"
                 style="font-size: 13px;">Save Calendar Settings</button
               >
               <button
+                type="button"
                 class="btn btn-ghost"
                 id="test-cal"
                 style="font-size: 13px;">Test Sync</button
@@ -412,6 +415,7 @@ const locale: Locale = cookieLocale === "ga" ? "ga" : "en";
               </select>
             </div>
             <button
+              type="button"
               class="btn btn-primary"
               id="save-grocy"
               style="font-size: 13px;">Save Grocy Settings</button
@@ -493,6 +497,7 @@ const locale: Locale = cookieLocale === "ga" ? "ga" : "en";
               </div>
             </div>
             <button
+              type="button"
               class="btn btn-primary"
               id="save-n8n"
               style="font-size: 13px;">Save n8n Settings</button
@@ -548,11 +553,13 @@ const locale: Locale = cookieLocale === "ga" ? "ga" : "en";
             </div>
             <div style="display: flex; gap: 8px;">
               <button
+                type="button"
                 class="btn btn-primary"
                 id="save-webhook"
                 style="font-size: 13px;">Save Webhook</button
               >
               <button
+                type="button"
                 class="btn btn-ghost"
                 id="test-webhook"
                 style="font-size: 13px;">Send Test</button
@@ -618,6 +625,7 @@ const locale: Locale = cookieLocale === "ga" ? "ga" : "en";
               />
             </div>
             <button
+              type="button"
               class="btn btn-primary"
               id="save-ai"
               style="font-size: 13px;">Save AI Settings</button
@@ -1216,6 +1224,7 @@ const locale: Locale = cookieLocale === "ga" ? "ga" : "en";
 
         // Restore sidebar config
         const DEFAULT_SIDEBAR = [
+          "dashboard",
           "kanban",
           "tasks",
           "table",
@@ -1224,6 +1233,7 @@ const locale: Locale = cookieLocale === "ga" ? "ga" : "en";
           "calendar",
         ];
         const SIDEBAR_LABELS: Record<string, string> = {
+          dashboard: "Dashboard",
           kanban: "Kanban Board",
           tasks: "Tasks List",
           table: "Table",
