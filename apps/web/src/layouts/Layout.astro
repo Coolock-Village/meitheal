@@ -1,5 +1,6 @@
 ---
 import "../styles/global.css";
+import { ViewTransitions } from "astro:transitions";
 import { t } from "../i18n/translations";
 import type { Locale } from "../lib/locale";
 import Sidebar from "../components/layout/Sidebar.astro";
@@ -80,6 +81,7 @@ Astro.response.headers.set("X-XSS-Protection", "1; mode=block");
       href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap"
       rel="stylesheet"
     />
+    <ViewTransitions fallback="swap" />
   </head>
   <body>
     <a href="#main-content" class="skip-to-content"
@@ -108,7 +110,7 @@ Astro.response.headers.set("X-XSS-Protection", "1; mode=block");
         id="task-detail-panel"
         class="absolute right-0 top-0 h-full w-full max-w-4xl bg-bg-secondary border-l border-border shadow-2xl overflow-y-auto animate-slide-in"
       >
-        <div class="px-6 pt-4">
+        <div class="px-6 lg:px-8 pt-6 pb-2">
           <a
             href="#"
             id="td-parent"
@@ -159,9 +161,9 @@ Astro.response.headers.set("X-XSS-Protection", "1; mode=block");
               class="text-xs text-text-muted font-medium"></span>
           </div>
 
-          <div class="flex flex-col lg:flex-row gap-6">
+          <div class="flex flex-col lg:flex-row">
             <!-- Left: Content -->
-            <div class="flex-1 p-6 lg:p-8 space-y-8">
+            <div class="flex-1 px-6 lg:px-8 py-6 space-y-8">
               <!-- Status + Board -->
               <div class="flex items-center gap-3">
                 <select id="td-status" class="inline-select">

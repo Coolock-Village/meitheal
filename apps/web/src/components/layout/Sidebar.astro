@@ -1,245 +1,269 @@
 ---
 import { t } from "../../i18n/translations";
 import type { Locale } from "../../lib/locale";
+import {
+  ensureSchema,
+  getPersistenceClient,
+} from "@domains/tasks/persistence/store";
 
-interface Props {
-  locale: Locale;
-  taskCounts: { total: number; active: number; pending: number };
+const currentPath = Astro.url.pathname;
+const cookieLocale = Astro.cookies.get("meitheal-locale")?.value;
+const locale: Locale = cookieLocale === "ga" ? "ga" : "en";
+
+let sidebarConfig = {
+  kanban: true,
+  tasks: true,
+  table: true,
+  today: true,
+  upcoming: true,
+  calendar: true,
+};
+
+try {
+  await ensureSchema();
+  const c = getPersistenceClient();
+  const res = await c.execute(
+    "SELECT value FROM settings WHERE key = 'sidebar_config'",
+  );
+  if (res.rows.length > 0) {
+    const parsed = JSON.parse(String(res.rows[0]?.value));
+    sidebarConfig = { ...sidebarConfig, ...parsed };
+  }
+} catch {
+  // DB fallback
 }
-
-const { locale, taskCounts } = Astro.props;
 ---
 
 <nav
-  class="sidebar"
+  class="sidebar hidden md:flex"
   id="sidebar"
   role="navigation"
-  aria-label="Main navigation"
+  aria-label="Main Navigation"
 >
-  <div class="sidebar-header">
-    <div class="logo">
-      <span class="logo-icon">
-        <svg
-          xmlns="http://www.w3.org/2000/svg"
-          width="24"
-          height="24"
-          viewBox="0 0 24 24"
-          fill="none"
-          stroke="currentColor"
-          stroke-width="2"
-          stroke-linecap="round"
-          stroke-linejoin="round"
-          class="w-6 h-6 text-accent"
-          ><path d="M12 2v20M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"
-          ></path></svg
-        >
-      </span>
-      <span class="logo-text">Meitheal</span>
-    </div>
+  <div class="sidebar-header pb-4 mb-4 border-b border-border/50">
+    <a
+      href="/"
+      class="text-xl font-bold tracking-tight text-text-primary hover:text-accent transition-colors flex items-center gap-2 no-underline"
+      aria-label="Meitheal Home"
+    >
+      <span class="text-2xl" aria-hidden="true">☘️</span> Meitheal
+    </a>
   </div>
-  <ul class="nav-links">
-    <li>
-      <a
-        href="/"
-        class="nav-link"
-        data-page="dashboard"
-        aria-label={t("nav.dashboard", locale)}
-      >
-        <span class="nav-icon">
-          <svg
-            xmlns="http://www.w3.org/2000/svg"
-            width="20"
-            height="20"
-            viewBox="0 0 24 24"
-            fill="none"
-            stroke="currentColor"
-            stroke-width="2"
-            stroke-linecap="round"
-            stroke-linejoin="round"
-            ><rect width="18" height="18" x="3" y="3" rx="2"></rect><path
-              d="M3 9h18M9 21V9"></path></svg
+  <ul class="nav-list flex-1 flex flex-col gap-1 list-none m-0 p-0">
+    {
+      sidebarConfig.kanban && (
+        <li>
+          <a
+            href="/"
+            class={`nav-link ${currentPath === "/" ? "active" : ""}`}
+            data-page="home"
+            aria-label={t("nav.home", locale)}
           >
-        </span>
-        {t("nav.dashboard", locale)}
-      </a>
-    </li>
-    <li>
-      <a
-        href="/tasks"
-        class="nav-link"
-        data-page="tasks"
-        aria-label={`Tasks (${taskCounts.total} total)`}
-      >
-        <span class="nav-icon">
-          <svg
-            xmlns="http://www.w3.org/2000/svg"
-            width="20"
-            height="20"
-            viewBox="0 0 24 24"
-            fill="none"
-            stroke="currentColor"
-            stroke-width="2"
-            stroke-linecap="round"
-            stroke-linejoin="round"
-            ><path d="m9 11 3 3L22 4"></path><path
-              d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"
-            ></path></svg
+            <span class="nav-icon">
+              <svg
+                xmlns="http://www.w3.org/2000/svg"
+                width="20"
+                height="20"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                stroke-width="2"
+                stroke-linecap="round"
+                stroke-linejoin="round"
+              >
+                <>
+                  <rect width="18" height="18" x="3" y="3" rx="2" />
+                  <path d="M8 7v7" />
+                  <path d="M12 7v4" />
+                  <path d="M16 7v9" />
+                </>
+              </svg>
+            </span>
+            {t("nav.home", locale)}
+          </a>
+        </li>
+      )
+    }
+    {
+      sidebarConfig.tasks && (
+        <li>
+          <a
+            href="/tasks"
+            class={`nav-link ${currentPath.startsWith("/tasks") ? "active" : ""}`}
+            data-page="tasks"
+            aria-label={t("nav.tasks", locale)}
           >
-        </span>
-        {t("nav.tasks", locale)}
-        <span class="nav-badge" aria-label={`${taskCounts.total} tasks`}
-          >{taskCounts.total}</span
-        >
-      </a>
-    </li>
-    <li>
-      <a
-        href="/kanban"
-        class="nav-link"
-        data-page="kanban"
-        aria-label={`Kanban board (${taskCounts.active} active)`}
-      >
-        <span class="nav-icon">
-          <svg
-            xmlns="http://www.w3.org/2000/svg"
-            width="20"
-            height="20"
-            viewBox="0 0 24 24"
-            fill="none"
-            stroke="currentColor"
-            stroke-width="2"
-            stroke-linecap="round"
-            stroke-linejoin="round"
-            ><rect width="18" height="18" x="3" y="3" rx="2"></rect><path
-              d="M8 3v18M16 3v18"></path></svg
+            <span class="nav-icon">
+              <svg
+                xmlns="http://www.w3.org/2000/svg"
+                width="20"
+                height="20"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                stroke-width="2"
+                stroke-linecap="round"
+                stroke-linejoin="round"
+              >
+                <>
+                  <line x1="8" x2="21" y1="6" y2="6" />
+                  <line x1="8" x2="21" y1="12" y2="12" />
+                  <line x1="8" x2="21" y1="18" y2="18" />
+                  <line x1="3" x2="3.01" y1="6" y2="6" />
+                  <line x1="3" x2="3.01" y1="12" y2="12" />
+                  <line x1="3" x2="3.01" y1="18" y2="18" />
+                </>
+              </svg>
+            </span>
+            {t("nav.tasks", locale)}
+            <span class="nav-badge" id="nav-count-tasks" aria-hidden="true">
+              0
+            </span>
+          </a>
+        </li>
+      )
+    }
+    {
+      sidebarConfig.table && (
+        <li>
+          <a
+            href="/table"
+            class={`nav-link ${currentPath.startsWith("/table") ? "active" : ""}`}
+            data-page="table"
+            aria-label={t("nav.table", locale)}
           >
-        </span>
-        {t("nav.kanban", locale)}
-        <span class="nav-badge" aria-label={`${taskCounts.active} active tasks`}
-          >{taskCounts.active}</span
-        >
-      </a>
-    </li>
-    <li>
-      <a
-        href="/table"
-        class="nav-link"
-        data-page="table"
-        aria-label={t("nav.table", locale)}
-      >
-        <span class="nav-icon">
-          <svg
-            xmlns="http://www.w3.org/2000/svg"
-            width="20"
-            height="20"
-            viewBox="0 0 24 24"
-            fill="none"
-            stroke="currentColor"
-            stroke-width="2"
-            stroke-linecap="round"
-            stroke-linejoin="round"
-            ><path d="M12 3v18"></path><rect
-              width="18"
-              height="18"
-              x="3"
-              y="3"
-              rx="2"></rect><path d="M3 9h18"></path><path d="M3 15h18"
-            ></path></svg
+            <span class="nav-icon">
+              <svg
+                xmlns="http://www.w3.org/2000/svg"
+                width="20"
+                height="20"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                stroke-width="2"
+                stroke-linecap="round"
+                stroke-linejoin="round"
+              >
+                <>
+                  <path d="M12 3v18" />
+                  <rect width="18" height="18" x="3" y="3" rx="2" />
+                  <path d="M3 9h18" />
+                  <path d="M3 15h18" />
+                </>
+              </svg>
+            </span>
+            {t("nav.table", locale)}
+          </a>
+        </li>
+      )
+    }
+    {
+      sidebarConfig.today && (
+        <li>
+          <a
+            href="/today"
+            class={`nav-link ${currentPath.startsWith("/today") ? "active" : ""}`}
+            data-page="today"
+            aria-label={t("nav.today", locale)}
           >
-        </span>
-        {t("nav.table", locale)}
-      </a>
-    </li>
-    <li>
-      <a
-        href="/today"
-        class="nav-link"
-        data-page="today"
-        aria-label={t("nav.today", locale)}
-      >
-        <span class="nav-icon">
-          <svg
-            xmlns="http://www.w3.org/2000/svg"
-            width="20"
-            height="20"
-            viewBox="0 0 24 24"
-            fill="none"
-            stroke="currentColor"
-            stroke-width="2"
-            stroke-linecap="round"
-            stroke-linejoin="round"
-            ><circle cx="12" cy="12" r="4"></circle><path d="M12 2v2"
-            ></path><path d="M12 20v2"></path><path d="m4.93 4.93 1.41 1.41"
-            ></path><path d="m17.66 17.66 1.41 1.41"></path><path d="M2 12h2"
-            ></path><path d="M20 12h2"></path><path d="m6.34 17.66-1.41 1.41"
-            ></path><path d="m19.07 4.93-1.41 1.41"></path></svg
+            <span class="nav-icon">
+              <svg
+                xmlns="http://www.w3.org/2000/svg"
+                width="20"
+                height="20"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                stroke-width="2"
+                stroke-linecap="round"
+                stroke-linejoin="round"
+              >
+                <>
+                  <circle cx="12" cy="12" r="10" />
+                  <polyline points="12 6 12 12 16 14" />
+                </>
+              </svg>
+            </span>
+            {t("nav.today", locale)}
+          </a>
+        </li>
+      )
+    }
+    {
+      sidebarConfig.upcoming && (
+        <li>
+          <a
+            href="/upcoming"
+            class={`nav-link ${currentPath.startsWith("/upcoming") ? "active" : ""}`}
+            data-page="upcoming"
+            aria-label={t("nav.upcoming", locale)}
           >
-        </span>
-        {t("nav.today", locale)}
-      </a>
-    </li>
-    <li>
-      <a
-        href="/upcoming"
-        class="nav-link"
-        data-page="upcoming"
-        aria-label={t("nav.upcoming", locale)}
-      >
-        <span class="nav-icon">
-          <svg
-            xmlns="http://www.w3.org/2000/svg"
-            width="20"
-            height="20"
-            viewBox="0 0 24 24"
-            fill="none"
-            stroke="currentColor"
-            stroke-width="2"
-            stroke-linecap="round"
-            stroke-linejoin="round"
-            ><path d="M8 2v4"></path><path d="M16 2v4"></path><rect
-              width="18"
-              height="18"
-              x="3"
-              y="4"
-              rx="2"></rect><path d="M3 10h18"></path><path d="m9 16 2 2 4-4"
-            ></path></svg
+            <span class="nav-icon">
+              <svg
+                xmlns="http://www.w3.org/2000/svg"
+                width="20"
+                height="20"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                stroke-width="2"
+                stroke-linecap="round"
+                stroke-linejoin="round"
+              >
+                <>
+                  <path d="M8 2v4" />
+                  <path d="M16 2v4" />
+                  <rect width="18" height="18" x="3" y="8" rx="2" />
+                  <path d="M3 14h18" />
+                  <path d="M8 18h8" />
+                </>
+              </svg>
+            </span>
+            {t("nav.upcoming", locale)}
+          </a>
+        </li>
+      )
+    }
+    {
+      sidebarConfig.calendar && (
+        <li>
+          <a
+            href="/calendar"
+            class={`nav-link ${currentPath.startsWith("/calendar") ? "active" : ""}`}
+            data-page="calendar"
+            aria-label={t("nav.calendar", locale)}
           >
-        </span>
-        {t("nav.upcoming", locale)}
-      </a>
-    </li>
-    <li>
-      <a
-        href="/calendar"
-        class="nav-link"
-        data-page="calendar"
-        aria-label={t("nav.calendar", locale)}
-      >
-        <span class="nav-icon">
-          <svg
-            xmlns="http://www.w3.org/2000/svg"
-            width="20"
-            height="20"
-            viewBox="0 0 24 24"
-            fill="none"
-            stroke="currentColor"
-            stroke-width="2"
-            stroke-linecap="round"
-            stroke-linejoin="round"
-            ><path d="M8 2v4"></path><path d="M16 2v4"></path><rect
-              width="18"
-              height="18"
-              x="3"
-              y="4"
-              rx="2"></rect><path d="M3 10h18"></path><path d="M8 14h.01"
-            ></path><path d="M12 14h.01"></path><path d="M16 14h.01"
-            ></path><path d="M8 18h.01"></path><path d="M12 18h.01"></path><path
-              d="M16 18h.01"></path></svg
-          >
-        </span>
-        {t("nav.calendar", locale)}
-      </a>
-    </li>
+            <span class="nav-icon">
+              <svg
+                xmlns="http://www.w3.org/2000/svg"
+                width="20"
+                height="20"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                stroke-width="2"
+                stroke-linecap="round"
+                stroke-linejoin="round"
+              >
+                <>
+                  <rect width="18" height="18" x="3" y="4" rx="2" ry="2" />
+                  <line x1="16" x2="16" y1="2" y2="6" />
+                  <line x1="8" x2="8" y1="2" y2="6" />
+                  <line x1="3" x2="21" y1="10" y2="10" />
+                  <path d="M8 14h.01" />
+                  <path d="M12 14h.01" />
+                  <path d="M16 14h.01" />
+                  <path d="M8 18h.01" />
+                  <path d="M12 18h.01" />
+                  <path d="M16 18h.01" />
+                </>
+              </svg>
+            </span>
+            {t("nav.calendar", locale)}
+          </a>
+        </li>
+      )
+    }
   </ul>
   <div
     class="board-switcher"

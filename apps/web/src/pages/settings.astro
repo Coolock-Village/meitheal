@@ -99,6 +99,58 @@ const locale: Locale = cookieLocale === "ga" ? "ga" : "en";
         </form>
       </div>
 
+      <!-- Sidebar Config -->
+      <div class="card">
+        <div class="card-header">
+          <div>
+            <div class="card-title">Sidebar Configuration</div>
+            <div class="card-subtitle">
+              Configure which views appear in the main navigation.
+            </div>
+          </div>
+        </div>
+        <div style="padding: 16px;">
+          <div style="display: flex; gap: 12px; flex-wrap: wrap;">
+            <label
+              style="font-size: 13px; display: flex; gap: 4px; align-items: center;"
+            >
+              <input type="checkbox" id="sidebar-cf-kanban" checked /> Kanban Board
+            </label>
+            <label
+              style="font-size: 13px; display: flex; gap: 4px; align-items: center;"
+            >
+              <input type="checkbox" id="sidebar-cf-tasks" checked /> Tasks List
+            </label>
+            <label
+              style="font-size: 13px; display: flex; gap: 4px; align-items: center;"
+            >
+              <input type="checkbox" id="sidebar-cf-table" checked /> Table
+            </label>
+            <label
+              style="font-size: 13px; display: flex; gap: 4px; align-items: center;"
+            >
+              <input type="checkbox" id="sidebar-cf-today" checked /> Today
+            </label>
+            <label
+              style="font-size: 13px; display: flex; gap: 4px; align-items: center;"
+            >
+              <input type="checkbox" id="sidebar-cf-upcoming" checked /> Upcoming
+            </label>
+            <label
+              style="font-size: 13px; display: flex; gap: 4px; align-items: center;"
+            >
+              <input type="checkbox" id="sidebar-cf-calendar" checked /> Calendar
+            </label>
+          </div>
+          <button
+            class="btn btn-primary"
+            id="save-sidebar"
+            style="font-size: 13px; margin-top: 16px;"
+            >Save Sidebar Config</button
+          >
+        </div>
+      </div>
+
       <!-- Custom Fields -->
       <div class="card">
         <div class="card-header">
@@ -1063,6 +1115,39 @@ const locale: Locale = cookieLocale === "ga" ? "ga" : "en";
           ).value = stored;
         }
 
+        // Restore sidebar config
+        if (settings.sidebar_config) {
+          try {
+            const sc = JSON.parse(settings.sidebar_config);
+            const kanbanT = document.getElementById(
+              "sidebar-cf-kanban",
+            ) as HTMLInputElement;
+            if (kanbanT) kanbanT.checked = sc.kanban !== false;
+            const tasksT = document.getElementById(
+              "sidebar-cf-tasks",
+            ) as HTMLInputElement;
+            if (tasksT) tasksT.checked = sc.tasks !== false;
+            const tableT = document.getElementById(
+              "sidebar-cf-table",
+            ) as HTMLInputElement;
+            if (tableT) tableT.checked = sc.table !== false;
+            const todayT = document.getElementById(
+              "sidebar-cf-today",
+            ) as HTMLInputElement;
+            if (todayT) todayT.checked = sc.today !== false;
+            const upcomingT = document.getElementById(
+              "sidebar-cf-upcoming",
+            ) as HTMLInputElement;
+            if (upcomingT) upcomingT.checked = sc.upcoming !== false;
+            const calendarT = document.getElementById(
+              "sidebar-cf-calendar",
+            ) as HTMLInputElement;
+            if (calendarT) calendarT.checked = sc.calendar !== false;
+          } catch {
+            /* skip */
+          }
+        }
+
         // Render saved custom fields
         if (settings.custom_fields) {
           try {
@@ -1205,6 +1290,47 @@ const locale: Locale = cookieLocale === "ga" ? "ga" : "en";
         saveBtn.innerHTML = origText;
         saveBtn.disabled = false;
         showToast("HA settings saved");
+      });
+
+    // Save sidebar config
+    document
+      .getElementById("save-sidebar")
+      ?.addEventListener("click", async () => {
+        const config = {
+          kanban:
+            (document.getElementById("sidebar-cf-kanban") as HTMLInputElement)
+              ?.checked ?? true,
+          tasks:
+            (document.getElementById("sidebar-cf-tasks") as HTMLInputElement)
+              ?.checked ?? true,
+          table:
+            (document.getElementById("sidebar-cf-table") as HTMLInputElement)
+              ?.checked ?? true,
+          today:
+            (document.getElementById("sidebar-cf-today") as HTMLInputElement)
+              ?.checked ?? true,
+          upcoming:
+            (document.getElementById("sidebar-cf-upcoming") as HTMLInputElement)
+              ?.checked ?? true,
+          calendar:
+            (document.getElementById("sidebar-cf-calendar") as HTMLInputElement)
+              ?.checked ?? true,
+        };
+
+        const btn = document.getElementById(
+          "save-sidebar",
+        ) as HTMLButtonElement;
+        if (!btn) return;
+        const oText = btn.textContent;
+        btn.textContent = "Saving...";
+        btn.disabled = true;
+
+        await saveSetting("sidebar_config", JSON.stringify(config));
+
+        btn.textContent = oText;
+        btn.disabled = false;
+        showToast("Sidebar configuration saved");
+        setTimeout(() => window.location.reload(), 1000);
       });
 
     // Add custom field
