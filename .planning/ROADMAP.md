@@ -230,10 +230,19 @@ Current state:
 Current state:
 - Planned. Ensure the order of fields, menu customizations, and UI preferences are fully serialized in settings import/export.
 
-## Phase 39: HA OS Addon Production Readiness 📋
+## Phase 39: HA OS Addon Production Readiness 🚀
 
 Current state:
-- Planned. Finalize metadata, build configurations, and app structure for Home Assistant Addon repository guidelines.
+- [x] Multi-stage Dockerfile (build inside container, self-contained image)
+- [x] Docker Hub publishing (`coolockvillage/meitheal-hub-{arch}`)
+- [x] CI workflow dual-push (GHCR + Docker Hub) with `workflow_dispatch` tag override
+- [x] `build-push-dev.sh` for rapid dev iteration
+- [x] `icon.png` and `logo.png` for addon store
+- [x] ADR-0012: Docker Hub publishing decision
+- [x] Updated DOCS.md with self-install instructions
+- [x] Updated README.md with Docker Hub badge and dev workflow
+- [ ] Push initial images to Docker Hub
+- [ ] Install and test on HA Green
 
 ## Phase 40: Mobile Responsiveness Finalization 📋
 

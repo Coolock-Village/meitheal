@@ -3,7 +3,7 @@ version: "0.1.0"
 slug: "meitheal_hub"
 description: "The cooperative task and life engine for your home"
 url: "https://github.com/Coolock-Village/meitheal"
-image: "ghcr.io/coolock-village/meitheal-hub-{arch}"
+image: "coolockvillage/meitheal-hub-{arch}"
 arch:
   - aarch64
   - amd64

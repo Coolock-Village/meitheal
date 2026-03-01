@@ -4,6 +4,16 @@ Meitheal Hub is the Home Assistant add-on runtime for Meitheal, the cooperative 
 
 This add-on is Astro-first and runs the Meitheal web runtime with SQLite persistence and Home Assistant ingress support.
 
+[![Docker Hub](https://img.shields.io/docker/v/coolockvillage/meitheal-hub-amd64?label=Docker%20Hub&logo=docker)](https://hub.docker.com/r/coolockvillage/meitheal-hub-amd64)
+
+## Quick Install on HA Green
+
+1. **Settings** → **Add-ons** → **Add-on Store** → **⋮** → **Repositories**
+2. Add: `https://github.com/Coolock-Village/meitheal`
+3. Find **Meitheal Hub** → **Install** → **Start** → **Open Web UI**
+
+> **Updating:** After pushing new images, go to the add-on → **⋮** → **Check for updates**. Then **Update** + **Restart**.
+
 ## Screenshots
 
 ![Meitheal Hub Home](../../docs/images/meitheal-hub-home.png)
@@ -12,20 +22,32 @@ This add-on is Astro-first and runs the Meitheal web runtime with SQLite persist
 
 ## Local Testing
 
-Per [HA local testing docs](https://developers.home-assistant.io/docs/add-ons/testing):
-
 ```bash
 # Build from repo root
 podman build --build-arg BUILD_FROM="ghcr.io/home-assistant/amd64-base:3.20" \
   -f addons/meitheal-hub/Dockerfile -t local/meitheal-hub .
 
 # Run standalone (no Supervisor)
-podman run --rm --network=slirp4netns:port_handler=slirp4netns \
-  -p 3333:3000 -v /tmp/meitheal-data:/data \
+podman run --rm -p 3333:3000 -v /tmp/meitheal-data:/data \
   local/meitheal-hub /run-local.sh
 
 # Verify
 curl http://localhost:3333/api/health
+```
+
+## Dev Build & Push
+
+For rapid iteration during development:
+
+```bash
+# Login once
+docker login -u coolockvillage
+
+# Build and push :dev tag for both architectures
+./addons/meitheal-hub/build-push-dev.sh
+
+# Build and push a versioned release
+./addons/meitheal-hub/build-push-dev.sh v0.1.0
 ```
 
 ## Files
@@ -33,10 +55,13 @@ curl http://localhost:3333/api/health
 | File | Purpose |
 |------|---------|
 | `config.yaml` | Add-on manifest (name, arch, ingress, options) |
-| `Dockerfile` | Build steps — HA base image + Node + pnpm + pre-built dist |
+| `Dockerfile` | Multi-stage build — Astro build + HA base image runtime |
 | `build.json` | Architecture-specific base image registry |
 | `run.sh` | Production entrypoint (uses bashio + Supervisor) |
 | `run-local.sh` | Local testing entrypoint (standalone, no bashio) |
+| `build-push-dev.sh` | Dev script to build + push to Docker Hub |
+| `icon.png` | Add-on store icon (128×128) |
+| `logo.png` | Add-on store logo (250×100) |
 | `rootfs/` | Grafana Alloy config + dashboards |
 | `DOCS.md` | Setup and operations details |
 

@@ -2,10 +2,37 @@
 
 ## Installation
 
+### From HA Add-on Store (after publishing)
+
 1. Add the Meitheal repository to Home Assistant add-on repositories.
 2. Install the `Meitheal Hub` add-on.
 3. Start the add-on.
 4. Open Web UI via ingress.
+
+### Self-Install on Your HA Green (pre-publishing)
+
+1. Open Home Assistant → **Settings** → **Add-ons** → **Add-on Store**.
+2. Click **⋮** (top-right) → **Repositories**.
+3. Add: `https://github.com/Coolock-Village/meitheal`
+4. Close the dialog, then search for **Meitheal Hub**.
+5. Click **Install** → **Start** → **Open Web UI**.
+
+> **Rapid development mode:** After pushing new images to Docker Hub, go to the add-on page → **⋮** → **Reload** to pick up new versions. Then click **Update** + **Restart** to get the latest build.
+
+### Local Testing (no HA required)
+
+```bash
+# Build from repo root
+podman build --build-arg BUILD_FROM="ghcr.io/home-assistant/amd64-base:3.20" \
+  -f addons/meitheal-hub/Dockerfile -t local/meitheal-hub .
+
+# Run standalone (no Supervisor)
+podman run --rm -p 3333:3000 -v /tmp/meitheal-data:/data \
+  local/meitheal-hub /run-local.sh
+
+# Verify
+curl http://localhost:3333/api/health
+```
 
 ## Configuration
 
@@ -66,7 +93,9 @@ With `auth_api: true`, Meitheal can validate user credentials against the Home A
 ## Publishing Requirements
 
 - `image` is configured in `config.yaml` and uses the `{arch}` suffix.
+- Images are published to Docker Hub under `coolockvillage/meitheal-hub-{arch}`.
 - Version tags and published container tags should match add-on `version`.
 - Root `repository.yaml` must stay present for repository publishing.
 - `apparmor.txt` must be present alongside `config.yaml`.
 - `translations/en.yaml` provides English option descriptions.
+- `icon.png` (128×128) and `logo.png` (250×100) present in addon folder.

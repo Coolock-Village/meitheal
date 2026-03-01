@@ -2,6 +2,11 @@ name: Publish Add-on Images
 
 on:
   workflow_dispatch:
+    inputs:
+      tag_override:
+        description: "Tag override (e.g. 'dev' for pre-release)"
+        required: false
+        default: ""
   push:
     tags:
       - "v*"
@@ -36,14 +41,28 @@ jobs:
           username: ${{ github.actor }}
           password: ${{ secrets.GITHUB_TOKEN }}
 
+      - name: Log in to Docker Hub
+        uses: docker/login-action@v3
+        with:
+          username: ${{ secrets.DOCKERHUB_USERNAME }}
+          password: ${{ secrets.DOCKERHUB_TOKEN }}
+
       - name: Resolve image metadata
         id: meta
         run: |
           owner_lc="$(echo "${GITHUB_REPOSITORY_OWNER}" | tr '[:upper:]' '[:lower:]')"
           version="$(awk -F'"' '/^version:/{print $2}' addons/meitheal-hub/config.yaml)"
           build_from="$(jq -r ".build_from[\"${{ matrix.arch }}\"]" addons/meitheal-hub/build.json)"
+
+          # Support tag override for dev builds
+          tag="${{ inputs.tag_override }}"
+          if [ -z "${tag}" ]; then
+            tag="${version}"
+          fi
+
           echo "owner_lc=${owner_lc}" >> "$GITHUB_OUTPUT"
           echo "version=${version}" >> "$GITHUB_OUTPUT"
+          echo "tag=${tag}" >> "$GITHUB_OUTPUT"
           echo "build_from=${build_from}" >> "$GITHUB_OUTPUT"
 
       - name: Validate release tag matches add-on version
@@ -68,5 +87,7 @@ jobs:
           push: true
           platforms: ${{ matrix.platform }}
           tags: |
-            ghcr.io/${{ steps.meta.outputs.owner_lc }}/meitheal-hub-${{ matrix.arch }}:${{ steps.meta.outputs.version }}
+            ghcr.io/${{ steps.meta.outputs.owner_lc }}/meitheal-hub-${{ matrix.arch }}:${{ steps.meta.outputs.tag }}
             ghcr.io/${{ steps.meta.outputs.owner_lc }}/meitheal-hub-${{ matrix.arch }}:latest
+            coolockvillage/meitheal-hub-${{ matrix.arch }}:${{ steps.meta.outputs.tag }}
+            coolockvillage/meitheal-hub-${{ matrix.arch }}:latest

@@ -61,15 +61,18 @@ Local-first task orchestration with HA calendar sync and Vikunja compatibility.
 3. Run live Vikunja voice-assistant compatibility workflow on deployed environment. *(Requires deployed environment)*
 4. ~~Evaluate Phase 06 draft plans for relevance.~~ — Superseded by extension track phases 15-30.
 5. ~~Continue autonomous optimization sweeps.~~ — Completed: 0 TODO/FIXME/HACK, 0 errors, 0 warnings.
+6. Set `DOCKERHUB_USERNAME` and `DOCKERHUB_TOKEN` as GitHub repo secrets for CI publishing.
+7. Push initial images to Docker Hub and test install on HA Green.
 
-> **No actionable deferrals remain.** Items 2 and 3 require a live HA deployment to verify.
+> Items 2, 3, and 7 require a live HA deployment to verify.
 
 ## Session Continuity
 
-Last session: 2026-03-01T16:42:00Z
-Stopped at: Production hardening passes 67-74. Full i18n migration, HA add-on CHANGELOG, skeleton CSS, CSP audit. Build clean.
+Last session: 2026-03-01T17:13:00Z
+Stopped at: Phase 39 — HA Addon Publishing Readiness. Multi-stage Dockerfile, Docker Hub config, CI dual-push, icon/logo, ADR-0012, docs updated.
 
-Resume hint: All 8 passes complete. Continue with Pass 75+ or deploy/test cycle.
+Resume hint: Build and push Docker image to Docker Hub, then install on HA Green for live testing.
 
 ---
-*Last updated: 2026-02-28 during Phase 21-23 persona audit pass*
+*Last updated: 2026-03-01 during Phase 39 HA addon publishing readiness*
+
