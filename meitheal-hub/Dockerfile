@@ -1,14 +1,16 @@
 # ── Stage 1: Build ──
-# Compiles the Astro app inside Docker so the final image is self-contained.
-ARG BUILD_FROM
+# Clones the monorepo from GitHub and builds the Astro app.
+# HA Supervisor uses the addon directory as Docker build context,
+# so we cannot COPY from the repo root — we clone instead.
 FROM node:22-alpine AS builder
 
+ARG BUILD_VERSION=0.1.0
+
+RUN apk add --no-cache git
 RUN npm install -g pnpm@10.8.0
 
 WORKDIR /build
-COPY pnpm-workspace.yaml pnpm-lock.yaml package.json tsconfig.base.json ./
-COPY apps/ apps/
-COPY packages/ packages/
+RUN git clone --depth=1 https://github.com/Coolock-Village/meitheal.git .
 
 # Install all deps (including devDependencies for build)
 RUN pnpm install --frozen-lockfile=false --ignore-scripts
@@ -18,6 +20,7 @@ RUN pnpm --filter @meitheal/web build
 
 # ── Stage 2: Runtime ──
 # Lean HA add-on image with only production artifacts.
+ARG BUILD_FROM
 FROM ${BUILD_FROM}
 
 LABEL io.hass.type="addon"
@@ -31,23 +34,24 @@ RUN addgroup -S meitheal && adduser -S meitheal -G meitheal
 WORKDIR /opt/meitheal
 
 # Copy monorepo scaffolding
-COPY pnpm-workspace.yaml pnpm-lock.yaml package.json ./
-COPY packages/ packages/
-COPY apps/web/package.json apps/web/package.json
+COPY --from=builder /build/pnpm-workspace.yaml /build/pnpm-lock.yaml /build/package.json ./
+COPY --from=builder /build/packages/ packages/
+COPY --from=builder /build/apps/web/package.json apps/web/package.json
 
 # Copy built output from builder stage
 COPY --from=builder /build/apps/web/dist apps/web/dist/
 
 # Copy migration scripts and SQL files needed at runtime
-COPY apps/web/scripts/ apps/web/scripts/
-COPY apps/web/drizzle/ apps/web/drizzle/
+COPY --from=builder /build/apps/web/scripts/ apps/web/scripts/
+COPY --from=builder /build/apps/web/drizzle/ apps/web/drizzle/
 
 # Install production deps only
 RUN pnpm install --frozen-lockfile=false --ignore-scripts --prod \
     && pnpm store prune
 
-COPY meitheal-hub/run.sh /run.sh
-COPY meitheal-hub/run-local.sh /run-local.sh
+# Copy entrypoints from builder (not from build context)
+COPY --from=builder /build/meitheal-hub/run.sh /run.sh
+COPY --from=builder /build/meitheal-hub/run-local.sh /run-local.sh
 RUN chmod +x /run.sh /run-local.sh
 
 # Ensure data directory exists and is writable by meitheal user
