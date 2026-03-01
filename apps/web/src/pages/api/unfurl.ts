@@ -2,6 +2,17 @@ import type { APIRoute } from "astro";
 import dns from "node:dns/promises";
 import net from "node:net";
 import { Agent } from "undici";
+import { apiError, apiJson } from "../../lib/api-response";
+import { createLogger, defaultRedactionPatterns } from "@meitheal/domain-observability";
+
+const logger = createLogger({
+  service: "meitheal-web",
+  env: process.env.NODE_ENV ?? "development",
+  minLevel: "info",
+  enabledCategories: ["tasks", "audit", "observability"],
+  redactPatterns: defaultRedactionPatterns,
+  auditEnabled: true,
+});
 
 const blockedHosts = new Set(["localhost", "127.0.0.1", "::1", "0.0.0.0"]);
 
@@ -58,27 +69,21 @@ function extractTitle(html: string): string | undefined {
 export const POST: APIRoute = async ({ request }) => {
   const { url } = (await request.json().catch(() => ({}))) as { url?: string };
   if (!url) {
-    return new Response(JSON.stringify({ error: "Missing url" }), {
-      status: 400,
-      headers: { "content-type": "application/json" }
-    });
+    return apiError("Missing url", 400);
+  }
+  if (url.length > 2048) {
+    return apiError("URL exceeds maximum length of 2048 characters", 400);
   }
 
   let parsed: URL;
   try {
     parsed = new URL(url);
   } catch {
-    return new Response(JSON.stringify({ error: "Invalid URL" }), {
-      status: 400,
-      headers: { "content-type": "application/json" }
-    });
+    return apiError("Invalid URL", 400);
   }
 
   if (!["http:", "https:"].includes(parsed.protocol) || isPrivateHost(parsed.hostname.toLowerCase())) {
-    return new Response(JSON.stringify({ error: "Blocked URL target" }), {
-      status: 400,
-      headers: { "content-type": "application/json" }
-    });
+    return apiError("Blocked URL target", 400);
   }
 
   const controller = new AbortController();
@@ -88,10 +93,7 @@ export const POST: APIRoute = async ({ request }) => {
   try {
     const records = await dns.lookup(parsed.hostname, { all: true, verbatim: true });
     if (records.length === 0 || records.some((record) => isPrivateIpAddress(record.address))) {
-      return new Response(JSON.stringify({ error: "Blocked private network target" }), {
-        status: 400,
-        headers: { "content-type": "application/json" }
-      });
+      return apiError("Blocked private network target", 400);
     }
 
     const pinnedRecords = records.map((record) => ({
@@ -138,18 +140,12 @@ export const POST: APIRoute = async ({ request }) => {
     } as RequestInit & { dispatcher: Agent });
 
     if (response.status >= 300 && response.status < 400) {
-      return new Response(JSON.stringify({ error: "Redirects are not supported for unfurl targets" }), {
-        status: 400,
-        headers: { "content-type": "application/json" }
-      });
+      return apiError("Redirects are not supported for unfurl targets", 400);
     }
 
     const contentType = response.headers.get("content-type") ?? "";
     if (!contentType.includes("text/html")) {
-      return new Response(JSON.stringify({ error: "Unsupported content type" }), {
-        status: 415,
-        headers: { "content-type": "application/json" }
-      });
+      return apiError("Unsupported content type", 415);
     }
 
     const html = await response.text();
@@ -162,16 +158,16 @@ export const POST: APIRoute = async ({ request }) => {
       fetchedAt: new Date().toISOString()
     };
 
-    return new Response(JSON.stringify(payload), {
-      status: 200,
-      headers: { "content-type": "application/json" }
-    });
+    return apiJson(payload);
   } catch (err) {
-    console.error("[unfurl] Failed to fetch URL:", url, err);
-    return new Response(JSON.stringify({ error: "Unable to fetch URL" }), {
-      status: 502,
-      headers: { "content-type": "application/json" }
+    logger.log("error", {
+      event: "api.unfurl.post.failed",
+      domain: "tasks",
+      component: "unfurl-api",
+      request_id: crypto.randomUUID(),
+      message: err instanceof Error ? err.message : "Unknown error",
     });
+    return apiError("Unable to fetch URL", 502);
   } finally {
     clearTimeout(timeout);
     if (dispatcher) {

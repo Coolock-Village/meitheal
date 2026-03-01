@@ -1,20 +1,28 @@
 import type { APIRoute } from "astro";
 import { ensureSchema, getPersistenceClient } from "@domains/tasks/persistence/store";
 import { stripHtml } from "../../../lib/strip-html";
+import { apiError, apiJson } from "../../../lib/api-response";
+import { createLogger, defaultRedactionPatterns } from "@meitheal/domain-observability";
+
+const logger = createLogger({
+    service: "meitheal-web",
+    env: process.env.NODE_ENV ?? "development",
+    minLevel: "info",
+    enabledCategories: ["tasks", "audit", "observability"],
+    redactPatterns: defaultRedactionPatterns,
+    auditEnabled: true,
+});
 
 export const PUT: APIRoute = async ({ params, request }) => {
     try {
         await ensureSchema();
         const id = params.id;
         if (!id) {
-            return new Response(JSON.stringify({ error: "Board ID required" }), {
-                status: 400,
-                headers: { "content-type": "application/json" },
-            });
+            return apiError("Board ID required", 400);
         }
 
         const client = getPersistenceClient();
-        const body = await request.json();
+        const body = (await request.json().catch(() => ({}))) as Record<string, unknown>;
         const updates: string[] = [];
         const args: (string | number)[] = [];
 
@@ -24,10 +32,7 @@ export const PUT: APIRoute = async ({ params, request }) => {
         if (body.position !== undefined) { updates.push("position = ?"); args.push(Number(body.position)); }
 
         if (updates.length === 0) {
-            return new Response(JSON.stringify({ error: "No fields to update" }), {
-                status: 400,
-                headers: { "content-type": "application/json" },
-            });
+            return apiError("No fields to update", 400);
         }
 
         updates.push("updated_at = ?");
@@ -39,15 +44,16 @@ export const PUT: APIRoute = async ({ params, request }) => {
             args,
         });
 
-        return new Response(JSON.stringify({ ok: true }), {
-            headers: { "content-type": "application/json" },
-        });
+        return apiJson({ ok: true });
     } catch (e) {
-        console.error("[boards] PUT failed:", e);
-        return new Response(JSON.stringify({ error: "Failed to update board" }), {
-            status: 500,
-            headers: { "content-type": "application/json" },
+        logger.log("error", {
+            event: "api.boards.put.failed",
+            domain: "tasks",
+            component: "boards-api",
+            request_id: crypto.randomUUID(),
+            message: e instanceof Error ? e.message : "Unknown error",
         });
+        return apiError("Failed to update board");
     }
 };
 
@@ -56,10 +62,7 @@ export const DELETE: APIRoute = async ({ params }) => {
         await ensureSchema();
         const id = params.id;
         if (!id || id === "default") {
-            return new Response(JSON.stringify({ error: "Cannot delete default board" }), {
-                status: 400,
-                headers: { "content-type": "application/json" },
-            });
+            return apiError("Cannot delete default board", 400);
         }
 
         const client = getPersistenceClient();
@@ -75,14 +78,15 @@ export const DELETE: APIRoute = async ({ params }) => {
             args: [id],
         });
 
-        return new Response(JSON.stringify({ ok: true, moved_to: "default" }), {
-            headers: { "content-type": "application/json" },
-        });
+        return apiJson({ ok: true, moved_to: "default" });
     } catch (e) {
-        console.error("[boards] DELETE failed:", e);
-        return new Response(JSON.stringify({ error: "Failed to delete board" }), {
-            status: 500,
-            headers: { "content-type": "application/json" },
+        logger.log("error", {
+            event: "api.boards.delete.failed",
+            domain: "tasks",
+            component: "boards-api",
+            request_id: crypto.randomUUID(),
+            message: e instanceof Error ? e.message : "Unknown error",
         });
+        return apiError("Failed to delete board");
     }
 };

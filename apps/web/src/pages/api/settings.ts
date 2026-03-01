@@ -1,6 +1,17 @@
 import type { APIRoute } from "astro";
 import type { InValue } from "@libsql/client";
 import { ensureSchema, getPersistenceClient } from "@domains/tasks/persistence/store";
+import { apiError, apiJson } from "../../lib/api-response";
+import { createLogger, defaultRedactionPatterns } from "@meitheal/domain-observability";
+
+const logger = createLogger({
+  service: "meitheal-web",
+  env: process.env.NODE_ENV ?? "development",
+  minLevel: "info",
+  enabledCategories: ["tasks", "audit", "observability"],
+  redactPatterns: defaultRedactionPatterns,
+  auditEnabled: true,
+});
 
 /**
  * Settings API — persists user preferences (framework scoring config, etc.)
@@ -33,15 +44,9 @@ export const GET: APIRoute = async ({ url }) => {
       });
       const row = result.rows[0] as Record<string, unknown> | undefined;
       if (!row) {
-        return new Response(JSON.stringify({ key, value: null }), {
-          status: 200,
-          headers: { "content-type": "application/json" },
-        });
+        return apiJson({ key, value: null });
       }
-      return new Response(
-        JSON.stringify({ key: String(row.key), value: JSON.parse(String(row.value)) }),
-        { status: 200, headers: { "content-type": "application/json" } }
-      );
+      return apiJson({ key: String(row.key), value: JSON.parse(String(row.value)) });
     }
 
     // Return all settings
@@ -55,16 +60,16 @@ export const GET: APIRoute = async ({ url }) => {
         settings[String(r.key)] = String(r.value);
       }
     }
-    return new Response(JSON.stringify(settings), {
-      status: 200,
-      headers: { "content-type": "application/json" },
-    });
+    return apiJson(settings);
   } catch (err) {
-    console.error("[settings] GET failed:", err);
-    return new Response(JSON.stringify({ error: "Failed to load settings" }), {
-      status: 500,
-      headers: { "content-type": "application/json" },
+    logger.log("error", {
+      event: "api.settings.get.failed",
+      domain: "tasks",
+      component: "settings-api",
+      request_id: crypto.randomUUID(),
+      message: err instanceof Error ? err.message : "Unknown error",
     });
+    return apiError("Failed to load settings");
   }
 };
 
@@ -76,19 +81,13 @@ export const PUT: APIRoute = async ({ request }) => {
 
     const key = typeof body.key === "string" ? body.key.trim() : "";
     if (!key || key.length > 100 || !/^[a-zA-Z0-9_-]+$/.test(key)) {
-      return new Response(JSON.stringify({ error: "key must be 1-100 alphanumeric/hyphen/underscore characters" }), {
-        status: 400,
-        headers: { "content-type": "application/json" },
-      });
+      return apiError("key must be 1-100 alphanumeric/hyphen/underscore characters", 400);
     }
 
     const value = JSON.stringify(body.value ?? null);
     // Cap value size at 10KB to prevent abuse
     if (value.length > 10240) {
-      return new Response(JSON.stringify({ error: "value exceeds 10KB limit" }), {
-        status: 400,
-        headers: { "content-type": "application/json" },
-      });
+      return apiError("value exceeds 10KB limit", 400);
     }
     const now = Date.now();
 
@@ -98,16 +97,16 @@ export const PUT: APIRoute = async ({ request }) => {
       args: [key, value, now] as InValue[],
     });
 
-    return new Response(JSON.stringify({ key, value: body.value, updated_at: now }), {
-      status: 200,
-      headers: { "content-type": "application/json" },
-    });
+    return apiJson({ key, value: body.value, updated_at: now });
   } catch (err) {
-    console.error("[settings] PUT failed:", err);
-    return new Response(JSON.stringify({ error: "Failed to save setting" }), {
-      status: 500,
-      headers: { "content-type": "application/json" },
+    logger.log("error", {
+      event: "api.settings.put.failed",
+      domain: "tasks",
+      component: "settings-api",
+      request_id: crypto.randomUUID(),
+      message: err instanceof Error ? err.message : "Unknown error",
     });
+    return apiError("Failed to save setting");
   }
 };
 
@@ -115,23 +114,29 @@ export const DELETE: APIRoute = async ({ url }) => {
   try {
     const reset = url.searchParams.get("reset");
     if (reset !== "all") {
-      return new Response(JSON.stringify({ error: "Use ?reset=all to confirm reset" }), {
-        status: 400,
-        headers: { "content-type": "application/json" },
-      });
+      return apiError("Use ?reset=all to confirm reset", 400);
     }
     await ensureSettingsTable();
     const client = getPersistenceClient();
     await client.execute("DELETE FROM settings");
-    return new Response(JSON.stringify({ reset: true }), {
-      status: 200,
-      headers: { "content-type": "application/json" },
+
+    logger.audit({
+      event: "audit.settings.reset",
+      domain: "audit",
+      component: "settings-api",
+      request_id: crypto.randomUUID(),
+      message: "All settings reset to defaults",
     });
+
+    return apiJson({ reset: true });
   } catch (err) {
-    console.error("[settings] DELETE/reset failed:", err);
-    return new Response(JSON.stringify({ error: "Failed to reset settings" }), {
-      status: 500,
-      headers: { "content-type": "application/json" },
+    logger.log("error", {
+      event: "api.settings.delete.failed",
+      domain: "tasks",
+      component: "settings-api",
+      request_id: crypto.randomUUID(),
+      message: err instanceof Error ? err.message : "Unknown error",
     });
+    return apiError("Failed to reset settings");
   }
 };

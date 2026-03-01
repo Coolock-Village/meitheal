@@ -1,0 +1,4 @@
+Contact: https://github.com/Coolock-Village/meitheal/issues
+Preferred-Languages: en
+Canonical: https://github.com/Coolock-Village/meitheal
+Policy: https://github.com/Coolock-Village/meitheal/blob/main/SECURITY.md

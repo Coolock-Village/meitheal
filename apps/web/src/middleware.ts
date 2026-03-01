@@ -10,6 +10,16 @@ import {
   normalizeIngressHeaders,
   shouldEnforceIngressHeaders
 } from "@domains/auth/ingress";
+import { createLogger, defaultRedactionPatterns } from "@meitheal/domain-observability";
+
+const logger = createLogger({
+  service: "meitheal-web",
+  env: process.env.NODE_ENV ?? "development",
+  minLevel: "info",
+  enabledCategories: ["tasks", "audit", "observability"],
+  redactPatterns: defaultRedactionPatterns,
+  auditEnabled: true,
+});
 
 let cachedRequiredHeaders: string[] | null = null;
 
@@ -67,6 +77,8 @@ function applyRateLimitHeaders(response: Response, remaining: number, resetAt: n
 }
 
 export const onRequest: MiddlewareHandler = async ({ request, locals }, next) => {
+  const startTime = Date.now();
+  const requestId = request.headers.get("x-request-id") ?? crypto.randomUUID();
   const requiredIngressHeaders = await getRequiredIngressHeaders();
   const ingressPath = getIngressPath(request.headers);
 
@@ -152,11 +164,25 @@ export const onRequest: MiddlewareHandler = async ({ request, locals }, next) =>
     const missingHeaders = getMissingRequiredIngressHeaders(requiredIngressHeaders, request.headers);
     if (missingHeaders.length === 0) {
       const response = await next();
-      // Inject security headers
+      // Inject security + observability headers
       for (const [key, value] of Object.entries(securityHeaders)) {
         response.headers.set(key, value);
       }
-      if (url.pathname.startsWith("/api/")) applyRateLimitHeaders(response, rateInfo.remaining, rateInfo.resetAt);
+      response.headers.set("x-request-id", requestId);
+      response.headers.set("x-response-time", `${Date.now() - startTime}ms`);
+      if (url.pathname.startsWith("/api/")) {
+        applyRateLimitHeaders(response, rateInfo.remaining, rateInfo.resetAt);
+        const elapsed = Date.now() - startTime;
+        if (elapsed > 1000) {
+          logger.log("warn", {
+            event: "http.slow_request",
+            domain: "observability",
+            component: "middleware",
+            request_id: requestId,
+            message: `Slow API request: ${request.method} ${url.pathname} took ${elapsed}ms`,
+          });
+        }
+      }
       return response;
     }
 
@@ -173,10 +199,24 @@ export const onRequest: MiddlewareHandler = async ({ request, locals }, next) =>
   }
 
   const response = await next();
-  // Inject security headers on all responses
+  // Inject security + observability headers on all responses
   for (const [key, value] of Object.entries(securityHeaders)) {
     response.headers.set(key, value);
   }
-  if (url.pathname.startsWith("/api/")) applyRateLimitHeaders(response, rateInfo.remaining, rateInfo.resetAt);
+  response.headers.set("x-request-id", requestId);
+  response.headers.set("x-response-time", `${Date.now() - startTime}ms`);
+  if (url.pathname.startsWith("/api/")) {
+    applyRateLimitHeaders(response, rateInfo.remaining, rateInfo.resetAt);
+    const elapsed = Date.now() - startTime;
+    if (elapsed > 1000) {
+      logger.log("warn", {
+        event: "http.slow_request",
+        domain: "observability",
+        component: "middleware",
+        request_id: requestId,
+        message: `Slow API request: ${request.method} ${url.pathname} took ${elapsed}ms`,
+      });
+    }
+  }
   return response;
 };

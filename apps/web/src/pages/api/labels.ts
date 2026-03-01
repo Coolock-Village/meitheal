@@ -5,6 +5,17 @@ import {
   ensureVikunjaCompatSchema,
 } from "@domains/integrations/vikunja-compat/store";
 import { stripHtml } from "../../lib/strip-html";
+import { apiError, apiJson } from "../../lib/api-response";
+import { createLogger, defaultRedactionPatterns } from "@meitheal/domain-observability";
+
+const logger = createLogger({
+  service: "meitheal-web",
+  env: process.env.NODE_ENV ?? "development",
+  minLevel: "info",
+  enabledCategories: ["tasks", "audit", "observability"],
+  redactPatterns: defaultRedactionPatterns,
+  auditEnabled: true,
+});
 
 /**
  * Native Labels API — wraps Vikunja-compat label store.
@@ -16,16 +27,16 @@ export const GET: APIRoute = async () => {
   try {
     await ensureVikunjaCompatSchema();
     const labels = await listVikunjaLabels();
-    return new Response(JSON.stringify(labels), {
-      status: 200,
-      headers: { "content-type": "application/json" },
-    });
+    return apiJson(labels);
   } catch (err) {
-    console.error("[labels] GET failed:", err);
-    return new Response(JSON.stringify({ error: "Failed to list labels" }), {
-      status: 500,
-      headers: { "content-type": "application/json" },
+    logger.log("error", {
+      event: "api.labels.get.failed",
+      domain: "tasks",
+      component: "labels-api",
+      request_id: crypto.randomUUID(),
+      message: err instanceof Error ? err.message : "Unknown error",
     });
+    return apiError("Failed to list labels");
   }
 };
 
@@ -36,16 +47,10 @@ export const POST: APIRoute = async ({ request }) => {
     const title = typeof body.title === "string" ? stripHtml(body.title.trim()) : "";
 
     if (!title) {
-      return new Response(JSON.stringify({ error: "title is required" }), {
-        status: 400,
-        headers: { "content-type": "application/json" },
-      });
+      return apiError("title is required", 400);
     }
     if (title.length > 100) {
-      return new Response(JSON.stringify({ error: "title must be 100 characters or less" }), {
-        status: 400,
-        headers: { "content-type": "application/json" },
-      });
+      return apiError("title must be 100 characters or less", 400);
     }
 
     const hexColor = typeof body.hex_color === "string" && /^#[0-9a-fA-F]{6}$/.test(body.hex_color)
@@ -53,15 +58,15 @@ export const POST: APIRoute = async ({ request }) => {
       : "#6b7280";
 
     const label = await createVikunjaLabel(title, hexColor);
-    return new Response(JSON.stringify(label), {
-      status: 201,
-      headers: { "content-type": "application/json" },
-    });
+    return apiJson(label, 201);
   } catch (err) {
-    console.error("[labels] POST failed:", err);
-    return new Response(JSON.stringify({ error: "Failed to create label" }), {
-      status: 500,
-      headers: { "content-type": "application/json" },
+    logger.log("error", {
+      event: "api.labels.post.failed",
+      domain: "tasks",
+      component: "labels-api",
+      request_id: crypto.randomUUID(),
+      message: err instanceof Error ? err.message : "Unknown error",
     });
+    return apiError("Failed to create label");
   }
 };

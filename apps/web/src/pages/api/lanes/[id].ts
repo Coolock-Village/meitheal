@@ -2,6 +2,17 @@ import type { APIRoute } from "astro";
 import type { InValue } from "@libsql/client";
 import { ensureSchema, getPersistenceClient } from "@domains/tasks/persistence/store";
 import { stripHtml } from "../../../lib/strip-html";
+import { apiError, apiJson } from "../../../lib/api-response";
+import { createLogger, defaultRedactionPatterns } from "@meitheal/domain-observability";
+
+const logger = createLogger({
+  service: "meitheal-web",
+  env: process.env.NODE_ENV ?? "development",
+  minLevel: "info",
+  enabledCategories: ["tasks", "audit", "observability"],
+  redactPatterns: defaultRedactionPatterns,
+  auditEnabled: true,
+});
 
 /** PUT /api/lanes/[id], DELETE /api/lanes/[id] */
 
@@ -16,10 +27,7 @@ export const PUT: APIRoute = async ({ params, request }) => {
       args: [params.id!],
     });
     if (existing.rows.length === 0) {
-      return new Response(JSON.stringify({ error: "Lane not found" }), {
-        status: 404,
-        headers: { "content-type": "application/json" },
-      });
+      return apiError("Lane not found", 404);
     }
 
     const now = Date.now();
@@ -29,10 +37,7 @@ export const PUT: APIRoute = async ({ params, request }) => {
     if (typeof body.label === "string") {
       const label = stripHtml(body.label.trim());
       if (!label || label.length < 1 || label.length > 50) {
-        return new Response(JSON.stringify({ error: "label must be 1-50 characters" }), {
-          status: 400,
-          headers: { "content-type": "application/json" },
-        });
+        return apiError("label must be 1-50 characters", 400);
       }
       updates.push("label = ?");
       args.push(label);
@@ -60,10 +65,7 @@ export const PUT: APIRoute = async ({ params, request }) => {
     }
 
     if (updates.length === 0) {
-      return new Response(JSON.stringify({ error: "No fields to update" }), {
-        status: 400,
-        headers: { "content-type": "application/json" },
-      });
+      return apiError("No fields to update", 400);
     }
 
     updates.push("updated_at = ?");
@@ -81,7 +83,7 @@ export const PUT: APIRoute = async ({ params, request }) => {
     });
 
     const row = updated.rows[0] as Record<string, unknown>;
-    return new Response(JSON.stringify({
+    return apiJson({
       id: row.id,
       key: row.key,
       label: row.label,
@@ -92,13 +94,16 @@ export const PUT: APIRoute = async ({ params, request }) => {
       builtIn: Number(row.built_in ?? 0) === 1,
       created_at: row.created_at,
       updated_at: row.updated_at,
-    }), {
-      status: 200,
-      headers: { "content-type": "application/json" },
     });
   } catch (err) {
-    console.error("[lanes] PUT failed:", err);
-    return new Response(JSON.stringify({ error: "Failed to update lane" }), { status: 500, headers: { "content-type": "application/json" } });
+    logger.log("error", {
+      event: "api.lanes.put.failed",
+      domain: "tasks",
+      component: "lanes-api",
+      request_id: crypto.randomUUID(),
+      message: err instanceof Error ? err.message : "Unknown error",
+    });
+    return apiError("Failed to update lane");
   }
 };
 
@@ -112,18 +117,12 @@ export const DELETE: APIRoute = async ({ params }) => {
       args: [params.id!],
     });
     if (existing.rows.length === 0) {
-      return new Response(JSON.stringify({ error: "Lane not found" }), {
-        status: 404,
-        headers: { "content-type": "application/json" },
-      });
+      return apiError("Lane not found", 404);
     }
 
     const row = existing.rows[0] as Record<string, unknown>;
     if (Number(row.built_in ?? 0) === 1) {
-      return new Response(JSON.stringify({ error: "Cannot delete built-in lane" }), {
-        status: 403,
-        headers: { "content-type": "application/json" },
-      });
+      return apiError("Cannot delete built-in lane", 403);
     }
 
     // Move tasks in this lane's status back to "pending"
@@ -135,12 +134,15 @@ export const DELETE: APIRoute = async ({ params }) => {
 
     await client.execute({ sql: "DELETE FROM kanban_lanes WHERE id = ?", args: [params.id!] });
 
-    return new Response(JSON.stringify({ deleted: true, tasksReassigned: key }), {
-      status: 200,
-      headers: { "content-type": "application/json" },
-    });
+    return apiJson({ deleted: true, tasksReassigned: key });
   } catch (err) {
-    console.error("[lanes] DELETE failed:", err);
-    return new Response(JSON.stringify({ error: "Failed to delete lane" }), { status: 500, headers: { "content-type": "application/json" } });
+    logger.log("error", {
+      event: "api.lanes.delete.failed",
+      domain: "tasks",
+      component: "lanes-api",
+      request_id: crypto.randomUUID(),
+      message: err instanceof Error ? err.message : "Unknown error",
+    });
+    return apiError("Failed to delete lane");
   }
 };

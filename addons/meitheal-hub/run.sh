@@ -1,6 +1,10 @@
 #!/usr/bin/with-contenv bashio
 set -euo pipefail
 
+MEITHEAL_VERSION="0.3.0"
+STARTUP_TS=$(date -u +"%Y-%m-%dT%H:%M:%SZ")
+echo "{\"event\":\"addon.startup\",\"version\":\"${MEITHEAL_VERSION}\",\"time\":\"${STARTUP_TS}\"}"
+
 export MEITHEAL_LOG_LEVEL="$(bashio::config 'log_level')"
 export MEITHEAL_LOG_REDACTION="$(bashio::config 'log_redaction')"
 export MEITHEAL_AUDIT_ENABLED="$(bashio::config 'audit_enabled')"
@@ -30,14 +34,14 @@ if [ -f /opt/meitheal/apps/web/package.json ]; then
       echo "Missing Astro server entry at dist/server/entry.mjs"
       exit 1
     fi
-    echo "Starting Meitheal web runtime on ${HOST}:${PORT}"
+    echo "{\"event\":\"web.starting\",\"host\":\"${HOST}\",\"port\":\"${PORT}\",\"time\":\"$(date -u +\"%Y-%m-%dT%H:%M:%SZ\")\"}"
     node dist/server/entry.mjs
   ) &
   WEB_PID=$!
 
   for attempt in $(seq 1 15); do
     if curl -fsS "${HEALTHCHECK_URL}" >/dev/null 2>&1; then
-      echo "Meitheal startup healthcheck passed on attempt ${attempt}"
+      echo "{\"event\":\"healthcheck.passed\",\"attempt\":${attempt},\"time\":\"$(date -u +\"%Y-%m-%dT%H:%M:%SZ\")\"}"
       break
     fi
     sleep 1

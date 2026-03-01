@@ -67,6 +67,26 @@ docs(kcs): Update PWA guide with attachment documentation
 4. **Type safety** — `pnpm check` must pass with 0 errors before committing
 5. **Test coverage** — add tests for new features in `tests/e2e/`
 
+## HA Add-on Development
+
+The HA add-on lives in `addons/meitheal-hub/`:
+
+```bash
+# Build the add-on container locally
+docker build -t meitheal-hub --build-arg BUILD_FROM=ghcr.io/home-assistant/amd64-base:latest addons/meitheal-hub
+
+# Run locally (outside HA Supervisor)
+docker run -p 3000:3000 -v $(pwd)/data:/data meitheal-hub /run-local.sh
+```
+
+Key files:
+
+- `config.yaml` — add-on manifest (ingress, API roles, AppArmor, options)
+- `apparmor.txt` — security profile (auto-enforced by Supervisor)
+- `translations/en.yaml` — English option descriptions for HA UI
+- `run.sh` — Supervisor entrypoint
+- `run-local.sh` — Local dev entrypoint (no bashio)
+
 ## Pull Request Process
 
 1. Create a feature branch

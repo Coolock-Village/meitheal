@@ -1,6 +1,17 @@
 import type { APIRoute } from "astro";
 import type { InValue } from "@libsql/client";
 import { ensureSchema, getPersistenceClient } from "@domains/tasks/persistence/store";
+import { apiError, apiJson } from "../../../../lib/api-response";
+import { createLogger, defaultRedactionPatterns } from "@meitheal/domain-observability";
+
+const logger = createLogger({
+    service: "meitheal-web",
+    env: process.env.NODE_ENV ?? "development",
+    minLevel: "info",
+    enabledCategories: ["tasks", "audit", "observability"],
+    redactPatterns: defaultRedactionPatterns,
+    auditEnabled: true,
+});
 
 /**
  * POST /api/tasks/[id]/duplicate — Clone a task with a new ID.
@@ -24,10 +35,7 @@ export const POST: APIRoute = async ({ params }) => {
         });
 
         if (source.rows.length === 0) {
-            return new Response(JSON.stringify({ error: "Task not found" }), {
-                status: 404,
-                headers: { "content-type": "application/json" },
-            });
+            return apiError("Task not found", 404);
         }
 
         const row = source.rows[0] as Record<string, unknown>;
@@ -52,20 +60,29 @@ export const POST: APIRoute = async ({ params }) => {
             ] as InValue[],
         });
 
-        return new Response(JSON.stringify({
+        logger.audit({
+            event: "audit.task.duplicated",
+            domain: "audit",
+            component: "duplicate-api",
+            request_id: crypto.randomUUID(),
+            task_id: newId,
+            message: `Task duplicated from ${sourceId}`,
+        });
+
+        return apiJson({
             id: newId,
             title: newTitle,
             source_id: sourceId,
             created_at: now,
-        }), {
-            status: 201,
-            headers: { "content-type": "application/json" },
-        });
+        }, 201);
     } catch (err) {
-        console.error("[duplicate] POST failed:", err);
-        return new Response(JSON.stringify({ error: "Failed to duplicate task" }), {
-            status: 500,
-            headers: { "content-type": "application/json" },
+        logger.log("error", {
+            event: "api.duplicate.post.failed",
+            domain: "tasks",
+            component: "duplicate-api",
+            request_id: crypto.randomUUID(),
+            message: err instanceof Error ? err.message : "Unknown error",
         });
+        return apiError("Failed to duplicate task");
     }
 };

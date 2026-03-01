@@ -2,6 +2,17 @@ import type { APIRoute } from "astro";
 import type { InValue } from "@libsql/client";
 import { ensureSchema, getPersistenceClient } from "@domains/tasks/persistence/store";
 import { stripHtml } from "../../../../lib/strip-html";
+import { apiError, apiJson } from "../../../../lib/api-response";
+import { createLogger, defaultRedactionPatterns } from "@meitheal/domain-observability";
+
+const logger = createLogger({
+    service: "meitheal-web",
+    env: process.env.NODE_ENV ?? "development",
+    minLevel: "info",
+    enabledCategories: ["tasks", "audit", "observability"],
+    redactPatterns: defaultRedactionPatterns,
+    auditEnabled: true,
+});
 
 /** GET /api/tasks/[id]/comments — list comments, POST — add comment */
 
@@ -16,16 +27,16 @@ export const GET: APIRoute = async ({ params }) => {
             args: [taskId!] as InValue[],
         });
 
-        return new Response(JSON.stringify({ comments: result.rows }), {
-            status: 200,
-            headers: { "content-type": "application/json" },
-        });
+        return apiJson({ comments: result.rows });
     } catch (err) {
-        console.error("[comments] GET failed:", err);
-        return new Response(JSON.stringify({ error: "Failed to load comments" }), {
-            status: 500,
-            headers: { "content-type": "application/json" },
+        logger.log("error", {
+            event: "api.comments.get.failed",
+            domain: "tasks",
+            component: "comments-api",
+            request_id: crypto.randomUUID(),
+            message: err instanceof Error ? err.message : "Unknown error",
         });
+        return apiError("Failed to load comments");
     }
 };
 
@@ -42,26 +53,17 @@ export const POST: APIRoute = async ({ params, request }) => {
             args: [taskId!] as InValue[],
         });
         if (task.rows.length === 0) {
-            return new Response(JSON.stringify({ error: "Task not found" }), {
-                status: 404,
-                headers: { "content-type": "application/json" },
-            });
+            return apiError("Task not found", 404);
         }
 
         // Validate content
         const rawContent = typeof body.content === "string" ? body.content.trim() : "";
-        const content = stripHtml(rawContent); // Recursive XSS prevention
+        const content = stripHtml(rawContent);
         if (!content) {
-            return new Response(JSON.stringify({ error: "content is required" }), {
-                status: 400,
-                headers: { "content-type": "application/json" },
-            });
+            return apiError("content is required", 400);
         }
         if (content.length > 5000) {
-            return new Response(JSON.stringify({ error: "content must be 5000 characters or less" }), {
-                status: 400,
-                headers: { "content-type": "application/json" },
-            });
+            return apiError("content must be 5000 characters or less", 400);
         }
 
         const author = typeof body.author === "string" ? stripHtml(body.author.trim()).slice(0, 100) : "user";
@@ -77,15 +79,15 @@ export const POST: APIRoute = async ({ params, request }) => {
             args: [taskId!] as InValue[],
         });
 
-        return new Response(JSON.stringify(latest.rows[0]), {
-            status: 201,
-            headers: { "content-type": "application/json" },
-        });
+        return apiJson(latest.rows[0], 201);
     } catch (err) {
-        console.error("[comments] POST failed:", err);
-        return new Response(JSON.stringify({ error: "Failed to create comment" }), {
-            status: 500,
-            headers: { "content-type": "application/json" },
+        logger.log("error", {
+            event: "api.comments.post.failed",
+            domain: "tasks",
+            component: "comments-api",
+            request_id: crypto.randomUUID(),
+            message: err instanceof Error ? err.message : "Unknown error",
         });
+        return apiError("Failed to create comment");
     }
 };

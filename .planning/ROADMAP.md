@@ -40,6 +40,7 @@ Primary Delivery drives completion math and release readiness.
 | 19 | Kanban Board Overhaul | ✅ Complete | `19-01..19-03-PLAN.md`, `19-01..19-03-SUMMARY.md` |
 | 20 | Deep Production Polish & Infinite Waves | 📋 Planned | `20-01..20-04-PLAN.md` (to be generated) |
 | 27 | HA Security Hardening | ✅ Complete | `27-CONTEXT.md` |
+| 28 | Structured Logging & API Polish | ✅ Complete | Autonomous sweep |
 
 ## Primary Delivery Details
 

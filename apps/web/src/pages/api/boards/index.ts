@@ -1,6 +1,17 @@
 import type { APIRoute } from "astro";
 import { ensureSchema, getPersistenceClient } from "@domains/tasks/persistence/store";
 import { stripHtml } from "../../../lib/strip-html";
+import { apiError, apiJson } from "../../../lib/api-response";
+import { createLogger, defaultRedactionPatterns } from "@meitheal/domain-observability";
+
+const logger = createLogger({
+    service: "meitheal-web",
+    env: process.env.NODE_ENV ?? "development",
+    minLevel: "info",
+    enabledCategories: ["tasks", "audit", "observability"],
+    redactPatterns: defaultRedactionPatterns,
+    auditEnabled: true,
+});
 
 export const GET: APIRoute = async () => {
     try {
@@ -9,28 +20,26 @@ export const GET: APIRoute = async () => {
         const result = await client.execute(
             "SELECT id, title, icon, color, position, created_at, updated_at FROM boards ORDER BY position ASC, created_at ASC"
         );
-        return new Response(JSON.stringify({ boards: result.rows }), {
-            headers: { "content-type": "application/json" },
-        });
+        return apiJson({ boards: result.rows });
     } catch (e) {
-        console.error("[boards] GET failed:", e);
-        return new Response(JSON.stringify({ error: "Failed to list boards" }), {
-            status: 500,
-            headers: { "content-type": "application/json" },
+        logger.log("error", {
+            event: "api.boards.get.failed",
+            domain: "tasks",
+            component: "boards-api",
+            request_id: crypto.randomUUID(),
+            message: e instanceof Error ? e.message : "Unknown error",
         });
+        return apiError("Failed to list boards");
     }
 };
 
 export const POST: APIRoute = async ({ request }) => {
     try {
         await ensureSchema();
-        const body = await request.json();
+        const body = (await request.json().catch(() => ({}))) as Record<string, unknown>;
         const title = stripHtml(String(body.title ?? "").trim());
         if (!title || title.length > 200) {
-            return new Response(JSON.stringify({ error: "Title is required" }), {
-                status: 400,
-                headers: { "content-type": "application/json" },
-            });
+            return apiError("Title is required and must be 200 characters or less", 400);
         }
 
         const client = getPersistenceClient();
@@ -38,15 +47,11 @@ export const POST: APIRoute = async ({ request }) => {
         // Phase 20 (Security Audit): Limit total boards to prevent abuse
         const countRes = await client.execute("SELECT COUNT(*) as c FROM boards");
         if (Number(countRes.rows[0]?.c || 0) >= 50) {
-            return new Response(JSON.stringify({ error: "Maximum board limit (50) reached" }), {
-                status: 429,
-                headers: { "content-type": "application/json" },
-            });
+            return apiError("Maximum board limit (50) reached", 429);
         }
 
-        // Generate deterministic board ID by slug-ifying the title
-        // e.g. "My Board" → "my_board"
-        const id = title.toLowerCase().replace(/[^a-z0-9]+/g, "_").replace(/^_|_$/g, "");
+        // Use UUID-based ID to avoid slug collisions (Phase 28 fix)
+        const id = `board-${crypto.randomUUID().split("-")[0]}`;
         const icon = String(body.icon ?? "📋").slice(0, 10);
         const color = typeof body.color === "string" && /^#([0-9a-fA-F]{3}|[0-9a-fA-F]{6})$/.test(body.color) ? body.color : "#10b981";
         const now = Date.now();
@@ -60,15 +65,15 @@ export const POST: APIRoute = async ({ request }) => {
             args: [id, title, icon, color, position, now, now],
         });
 
-        return new Response(
-            JSON.stringify({ id, title, icon, color, position, created_at: now, updated_at: now }),
-            { status: 201, headers: { "content-type": "application/json" } }
-        );
+        return apiJson({ id, title, icon, color, position, created_at: now, updated_at: now }, 201);
     } catch (e) {
-        console.error("[boards] POST failed:", e);
-        return new Response(JSON.stringify({ error: "Failed to create board" }), {
-            status: 500,
-            headers: { "content-type": "application/json" },
+        logger.log("error", {
+            event: "api.boards.post.failed",
+            domain: "tasks",
+            component: "boards-api",
+            request_id: crypto.randomUUID(),
+            message: e instanceof Error ? e.message : "Unknown error",
         });
+        return apiError("Failed to create board");
     }
 };
