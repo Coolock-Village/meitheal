@@ -11,6 +11,12 @@ import type { TaskType } from "@meitheal/domain-tasks";
 export const GET: APIRoute = async ({ params }) => {
   await ensureSchema();
   const client = getPersistenceClient();
+  let id = params.id!;
+  let parsedTicketNum = null;
+  if (id.toUpperCase().startsWith("MTH-")) {
+    parsedTicketNum = parseInt(id.slice(4), 10);
+  }
+
   const result = await client.execute({
     sql: `SELECT t.id, t.title, t.description, t.status, t.priority, t.due_date, t.labels,
                  t.framework_payload, t.calendar_sync_state, t.board_id, t.custom_fields,
@@ -19,8 +25,8 @@ export const GET: APIRoute = async ({ params }) => {
                  p.title as parent_title, p.task_type as parent_task_type, p.ticket_number as parent_ticket_number
           FROM tasks t
           LEFT JOIN tasks p ON t.parent_id = p.id
-          WHERE t.id = ? LIMIT 1`,
-    args: [params.id!],
+          WHERE t.id = ? OR t.ticket_number = ? LIMIT 1`,
+    args: [id, parsedTicketNum],
   });
 
   const row = result.rows[0] as Record<string, unknown> | undefined;
@@ -52,10 +58,16 @@ export const PUT: APIRoute = async ({ params, request }) => {
   const body = (await request.json().catch(() => ({}))) as Record<string, unknown>;
   const now = Date.now();
 
+  let id = params.id!;
+  let parsedTicketNum = null;
+  if (id.toUpperCase().startsWith("MTH-")) {
+    parsedTicketNum = parseInt(id.slice(4), 10);
+  }
+
   // Check task exists
   const existing = await client.execute({
-    sql: "SELECT id, updated_at FROM tasks WHERE id = ? LIMIT 1",
-    args: [params.id!],
+    sql: "SELECT id, updated_at FROM tasks WHERE id = ? OR ticket_number = ? LIMIT 1",
+    args: [id, parsedTicketNum],
   });
   if (existing.rows.length === 0) {
     return new Response(JSON.stringify({ error: "Task not found" }), {
@@ -199,9 +211,11 @@ export const PUT: APIRoute = async ({ params, request }) => {
     });
   }
 
+  const resolvedId = existing.rows[0].id as string;
+
   updates.push("updated_at = ?");
   args.push(now);
-  args.push(params.id!);
+  args.push(resolvedId);
 
   // Fetch old values for activity log diffing
   const oldRow = await client.execute({
@@ -209,7 +223,7 @@ export const PUT: APIRoute = async ({ params, request }) => {
                  framework_payload, board_id, custom_fields, parent_id,
                  task_type, start_date, end_date, progress, color, is_favorite
           FROM tasks WHERE id = ? LIMIT 1`,
-    args: [params.id!],
+    args: [resolvedId],
   });
   const oldTask = oldRow.rows[0] as Record<string, unknown> | undefined;
 
@@ -228,7 +242,7 @@ export const PUT: APIRoute = async ({ params, request }) => {
           client.execute({
             sql: `INSERT INTO task_activity_log (task_id, field, old_value, new_value, actor, created_at)
                   VALUES (?, ?, ?, ?, 'user', ?)`,
-            args: [params.id!, field, oldVal != null ? String(oldVal) : null, String(newVal), now] as InValue[],
+            args: [resolvedId, field, oldVal != null ? String(oldVal) : null, String(newVal), now] as InValue[],
           })
         );
       }
@@ -244,7 +258,7 @@ export const PUT: APIRoute = async ({ params, request }) => {
                  parent_id, time_tracked, start_date, end_date, progress, color,
                  is_favorite, task_type, ticket_number, created_at, updated_at
           FROM tasks WHERE id = ? LIMIT 1`,
-    args: [params.id!],
+    args: [resolvedId],
   });
 
   const updatedRow = updated.rows[0] as Record<string, unknown>;
@@ -260,9 +274,15 @@ export const DELETE: APIRoute = async ({ params }) => {
   await ensureSchema();
   const client = getPersistenceClient();
 
+  let id = params.id!;
+  let parsedTicketNum = null;
+  if (id.toUpperCase().startsWith("MTH-")) {
+    parsedTicketNum = parseInt(id.slice(4), 10);
+  }
+
   const existing = await client.execute({
-    sql: "SELECT id FROM tasks WHERE id = ? LIMIT 1",
-    args: [params.id!],
+    sql: "SELECT id FROM tasks WHERE id = ? OR ticket_number = ? LIMIT 1",
+    args: [id, parsedTicketNum],
   });
   if (existing.rows.length === 0) {
     return new Response(JSON.stringify({ error: "Task not found" }), {
@@ -271,7 +291,8 @@ export const DELETE: APIRoute = async ({ params }) => {
     });
   }
 
-  await client.execute({ sql: "DELETE FROM tasks WHERE id = ?", args: [params.id!] });
+  const resolvedId = existing.rows[0].id as string;
+  await client.execute({ sql: "DELETE FROM tasks WHERE id = ?", args: [resolvedId] });
 
   return new Response(null, { status: 204 });
 };

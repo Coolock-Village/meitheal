@@ -14,6 +14,7 @@ import {
   removeSyncOp,
   incrementRetryCount,
   putTask,
+  cleanupExpiredSyncOps,
   type PendingSyncOperation,
   type OfflineTask,
 } from "./offline-store"
@@ -205,6 +206,9 @@ export function startPeriodicSync(intervalMs: number = PERIODIC_SYNC_MS): void {
   if (periodicTimer) return
   periodicTimer = setInterval(() => {
     if (navigator.onLine) {
+      cleanupExpiredSyncOps().then(removed => {
+        if (removed > 0) console.log(`[sync-engine] Cleaned up ${removed} expired sync operations`)
+      }).catch(err => console.error("[sync-engine] Cleanup failed:", err))
       processSyncQueue().catch((err) => console.error("[sync-engine] Periodic sync failed:", err))
     }
   }, intervalMs)

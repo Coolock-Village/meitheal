@@ -10,841 +10,937 @@ const locale: Locale = cookieLocale === "ga" ? "ga" : "en";
 <Layout title={`Meitheal — ${t("settings.title", locale)}`}>
   <span slot="page-title">{t("settings.title", locale)}</span>
 
-  <div class="settings-grid">
-    <!-- HA Connection -->
-    <div class="card">
-      <div class="card-header">
-        <div>
-          <div class="card-title">{t("settings.ha_title", locale)}</div>
-          <div class="card-subtitle">{t("settings.ha_subtitle", locale)}</div>
-        </div>
-      </div>
-      <form id="ha-form">
-        <div class="form-group">
-          <label class="form-label" for="ha-url">HA URL</label>
-          <input
-            type="url"
-            class="form-input"
-            id="ha-url"
-            placeholder="http://homeassistant.local:8123"
-            pattern="https?://.*"
-            required
-          />
-        </div>
-        <div class="form-group">
-          <label class="form-label" for="ha-token"
-            >Long-Lived Access Token</label
-          >
-          <input
-            type="password"
-            class="form-input"
-            id="ha-token"
-            placeholder="••••••••"
-          />
-          <small style="color: var(--text-muted); font-size: 12px;">
-            Generate in HA → Profile → Long-Lived Access Tokens
-          </small>
-        </div>
-        <div class="form-group">
-          <label class="form-label" for="calendar-entity">Calendar Entity</label
-          >
-          <input
-            type="text"
-            class="form-input"
-            id="calendar-entity"
-            placeholder="calendar.meitheal_tasks"
-          />
-        </div>
-        <div style="display: flex; gap: 8px;">
-          <button type="button" class="btn btn-ghost" id="test-connection"
-            >Test Connection</button
-          >
-          <button type="submit" class="btn btn-primary" id="save-ha"
-            >💾 Save</button
-          >
-        </div>
-        <div id="ha-status" style="margin-top: 12px;"></div>
-      </form>
-    </div>
+  <div
+    class="settings-tabs"
+    style="display: flex; gap: 24px; border-bottom: 1px solid var(--border); margin-bottom: 24px; overflow-x: auto;"
+  >
+    <button
+      class="settings-tab active"
+      data-target="tab-general"
+      style="padding-bottom: 12px; border-bottom: 2px solid var(--accent); color: var(--text-primary); font-weight: 500; cursor: pointer; background: transparent; white-space: nowrap;"
+      >General</button
+    >
+    <button
+      class="settings-tab"
+      data-target="tab-integrations"
+      style="padding-bottom: 12px; border-bottom: 2px solid transparent; color: var(--text-muted); font-weight: 500; cursor: pointer; background: transparent; white-space: nowrap;"
+      >Integrations</button
+    >
+    <button
+      class="settings-tab"
+      data-target="tab-agents"
+      style="padding-bottom: 12px; border-bottom: 2px solid transparent; color: var(--text-muted); font-weight: 500; cursor: pointer; background: transparent; white-space: nowrap;"
+      >Agents & AI</button
+    >
+    <button
+      class="settings-tab"
+      data-target="tab-system"
+      style="padding-bottom: 12px; border-bottom: 2px solid transparent; color: var(--text-muted); font-weight: 500; cursor: pointer; background: transparent; white-space: nowrap;"
+      >System & Danger</button
+    >
+  </div>
 
-    <!-- Custom Fields -->
-    <div class="card">
-      <div class="card-header">
-        <div>
-          <div class="card-title">
-            {t("settings.custom_fields_title", locale)}
-          </div>
-          <div class="card-subtitle">
-            {t("settings.custom_fields_subtitle", locale)}
-          </div>
-        </div>
-        <button class="btn btn-ghost" id="add-custom-field">+ Add Field</button>
-      </div>
-      <div id="custom-fields-list">
-        <div class="custom-field-row">
-          <input
-            type="text"
-            class="form-input"
-            placeholder="Field name"
-            value="sprint"
-            disabled
-          />
-          <select class="form-select" disabled>
-            <option value="text" selected>Text</option>
-            <option value="number">Number</option>
-            <option value="select">Select</option>
-            <option value="date">Date</option>
-            <option value="checkbox">Checkbox</option>
-          </select>
-          <span style="color: var(--text-muted); font-size: 12px;"
-            >Built-in</span
-          >
-        </div>
-        <div class="custom-field-row">
-          <input
-            type="text"
-            class="form-input"
-            placeholder="Field name"
-            value="story_points"
-            disabled
-          />
-          <select class="form-select" disabled>
-            <option value="number" selected>Number</option>
-          </select>
-          <span style="color: var(--text-muted); font-size: 12px;"
-            >Built-in</span
-          >
-        </div>
-      </div>
-    </div>
-
-    <!-- Framework Scoring — Configurable enable/disable -->
-    <div class="card">
-      <div class="card-header">
-        <div>
-          <div class="card-title">{t("settings.frameworks_title", locale)}</div>
-          <div class="card-subtitle">
-            {t("settings.frameworks_subtitle", locale)}
-          </div>
-        </div>
-      </div>
-      <div id="framework-list">
-        <div class="framework-row" data-framework="rice">
-          <div class="framework-info">
-            <label class="toggle-label">
-              <input
-                type="checkbox"
-                class="framework-toggle"
-                data-fw="rice"
-                checked
-              />
-              <span class="toggle-slider"></span>
-            </label>
-            <div>
-              <strong>RICE</strong>
-              <div class="framework-desc">
-                Reach × Impact × Confidence / Effort
-              </div>
-            </div>
-          </div>
-        </div>
-        <div class="framework-row" data-framework="drice">
-          <div class="framework-info">
-            <label class="toggle-label">
-              <input type="checkbox" class="framework-toggle" data-fw="drice" />
-              <span class="toggle-slider"></span>
-            </label>
-            <div>
-              <strong>DRICE</strong>
-              <div class="framework-desc">Dependencies + RICE</div>
-            </div>
-          </div>
-        </div>
-        <div class="framework-row" data-framework="heart">
-          <div class="framework-info">
-            <label class="toggle-label">
-              <input type="checkbox" class="framework-toggle" data-fw="heart" />
-              <span class="toggle-slider"></span>
-            </label>
-            <div>
-              <strong>HEART</strong>
-              <div class="framework-desc">
-                Happiness, Engagement, Adoption, Retention, Task Success
-              </div>
-            </div>
-          </div>
-        </div>
-        <div class="framework-row" data-framework="kcs">
-          <div class="framework-info">
-            <label class="toggle-label">
-              <input type="checkbox" class="framework-toggle" data-fw="kcs" />
-              <span class="toggle-slider"></span>
-            </label>
-            <div>
-              <strong>KCS</strong>
-              <div class="framework-desc">Knowledge-Centered Support</div>
-            </div>
-          </div>
-        </div>
-        <div class="framework-row" data-framework="ddd">
-          <div class="framework-info">
-            <label class="toggle-label">
-              <input type="checkbox" class="framework-toggle" data-fw="ddd" />
-              <span class="toggle-slider"></span>
-            </label>
-            <div>
-              <strong>DDD</strong>
-              <div class="framework-desc">Domain-Driven Design scoring</div>
-            </div>
-          </div>
-        </div>
-        <div class="framework-row" data-framework="custom">
-          <div class="framework-info">
-            <label class="toggle-label">
-              <input
-                type="checkbox"
-                class="framework-toggle"
-                data-fw="custom"
-              />
-              <span class="toggle-slider"></span>
-            </label>
-            <div>
-              <strong>Custom</strong>
-              <div class="framework-desc">User-defined scoring fields</div>
-            </div>
-          </div>
-        </div>
-      </div>
-      <div class="form-group" style="margin-top: 12px;">
-        <label class="form-label">Active Framework</label>
-        <select class="form-select" id="scoring-framework">
-          <option value="rice" selected>RICE</option>
-        </select>
-      </div>
-      <div class="form-group">
-        <label class="form-label">Score Display</label>
-        <select class="form-select" id="score-display">
-          <option value="badge">Badge (high/med/low)</option>
-          <option value="number" selected>Numeric score</option>
-          <option value="both">Both</option>
-        </select>
-      </div>
-    </div>
-
-    <!-- Integrations — Comprehensive Configuration -->
-    <div class="card" style="grid-column: 1 / -1;">
-      <div class="card-header">
-        <div>
-          <div class="card-title">
-            {t("settings.integrations_title", locale)}
-          </div>
-          <div class="card-subtitle">
-            {t("settings.integrations_subtitle", locale)}
-          </div>
-        </div>
-      </div>
-
-      <!-- Calendar Sync -->
-      <div class="integration-section">
-        <div class="integration-header">
+  <div id="tab-general" class="tab-pane active" style="display: block;">
+    <div class="settings-grid">
+      <!-- HA Connection -->
+      <div class="card">
+        <div class="card-header">
           <div>
-            <strong>📅 Calendar Sync</strong>
-            <div class="integration-desc">
-              Sync tasks with due dates to your Home Assistant or CalDAV
-              calendar. Tasks appear as events with priority color coding.
-            </div>
+            <div class="card-title">{t("settings.ha_title", locale)}</div>
+            <div class="card-subtitle">{t("settings.ha_subtitle", locale)}</div>
           </div>
-          <span class="badge badge-active" id="cal-status">Connected</span>
         </div>
-        <div class="integration-config">
+        <form id="ha-form">
           <div class="form-group">
-            <label class="form-label" for="cal-entity">Calendar Entity</label>
+            <label class="form-label" for="ha-url">HA URL</label>
+            <input
+              type="url"
+              class="form-input"
+              id="ha-url"
+              placeholder="http://homeassistant.local:8123"
+              pattern="https?://.*"
+              required
+            />
+          </div>
+          <div class="form-group">
+            <label class="form-label" for="ha-token"
+              >Long-Lived Access Token</label
+            >
+            <input
+              type="password"
+              class="form-input"
+              id="ha-token"
+              placeholder="••••••••"
+            />
+            <small style="color: var(--text-muted); font-size: 12px;">
+              Generate in HA → Profile → Long-Lived Access Tokens
+            </small>
+          </div>
+          <div class="form-group">
+            <label class="form-label" for="calendar-entity"
+              >Calendar Entity</label
+            >
             <input
               type="text"
               class="form-input"
-              id="cal-entity"
+              id="calendar-entity"
               placeholder="calendar.meitheal_tasks"
             />
-            <small style="color: var(--text-muted); font-size: 11px;"
-              >The HA calendar entity to sync tasks to. Find it in HA →
-              Developer Tools → States → search "calendar."</small
-            >
-          </div>
-          <div class="form-group">
-            <label class="form-label" for="caldav-url"
-              >CalDAV URL (optional)</label
-            >
-            <input
-              type="url"
-              class="form-input"
-              id="caldav-url"
-              placeholder="https://your-server.com/dav/calendars/"
-            />
-            <small style="color: var(--text-muted); font-size: 11px;"
-              >For direct CalDAV sync (Nextcloud, Radicale, etc). Leave blank to
-              use HA calendar only.</small
-            >
-          </div>
-          <div style="display: flex; gap: 8px; align-items: center;">
-            <button
-              class="btn btn-primary"
-              id="save-cal"
-              style="font-size: 13px;">Save Calendar Settings</button
-            >
-            <button class="btn btn-ghost" id="test-cal" style="font-size: 13px;"
-              >Test Sync</button
-            >
-          </div>
-        </div>
-      </div>
-
-      <!-- Grocy -->
-      <div class="integration-section">
-        <div class="integration-header">
-          <div>
-            <strong>🛒 Grocy</strong>
-            <div class="integration-desc">
-              Connect to Grocy for household inventory and chore management.
-              Meitheal can import Grocy tasks and expose its own tasks back.
-            </div>
-          </div>
-          <span class="badge badge-pending" id="grocy-status"
-            >Not configured</span
-          >
-        </div>
-        <div class="integration-config">
-          <div class="form-group">
-            <label class="form-label" for="grocy-url">Grocy URL</label>
-            <input
-              type="url"
-              class="form-input"
-              id="grocy-url"
-              placeholder="http://homeassistant.local:9192"
-            />
-            <small style="color: var(--text-muted); font-size: 11px;"
-              >The URL of your Grocy instance. Often runs as a HA add-on on port
-              9192.</small
-            >
-          </div>
-          <div class="form-group">
-            <label class="form-label" for="grocy-key">API Key</label>
-            <input
-              type="password"
-              class="form-input"
-              id="grocy-key"
-              placeholder="••••••••"
-            />
-            <small style="color: var(--text-muted); font-size: 11px;"
-              >Generate in Grocy → Settings → API Keys → Add.</small
-            >
-          </div>
-          <div class="form-group">
-            <label class="form-label" for="grocy-sync-mode">Sync Mode</label>
-            <select class="form-select" id="grocy-sync-mode">
-              <option value="import">Import Grocy → Meitheal</option>
-              <option value="export">Export Meitheal → Grocy</option>
-              <option value="bidirectional">Bidirectional sync</option>
-            </select>
-          </div>
-          <button
-            class="btn btn-primary"
-            id="save-grocy"
-            style="font-size: 13px;">Save Grocy Settings</button
-          >
-        </div>
-      </div>
-
-      <!-- n8n / Node-RED -->
-      <div class="integration-section">
-        <div class="integration-header">
-          <div>
-            <strong>⚙ n8n / Node-RED</strong>
-            <div class="integration-desc">
-              Trigger automation workflows when tasks are created, updated, or
-              completed. Create complex pipelines that react to task events.
-            </div>
-          </div>
-          <span class="badge badge-pending" id="n8n-status">Not configured</span
-          >
-        </div>
-        <div class="integration-config">
-          <div class="form-group">
-            <label class="form-label" for="n8n-webhook-url">Webhook URL</label>
-            <input
-              type="url"
-              class="form-input"
-              id="n8n-webhook-url"
-              placeholder="https://n8n.example.com/webhook/meitheal"
-            />
-            <small style="color: var(--text-muted); font-size: 11px;"
-              >The webhook URL from your n8n/Node-RED flow. Meitheal will POST
-              task events here.</small
-            >
-          </div>
-          <div class="form-group">
-            <label class="form-label">Trigger Events</label>
-            <div style="display: flex; gap: 12px; flex-wrap: wrap;">
-              <label
-                style="font-size: 13px; display: flex; gap: 4px; align-items: center;"
-              >
-                <input
-                  type="checkbox"
-                  class="n8n-event"
-                  value="task.created"
-                  checked
-                /> Created
-              </label>
-              <label
-                style="font-size: 13px; display: flex; gap: 4px; align-items: center;"
-              >
-                <input
-                  type="checkbox"
-                  class="n8n-event"
-                  value="task.updated"
-                  checked
-                /> Updated
-              </label>
-              <label
-                style="font-size: 13px; display: flex; gap: 4px; align-items: center;"
-              >
-                <input
-                  type="checkbox"
-                  class="n8n-event"
-                  value="task.completed"
-                  checked
-                /> Completed
-              </label>
-              <label
-                style="font-size: 13px; display: flex; gap: 4px; align-items: center;"
-              >
-                <input type="checkbox" class="n8n-event" value="task.deleted" /> Deleted
-              </label>
-            </div>
-          </div>
-          <button class="btn btn-primary" id="save-n8n" style="font-size: 13px;"
-            >Save n8n Settings</button
-          >
-        </div>
-      </div>
-
-      <!-- Webhooks -->
-      <div class="integration-section">
-        <div class="integration-header">
-          <div>
-            <strong>🔔 Webhooks</strong>
-            <div class="integration-desc">
-              Generic outgoing webhooks for any service. Each event sends a JSON
-              payload with the full task object and event type.
-            </div>
-          </div>
-          <span class="badge badge-active" id="webhook-status">Active</span>
-        </div>
-        <div class="integration-config">
-          <div class="form-group">
-            <label class="form-label" for="webhook-endpoint">Endpoint URL</label
-            >
-            <input
-              type="url"
-              class="form-input"
-              id="webhook-endpoint"
-              placeholder="https://your-service.com/webhook"
-            />
-          </div>
-          <div class="form-group">
-            <label class="form-label" for="webhook-secret"
-              >Signing Secret (optional)</label
-            >
-            <input
-              type="password"
-              class="form-input"
-              id="webhook-secret"
-              placeholder="••••••••"
-            />
-            <small style="color: var(--text-muted); font-size: 11px;"
-              >HMAC-SHA256 secret used to sign webhook payloads. Verify with the
-              X-Webhook-Signature header.</small
-            >
-          </div>
-          <div class="form-group">
-            <label class="form-label">Payload Format</label>
-            <select class="form-select" id="webhook-format">
-              <option value="json" selected>JSON</option>
-              <option value="form">Form-encoded</option>
-            </select>
           </div>
           <div style="display: flex; gap: 8px;">
+            <button type="button" class="btn btn-ghost" id="test-connection"
+              >Test Connection</button
+            >
+            <button type="submit" class="btn btn-primary" id="save-ha"
+              >💾 Save</button
+            >
+          </div>
+          <div id="ha-status" style="margin-top: 12px;"></div>
+        </form>
+      </div>
+
+      <!-- Custom Fields -->
+      <div class="card">
+        <div class="card-header">
+          <div>
+            <div class="card-title">
+              {t("settings.custom_fields_title", locale)}
+            </div>
+            <div class="card-subtitle">
+              {t("settings.custom_fields_subtitle", locale)}
+            </div>
+          </div>
+          <button class="btn btn-ghost" id="add-custom-field"
+            >+ Add Field</button
+          >
+        </div>
+        <div id="custom-fields-list">
+          <div class="custom-field-row">
+            <input
+              type="text"
+              class="form-input"
+              placeholder="Field name"
+              value="sprint"
+              disabled
+            />
+            <select class="form-select" disabled>
+              <option value="text" selected>Text</option>
+              <option value="number">Number</option>
+              <option value="select">Select</option>
+              <option value="date">Date</option>
+              <option value="checkbox">Checkbox</option>
+            </select>
+            <span style="color: var(--text-muted); font-size: 12px;"
+              >Built-in</span
+            >
+          </div>
+          <div class="custom-field-row">
+            <input
+              type="text"
+              class="form-input"
+              placeholder="Field name"
+              value="story_points"
+              disabled
+            />
+            <select class="form-select" disabled>
+              <option value="number" selected>Number</option>
+            </select>
+            <span style="color: var(--text-muted); font-size: 12px;"
+              >Built-in</span
+            >
+          </div>
+        </div>
+      </div>
+
+      <!-- Framework Scoring — Configurable enable/disable -->
+      <div class="card">
+        <div class="card-header">
+          <div>
+            <div class="card-title">
+              {t("settings.frameworks_title", locale)}
+            </div>
+            <div class="card-subtitle">
+              {t("settings.frameworks_subtitle", locale)}
+            </div>
+          </div>
+        </div>
+        <div id="framework-list">
+          <div class="framework-row" data-framework="rice">
+            <div class="framework-info">
+              <label class="toggle-label">
+                <input
+                  type="checkbox"
+                  class="framework-toggle"
+                  data-fw="rice"
+                  checked
+                />
+                <span class="toggle-slider"></span>
+              </label>
+              <div>
+                <strong>RICE</strong>
+                <div class="framework-desc">
+                  Reach × Impact × Confidence / Effort
+                </div>
+              </div>
+            </div>
+          </div>
+          <div class="framework-row" data-framework="drice">
+            <div class="framework-info">
+              <label class="toggle-label">
+                <input
+                  type="checkbox"
+                  class="framework-toggle"
+                  data-fw="drice"
+                />
+                <span class="toggle-slider"></span>
+              </label>
+              <div>
+                <strong>DRICE</strong>
+                <div class="framework-desc">Dependencies + RICE</div>
+              </div>
+            </div>
+          </div>
+          <div class="framework-row" data-framework="heart">
+            <div class="framework-info">
+              <label class="toggle-label">
+                <input
+                  type="checkbox"
+                  class="framework-toggle"
+                  data-fw="heart"
+                />
+                <span class="toggle-slider"></span>
+              </label>
+              <div>
+                <strong>HEART</strong>
+                <div class="framework-desc">
+                  Happiness, Engagement, Adoption, Retention, Task Success
+                </div>
+              </div>
+            </div>
+          </div>
+          <div class="framework-row" data-framework="kcs">
+            <div class="framework-info">
+              <label class="toggle-label">
+                <input type="checkbox" class="framework-toggle" data-fw="kcs" />
+                <span class="toggle-slider"></span>
+              </label>
+              <div>
+                <strong>KCS</strong>
+                <div class="framework-desc">Knowledge-Centered Support</div>
+              </div>
+            </div>
+          </div>
+          <div class="framework-row" data-framework="ddd">
+            <div class="framework-info">
+              <label class="toggle-label">
+                <input type="checkbox" class="framework-toggle" data-fw="ddd" />
+                <span class="toggle-slider"></span>
+              </label>
+              <div>
+                <strong>DDD</strong>
+                <div class="framework-desc">Domain-Driven Design scoring</div>
+              </div>
+            </div>
+          </div>
+          <div class="framework-row" data-framework="custom">
+            <div class="framework-info">
+              <label class="toggle-label">
+                <input
+                  type="checkbox"
+                  class="framework-toggle"
+                  data-fw="custom"
+                />
+                <span class="toggle-slider"></span>
+              </label>
+              <div>
+                <strong>Custom</strong>
+                <div class="framework-desc">User-defined scoring fields</div>
+              </div>
+            </div>
+          </div>
+        </div>
+        <div class="form-group" style="margin-top: 12px;">
+          <label class="form-label">Active Framework</label>
+          <select class="form-select" id="scoring-framework">
+            <option value="rice" selected>RICE</option>
+          </select>
+        </div>
+        <div class="form-group">
+          <label class="form-label">Score Display</label>
+          <select class="form-select" id="score-display">
+            <option value="badge">Badge (high/med/low)</option>
+            <option value="number" selected>Numeric score</option>
+            <option value="both">Both</option>
+          </select>
+        </div>
+      </div>
+    </div>
+    <!-- /settings-grid -->
+  </div>
+  <!-- /tab-general -->
+
+  <div id="tab-integrations" class="tab-pane" style="display: none;">
+    <div class="settings-grid">
+      <!-- Integrations — Comprehensive Configuration -->
+      <div class="card" style="grid-column: 1 / -1;">
+        <div class="card-header">
+          <div>
+            <div class="card-title">
+              {t("settings.integrations_title", locale)}
+            </div>
+            <div class="card-subtitle">
+              {t("settings.integrations_subtitle", locale)}
+            </div>
+          </div>
+        </div>
+
+        <!-- Calendar Sync -->
+        <div class="integration-section">
+          <div class="integration-header">
+            <div>
+              <strong>📅 Calendar Sync</strong>
+              <div class="integration-desc">
+                Sync tasks with due dates to your Home Assistant or CalDAV
+                calendar. Tasks appear as events with priority color coding.
+              </div>
+            </div>
+            <span class="badge badge-active" id="cal-status">Connected</span>
+          </div>
+          <div class="integration-config">
+            <div class="form-group">
+              <label class="form-label" for="cal-entity">Calendar Entity</label>
+              <input
+                type="text"
+                class="form-input"
+                id="cal-entity"
+                placeholder="calendar.meitheal_tasks"
+              />
+              <small style="color: var(--text-muted); font-size: 11px;"
+                >The HA calendar entity to sync tasks to. Find it in HA →
+                Developer Tools → States → search "calendar."</small
+              >
+            </div>
+            <div class="form-group">
+              <label class="form-label" for="caldav-url"
+                >CalDAV URL (optional)</label
+              >
+              <input
+                type="url"
+                class="form-input"
+                id="caldav-url"
+                placeholder="https://your-server.com/dav/calendars/"
+              />
+              <small style="color: var(--text-muted); font-size: 11px;"
+                >For direct CalDAV sync (Nextcloud, Radicale, etc). Leave blank
+                to use HA calendar only.</small
+              >
+            </div>
+            <div style="display: flex; gap: 8px; align-items: center;">
+              <button
+                class="btn btn-primary"
+                id="save-cal"
+                style="font-size: 13px;">Save Calendar Settings</button
+              >
+              <button
+                class="btn btn-ghost"
+                id="test-cal"
+                style="font-size: 13px;">Test Sync</button
+              >
+            </div>
+          </div>
+        </div>
+
+        <!-- Grocy -->
+        <div class="integration-section">
+          <div class="integration-header">
+            <div>
+              <strong>🛒 Grocy</strong>
+              <div class="integration-desc">
+                Connect to Grocy for household inventory and chore management.
+                Meitheal can import Grocy tasks and expose its own tasks back.
+              </div>
+            </div>
+            <span class="badge badge-pending" id="grocy-status"
+              >Not configured</span
+            >
+          </div>
+          <div class="integration-config">
+            <div class="form-group">
+              <label class="form-label" for="grocy-url">Grocy URL</label>
+              <input
+                type="url"
+                class="form-input"
+                id="grocy-url"
+                placeholder="http://homeassistant.local:9192"
+              />
+              <small style="color: var(--text-muted); font-size: 11px;"
+                >The URL of your Grocy instance. Often runs as a HA add-on on
+                port 9192.</small
+              >
+            </div>
+            <div class="form-group">
+              <label class="form-label" for="grocy-key">API Key</label>
+              <input
+                type="password"
+                class="form-input"
+                id="grocy-key"
+                placeholder="••••••••"
+              />
+              <small style="color: var(--text-muted); font-size: 11px;"
+                >Generate in Grocy → Settings → API Keys → Add.</small
+              >
+            </div>
+            <div class="form-group">
+              <label class="form-label" for="grocy-sync-mode">Sync Mode</label>
+              <select class="form-select" id="grocy-sync-mode">
+                <option value="import">Import Grocy → Meitheal</option>
+                <option value="export">Export Meitheal → Grocy</option>
+                <option value="bidirectional">Bidirectional sync</option>
+              </select>
+            </div>
             <button
               class="btn btn-primary"
-              id="save-webhook"
-              style="font-size: 13px;">Save Webhook</button
+              id="save-grocy"
+              style="font-size: 13px;">Save Grocy Settings</button
             >
+          </div>
+        </div>
+
+        <!-- n8n / Node-RED -->
+        <div class="integration-section">
+          <div class="integration-header">
+            <div>
+              <strong>⚙ n8n / Node-RED</strong>
+              <div class="integration-desc">
+                Trigger automation workflows when tasks are created, updated, or
+                completed. Create complex pipelines that react to task events.
+              </div>
+            </div>
+            <span class="badge badge-pending" id="n8n-status"
+              >Not configured</span
+            >
+          </div>
+          <div class="integration-config">
+            <div class="form-group">
+              <label class="form-label" for="n8n-webhook-url">Webhook URL</label
+              >
+              <input
+                type="url"
+                class="form-input"
+                id="n8n-webhook-url"
+                placeholder="https://n8n.example.com/webhook/meitheal"
+              />
+              <small style="color: var(--text-muted); font-size: 11px;"
+                >The webhook URL from your n8n/Node-RED flow. Meitheal will POST
+                task events here.</small
+              >
+            </div>
+            <div class="form-group">
+              <label class="form-label">Trigger Events</label>
+              <div style="display: flex; gap: 12px; flex-wrap: wrap;">
+                <label
+                  style="font-size: 13px; display: flex; gap: 4px; align-items: center;"
+                >
+                  <input
+                    type="checkbox"
+                    class="n8n-event"
+                    value="task.created"
+                    checked
+                  /> Created
+                </label>
+                <label
+                  style="font-size: 13px; display: flex; gap: 4px; align-items: center;"
+                >
+                  <input
+                    type="checkbox"
+                    class="n8n-event"
+                    value="task.updated"
+                    checked
+                  /> Updated
+                </label>
+                <label
+                  style="font-size: 13px; display: flex; gap: 4px; align-items: center;"
+                >
+                  <input
+                    type="checkbox"
+                    class="n8n-event"
+                    value="task.completed"
+                    checked
+                  /> Completed
+                </label>
+                <label
+                  style="font-size: 13px; display: flex; gap: 4px; align-items: center;"
+                >
+                  <input
+                    type="checkbox"
+                    class="n8n-event"
+                    value="task.deleted"
+                  /> Deleted
+                </label>
+              </div>
+            </div>
             <button
-              class="btn btn-ghost"
-              id="test-webhook"
-              style="font-size: 13px;">Send Test</button
+              class="btn btn-primary"
+              id="save-n8n"
+              style="font-size: 13px;">Save n8n Settings</button
             >
           </div>
         </div>
-      </div>
 
-      <!-- AI Provider -->
-      <div class="integration-section">
-        <div class="integration-header">
+        <!-- Webhooks -->
+        <div class="integration-section">
+          <div class="integration-header">
+            <div>
+              <strong>🔔 Webhooks</strong>
+              <div class="integration-desc">
+                Generic outgoing webhooks for any service. Each event sends a
+                JSON payload with the full task object and event type.
+              </div>
+            </div>
+            <span class="badge badge-active" id="webhook-status">Active</span>
+          </div>
+          <div class="integration-config">
+            <div class="form-group">
+              <label class="form-label" for="webhook-endpoint"
+                >Endpoint URL</label
+              >
+              <input
+                type="url"
+                class="form-input"
+                id="webhook-endpoint"
+                placeholder="https://your-service.com/webhook"
+              />
+            </div>
+            <div class="form-group">
+              <label class="form-label" for="webhook-secret"
+                >Signing Secret (optional)</label
+              >
+              <input
+                type="password"
+                class="form-input"
+                id="webhook-secret"
+                placeholder="••••••••"
+              />
+              <small style="color: var(--text-muted); font-size: 11px;"
+                >HMAC-SHA256 secret used to sign webhook payloads. Verify with
+                the X-Webhook-Signature header.</small
+              >
+            </div>
+            <div class="form-group">
+              <label class="form-label">Payload Format</label>
+              <select class="form-select" id="webhook-format">
+                <option value="json" selected>JSON</option>
+                <option value="form">Form-encoded</option>
+              </select>
+            </div>
+            <div style="display: flex; gap: 8px;">
+              <button
+                class="btn btn-primary"
+                id="save-webhook"
+                style="font-size: 13px;">Save Webhook</button
+              >
+              <button
+                class="btn btn-ghost"
+                id="test-webhook"
+                style="font-size: 13px;">Send Test</button
+              >
+            </div>
+          </div>
+        </div>
+      </div>
+      <!-- /card -->
+    </div>
+    <!-- /settings-grid (integrations) -->
+  </div>
+  <!-- /tab-integrations -->
+
+  <div id="tab-agents" class="tab-pane" style="display: none;">
+    <div class="settings-grid">
+      <div class="card" style="grid-column: 1 / -1;">
+        <div class="card-header">
           <div>
-            <strong>🤖 AI Provider</strong>
-            <div class="integration-desc">
-              Configure which AI service the "Ask AI" button sends tasks to.
-              Generates a pre-filled prompt with task context for analysis.
+            <div class="card-title">Agents & AI</div>
+            <div class="card-subtitle">
+              Configure AI providers and agent-to-agent protocols mapping.
             </div>
           </div>
-          <span class="badge badge-active">ChatGPT</span>
         </div>
-        <div class="integration-config">
-          <div class="form-group">
-            <label class="form-label" for="ai-provider">Provider</label>
-            <select class="form-select" id="ai-provider">
-              <option value="chatgpt" selected>ChatGPT</option>
-              <option value="claude">Claude</option>
-              <option value="gemini">Google Gemini</option>
-              <option value="ollama">Ollama (local)</option>
-              <option value="custom">Custom URL</option>
-            </select>
-          </div>
-          <div
-            class="form-group"
-            id="ai-custom-url-group"
-            style="display: none;"
-          >
-            <label class="form-label" for="ai-custom-url">Custom API URL</label>
-            <input
-              type="url"
-              class="form-input"
-              id="ai-custom-url"
-              placeholder="http://localhost:11434/api/chat"
-            />
-          </div>
-          <button class="btn btn-primary" id="save-ai" style="font-size: 13px;"
-            >Save AI Settings</button
-          >
-        </div>
-      </div>
 
-      <!-- Agent Protocols -->
-      <div class="integration-section">
-        <div class="integration-header">
-          <div>
-            <strong>🔗 Agent Protocols</strong>
-            <div class="integration-desc">
-              Expose Meitheal tools to AI agents via A2A, WebMCP, and MCP
-              protocols. Enable agent-to-agent collaboration, browser agent
-              tools, and tool discovery.
-            </div>
-          </div>
-          <span class="badge badge-active" id="agent-protocols-status"
-            >Active</span
-          >
-        </div>
-        <div class="integration-config">
-          <!-- A2A -->
-          <div
-            class="form-group"
-            style="padding-bottom: 16px; border-bottom: 1px solid var(--border);"
-          >
-            <div
-              style="display: flex; align-items: center; gap: 12px; margin-bottom: 8px;"
-            >
-              <label class="toggle-label">
-                <input type="checkbox" id="agent-a2a-enabled" checked />
-                <span class="toggle-slider"></span>
-              </label>
-              <div>
-                <strong style="font-size: 14px;">A2A (Agent-to-Agent)</strong>
-                <div
-                  style="color: var(--text-muted); font-size: 12px; margin-top: 2px;"
-                >
-                  Serve an Agent Card at <code
-                    >/.well-known/agent-card.json</code
-                  > so other AI agents can discover and delegate tasks to Meitheal.
-                  <a
-                    href="/api/a2a/agent-card"
-                    target="_blank"
-                    style="color: var(--accent);">View Agent Card →</a
-                  >
-                </div>
+        <!-- AI Provider -->
+        <div class="integration-section">
+          <div class="integration-header">
+            <div>
+              <strong>🤖 AI Provider</strong>
+              <div class="integration-desc">
+                Configure which AI service the "Ask AI" button sends tasks to.
+                Generates a pre-filled prompt with task context for analysis.
               </div>
             </div>
+            <span class="badge badge-active">ChatGPT</span>
           </div>
-
-          <!-- WebMCP -->
-          <div
-            class="form-group"
-            style="padding-top: 16px; padding-bottom: 16px; border-bottom: 1px solid var(--border);"
-          >
-            <div
-              style="display: flex; align-items: center; gap: 12px; margin-bottom: 8px;"
-            >
-              <label class="toggle-label">
-                <input type="checkbox" id="agent-webmcp-enabled" />
-                <span class="toggle-slider"></span>
-              </label>
-              <div>
-                <strong style="font-size: 14px;">WebMCP (Browser Agent)</strong>
-                <span
-                  style="font-size: 10px; padding: 2px 6px; background: var(--accent); color: #fff; border-radius: 4px; margin-left: 6px; vertical-align: middle;"
-                  >Experimental</span
-                >
-                <div
-                  style="color: var(--text-muted); font-size: 12px; margin-top: 2px;"
-                >
-                  Register Meitheal tools with your browser's AI assistant
-                  (Chrome EPP). Allows browser agents to create tasks, search,
-                  and navigate boards.
-                </div>
-              </div>
+          <div class="integration-config">
+            <div class="form-group">
+              <label class="form-label" for="ai-provider">Provider</label>
+              <select class="form-select" id="ai-provider">
+                <option value="chatgpt" selected>ChatGPT</option>
+                <option value="claude">Claude</option>
+                <option value="gemini">Google Gemini</option>
+                <option value="ollama">Ollama (local)</option>
+                <option value="custom">Custom URL</option>
+              </select>
             </div>
-          </div>
-
-          <!-- MCP Discovery -->
-          <div class="form-group" style="padding-top: 16px;">
             <div
-              style="display: flex; align-items: center; gap: 12px; margin-bottom: 8px;"
-            >
-              <label class="toggle-label">
-                <input type="checkbox" id="agent-mcp-enabled" checked />
-                <span class="toggle-slider"></span>
-              </label>
-              <div>
-                <strong style="font-size: 14px;">MCP Discovery</strong>
-                <div
-                  style="color: var(--text-muted); font-size: 12px; margin-top: 2px;"
-                >
-                  Serve tool definitions at <code>/.well-known/mcp.json</code> for
-                  MCP-compatible clients.
-                  <a
-                    href="/.well-known/mcp.json"
-                    target="_blank"
-                    style="color: var(--accent);">View MCP manifest →</a
-                  >
-                </div>
-              </div>
-            </div>
-          </div>
-
-          <button
-            class="btn btn-primary"
-            id="save-agent-protocols"
-            style="font-size: 13px;">Save Agent Protocol Settings</button
-          >
-        </div>
-      </div>
-    </div>
-
-    <!-- Keyboard Shortcuts -->
-    <div class="card">
-      <div class="card-header">
-        <div>
-          <div class="card-title">{t("settings.shortcuts_title", locale)}</div>
-          <div class="card-subtitle">
-            {t("settings.shortcuts_subtitle", locale)}
-          </div>
-        </div>
-      </div>
-      <div class="shortcut-grid">
-        <div class="shortcut-row">
-          <kbd>n</kbd><span>{t("settings.shortcut_new_task", locale)}</span>
-        </div>
-        <div class="shortcut-row">
-          <kbd>/</kbd><span>{t("settings.shortcut_search", locale)}</span>
-        </div>
-        <div class="shortcut-row">
-          <kbd>l</kbd><span>{t("settings.shortcut_list", locale)}</span>
-        </div>
-        <div class="shortcut-row">
-          <kbd>k</kbd><span>{t("settings.shortcut_kanban", locale)}</span>
-        </div>
-        <div class="shortcut-row">
-          <kbd>t</kbd><span>{t("settings.shortcut_table", locale)}</span>
-        </div>
-        <div class="shortcut-row">
-          <kbd>y</kbd><span>{t("settings.shortcut_today", locale)}</span>
-        </div>
-        <div class="shortcut-row">
-          <kbd>u</kbd><span>{t("settings.shortcut_upcoming", locale)}</span>
-        </div>
-        <div class="shortcut-row">
-          <kbd>c</kbd><span>{t("settings.shortcut_calendar", locale)}</span>
-        </div>
-        <div class="shortcut-row">
-          <kbd>Esc</kbd><span>{t("settings.shortcut_close", locale)}</span>
-        </div>
-        <div class="shortcut-row">
-          <kbd>?</kbd><span>{t("settings.shortcut_help", locale)}</span>
-        </div>
-      </div>
-    </div>
-
-    <!-- Language -->
-    <div class="card">
-      <div class="card-header">
-        <div>
-          <div class="card-title">{t("settings.language_title", locale)}</div>
-          <div class="card-subtitle">
-            {t("settings.language_subtitle", locale)}
-          </div>
-        </div>
-      </div>
-      <div class="form-group" style="margin-top: 12px;">
-        <label class="form-label" for="locale-select">Display Language</label>
-        <select
-          class="form-select"
-          id="locale-select"
-          style="max-width: 240px;"
-        >
-          <option value="en">English</option>
-          <option value="ga">Gaeilge</option>
-        </select>
-      </div>
-    </div>
-
-    <!-- Data Portability -->
-    <div class="card">
-      <div class="card-header">
-        <div>
-          <div class="card-title">{t("settings.data_title", locale)}</div>
-          <div class="card-subtitle">
-            {t("settings.data_subtitle", locale)}
-          </div>
-        </div>
-      </div>
-      <div class="form-group" style="margin-top: 12px;">
-        <label class="form-label" style="margin-bottom: 8px;"
-          >Export Tasks</label
-        >
-        <div style="display: flex; gap: 8px;">
-          <a
-            href="#"
-            class="btn btn-primary"
-            id="export-json-btn"
-            style="flex: 1; text-align: center; text-decoration: none;"
-            >📥 Download JSON</a
-          >
-          <a
-            href="/api/export/tasks.csv"
-            download
-            class="btn btn-secondary"
-            id="export-csv-btn"
-            style="flex: 1; text-align: center; text-decoration: none;"
-            >📊 Download CSV</a
-          >
-          <a
-            href="/api/export/database.sqlite"
-            download
-            class="btn btn-secondary"
-            id="export-db-btn"
-            style="flex: 1; text-align: center; text-decoration: none;"
-            >🗄️ Raw DB</a
-          >
-        </div>
-        <small
-          style="color: var(--text-muted); font-size: 11px; display: block; margin-top: 6px;"
-        >
-          Export your tasks to JSON/CSV, or download the entire raw SQLite
-          database file for full local-first data sovereignty.
-        </small>
-      </div>
-
-      <div
-        class="form-group"
-        style="margin-top: 16px; border-top: 1px solid var(--border-color); padding-top: 16px;"
-      >
-        <label class="form-label" style="margin-bottom: 8px;"
-          >Settings Configuration</label
-        >
-        <div style="display: flex; gap: 8px;">
-          <a
-            href="/api/export/settings.json"
-            download
-            class="btn btn-secondary"
-            id="export-settings-btn"
-            style="flex: 1; text-align: center; text-decoration: none;"
-            >⚙️ Export Config</a
-          >
-          <label
-            class="btn btn-secondary"
-            style="flex: 1; text-align: center; cursor: pointer; margin: 0; padding: 6px 16px; display: inline-flex; justify-content: center; align-items: center;"
-          >
-            🔄 Import Config
-            <input
-              type="file"
-              id="import-settings-input"
-              accept=".json"
+              class="form-group"
+              id="ai-custom-url-group"
               style="display: none;"
-            />
-          </label>
+            >
+              <label class="form-label" for="ai-custom-url"
+                >Custom API URL</label
+              >
+              <input
+                type="url"
+                class="form-input"
+                id="ai-custom-url"
+                placeholder="http://localhost:11434/api/chat"
+              />
+            </div>
+            <button
+              class="btn btn-primary"
+              id="save-ai"
+              style="font-size: 13px;">Save AI Settings</button
+            >
+          </div>
         </div>
-        <small
-          style="color: var(--text-muted); font-size: 11px; display: block; margin-top: 6px;"
-        >
-          Backup or restore your tokens, shortcuts, UI layouts, and active
-          integrations. Restoring will trigger a page reload.
-        </small>
+
+        <!-- Agent Protocols -->
+        <div class="integration-section">
+          <div class="integration-header">
+            <div>
+              <strong>🔗 Agent Protocols</strong>
+              <div class="integration-desc">
+                Expose Meitheal tools to AI agents via A2A, WebMCP, and MCP
+                protocols. Enable agent-to-agent collaboration, browser agent
+                tools, and tool discovery.
+              </div>
+            </div>
+            <span class="badge badge-active" id="agent-protocols-status"
+              >Active</span
+            >
+          </div>
+          <div class="integration-config">
+            <!-- A2A -->
+            <div
+              class="form-group"
+              style="padding-bottom: 16px; border-bottom: 1px solid var(--border);"
+            >
+              <div
+                style="display: flex; align-items: center; gap: 12px; margin-bottom: 8px;"
+              >
+                <label class="toggle-label">
+                  <input type="checkbox" id="agent-a2a-enabled" checked />
+                  <span class="toggle-slider"></span>
+                </label>
+                <div>
+                  <strong style="font-size: 14px;">A2A (Agent-to-Agent)</strong>
+                  <div
+                    style="color: var(--text-muted); font-size: 12px; margin-top: 2px;"
+                  >
+                    Serve an Agent Card at <code
+                      >/.well-known/agent-card.json</code
+                    > so other AI agents can discover and delegate tasks to Meitheal.
+                    <a
+                      href="/api/a2a/agent-card"
+                      target="_blank"
+                      style="color: var(--accent);">View Agent Card →</a
+                    >
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <!-- WebMCP -->
+            <div
+              class="form-group"
+              style="padding-top: 16px; padding-bottom: 16px; border-bottom: 1px solid var(--border);"
+            >
+              <div
+                style="display: flex; align-items: center; gap: 12px; margin-bottom: 8px;"
+              >
+                <label class="toggle-label">
+                  <input type="checkbox" id="agent-webmcp-enabled" />
+                  <span class="toggle-slider"></span>
+                </label>
+                <div>
+                  <strong style="font-size: 14px;"
+                    >WebMCP (Browser Agent)</strong
+                  >
+                  <span
+                    style="font-size: 10px; padding: 2px 6px; background: var(--accent); color: #fff; border-radius: 4px; margin-left: 6px; vertical-align: middle;"
+                    >Experimental</span
+                  >
+                  <div
+                    style="color: var(--text-muted); font-size: 12px; margin-top: 2px;"
+                  >
+                    Register Meitheal tools with your browser's AI assistant
+                    (Chrome EPP). Allows browser agents to create tasks, search,
+                    and navigate boards.
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <!-- MCP Discovery -->
+            <div class="form-group" style="padding-top: 16px;">
+              <div
+                style="display: flex; align-items: center; gap: 12px; margin-bottom: 8px;"
+              >
+                <label class="toggle-label">
+                  <input type="checkbox" id="agent-mcp-enabled" checked />
+                  <span class="toggle-slider"></span>
+                </label>
+                <div>
+                  <strong style="font-size: 14px;">MCP Discovery</strong>
+                  <div
+                    style="color: var(--text-muted); font-size: 12px; margin-top: 2px;"
+                  >
+                    Serve tool definitions at <code>/.well-known/mcp.json</code> for
+                    MCP-compatible clients.
+                    <a
+                      href="/.well-known/mcp.json"
+                      target="_blank"
+                      style="color: var(--accent);">View MCP manifest →</a
+                    >
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <button
+              class="btn btn-primary"
+              id="save-agent-protocols"
+              style="font-size: 13px;">Save Agent Protocol Settings</button
+            >
+          </div>
+        </div>
       </div>
     </div>
+    <!-- /settings-grid (agents) -->
+  </div>
+  <!-- /tab-agents -->
 
-    <!-- About -->
-    <div class="card">
-      <div class="card-header">
-        <div>
-          <div class="card-title">{t("settings.about_title", locale)}</div>
-          <div class="card-subtitle">
-            {t("settings.about_subtitle", locale)}
+  <div id="tab-system" class="tab-pane" style="display: none;">
+    <div class="settings-grid">
+      <!-- Keyboard Shortcuts -->
+      <div class="card">
+        <div class="card-header">
+          <div>
+            <div class="card-title">
+              {t("settings.shortcuts_title", locale)}
+            </div>
+            <div class="card-subtitle">
+              {t("settings.shortcuts_subtitle", locale)}
+            </div>
+          </div>
+        </div>
+        <div class="shortcut-grid">
+          <div class="shortcut-row">
+            <kbd>n</kbd><span>{t("settings.shortcut_new_task", locale)}</span>
+          </div>
+          <div class="shortcut-row">
+            <kbd>/</kbd><span>{t("settings.shortcut_search", locale)}</span>
+          </div>
+          <div class="shortcut-row">
+            <kbd>l</kbd><span>{t("settings.shortcut_list", locale)}</span>
+          </div>
+          <div class="shortcut-row">
+            <kbd>k</kbd><span>{t("settings.shortcut_kanban", locale)}</span>
+          </div>
+          <div class="shortcut-row">
+            <kbd>t</kbd><span>{t("settings.shortcut_table", locale)}</span>
+          </div>
+          <div class="shortcut-row">
+            <kbd>y</kbd><span>{t("settings.shortcut_today", locale)}</span>
+          </div>
+          <div class="shortcut-row">
+            <kbd>u</kbd><span>{t("settings.shortcut_upcoming", locale)}</span>
+          </div>
+          <div class="shortcut-row">
+            <kbd>c</kbd><span>{t("settings.shortcut_calendar", locale)}</span>
+          </div>
+          <div class="shortcut-row">
+            <kbd>Esc</kbd><span>{t("settings.shortcut_close", locale)}</span>
+          </div>
+          <div class="shortcut-row">
+            <kbd>?</kbd><span>{t("settings.shortcut_help", locale)}</span>
           </div>
         </div>
       </div>
-      <div
-        style="font-size: 13px; color: var(--text-secondary); line-height: 1.6;"
-      >
-        <p>
-          <strong>Meitheal</strong> (IPA: /ˈmɛhəl/) — Irish for "cooperative work
-          party."
-        </p>
-        <p>
-          A Home Assistant-native, Astro-first task and life management engine.
-        </p>
-        <p>
-          Version: <code>0.3.0</code> · Phase 32: Deep Audit
-        </p>
-      </div>
-    </div>
 
-    <!-- Danger Zone -->
-    <div class="card" style="border-color: var(--danger); border-width: 2px;">
-      <div class="card-header">
-        <div>
-          <div class="card-title" style="color: var(--danger);">
-            {t("settings.danger_title", locale)}
-          </div>
-          <div class="card-subtitle">
-            {t("settings.danger_subtitle", locale)}
+      <!-- Language -->
+      <div class="card">
+        <div class="card-header">
+          <div>
+            <div class="card-title">{t("settings.language_title", locale)}</div>
+            <div class="card-subtitle">
+              {t("settings.language_subtitle", locale)}
+            </div>
           </div>
         </div>
+        <div class="form-group" style="margin-top: 12px;">
+          <label class="form-label" for="locale-select">Display Language</label>
+          <select
+            class="form-select"
+            id="locale-select"
+            style="max-width: 240px;"
+          >
+            <option value="en">English</option>
+            <option value="ga">Gaeilge</option>
+          </select>
+        </div>
       </div>
-      <div style="display: flex; gap: 8px; flex-wrap: wrap;">
-        <button
-          class="btn"
-          id="purge-tasks"
-          style="border-color: var(--danger); color: var(--danger);"
-          >🗑 Purge All Tasks</button
+
+      <!-- Data Portability -->
+      <div class="card">
+        <div class="card-header">
+          <div>
+            <div class="card-title">{t("settings.data_title", locale)}</div>
+            <div class="card-subtitle">
+              {t("settings.data_subtitle", locale)}
+            </div>
+          </div>
+        </div>
+        <div class="form-group" style="margin-top: 12px;">
+          <label class="form-label" style="margin-bottom: 8px;"
+            >Export Tasks</label
+          >
+          <div style="display: flex; gap: 8px;">
+            <a
+              href="#"
+              class="btn btn-primary"
+              id="export-json-btn"
+              style="flex: 1; text-align: center; text-decoration: none;"
+              >📥 Download JSON</a
+            >
+            <a
+              href="/api/export/tasks.csv"
+              download
+              class="btn btn-secondary"
+              id="export-csv-btn"
+              style="flex: 1; text-align: center; text-decoration: none;"
+              >📊 Download CSV</a
+            >
+            <a
+              href="/api/export/database.sqlite"
+              download
+              class="btn btn-secondary"
+              id="export-db-btn"
+              style="flex: 1; text-align: center; text-decoration: none;"
+              >🗄️ Raw DB</a
+            >
+          </div>
+          <small
+            style="color: var(--text-muted); font-size: 11px; display: block; margin-top: 6px;"
+          >
+            Export your tasks to JSON/CSV, or download the entire raw SQLite
+            database file for full local-first data sovereignty.
+          </small>
+        </div>
+
+        <div
+          class="form-group"
+          style="margin-top: 16px; border-top: 1px solid var(--border-color); padding-top: 16px;"
         >
-        <button
-          class="btn"
-          id="reset-settings"
-          style="border-color: var(--danger); color: var(--danger);"
-          >🔄 Reset Settings</button
+          <label class="form-label" style="margin-bottom: 8px;"
+            >Settings Configuration</label
+          >
+          <div style="display: flex; gap: 8px;">
+            <a
+              href="/api/export/settings.json"
+              download
+              class="btn btn-secondary"
+              id="export-settings-btn"
+              style="flex: 1; text-align: center; text-decoration: none;"
+              >⚙️ Export Config</a
+            >
+            <label
+              class="btn btn-secondary"
+              style="flex: 1; text-align: center; cursor: pointer; margin: 0; padding: 6px 16px; display: inline-flex; justify-content: center; align-items: center;"
+            >
+              🔄 Import Config
+              <input
+                type="file"
+                id="import-settings-input"
+                accept=".json"
+                style="display: none;"
+              />
+            </label>
+          </div>
+          <small
+            style="color: var(--text-muted); font-size: 11px; display: block; margin-top: 6px;"
+          >
+            Backup or restore your tokens, shortcuts, UI layouts, and active
+            integrations. Restoring will trigger a page reload.
+          </small>
+        </div>
+      </div>
+
+      <!-- About -->
+      <div class="card">
+        <div class="card-header">
+          <div>
+            <div class="card-title">{t("settings.about_title", locale)}</div>
+            <div class="card-subtitle">
+              {t("settings.about_subtitle", locale)}
+            </div>
+          </div>
+        </div>
+        <div
+          style="font-size: 13px; color: var(--text-secondary); line-height: 1.6;"
         >
+          <p>
+            <strong>Meitheal</strong> (IPA: /ˈmɛhəl/) — Irish for "cooperative work
+            party."
+          </p>
+          <p>
+            A Home Assistant-native, Astro-first task and life management
+            engine.
+          </p>
+          <p>
+            Version: <code>0.3.0</code> · Phase 32: Deep Audit
+          </p>
+        </div>
+      </div>
+
+      <!-- Danger Zone -->
+      <div class="card" style="border-color: var(--danger); border-width: 2px;">
+        <div class="card-header">
+          <div>
+            <div class="card-title" style="color: var(--danger);">
+              {t("settings.danger_title", locale)}
+            </div>
+            <div class="card-subtitle">
+              {t("settings.danger_subtitle", locale)}
+            </div>
+          </div>
+        </div>
+        <div style="display: flex; gap: 8px; flex-wrap: wrap;">
+          <button
+            class="btn"
+            id="purge-tasks"
+            style="border-color: var(--danger); color: var(--danger);"
+            >🗑 Purge All Tasks</button
+          >
+          <button
+            class="btn"
+            id="reset-settings"
+            style="border-color: var(--danger); color: var(--danger);"
+            >🔄 Reset Settings</button
+          >
+        </div>
       </div>
     </div>
   </div>
+  <!-- /tab-system -->
 
   <div
     id="toast-container"
@@ -855,6 +951,38 @@ const locale: Locale = cookieLocale === "ga" ? "ga" : "en";
   </div>
 
   <script>
+    // Tab switching logic
+    document.addEventListener("DOMContentLoaded", () => {
+      const tabs = document.querySelectorAll(".settings-tab");
+      const panes = document.querySelectorAll(".tab-pane");
+
+      tabs.forEach((tab) => {
+        tab.addEventListener("click", () => {
+          tabs.forEach((t) => {
+            t.classList.remove("active");
+            (t as HTMLElement).style.color = "var(--text-muted)";
+            (t as HTMLElement).style.borderBottomColor = "transparent";
+          });
+          panes.forEach((p) => ((p as HTMLElement).style.display = "none"));
+
+          tab.classList.add("active");
+          const isDanger = tab.getAttribute("data-target") === "tab-system";
+          (tab as HTMLElement).style.color = isDanger
+            ? "var(--text-primary)"
+            : "var(--text-primary)"; // System tab gets primary color, danger is handled within card
+          (tab as HTMLElement).style.borderBottomColor = isDanger
+            ? "var(--danger)"
+            : "var(--accent)";
+
+          const targetId = tab.getAttribute("data-target");
+          if (targetId) {
+            const targetPane = document.getElementById(targetId);
+            if (targetPane) targetPane.style.display = "block";
+          }
+        });
+      });
+    });
+
     import { exportLocalDataAsJson } from "../domains/offline/export-service";
     import { confirmDialog } from "../lib/confirm-dialog";
 
