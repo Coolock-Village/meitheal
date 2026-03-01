@@ -65,20 +65,10 @@ Local-first task orchestration with HA calendar sync and Vikunja compatibility.
 
 ## Session Continuity
 
-Last session: 2026-03-01T11:55:00Z
-Stopped at: Phase 30 Web API Integration — all 23 features implemented, docs updated, build clean.
+Last session: 2026-03-01T16:42:00Z
+Stopped at: Production hardening passes 67-74. Full i18n migration, HA add-on CHANGELOG, skeleton CSS, CSP audit. Build clean.
 
-### Phase 30 Summary
-
-- 14 new modules across `lib/` and `domains/offline/`
-- APIs: Notifications, Permissions, Web Share, Clipboard, Vibration, Badging, Web Locks, BroadcastChannel, IntersectionObserver, PerformanceObserver, Screen Wake Lock, prefers-color-scheme, ResizeObserver, StorageManager, Page Visibility
-- Manifest: shortcuts + share_target
-- SW: notificationclick handler
-- Settings: Calendar entity auto-populated from `/api/ha/calendars`
-- Dashboard: overdue notification check on load
-- Build: 0 errors, 0 warnings, 70 files
-
-Resume hint: continue with P2-P6 items from task.md or move to CodeQL reconciliation. PR #1 checks still need triage.
+Resume hint: All 8 passes complete. Continue with Pass 75+ or deploy/test cycle.
 
 ---
 *Last updated: 2026-02-28 during Phase 21-23 persona audit pass*

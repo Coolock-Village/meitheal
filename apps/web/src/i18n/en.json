@@ -162,7 +162,9 @@
         "change_status": "Change status...",
         "delete_selected": "Delete Selected",
         "priority_updated": "Priority updated",
-        "status_updated": "Status updated"
+        "status_updated": "Status updated",
+        "bulk_update_failed": "Bulk update failed",
+        "bulk_delete_failed": "Bulk delete failed"
     },
     "task_detail": {
         "description": "Description",
@@ -340,7 +342,13 @@
         "export_success": "Local data exported successfully",
         "export_failed": "Failed to generate local export",
         "import_success": "Settings restored successfully. Reloading...",
-        "import_failed": "Import failed. Check console."
+        "import_failed": "Import failed. Check console.",
+        "calendar_saved": "Calendar settings saved",
+        "purge_cancelled": "Purge cancelled",
+        "purge_success": "All tasks purged",
+        "purge_failed": "Purge failed",
+        "reset_success": "Settings reset to defaults",
+        "reset_failed": "Reset failed"
     },
     "command_palette": {
         "placeholder": "Type a command or search...",
@@ -379,7 +387,9 @@
         "failed_update": "Failed to update",
         "failed_delete": "Failed to delete",
         "updated": "Updated",
-        "failed": "Failed"
+        "failed": "Failed",
+        "id_copied": "ID copied to clipboard",
+        "sync_conflict_merged": "Sync conflict merged with server changes"
     },
     "errors": {
         "page_not_found": "Page Not Found",

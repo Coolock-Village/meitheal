@@ -162,7 +162,9 @@
         "change_status": "Athraigh stádas...",
         "delete_selected": "Scrios Roghnaithe",
         "priority_updated": "Tosaíocht nuashonraithe",
-        "status_updated": "Stádas nuashonraithe"
+        "status_updated": "Stádas nuashonraithe",
+        "bulk_update_failed": "Theip ar nuashonrú ollmhór",
+        "bulk_delete_failed": "Theip ar scriosadh ollmhór"
     },
     "task_detail": {
         "description": "Cur Síos",
@@ -321,7 +323,32 @@
         "reset_settings": "🔄 Athshocraigh Socruithe",
         "not_configured": "Gan chumrú",
         "connected_label": "Nasctha",
-        "active_label": "Gníomhach"
+        "active_label": "Gníomhach",
+        "ha_saved": "Socruithe HA sábháilte",
+        "ai_saved": "Socruithe II sábháilte",
+        "sidebar_saved": "Cumraíocht an taoibh-bharra sábháilte",
+        "custom_field_saved": "Réimse saincheaptha sábháilte!",
+        "failed_save_field": "Theip ar shábháil an réimse",
+        "field_removed": "Réimse bainte (sonraí ar thascanna caomhnaithe)",
+        "frameworks_updated": "Mapuithe creatlach nuashonraithe",
+        "agent_protocols_saved": "Socruithe prótacal gíníomhaire sábháilte",
+        "webhook_saved": "Socruithe webhook sábháilte",
+        "webhook_required": "Tá URL críochphointe webhook ag teastáil",
+        "webhook_enter_url": "Cuir isteach URL webhook ar dtús",
+        "n8n_saved": "Socruithe n8n sábháilte",
+        "n8n_required": "Tá URL webhook n8n ag teastáil",
+        "grocy_saved": "Socruithe Grocy sábháilte",
+        "grocy_required": "Tá URL Grocy ag teastáil",
+        "export_success": "Sonraí áitiúla easpórtáilte go rathach",
+        "export_failed": "Theip ar easpórtáil áitiúil a ghiniúint",
+        "import_success": "Socruithe athchóirithe go rathach. Ag athlódáil...",
+        "import_failed": "Theip ar iompórtáil. Seiceáil an consóil.",
+        "calendar_saved": "Socruithe féilire sábháilte",
+        "purge_cancelled": "Glanadh cealaithe",
+        "purge_success": "Gach tasc glanta",
+        "purge_failed": "Theip ar ghlanadh",
+        "reset_success": "Socruithe athshocraithe go réamhshocruithe",
+        "reset_failed": "Theip ar athshocrú"
     },
     "command_palette": {
         "placeholder": "Clóscríobh ordú nó cuardaigh...",
@@ -360,7 +387,9 @@
         "failed_update": "Theip ar nuashonrú",
         "failed_delete": "Theip ar scriosadh",
         "updated": "Nuashonraithe",
-        "failed": "Theip"
+        "failed": "Theip",
+        "id_copied": "ID cóipeáilte go dtí an ghearrthaisce",
+        "sync_conflict_merged": "Coimhlint sioncronaithe cumaisc le hathruithe freastalaí"
     },
     "errors": {
         "page_not_found": "Leathanach Gan Aimsiú",

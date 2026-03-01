@@ -822,6 +822,56 @@ const locale: Locale = cookieLocale === "ga" ? "ga" : "en";
             <option value="ga">Gaeilge</option>
           </select>
         </div>
+        <div class="form-group" style="margin-top: 12px;">
+          <label class="form-label" for="timezone-select">Timezone</label>
+          <select
+            class="form-select"
+            id="timezone-select"
+            style="max-width: 300px;"
+          >
+            <option value="Europe/Dublin">Europe/Dublin</option>
+            <option value="Europe/London">Europe/London</option>
+            <option value="Europe/Berlin">Europe/Berlin</option>
+            <option value="Europe/Paris">Europe/Paris</option>
+            <option value="America/New_York">America/New_York</option>
+            <option value="America/Chicago">America/Chicago</option>
+            <option value="America/Denver">America/Denver</option>
+            <option value="America/Los_Angeles">America/Los_Angeles</option>
+            <option value="Asia/Tokyo">Asia/Tokyo</option>
+            <option value="Asia/Shanghai">Asia/Shanghai</option>
+            <option value="Australia/Sydney">Australia/Sydney</option>
+            <option value="UTC">UTC</option>
+          </select>
+        </div>
+        <div class="form-group" style="margin-top: 12px;">
+          <label class="form-label" for="week-start-select"
+            >Week Starts On</label
+          >
+          <select
+            class="form-select"
+            id="week-start-select"
+            style="max-width: 240px;"
+          >
+            <option value="monday">Monday</option>
+            <option value="sunday">Sunday</option>
+            <option value="saturday">Saturday</option>
+          </select>
+        </div>
+        <div class="form-group" style="margin-top: 12px;">
+          <label class="form-label" for="date-format-select"
+            >Date Display Format</label
+          >
+          <select
+            class="form-select"
+            id="date-format-select"
+            style="max-width: 300px;"
+          >
+            <option value="relative">Relative (e.g. "2 days ago")</option>
+            <option value="absolute-iso">Absolute ISO (2026-03-01)</option>
+            <option value="absolute-eu">Absolute EU (01/03/2026)</option>
+            <option value="absolute-us">Absolute US (03/01/2026)</option>
+          </select>
+        </div>
       </div>
 
       <!-- Data Portability -->
@@ -1018,10 +1068,10 @@ const locale: Locale = cookieLocale === "ga" ? "ga" : "en";
         e.preventDefault();
         try {
           await exportLocalDataAsJson();
-          showToast("Local data and attachments exported successfully.");
+          showToast("settings.export_success");
         } catch (err) {
           console.error("Failed to export JSON:", err);
-          showToast("Failed to generate local export.", "error");
+          showToast("settings.export_failed", "error");
         }
       });
 
@@ -1048,11 +1098,11 @@ const locale: Locale = cookieLocale === "ga" ? "ga" : "en";
             throw new Error(await response.text());
           }
 
-          showToast("Settings restored successfully. Reloading...");
+          showToast("settings.import_success");
           setTimeout(() => window.location.reload(), 1500);
         } catch (error) {
           console.error("Failed to import settings:", error);
-          showToast("Import failed. Check console.", "error");
+          showToast("settings.import_failed", "error");
         }
       });
     }
@@ -1114,6 +1164,36 @@ const locale: Locale = cookieLocale === "ga" ? "ga" : "en";
             document.getElementById("locale-select") as HTMLSelectElement
           ).value = stored;
         }
+
+        // Restore timezone
+        const tz =
+          settings.timezone ||
+          localStorage.getItem("meitheal-timezone") ||
+          "Europe/Dublin";
+        const tzEl = document.getElementById(
+          "timezone-select",
+        ) as HTMLSelectElement;
+        if (tzEl) tzEl.value = tz;
+
+        // Restore week start
+        const ws =
+          settings.week_start ||
+          localStorage.getItem("meitheal-week-start") ||
+          "monday";
+        const wsEl = document.getElementById(
+          "week-start-select",
+        ) as HTMLSelectElement;
+        if (wsEl) wsEl.value = ws;
+
+        // Restore date format
+        const df =
+          settings.date_format ||
+          localStorage.getItem("meitheal-date-format") ||
+          "relative";
+        const dfEl = document.getElementById(
+          "date-format-select",
+        ) as HTMLSelectElement;
+        if (dfEl) dfEl.value = df;
 
         // Restore sidebar config
         if (settings.sidebar_config) {
@@ -1189,13 +1269,7 @@ const locale: Locale = cookieLocale === "ga" ? "ga" : "en";
                         }),
                       });
                       row.remove();
-                      showToast(
-                        typeof window !== "undefined" && (window as any).mI18n
-                          ? (window as any).mI18n.get(
-                              "settings.field_removed",
-                            ) || `Field "${field.name}" removed`
-                          : `Field "${field.name}" removed`,
-                      );
+                      showToast("settings.field_removed");
                     } catch {
                       showToast("common.failed_delete", "error");
                     }
@@ -1656,7 +1730,7 @@ const locale: Locale = cookieLocale === "ga" ? "ga" : "en";
 
       btn.textContent = "Save Calendar Settings";
       btn.disabled = false;
-      showToast("Calendar settings saved");
+      showToast("settings.calendar_saved");
     });
 
     document.getElementById("test-cal")?.addEventListener("click", async () => {
@@ -1815,17 +1889,17 @@ const locale: Locale = cookieLocale === "ga" ? "ga" : "en";
         if (!ok) return;
         const typed = prompt("Type YES to confirm purge:");
         if (typed?.toUpperCase() !== "YES") {
-          showToast("Purge cancelled", "error");
+          showToast("settings.purge_cancelled", "error");
           return;
         }
         try {
           const res = await fetch("/api/tasks?purge=all", { method: "DELETE" });
           if (res.ok) {
-            showToast("All tasks purged");
+            showToast("settings.purge_success");
             setTimeout(() => window.location.reload(), 1000);
-          } else showToast("Purge failed", "error");
+          } else showToast("settings.purge_failed", "error");
         } catch {
-          showToast("Network error", "error");
+          showToast("common.network_error", "error");
         }
       });
 
@@ -1844,11 +1918,11 @@ const locale: Locale = cookieLocale === "ga" ? "ga" : "en";
             method: "DELETE",
           });
           if (res.ok) {
-            showToast("Settings reset to defaults");
+            showToast("settings.reset_success");
             setTimeout(() => window.location.reload(), 1000);
-          } else showToast("Reset failed", "error");
+          } else showToast("settings.reset_failed", "error");
         } catch {
-          showToast("Network error", "error");
+          showToast("common.network_error", "error");
         }
       });
 
@@ -1882,6 +1956,36 @@ const locale: Locale = cookieLocale === "ga" ? "ga" : "en";
             : "Language changed to English",
         );
         setTimeout(() => window.location.reload(), 800);
+      });
+
+    // Timezone selector — persist to API + localStorage
+    document
+      .getElementById("timezone-select")
+      ?.addEventListener("change", async (e) => {
+        const tz = (e.target as HTMLSelectElement).value;
+        localStorage.setItem("meitheal-timezone", tz);
+        await saveSetting("timezone", tz);
+        showToast("common.updated");
+      });
+
+    // Week start selector
+    document
+      .getElementById("week-start-select")
+      ?.addEventListener("change", async (e) => {
+        const ws = (e.target as HTMLSelectElement).value;
+        localStorage.setItem("meitheal-week-start", ws);
+        await saveSetting("week_start", ws);
+        showToast("common.updated");
+      });
+
+    // Date format selector
+    document
+      .getElementById("date-format-select")
+      ?.addEventListener("change", async (e) => {
+        const df = (e.target as HTMLSelectElement).value;
+        localStorage.setItem("meitheal-date-format", df);
+        await saveSetting("date_format", df);
+        showToast("common.updated");
       });
 
     // Init

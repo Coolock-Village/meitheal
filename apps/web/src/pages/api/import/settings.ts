@@ -1,14 +1,33 @@
 import type { APIRoute } from "astro";
 import { ensureSchema, getPersistenceClient } from "@domains/tasks/persistence/store";
 
-/** Known safe setting keys — only these will be imported */
+/** Known safe setting keys — only these will be imported.
+ * IMPORTANT: Update this set when adding new saveSetting() calls.
+ * Last audited: 2026-03-01 (Phase 35) */
 const ALLOWED_KEYS = new Set([
-    "ha-url", "ha-token", "vikunja-url", "vikunja-token",
+    // ── Home Assistant / Connectivity ──
+    "ha-url", "ha-token", "ha_url", "ha_token",
+    "vikunja-url", "vikunja-token",
+    "calendar-entity", "calendar_entity", "cal_entity", "caldav_url",
+    // ── UI Preferences ──
     "default-board", "theme", "default-view", "wip-limit",
-    "ai-provider", "ai-custom-url", "show-description", "column-order",
-    "enable-notifications", "notification-sound", "notification-vibrate", "calendar-entity",
+    "show-description", "column-order", "locale",
+    "sidebar-collapsed", "sidebar_config",
+    "kanban-group-by", "task-detail-width",
+    // ── Notifications ──
+    "enable-notifications", "notification-sound", "notification-vibrate",
+    // ── Scoring Frameworks ──
     "rice-scoring-enabled", "heart-scoring-enabled", "kcs-scoring-enabled",
-    "sidebar-collapsed", "kanban-group-by", "task-detail-width",
+    "framework_mapping",
+    // ── AI & Agent Protocols ──
+    "ai-provider", "ai-custom-url",
+    "agent-protocols-a2a-enabled", "agent-protocols-webmcp-enabled", "agent-protocols-mcp-enabled",
+    // ── Webhooks & Integrations ──
+    "webhook_endpoint", "webhook_secret", "webhook_format",
+    "n8n_webhook_url", "n8n_events",
+    "grocy_url", "grocy_api_key", "grocy_sync_mode",
+    // ── Custom Fields ──
+    "custom_fields",
 ]);
 
 export const POST: APIRoute = async ({ request }) => {

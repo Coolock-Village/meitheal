@@ -11,7 +11,50 @@ const currentPath = Astro.url.pathname;
 const cookieLocale = Astro.cookies.get("meitheal-locale")?.value;
 const locale: Locale = cookieLocale === "ga" ? "ga" : "en";
 
-let sidebarConfig = {
+/** Default nav item definitions */
+interface NavItemDef {
+  href: string;
+  i18nKey: string;
+  icon: string;
+  matchExact?: boolean;
+  showBadge?: boolean;
+}
+
+const NAV_ITEMS: Record<string, NavItemDef> = {
+  kanban: { href: "/", i18nKey: "nav.home", icon: "kanban", matchExact: true },
+  tasks: {
+    href: "/tasks",
+    i18nKey: "nav.tasks",
+    icon: "tasks",
+    showBadge: true,
+  },
+  table: { href: "/table", i18nKey: "nav.table", icon: "table" },
+  today: { href: "/today", i18nKey: "nav.today", icon: "today" },
+  upcoming: { href: "/upcoming", i18nKey: "nav.upcoming", icon: "upcoming" },
+  calendar: { href: "/calendar", i18nKey: "nav.calendar", icon: "calendar" },
+};
+
+type NavKey = string;
+const DEFAULT_ORDER: NavKey[] = [
+  "kanban",
+  "tasks",
+  "table",
+  "today",
+  "upcoming",
+  "calendar",
+];
+
+/** Sidebar configuration from settings DB */
+interface SidebarConfig {
+  /** Visibility toggles (legacy format preserved) */
+  [key: string]: unknown;
+  /** Display order — array of nav keys */
+  order?: string[];
+  /** Custom labels per nav key */
+  labels?: Record<string, string>;
+}
+
+let sidebarConfig: SidebarConfig = {
   kanban: true,
   tasks: true,
   table: true,
@@ -31,8 +74,27 @@ try {
     sidebarConfig = { ...sidebarConfig, ...parsed };
   }
 } catch {
-  // DB fallback
+  // DB fallback — use defaults
 }
+
+/** Build ordered, filtered nav item list */
+const order: NavKey[] = Array.isArray(sidebarConfig.order)
+  ? (sidebarConfig.order as string[]).filter((k: string) => k in NAV_ITEMS)
+  : DEFAULT_ORDER;
+
+const labels: Record<string, string> =
+  (sidebarConfig.labels as Record<string, string>) ?? {};
+
+const navItems = order
+  .filter((key) => sidebarConfig[key] !== false && key in NAV_ITEMS)
+  .map((key) => {
+    const def = NAV_ITEMS[key]!;
+    const label = labels[key] || t(def.i18nKey, locale);
+    const isActive = def.matchExact
+      ? currentPath === def.href
+      : currentPath.startsWith(def.href);
+    return { key, label, isActive, ...def };
+  });
 ---
 
 <nav
@@ -52,109 +114,30 @@ try {
   </div>
   <ul class="nav-list flex-1 flex flex-col gap-1 list-none m-0 p-0">
     {
-      sidebarConfig.kanban && (
+      navItems.map((item) => (
         <li>
           <a
-            href="/"
-            class={`nav-link ${currentPath === "/" ? "active" : ""}`}
-            data-page="home"
-            aria-label={t("nav.home", locale)}
+            href={item.href}
+            class={`nav-link ${item.isActive ? "active" : ""}`}
+            data-page={item.key}
+            aria-label={item.label}
           >
             <span class="nav-icon">
-              <Icon name="kanban" />
+              <Icon name={item.icon as any} />
             </span>
-            {t("nav.home", locale)}
+            {item.label}
+            {item.showBadge && (
+              <span
+                class="nav-badge"
+                id={`nav-count-${item.key}`}
+                aria-hidden="true"
+              >
+                0
+              </span>
+            )}
           </a>
         </li>
-      )
-    }
-    {
-      sidebarConfig.tasks && (
-        <li>
-          <a
-            href="/tasks"
-            class={`nav-link ${currentPath.startsWith("/tasks") ? "active" : ""}`}
-            data-page="tasks"
-            aria-label={t("nav.tasks", locale)}
-          >
-            <span class="nav-icon">
-              <Icon name="tasks" />
-            </span>
-            {t("nav.tasks", locale)}
-            <span class="nav-badge" id="nav-count-tasks" aria-hidden="true">
-              0
-            </span>
-          </a>
-        </li>
-      )
-    }
-    {
-      sidebarConfig.table && (
-        <li>
-          <a
-            href="/table"
-            class={`nav-link ${currentPath.startsWith("/table") ? "active" : ""}`}
-            data-page="table"
-            aria-label={t("nav.table", locale)}
-          >
-            <span class="nav-icon">
-              <Icon name="table" />
-            </span>
-            {t("nav.table", locale)}
-          </a>
-        </li>
-      )
-    }
-    {
-      sidebarConfig.today && (
-        <li>
-          <a
-            href="/today"
-            class={`nav-link ${currentPath.startsWith("/today") ? "active" : ""}`}
-            data-page="today"
-            aria-label={t("nav.today", locale)}
-          >
-            <span class="nav-icon">
-              <Icon name="today" />
-            </span>
-            {t("nav.today", locale)}
-          </a>
-        </li>
-      )
-    }
-    {
-      sidebarConfig.upcoming && (
-        <li>
-          <a
-            href="/upcoming"
-            class={`nav-link ${currentPath.startsWith("/upcoming") ? "active" : ""}`}
-            data-page="upcoming"
-            aria-label={t("nav.upcoming", locale)}
-          >
-            <span class="nav-icon">
-              <Icon name="upcoming" />
-            </span>
-            {t("nav.upcoming", locale)}
-          </a>
-        </li>
-      )
-    }
-    {
-      sidebarConfig.calendar && (
-        <li>
-          <a
-            href="/calendar"
-            class={`nav-link ${currentPath.startsWith("/calendar") ? "active" : ""}`}
-            data-page="calendar"
-            aria-label={t("nav.calendar", locale)}
-          >
-            <span class="nav-icon">
-              <Icon name="calendar" />
-            </span>
-            {t("nav.calendar", locale)}
-          </a>
-        </li>
-      )
+      ))
     }
   </ul>
   <div
