@@ -1,0 +1,48 @@
+---
+---
+
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Meitheal — Server Error</title>
+    <style>
+      * { margin: 0; padding: 0; box-sizing: border-box; }
+      body {
+        min-height: 100vh;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        background: #0f1419;
+        color: #e0e0e0;
+        font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+      }
+      .icon { font-size: 72px; margin-bottom: 16px; }
+      h1 { font-size: 24px; margin-bottom: 8px; }
+      p { color: #9ca3af; font-size: 14px; margin-bottom: 24px; }
+      .actions { display: flex; gap: 12px; }
+      a {
+        display: inline-block;
+        padding: 8px 20px;
+        border-radius: 8px;
+        text-decoration: none;
+        font-size: 14px;
+        font-weight: 500;
+        transition: opacity 0.2s;
+      }
+      a:hover { opacity: 0.8; }
+      .btn-primary { background: #10b981; color: #fff; }
+      .btn-ghost { background: transparent; border: 1px solid #374151; color: #e0e0e0; }
+    </style>
+  </head>
+  <body>
+    <div class="icon">⚠</div>
+    <h1>Something Went Wrong</h1>
+    <p>An unexpected error occurred. Please try again or contact support.</p>
+    <div class="actions">
+      <a href="/" class="btn-primary">Go Home</a>
+      <a href="javascript:location.reload()" class="btn-ghost">Reload Page</a>
+    </div>
+  </body>
+</html>
