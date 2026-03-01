@@ -1,0 +1,197 @@
+---
+import Layout from "../layouts/Layout.astro";
+import {
+  ensureSchema,
+  getPersistenceClient,
+} from "@domains/tasks/persistence/store";
+
+const cookieLocale = Astro.cookies.get("meitheal-locale")?.value;
+const locale = cookieLocale === "ga" ? "ga" : "en";
+
+// Get current month from query param or default to today
+const url = new URL(Astro.request.url);
+const yearParam = url.searchParams.get("year");
+const monthParam = url.searchParams.get("month");
+
+const now = new Date();
+const year = yearParam ? parseInt(yearParam, 10) : now.getFullYear();
+const month = monthParam ? parseInt(monthParam, 10) : now.getMonth(); // 0-indexed
+
+const firstDay = new Date(year, month, 1);
+const lastDay = new Date(year, month + 1, 0);
+const startDayOfWeek = firstDay.getDay(); // 0=Sun
+const daysInMonth = lastDay.getDate();
+
+const monthName = firstDay.toLocaleDateString("en-US", {
+  month: "long",
+  year: "numeric",
+});
+
+// Prev/next month links
+const prevMonth = month === 0 ? 11 : month - 1;
+const prevYear = month === 0 ? year - 1 : year;
+const nextMonth = month === 11 ? 0 : month + 1;
+const nextYear = month === 11 ? year + 1 : year;
+
+// Query task counts per day for this month
+const tasksByDay: Record<string, { count: number; colors: string[] }> = {};
+
+try {
+  await ensureSchema();
+  const client = getPersistenceClient();
+  const monthStart = `${year}-${String(month + 1).padStart(2, "0")}-01`;
+  const monthEnd = `${year}-${String(month + 1).padStart(2, "0")}-${String(daysInMonth).padStart(2, "0")}`;
+
+  const result = await client.execute({
+    sql: `SELECT due_date, COUNT(*) as cnt, GROUP_CONCAT(COALESCE(color, ''), ',') as colors
+          FROM tasks
+          WHERE due_date >= ? AND due_date <= ?
+            AND status NOT IN ('complete', 'done')
+          GROUP BY due_date`,
+    args: [monthStart, monthEnd],
+  });
+
+  for (const row of result.rows) {
+    const r = row as Record<string, unknown>;
+    const dateStr = String(r.due_date);
+    tasksByDay[dateStr] = {
+      count: Number(r.cnt),
+      colors: String(r.colors ?? "")
+        .split(",")
+        .filter((c) => c.length > 0)
+        .slice(0, 3),
+    };
+  }
+} catch {
+  /* DB not available */
+}
+
+// Build calendar grid (6 rows × 7 cols)
+interface CalDay {
+  day: number;
+  dateStr: string;
+  isCurrentMonth: boolean;
+  isToday: boolean;
+  taskCount: number;
+  colors: string[];
+}
+
+const grid: CalDay[][] = [];
+let currentDay = 1 - startDayOfWeek;
+
+for (let week = 0; week < 6; week++) {
+  const row: CalDay[] = [];
+  for (let dow = 0; dow < 7; dow++) {
+    const d = currentDay;
+    const isCurrentMonth = d >= 1 && d <= daysInMonth;
+    const dateStr = isCurrentMonth
+      ? `${year}-${String(month + 1).padStart(2, "0")}-${String(d).padStart(2, "0")}`
+      : "";
+    const todayStr = now.toISOString().split("T")[0] ?? "";
+    const dayData = tasksByDay[dateStr];
+
+    row.push({
+      day: d,
+      dateStr,
+      isCurrentMonth,
+      isToday: dateStr === todayStr,
+      taskCount: dayData?.count ?? 0,
+      colors: dayData?.colors ?? [],
+    });
+    currentDay++;
+  }
+  // Skip empty trailing weeks
+  if (row.every((d) => !d.isCurrentMonth) && week > 0) break;
+  grid.push(row);
+}
+---
+
+<Layout title={`Meitheal — Calendar — ${monthName}`}>
+  <span slot="page-title">🗓️ Calendar</span>
+  <div slot="actions">
+    <a href="/today" class="btn btn-ghost">☀️ Today</a>
+    <a href="/upcoming" class="btn btn-ghost">📅 Upcoming</a>
+  </div>
+
+  <div
+    class="calendar-nav"
+    style="display: flex; align-items: center; gap: 16px; margin-bottom: 16px;"
+  >
+    <a
+      href={`/calendar?year=${prevYear}&month=${prevMonth}`}
+      class="btn btn-ghost"
+      aria-label="Previous month">←</a
+    >
+    <h2 style="margin: 0; font-size: 18px; font-weight: 600;">{monthName}</h2>
+    <a
+      href={`/calendar?year=${nextYear}&month=${nextMonth}`}
+      class="btn btn-ghost"
+      aria-label="Next month">→</a
+    >
+    <a href="/calendar" class="btn btn-ghost text-xs" style="margin-left: auto;"
+      >Today</a
+    >
+  </div>
+
+  <div
+    class="calendar-grid"
+    style="display: grid; grid-template-columns: repeat(7, 1fr); gap: 1px; background: var(--border); border: 1px solid var(--border); border-radius: 8px; overflow: hidden;"
+  >
+    {
+      ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"].map((d) => (
+        <div style="padding: 8px; text-align: center; font-size: 11px; font-weight: 600; color: var(--text-muted); background: var(--bg-secondary); text-transform: uppercase; letter-spacing: 0.05em;">
+          {d}
+        </div>
+      ))
+    }
+    {
+      grid.flat().map((cell) => (
+        <div
+          class={`cal-cell ${cell.isToday ? "cal-today" : ""} ${!cell.isCurrentMonth ? "cal-other" : ""}`}
+          style={`padding: 8px; min-height: 80px; background: ${cell.isToday ? "var(--bg-hover)" : "var(--bg-card)"}; cursor: ${cell.isCurrentMonth ? "pointer" : "default"}; position: relative;`}
+          data-date={cell.dateStr}
+        >
+          {cell.isCurrentMonth && (
+            <div>
+              <span
+                style={`font-size: 13px; font-weight: ${cell.isToday ? "700" : "400"}; color: ${cell.isToday ? "var(--accent)" : "var(--text-primary)"};`}
+              >
+                {cell.day}
+              </span>
+              {cell.taskCount > 0 && (
+                <div style="margin-top: 4px;">
+                  <span style="font-size: 10px; background: var(--accent); color: white; padding: 1px 5px; border-radius: 8px; font-weight: 600;">
+                    {cell.taskCount}
+                  </span>
+                  {cell.colors.length > 0 && (
+                    <div style="display: flex; gap: 2px; margin-top: 3px;">
+                      {cell.colors.map((c) => (
+                        <span
+                          style={`width: 6px; height: 6px; border-radius: 50%; background: ${c || "var(--accent)"};`}
+                        />
+                      ))}
+                    </div>
+                  )}
+                </div>
+              )}
+            </div>
+          )}
+        </div>
+      ))
+    }
+  </div>
+</Layout>
+
+<script>
+  // Click calendar day to navigate to tasks filtered by date
+  document
+    .querySelectorAll<HTMLElement>(".cal-cell[data-date]")
+    .forEach((cell) => {
+      cell.addEventListener("click", () => {
+        const date = cell.dataset.date;
+        if (date) {
+          window.location.href = `/tasks#due=${date}`;
+        }
+      });
+    });
+</script>

@@ -366,6 +366,49 @@ export async function ensureSchema(): Promise<void> {
 
   await client.execute("CREATE INDEX IF NOT EXISTS kanban_lanes_position_idx ON kanban_lanes(position)");
 
+  // Phase 31: Recurring tasks — iCal RRULE format (e.g. "FREQ=WEEKLY;BYDAY=MO")
+  if (!(await hasColumn(client, "tasks", "recurrence_rule"))) {
+    await client.execute("ALTER TABLE tasks ADD COLUMN recurrence_rule TEXT");
+  }
+
+  // Phase 31: In-task checklists — JSON array of {text, done} items
+  if (!(await hasColumn(client, "tasks", "checklists"))) {
+    await client.execute("ALTER TABLE tasks ADD COLUMN checklists TEXT NOT NULL DEFAULT '[]'");
+  }
+
+  // Phase 31: Reminder scheduling — ISO datetime for next reminder
+  if (!(await hasColumn(client, "tasks", "reminder_at"))) {
+    await client.execute("ALTER TABLE tasks ADD COLUMN reminder_at TEXT");
+  }
+
+  // Phase 31: Saved filters — user-defined reusable filter combinations
+  await client.execute(`
+    CREATE TABLE IF NOT EXISTS saved_filters (
+      id TEXT PRIMARY KEY,
+      name TEXT NOT NULL,
+      query_json TEXT NOT NULL DEFAULT '{}',
+      icon TEXT NOT NULL DEFAULT '🔍',
+      position INTEGER NOT NULL DEFAULT 0,
+      created_at INTEGER NOT NULL,
+      updated_at INTEGER NOT NULL
+    )
+  `);
+  await client.execute("CREATE INDEX IF NOT EXISTS saved_filters_position_idx ON saved_filters(position)");
+
+  // Phase 31: Task templates — reusable task blueprints
+  await client.execute(`
+    CREATE TABLE IF NOT EXISTS task_templates (
+      id TEXT PRIMARY KEY,
+      name TEXT NOT NULL,
+      template_json TEXT NOT NULL DEFAULT '{}',
+      icon TEXT NOT NULL DEFAULT '📝',
+      position INTEGER NOT NULL DEFAULT 0,
+      created_at INTEGER NOT NULL,
+      updated_at INTEGER NOT NULL
+    )
+  `);
+  await client.execute("CREATE INDEX IF NOT EXISTS task_templates_position_idx ON task_templates(position)");
+
   await client.execute("CREATE INDEX IF NOT EXISTS tasks_status_idx ON tasks(status)");
   await client.execute("CREATE INDEX IF NOT EXISTS tasks_priority_idx ON tasks(priority)");
   await client.execute("CREATE INDEX IF NOT EXISTS tasks_parent_id_idx ON tasks(parent_id)");
@@ -375,6 +418,7 @@ export async function ensureSchema(): Promise<void> {
   await client.execute("CREATE INDEX IF NOT EXISTS tasks_due_date_idx ON tasks(due_date)");
   await client.execute("CREATE INDEX IF NOT EXISTS tasks_updated_at_idx ON tasks(updated_at)");
   await client.execute("CREATE INDEX IF NOT EXISTS tasks_is_favorite_idx ON tasks(is_favorite)");
+  await client.execute("CREATE INDEX IF NOT EXISTS tasks_reminder_at_idx ON tasks(reminder_at)");
   await client.execute("CREATE INDEX IF NOT EXISTS comments_task_id_idx ON comments(task_id)");
 
   ensured = true;

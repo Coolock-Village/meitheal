@@ -1,0 +1,280 @@
+---
+import Layout from "../layouts/Layout.astro";
+import {
+  ensureSchema,
+  getPersistenceClient,
+} from "@domains/tasks/persistence/store";
+
+const cookieLocale = Astro.cookies.get("meitheal-locale")?.value;
+const locale = cookieLocale === "ga" ? "ga" : "en";
+
+let overdueTasks: Record<string, unknown>[] = [];
+let todayTasks: Record<string, unknown>[] = [];
+let noDueTasks: Record<string, unknown>[] = [];
+
+try {
+  await ensureSchema();
+  const client = getPersistenceClient();
+  const today = new Date().toISOString().split("T")[0] ?? "";
+
+  const overdueResult = await client.execute({
+    sql: `SELECT * FROM tasks
+          WHERE due_date IS NOT NULL AND due_date < ?
+            AND status NOT IN ('complete', 'done')
+          ORDER BY due_date ASC`,
+    args: [today],
+  });
+  overdueTasks = overdueResult.rows as Record<string, unknown>[];
+
+  const todayResult = await client.execute({
+    sql: `SELECT * FROM tasks
+          WHERE due_date = ?
+            AND status NOT IN ('complete', 'done')
+          ORDER BY priority ASC, created_at ASC`,
+    args: [today],
+  });
+  todayTasks = todayResult.rows as Record<string, unknown>[];
+
+  const noDueResult = await client.execute({
+    sql: `SELECT * FROM tasks
+          WHERE due_date IS NULL
+            AND status NOT IN ('complete', 'done')
+          ORDER BY priority ASC, created_at DESC
+          LIMIT 10`,
+    args: [],
+  });
+  noDueTasks = noDueResult.rows as Record<string, unknown>[];
+} catch {
+  /* DB not available */
+}
+
+const priorityColors: Record<number, string> = {
+  1: "#ef4444",
+  2: "#f59e0b",
+  3: "#3b82f6",
+  4: "#10b981",
+  5: "#6b7280",
+};
+const typeIcons: Record<string, string> = {
+  epic: "🎯",
+  story: "📖",
+  task: "✅",
+};
+---
+
+<Layout title="Meitheal — Today">
+  <span slot="page-title">☀️ Today</span>
+  <div slot="actions">
+    <button class="btn btn-primary" id="create-task-btn">+ New Task</button>
+  </div>
+
+  {
+    overdueTasks.length > 0 && (
+      <div
+        class="card"
+        style="margin-bottom: 20px; border-left: 3px solid var(--danger);"
+      >
+        <div class="card-header">
+          <div>
+            <div class="card-title" style="color: var(--danger);">
+              ⚠️ Overdue ({overdueTasks.length})
+            </div>
+            <div class="card-subtitle">Tasks past their due date</div>
+          </div>
+        </div>
+        <div class="task-list">
+          {overdueTasks.map((task) => {
+            const p = Number(task.priority ?? 3);
+            const tt = String(task.task_type ?? "task");
+            return (
+              <div
+                class="task-item"
+                data-id={String(task.id)}
+                style="cursor:pointer;"
+              >
+                <input
+                  type="checkbox"
+                  class="task-checkbox"
+                  data-id={String(task.id)}
+                />
+                <div class="task-content">
+                  <div class="task-title">
+                    <span style="margin-right:4px;">
+                      {typeIcons[tt] ?? "✅"}
+                    </span>
+                    {String(task.title)}
+                  </div>
+                  <div class="task-meta">
+                    <span
+                      style={`color: ${priorityColors[p] ?? "#6b7280"}; font-size: 11px;`}
+                    >
+                      ●
+                    </span>
+                    {task.due_date && (
+                      <span class="text-xs text-danger">
+                        {String(task.due_date)}
+                      </span>
+                    )}
+                    {task.recurrence_rule && (
+                      <span class="text-xs text-text-muted">🔁</span>
+                    )}
+                  </div>
+                </div>
+              </div>
+            );
+          })}
+        </div>
+      </div>
+    )
+  }
+
+  <div class="card" style="margin-bottom: 20px;">
+    <div class="card-header">
+      <div>
+        <div class="card-title">☀️ Due Today ({todayTasks.length})</div>
+        <div class="card-subtitle">Focus on these tasks today</div>
+      </div>
+    </div>
+    <div class="task-list" id="today-tasks">
+      {
+        todayTasks.length === 0 ? (
+          <div class="empty-state">
+            <div class="empty-icon">🎉</div>
+            <div class="empty-text">No tasks due today</div>
+            <div class="empty-sub">You're on top of things!</div>
+          </div>
+        ) : (
+          todayTasks.map((task) => {
+            const p = Number(task.priority ?? 3);
+            const tt = String(task.task_type ?? "task");
+            const progress = Number(task.progress ?? 0);
+            return (
+              <div
+                class="task-item"
+                data-id={String(task.id)}
+                style="cursor:pointer;"
+              >
+                <input
+                  type="checkbox"
+                  class="task-checkbox"
+                  data-id={String(task.id)}
+                />
+                <div class="task-content">
+                  <div class="task-title">
+                    <span style="margin-right:4px;">
+                      {typeIcons[tt] ?? "✅"}
+                    </span>
+                    {String(task.title)}
+                  </div>
+                  <div class="task-meta">
+                    <span
+                      style={`color: ${priorityColors[p] ?? "#6b7280"}; font-size: 11px;`}
+                    >
+                      ●
+                    </span>
+                    {progress > 0 && (
+                      <span class="text-xs text-text-muted">{progress}%</span>
+                    )}
+                    {task.recurrence_rule && (
+                      <span class="text-xs text-text-muted">🔁</span>
+                    )}
+                  </div>
+                </div>
+                {task.color && (
+                  <span
+                    style={`width:4px;height:100%;border-radius:2px;background:${String(task.color)};`}
+                  />
+                )}
+              </div>
+            );
+          })
+        )
+      }
+    </div>
+  </div>
+
+  {
+    noDueTasks.length > 0 && (
+      <div class="card">
+        <div class="card-header">
+          <div>
+            <div class="card-title">📌 Unscheduled ({noDueTasks.length})</div>
+            <div class="card-subtitle">
+              Tasks without a due date — consider scheduling them
+            </div>
+          </div>
+        </div>
+        <div class="task-list">
+          {noDueTasks.map((task) => {
+            const p = Number(task.priority ?? 3);
+            const tt = String(task.task_type ?? "task");
+            return (
+              <div
+                class="task-item"
+                data-id={String(task.id)}
+                style="cursor:pointer;"
+              >
+                <input
+                  type="checkbox"
+                  class="task-checkbox"
+                  data-id={String(task.id)}
+                />
+                <div class="task-content">
+                  <div class="task-title">
+                    <span style="margin-right:4px;">
+                      {typeIcons[tt] ?? "✅"}
+                    </span>
+                    {String(task.title)}
+                  </div>
+                  <div class="task-meta">
+                    <span
+                      style={`color: ${priorityColors[p] ?? "#6b7280"}; font-size: 11px;`}
+                    >
+                      ●
+                    </span>
+                  </div>
+                </div>
+              </div>
+            );
+          })}
+        </div>
+      </div>
+    )
+  }
+</Layout>
+
+<script>
+  // Task checkbox completion
+  document
+    .querySelectorAll<HTMLInputElement>(".task-checkbox")
+    .forEach((cb) => {
+      cb.addEventListener("change", async () => {
+        const id = cb.dataset.id;
+        if (!id) return;
+        try {
+          await fetch(`/api/tasks/${id}`, {
+            method: "PATCH",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ status: cb.checked ? "done" : "pending" }),
+          });
+          cb.closest(".task-item")?.classList.toggle("task-done", cb.checked);
+        } catch {
+          /* retry silently */
+        }
+      });
+    });
+
+  // Click to open task detail
+  document.querySelectorAll<HTMLElement>(".task-item").forEach((item) => {
+    item.addEventListener("click", (e) => {
+      if ((e.target as HTMLElement).tagName === "INPUT") return;
+      const id = item.dataset.id;
+      if (id) window.location.href = `/tasks#task-${id}`;
+    });
+  });
+
+  // New task button
+  document.getElementById("create-task-btn")?.addEventListener("click", () => {
+    window.location.href = "/tasks";
+  });
+</script>

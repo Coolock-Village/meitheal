@@ -5,7 +5,7 @@ import type { Locale } from "../lib/locale";
 
 // i18n: resolve locale from cookie for SSR
 const cookieLocale = Astro.cookies.get("meitheal-locale")?.value;
-const locale: Locale = (cookieLocale === "ga" ? "ga" : "en");
+const locale: Locale = cookieLocale === "ga" ? "ga" : "en";
 
 export interface Props {
   title?: string;
@@ -58,7 +58,9 @@ try {
     />
   </head>
   <body>
-    <a href="#main-content" class="skip-to-content">{t("nav.skip_to_content", locale)}</a>
+    <a href="#main-content" class="skip-to-content"
+      >{t("nav.skip_to_content", locale)}</a
+    >
     <nav
       class="sidebar"
       id="sidebar"
@@ -77,7 +79,8 @@ try {
             href="/"
             class="nav-link"
             data-page="dashboard"
-            aria-label={t("nav.dashboard", locale)}><span class="nav-icon">📊</span> {t("nav.dashboard", locale)}</a
+            aria-label={t("nav.dashboard", locale)}
+            ><span class="nav-icon">📊</span> {t("nav.dashboard", locale)}</a
           >
         </li>
         <li>
@@ -86,9 +89,10 @@ try {
             class="nav-link"
             data-page="tasks"
             aria-label={`Tasks (${taskCounts.total} total)`}
-            ><span class="nav-icon">✅</span> {t("nav.tasks", locale)} <span
-              class="nav-badge"
-              aria-label={`${taskCounts.total} tasks`}>{taskCounts.total}</span
+            ><span class="nav-icon">✅</span>
+            {t("nav.tasks", locale)}
+            <span class="nav-badge" aria-label={`${taskCounts.total} tasks`}
+              >{taskCounts.total}</span
             ></a
           >
         </li>
@@ -98,7 +102,9 @@ try {
             class="nav-link"
             data-page="kanban"
             aria-label={`Kanban board (${taskCounts.active} active)`}
-            ><span class="nav-icon">▦</span> {t("nav.kanban", locale)} <span
+            ><span class="nav-icon">▦</span>
+            {t("nav.kanban", locale)}
+            <span
               class="nav-badge"
               aria-label={`${taskCounts.active} active tasks`}
               >{taskCounts.active}</span
@@ -110,7 +116,29 @@ try {
             href="/table"
             class="nav-link"
             data-page="table"
-            aria-label={t("nav.table", locale)}><span class="nav-icon">⊞</span> {t("nav.table", locale)}</a
+            aria-label={t("nav.table", locale)}
+            ><span class="nav-icon">⊞</span> {t("nav.table", locale)}</a
+          >
+        </li>
+        <li>
+          <a href="/today" class="nav-link" data-page="today" aria-label="Today"
+            ><span class="nav-icon">☀️</span> Today</a
+          >
+        </li>
+        <li>
+          <a
+            href="/upcoming"
+            class="nav-link"
+            data-page="upcoming"
+            aria-label="Upcoming"><span class="nav-icon">📅</span> Upcoming</a
+          >
+        </li>
+        <li>
+          <a
+            href="/calendar"
+            class="nav-link"
+            data-page="calendar"
+            aria-label="Calendar"><span class="nav-icon">🗓️</span> Calendar</a
           >
         </li>
         <li>
@@ -118,7 +146,8 @@ try {
             href="/settings"
             class="nav-link"
             data-page="settings"
-            aria-label={t("nav.settings", locale)}><span class="nav-icon">⚙</span> {t("nav.settings", locale)}</a
+            aria-label={t("nav.settings", locale)}
+            ><span class="nav-icon">⚙</span> {t("nav.settings", locale)}</a
           >
         </li>
       </ul>
@@ -134,7 +163,9 @@ try {
           id="board-select"
           aria-label="Select active board"
         >
-          <option value="default">📋 {t("sidebar.default_board", locale)}</option>
+          <option value="default"
+            >📋 {t("sidebar.default_board", locale)}</option
+          >
         </select>
         <button
           class="board-add-btn"
@@ -157,8 +188,10 @@ try {
     </nav>
     <div class="main-content">
       <header class="topbar">
-        <button class="menu-toggle" id="menu-toggle" aria-label={t("topbar.toggle_menu", locale)}
-          >☰</button
+        <button
+          class="menu-toggle"
+          id="menu-toggle"
+          aria-label={t("topbar.toggle_menu", locale)}>☰</button
         >
         <h1 class="page-title"><slot name="page-title" /></h1>
         <div class="search-container" id="search-container">
@@ -199,1922 +232,2281 @@ try {
         class="absolute right-0 top-0 h-full w-full max-w-3xl bg-bg-secondary border-l border-border shadow-lg overflow-y-auto animate-slide-in"
       >
         <div class="px-6 pt-4">
-          <a href="#" id="td-parent" class="text-xs text-info hidden hover:underline flex items-center gap-1 mb-1"></a>
-          <div class="flex items-center justify-between pb-2 border-b border-border">
+          <a
+            href="#"
+            id="td-parent"
+            class="text-xs text-info hidden hover:underline flex items-center gap-1 mb-1"
+          ></a>
+          <div
+            class="flex items-center justify-between pb-2 border-b border-border"
+          >
             <div class="flex items-center gap-3 w-full">
-              <span id="td-priority-dot" class="td-priority-dot" title="Priority">●</span>
+              <span
+                id="td-priority-dot"
+                class="td-priority-dot"
+                title="Priority">●</span
+              >
               <input
                 id="td-title"
-              class="form-input bg-transparent border-none text-lg font-bold p-0 focus:ring-0"
-              placeholder="Task title"
-            />
-            <span id="td-id" class="text-[10px] text-text-muted opacity-50 cursor-help hidden" title="Task ID"></span>
-          </div>
-          <button
-            id="td-close"
-            class="btn-secondary px-3 py-1.5 text-sm"
-            aria-label="Close detail">✕</button
-          >
-        </div>
-        <!-- Progress bar -->
-        <div id="td-progress-bar-container" class="td-progress-bar-container">
-          <div id="td-progress-bar-fill" class="td-progress-bar-fill" style="width: 0%"></div>
-        </div>
-        <!-- Due date -->
-        <div id="td-due-row" class="td-due-row hidden">
-          <span class="text-[10px] text-text-muted uppercase tracking-wider">Due</span>
-          <span id="td-due-display" class="text-xs text-text-muted font-medium"></span>
-        </div>
-
-        <div class="flex flex-col lg:flex-row">
-          <!-- Left: Content -->
-          <div class="flex-1 p-6 space-y-6">
-            <!-- Status + Board -->
-            <div class="flex items-center gap-3">
-              <select id="td-status" class="inline-select">
-                <option value="pending">Pending</option>
-                <option value="active">Active</option>
-                <option value="in_progress">In Progress</option>
-                <option value="done">Done</option>
-              </select>
-              <select
-                id="td-task-type"
-                class="inline-select"
-                title="Work item type"
-              >
-                <option value="task">✅ Task</option>
-                <option value="story">📖 Story</option>
-                <option value="epic">🎯 Epic</option>
-              </select>
-              <select id="td-board" class="inline-select" title="Board"></select>
-            </div>
-
-            <!-- Description -->
-            <div>
-              <label
-                class="text-xs text-text-muted font-semibold uppercase tracking-wide mb-2 block"
-                >Description</label
-              >
-              <textarea
-                id="td-description"
-                class="form-input min-h-[120px] resize-y"
-                placeholder="Add a description..."></textarea>
-            </div>
-
-
-            <!-- Ticket Linking (Parent / Children) -->
-            <div>
-              <label
-                class="text-xs text-text-muted font-semibold uppercase tracking-wide mb-2 block"
-                >Linked Tickets</label
-              >
-              <div class="space-y-2">
-                <div class="flex items-center gap-2">
-                  <span class="text-xs text-text-muted w-14">Parent:</span>
-                  <div id="td-link-parent-display" class="flex-1 flex items-center gap-1">
-                    <span class="text-xs text-text-muted italic">None</span>
-                  </div>
-                </div>
-                <div class="relative">
-                  <input
-                    id="td-link-parent-search"
-                    class="form-input text-sm py-1.5"
-                    placeholder="Search for parent (Epic/Story)..."
-                    autocomplete="off"
-                  />
-                  <div id="td-link-parent-results" class="absolute z-10 left-0 right-0 bg-bg-card border border-border rounded-md shadow-lg max-h-40 overflow-y-auto" style="display:none;"></div>
-                </div>
-                <div>
-                  <span class="text-xs text-text-muted">Children:</span>
-                  <div id="td-link-children" class="space-y-1 mt-1"></div>
-                </div>
-              </div>
-            </div>
-
-            <!-- Labels (interactive) -->
-            <div>
-              <label
-                class="text-xs text-text-muted font-semibold uppercase tracking-wide mb-2 block"
-                >Labels</label
-              >
-              <div id="td-labels" class="flex flex-wrap gap-1 mb-2"></div>
-              <input
-                id="td-label-input"
-                class="form-input text-sm py-1.5"
-                placeholder="Type a label and press Enter..."
+                class="form-input bg-transparent border-none text-lg font-bold p-0 focus:ring-0"
+                placeholder="Task title"
               />
+              <span
+                id="td-id"
+                class="text-[10px] text-text-muted opacity-50 cursor-help hidden"
+                title="Task ID"></span>
             </div>
-
-            <!-- Custom Fields (interactive) -->
-            <div>
-              <label
-                class="text-xs text-text-muted font-semibold uppercase tracking-wide mb-2 block"
-                >Custom Fields</label
-              >
-              <div id="td-custom-fields" class="space-y-2"></div>
-              <div class="relative mt-2">
-                <button
-                  id="td-add-cf"
-                  type="button"
-                  class="text-xs text-accent hover:text-accent-hover transition-colors"
-                  >+ Add Field</button
-                >
-                <div id="td-add-cf-dropdown" class="absolute z-10 left-0 bg-bg-card border border-border rounded-md shadow-lg min-w-[200px] py-1" style="display:none;">
-                  <div class="px-2 py-1">
-                    <input id="td-add-cf-search" class="form-input text-xs py-1 w-full" placeholder="Field name..." autocomplete="off" />
-                  </div>
-                  <div id="td-add-cf-options" class="max-h-32 overflow-y-auto"></div>
-                </div>
-              </div>
+            <button
+              id="td-close"
+              class="btn-secondary px-3 py-1.5 text-sm"
+              aria-label="Close detail">✕</button
+            >
+          </div>
+          <!-- Progress bar -->
+          <div id="td-progress-bar-container" class="td-progress-bar-container">
+            <div
+              id="td-progress-bar-fill"
+              class="td-progress-bar-fill"
+              style="width: 0%"
+            >
             </div>
-
-            <!-- Attachments (Phase 23) -->
-            <div>
-              <label
-                class="text-xs text-text-muted font-semibold uppercase tracking-wide mb-2 flex items-center justify-between"
-              >
-                <span>Attachments</span>
-                <label class="text-xs text-accent hover:text-accent-hover cursor-pointer m-0">
-                  + Add Image
-                  <input type="file" id="td-attachment-input" accept="image/*" class="hidden" />
-                </label>
-              </label>
-              <div id="td-attachments" class="flex flex-wrap gap-3 mt-2"></div>
-            </div>
-
-            <!-- Comments -->
-            <div>
-              <label
-                class="text-xs text-text-muted font-semibold uppercase tracking-wide mb-2 block"
-                >Comments</label
-              >
-              <div id="td-comments" class="space-y-3 mb-4"></div>
-              <div class="flex gap-2">
-                <input
-                  id="td-comment-input"
-                  class="form-input flex-1"
-                  placeholder="Add a comment..."
-                />
-                <button id="td-comment-submit" class="btn-primary px-4"
-                  >Comment</button
-                >
-              </div>
-            </div>
-
-            <!-- Activity Log (ADR-0011) -->
-            <details class="mt-4">
-              <summary class="text-xs text-text-muted font-semibold uppercase tracking-wide cursor-pointer select-none hover:text-text-secondary transition-colors">
-                Activity Log
-              </summary>
-              <div id="td-activity" class="space-y-1 mt-2 max-h-48 overflow-y-auto text-xs"></div>
-            </details>
+          </div>
+          <!-- Due date -->
+          <div id="td-due-row" class="td-due-row hidden">
+            <span class="text-[10px] text-text-muted uppercase tracking-wider"
+              >Due</span
+            >
+            <span
+              id="td-due-display"
+              class="text-xs text-text-muted font-medium"></span>
           </div>
 
-          <!-- Right: Action Sidebar -->
-          <div
-            class="w-full lg:w-64 border-t lg:border-t-0 lg:border-l border-border p-4 space-y-3"
-          >
-            <div class="space-y-1">
-              <button
-                id="td-toggle-done"
-                class="w-full text-left px-3 py-2 text-sm rounded-md hover:bg-bg-hover transition-colors"
-                >✓ Mark as Done</button
-              >
-              <button
-                id="td-toggle-favorite"
-                class="w-full text-left px-3 py-2 text-sm rounded-md hover:bg-bg-hover transition-colors"
-                >⭐ Add to Favorites</button
-              >
-              <button
-                id="td-duplicate"
-                class="w-full text-left px-3 py-2 text-sm rounded-md hover:bg-bg-hover transition-colors"
-                >📋 Duplicate Task</button
-              >
-            </div>
+          <div class="flex flex-col lg:flex-row">
+            <!-- Left: Content -->
+            <div class="flex-1 p-6 space-y-6">
+              <!-- Status + Board -->
+              <div class="flex items-center gap-3">
+                <select id="td-status" class="inline-select">
+                  <option value="pending">Pending</option>
+                  <option value="active">Active</option>
+                  <option value="in_progress">In Progress</option>
+                  <option value="done">Done</option>
+                </select>
+                <select
+                  id="td-task-type"
+                  class="inline-select"
+                  title="Work item type"
+                >
+                  <option value="task">✅ Task</option>
+                  <option value="story">📖 Story</option>
+                  <option value="epic">🎯 Epic</option>
+                </select>
+                <select id="td-board" class="inline-select" title="Board"
+                ></select>
+              </div>
 
-            <div class="border-t border-border pt-3">
-              <span
-                class="text-[10px] uppercase tracking-wide text-text-muted font-semibold"
-                >Organization</span
-              >
-              <div class="mt-2 space-y-2">
-                <div>
-                  <label class="text-xs text-text-secondary block mb-1"
-                    >Priority</label
+              <!-- Description -->
+              <div>
+                <label
+                  class="text-xs text-text-muted font-semibold uppercase tracking-wide mb-2 block"
+                  >Description</label
+                >
+                <textarea
+                  id="td-description"
+                  class="form-input min-h-[120px] resize-y"
+                  placeholder="Add a description..."></textarea>
+              </div>
+
+              <!-- Checklists (Phase 31) -->
+              <div>
+                <label
+                  class="text-xs text-text-muted font-semibold uppercase tracking-wide mb-2 flex items-center justify-between"
+                >
+                  <span>Checklists</span>
+                  <button
+                    id="td-add-checklist-item"
+                    type="button"
+                    class="text-xs text-accent hover:text-accent-hover transition-colors"
+                    >+ Add Item</button
                   >
-                  <select id="td-priority" class="inline-select w-full">
-                    <option value="1">1 — Lowest</option>
-                    <option value="2">2 — Low</option>
-                    <option value="3">3 — Medium</option>
-                    <option value="4">4 — High</option>
-                    <option value="5">5 — Highest</option>
-                  </select>
+                </label>
+                <div id="td-checklists" class="space-y-1"></div>
+                <div
+                  id="td-checklist-progress"
+                  class="text-[10px] text-text-muted mt-1"
+                  style="display:none;"
+                >
+                  <span id="td-checklist-done">0</span>/<span
+                    id="td-checklist-total">0</span
+                  > complete
                 </div>
-                <div>
-                  <label class="text-xs text-text-secondary block mb-1"
-                    >Progress</label
+              </div>
+
+              <!-- Recurrence (Phase 31) -->
+              <div>
+                <label
+                  class="text-xs text-text-muted font-semibold uppercase tracking-wide mb-2 block"
+                  >Recurrence</label
+                >
+                <div class="flex items-center gap-2">
+                  <select
+                    id="td-recurrence"
+                    class="inline-select flex-1"
+                    title="Recurrence pattern"
                   >
-                  <div class="flex items-center gap-2">
-                    <input
-                      id="td-progress"
-                      type="range"
-                      min="0"
-                      max="100"
-                      value="0"
-                      class="flex-1 accent-accent"
-                    />
-                    <span
-                      id="td-progress-value"
-                      class="text-xs text-text-muted w-8 text-right">0%</span
+                    <option value="">None</option>
+                    <option value="FREQ=DAILY">Every day</option>
+                    <option value="FREQ=WEEKLY">Every week</option>
+                    <option value="FREQ=WEEKLY;BYDAY=MO,TU,WE,TH,FR"
+                      >Every weekday</option
                     >
+                    <option value="FREQ=MONTHLY">Every month</option>
+                    <option value="FREQ=YEARLY">Every year</option>
+                    <option value="FREQ=WEEKLY;INTERVAL=2">Every 2 weeks</option
+                    >
+                  </select>
+                  <span
+                    id="td-recurrence-desc"
+                    class="text-[10px] text-text-muted"></span>
+                </div>
+              </div>
+
+              <!-- Ticket Linking (Parent / Children) -->
+              <div>
+                <label
+                  class="text-xs text-text-muted font-semibold uppercase tracking-wide mb-2 block"
+                  >Linked Tickets</label
+                >
+                <div class="space-y-2">
+                  <div class="flex items-center gap-2">
+                    <span class="text-xs text-text-muted w-14">Parent:</span>
+                    <div
+                      id="td-link-parent-display"
+                      class="flex-1 flex items-center gap-1"
+                    >
+                      <span class="text-xs text-text-muted italic">None</span>
+                    </div>
+                  </div>
+                  <div class="relative">
+                    <input
+                      id="td-link-parent-search"
+                      class="form-input text-sm py-1.5"
+                      placeholder="Search for parent (Epic/Story)..."
+                      autocomplete="off"
+                    />
+                    <div
+                      id="td-link-parent-results"
+                      class="absolute z-10 left-0 right-0 bg-bg-card border border-border rounded-md shadow-lg max-h-40 overflow-y-auto"
+                      style="display:none;"
+                    >
+                    </div>
+                  </div>
+                  <div>
+                    <span class="text-xs text-text-muted">Children:</span>
+                    <div id="td-link-children" class="space-y-1 mt-1"></div>
                   </div>
                 </div>
-                <div>
-                  <label class="text-xs text-text-secondary block mb-1"
-                    >Color</label
+              </div>
+
+              <!-- Labels (interactive) -->
+              <div>
+                <label
+                  class="text-xs text-text-muted font-semibold uppercase tracking-wide mb-2 block"
+                  >Labels</label
+                >
+                <div id="td-labels" class="flex flex-wrap gap-1 mb-2"></div>
+                <input
+                  id="td-label-input"
+                  class="form-input text-sm py-1.5"
+                  placeholder="Type a label and press Enter..."
+                />
+              </div>
+
+              <!-- Custom Fields (interactive) -->
+              <div>
+                <label
+                  class="text-xs text-text-muted font-semibold uppercase tracking-wide mb-2 block"
+                  >Custom Fields</label
+                >
+                <div id="td-custom-fields" class="space-y-2"></div>
+                <div class="relative mt-2">
+                  <button
+                    id="td-add-cf"
+                    type="button"
+                    class="text-xs text-accent hover:text-accent-hover transition-colors"
+                    >+ Add Field</button
                   >
-                  <input
-                    id="td-color"
-                    type="color"
-                    value="#10b981"
-                    class="w-8 h-8 rounded cursor-pointer border-none"
-                  />
+                  <div
+                    id="td-add-cf-dropdown"
+                    class="absolute z-10 left-0 bg-bg-card border border-border rounded-md shadow-lg min-w-[200px] py-1"
+                    style="display:none;"
+                  >
+                    <div class="px-2 py-1">
+                      <input
+                        id="td-add-cf-search"
+                        class="form-input text-xs py-1 w-full"
+                        placeholder="Field name..."
+                        autocomplete="off"
+                      />
+                    </div>
+                    <div
+                      id="td-add-cf-options"
+                      class="max-h-32 overflow-y-auto"
+                    >
+                    </div>
+                  </div>
                 </div>
               </div>
-            </div>
 
-            <div class="border-t border-border pt-3">
-              <span
-                class="text-[10px] uppercase tracking-wide text-text-muted font-semibold"
-                >Date & Time</span
-              >
-              <div class="mt-2 space-y-2">
-                <div>
-                  <label class="text-xs text-text-secondary block mb-1"
-                    >Due Date</label
+              <!-- Attachments (Phase 23) -->
+              <div>
+                <label
+                  class="text-xs text-text-muted font-semibold uppercase tracking-wide mb-2 flex items-center justify-between"
+                >
+                  <span>Attachments</span>
+                  <label
+                    class="text-xs text-accent hover:text-accent-hover cursor-pointer m-0"
                   >
-                  <input
-                    id="td-due-date"
-                    type="date"
-                    class="form-input text-sm py-1.5"
-                  />
-                </div>
-                <div>
-                  <label class="text-xs text-text-secondary block mb-1"
-                    >Start Date</label
-                  >
-                  <input
-                    id="td-start-date"
-                    type="date"
-                    class="form-input text-sm py-1.5"
-                  />
-                </div>
-                <div>
-                  <label class="text-xs text-text-secondary block mb-1"
-                    >End Date</label
-                  >
-                  <input
-                    id="td-end-date"
-                    type="date"
-                    class="form-input text-sm py-1.5"
-                  />
-                </div>
-                <div>
-                  <label class="text-xs text-text-secondary block mb-1"
-                    >Time Tracked (min)</label
-                  >
-                  <input
-                    id="td-time-tracked"
-                    type="number"
-                    min="0"
-                    step="1"
-                    value="0"
-                    class="form-input text-sm py-1.5 w-full"
-                    placeholder="0"
-                  />
+                    + Add Image
+                    <input
+                      type="file"
+                      id="td-attachment-input"
+                      accept="image/*"
+                      class="hidden"
+                    />
+                  </label>
+                </label>
+                <div id="td-attachments" class="flex flex-wrap gap-3 mt-2">
                 </div>
               </div>
+
+              <!-- Comments -->
+              <div>
+                <label
+                  class="text-xs text-text-muted font-semibold uppercase tracking-wide mb-2 block"
+                  >Comments</label
+                >
+                <div id="td-comments" class="space-y-3 mb-4"></div>
+                <div class="flex gap-2">
+                  <input
+                    id="td-comment-input"
+                    class="form-input flex-1"
+                    placeholder="Add a comment..."
+                  />
+                  <button id="td-comment-submit" class="btn-primary px-4"
+                    >Comment</button
+                  >
+                </div>
+              </div>
+
+              <!-- Activity Log (ADR-0011) -->
+              <details class="mt-4">
+                <summary
+                  class="text-xs text-text-muted font-semibold uppercase tracking-wide cursor-pointer select-none hover:text-text-secondary transition-colors"
+                >
+                  Activity Log
+                </summary>
+                <div
+                  id="td-activity"
+                  class="space-y-1 mt-2 max-h-48 overflow-y-auto text-xs"
+                >
+                </div>
+              </details>
             </div>
 
-            <div class="border-t border-border pt-3">
-              <span id="td-rice" class="text-xs text-text-muted"></span>
-            </div>
+            <!-- Right: Action Sidebar -->
+            <div
+              class="w-full lg:w-64 border-t lg:border-t-0 lg:border-l border-border p-4 space-y-3"
+            >
+              <div class="space-y-1">
+                <button
+                  id="td-toggle-done"
+                  class="w-full text-left px-3 py-2 text-sm rounded-md hover:bg-bg-hover transition-colors"
+                  >✓ Mark as Done</button
+                >
+                <button
+                  id="td-toggle-favorite"
+                  class="w-full text-left px-3 py-2 text-sm rounded-md hover:bg-bg-hover transition-colors"
+                  >⭐ Add to Favorites</button
+                >
+                <button
+                  id="td-duplicate"
+                  class="w-full text-left px-3 py-2 text-sm rounded-md hover:bg-bg-hover transition-colors"
+                  >📋 Duplicate Task</button
+                >
+              </div>
 
-            <div class="border-t border-border pt-3 space-y-2">
-              <button
-                id="td-ask-ai"
-                class="w-full text-left px-3 py-2 text-sm text-primary rounded-md hover:bg-primary/10 transition-colors"
-                >🤖 Ask AI</button
-              >
-              <label
-                class="w-full block text-left px-3 py-2 text-sm text-secondary rounded-md hover:bg-secondary/10 transition-colors cursor-pointer m-0"
-              >
-                🖼️ Attach Image
-                <input type="file" id="td-attach-image" accept="image/png, image/jpeg, image/webp, image/gif" style="display: none;" />
-              </label>
-              <button
-                id="td-delete"
-                class="w-full text-left px-3 py-2 text-sm text-danger rounded-md hover:bg-danger/10 transition-colors"
-                >🗑 Delete</button
-              >
-            </div>
+              <div class="border-t border-border pt-3">
+                <span
+                  class="text-[10px] uppercase tracking-wide text-text-muted font-semibold"
+                  >Organization</span
+                >
+                <div class="mt-2 space-y-2">
+                  <div>
+                    <label class="text-xs text-text-secondary block mb-1"
+                      >Priority</label
+                    >
+                    <select id="td-priority" class="inline-select w-full">
+                      <option value="1">1 — Lowest</option>
+                      <option value="2">2 — Low</option>
+                      <option value="3">3 — Medium</option>
+                      <option value="4">4 — High</option>
+                      <option value="5">5 — Highest</option>
+                    </select>
+                  </div>
+                  <div>
+                    <label class="text-xs text-text-secondary block mb-1"
+                      >Progress</label
+                    >
+                    <div class="flex items-center gap-2">
+                      <input
+                        id="td-progress"
+                        type="range"
+                        min="0"
+                        max="100"
+                        value="0"
+                        class="flex-1 accent-accent"
+                      />
+                      <span
+                        id="td-progress-value"
+                        class="text-xs text-text-muted w-8 text-right">0%</span
+                      >
+                    </div>
+                  </div>
+                  <div>
+                    <label class="text-xs text-text-secondary block mb-1"
+                      >Color</label
+                    >
+                    <input
+                      id="td-color"
+                      type="color"
+                      value="#10b981"
+                      class="w-8 h-8 rounded cursor-pointer border-none"
+                    />
+                  </div>
+                </div>
+              </div>
 
-            <div class="text-[10px] text-text-muted mt-4">
-              <div id="td-created"></div>
-              <div id="td-updated"></div>
+              <div class="border-t border-border pt-3">
+                <span
+                  class="text-[10px] uppercase tracking-wide text-text-muted font-semibold"
+                  >Date & Time</span
+                >
+                <div class="mt-2 space-y-2">
+                  <div>
+                    <label class="text-xs text-text-secondary block mb-1"
+                      >Due Date</label
+                    >
+                    <input
+                      id="td-due-date"
+                      type="date"
+                      class="form-input text-sm py-1.5"
+                    />
+                  </div>
+                  <div>
+                    <label class="text-xs text-text-secondary block mb-1"
+                      >Start Date</label
+                    >
+                    <input
+                      id="td-start-date"
+                      type="date"
+                      class="form-input text-sm py-1.5"
+                    />
+                  </div>
+                  <div>
+                    <label class="text-xs text-text-secondary block mb-1"
+                      >End Date</label
+                    >
+                    <input
+                      id="td-end-date"
+                      type="date"
+                      class="form-input text-sm py-1.5"
+                    />
+                  </div>
+                  <div>
+                    <label class="text-xs text-text-secondary block mb-1"
+                      >Time Tracked (min)</label
+                    >
+                    <input
+                      id="td-time-tracked"
+                      type="number"
+                      min="0"
+                      step="1"
+                      value="0"
+                      class="form-input text-sm py-1.5 w-full"
+                      placeholder="0"
+                    />
+                  </div>
+                  <div>
+                    <label class="text-xs text-text-secondary block mb-1"
+                      >Reminder</label
+                    >
+                    <input
+                      id="td-reminder"
+                      type="datetime-local"
+                      class="form-input text-sm py-1.5 w-full"
+                    />
+                  </div>
+                </div>
+              </div>
+
+              <div class="border-t border-border pt-3">
+                <span id="td-rice" class="text-xs text-text-muted"></span>
+              </div>
+
+              <div class="border-t border-border pt-3 space-y-2">
+                <button
+                  id="td-ask-ai"
+                  class="w-full text-left px-3 py-2 text-sm text-primary rounded-md hover:bg-primary/10 transition-colors"
+                  >🤖 Ask AI</button
+                >
+                <label
+                  class="w-full block text-left px-3 py-2 text-sm text-secondary rounded-md hover:bg-secondary/10 transition-colors cursor-pointer m-0"
+                >
+                  🖼️ Attach Image
+                  <input
+                    type="file"
+                    id="td-attach-image"
+                    accept="image/png, image/jpeg, image/webp, image/gif"
+                    style="display: none;"
+                  />
+                </label>
+                <button
+                  id="td-delete"
+                  class="w-full text-left px-3 py-2 text-sm text-danger rounded-md hover:bg-danger/10 transition-colors"
+                  >🗑 Delete</button
+                >
+              </div>
+
+              <div class="text-[10px] text-text-muted mt-4">
+                <div id="td-created"></div>
+                <div id="td-updated"></div>
+              </div>
             </div>
           </div>
         </div>
       </div>
-    </div>
 
-    <!-- Command Palette -->
-    <div
-      id="command-palette-overlay"
-      class="fixed inset-0 bg-black/60 z-[60] hidden"
-      role="dialog"
-      aria-modal="true"
-      aria-label="Command palette"
-    >
-      <div class="flex justify-center pt-[15vh]">
-        <div
-          id="command-palette"
-          class="w-full max-w-lg bg-bg-card border border-border rounded-xl shadow-lg overflow-hidden animate-fade-in"
-        >
-          <div class="px-4 py-3 border-b border-border">
-            <input
-              id="cp-search"
-              type="text"
-              class="w-full bg-transparent text-text-primary text-lg outline-none"
-              placeholder="Type a command or search..."
-              autocomplete="off"
-            />
-            <p class="text-[10px] text-text-muted mt-1">
-              Search tasks, or use quick actions
-            </p>
-          </div>
-          <div id="cp-results" class="max-h-[50vh] overflow-y-auto">
-            <div
-              class="px-3 py-1.5 text-[10px] uppercase tracking-wide text-text-muted font-semibold"
-            >
-              Commands
+      <!-- Command Palette -->
+      <div
+        id="command-palette-overlay"
+        class="fixed inset-0 bg-black/60 z-[60] hidden"
+        role="dialog"
+        aria-modal="true"
+        aria-label="Command palette"
+      >
+        <div class="flex justify-center pt-[15vh]">
+          <div
+            id="command-palette"
+            class="w-full max-w-lg bg-bg-card border border-border rounded-xl shadow-lg overflow-hidden animate-fade-in"
+          >
+            <div class="px-4 py-3 border-b border-border">
+              <input
+                id="cp-search"
+                type="text"
+                class="w-full bg-transparent text-text-primary text-lg outline-none"
+                placeholder="Type a command or search..."
+                autocomplete="off"
+              />
+              <p class="text-[10px] text-text-muted mt-1">
+                Search tasks, or use quick actions
+              </p>
             </div>
-            <div
-              class="cp-item px-4 py-2.5 cursor-pointer hover:bg-bg-hover text-sm text-text-primary"
-              data-action="new-task"
-            >
-              New task
-            </div>
-            <div
-              class="cp-item px-4 py-2.5 cursor-pointer hover:bg-bg-hover text-sm text-text-primary"
-              data-action="new-board"
-            >
-              New board
-            </div>
-            <div
-              class="px-3 py-1.5 text-[10px] uppercase tracking-wide text-text-muted font-semibold"
-            >
-              Navigate
-            </div>
-            <div
-              class="cp-item px-4 py-2.5 cursor-pointer hover:bg-bg-hover text-sm text-text-primary"
-              data-action="go-dashboard"
-            >
-              📊 Go to Dashboard
-            </div>
-            <div
-              class="cp-item px-4 py-2.5 cursor-pointer hover:bg-bg-hover text-sm text-text-primary"
-              data-action="go-kanban"
-            >
-              📋 Go to Kanban Board
-            </div>
-            <div
-              class="cp-item px-4 py-2.5 cursor-pointer hover:bg-bg-hover text-sm text-text-primary"
-              data-action="go-table"
-            >
-              📄 Go to Table View
-            </div>
-            <div
-              class="cp-item px-4 py-2.5 cursor-pointer hover:bg-bg-hover text-sm text-text-primary"
-              data-action="go-settings"
-            >
-              ⚙ Go to Settings
-            </div>
-            <div
-              class="cp-item px-4 py-2.5 cursor-pointer hover:bg-bg-hover text-sm text-text-primary"
-              data-action="export-csv"
-            >
-              📥 Export Tasks CSV
-            </div>
-            <div id="cp-tasks-section" class="hidden">
+            <div id="cp-results" class="max-h-[50vh] overflow-y-auto">
               <div
                 class="px-3 py-1.5 text-[10px] uppercase tracking-wide text-text-muted font-semibold"
               >
-                Tasks
+                Commands
               </div>
-              <div id="cp-tasks"></div>
+              <div
+                class="cp-item px-4 py-2.5 cursor-pointer hover:bg-bg-hover text-sm text-text-primary"
+                data-action="new-task"
+              >
+                New task
+              </div>
+              <div
+                class="cp-item px-4 py-2.5 cursor-pointer hover:bg-bg-hover text-sm text-text-primary"
+                data-action="new-board"
+              >
+                New board
+              </div>
+              <div
+                class="px-3 py-1.5 text-[10px] uppercase tracking-wide text-text-muted font-semibold"
+              >
+                Navigate
+              </div>
+              <div
+                class="cp-item px-4 py-2.5 cursor-pointer hover:bg-bg-hover text-sm text-text-primary"
+                data-action="go-dashboard"
+              >
+                📊 Go to Dashboard
+              </div>
+              <div
+                class="cp-item px-4 py-2.5 cursor-pointer hover:bg-bg-hover text-sm text-text-primary"
+                data-action="go-kanban"
+              >
+                📋 Go to Kanban Board
+              </div>
+              <div
+                class="cp-item px-4 py-2.5 cursor-pointer hover:bg-bg-hover text-sm text-text-primary"
+                data-action="go-table"
+              >
+                📄 Go to Table View
+              </div>
+              <div
+                class="cp-item px-4 py-2.5 cursor-pointer hover:bg-bg-hover text-sm text-text-primary"
+                data-action="go-settings"
+              >
+                ⚙ Go to Settings
+              </div>
+              <div
+                class="cp-item px-4 py-2.5 cursor-pointer hover:bg-bg-hover text-sm text-text-primary"
+                data-action="go-today"
+              >
+                ☀️ Go to Today
+              </div>
+              <div
+                class="cp-item px-4 py-2.5 cursor-pointer hover:bg-bg-hover text-sm text-text-primary"
+                data-action="go-upcoming"
+              >
+                📅 Go to Upcoming
+              </div>
+              <div
+                class="cp-item px-4 py-2.5 cursor-pointer hover:bg-bg-hover text-sm text-text-primary"
+                data-action="go-calendar"
+              >
+                🗓️ Go to Calendar
+              </div>
+              <div
+                class="cp-item px-4 py-2.5 cursor-pointer hover:bg-bg-hover text-sm text-text-primary"
+                data-action="export-csv"
+              >
+                📥 Export Tasks CSV
+              </div>
+              <div id="cp-tasks-section" class="hidden">
+                <div
+                  class="px-3 py-1.5 text-[10px] uppercase tracking-wide text-text-muted font-semibold"
+                >
+                  Tasks
+                </div>
+                <div id="cp-tasks"></div>
+              </div>
             </div>
           </div>
         </div>
       </div>
-    </div>
-    <script>
-      // Connection status check
-      async function checkHealth() {
-        const indicator = document.getElementById("connection-status");
-        if (!indicator) return;
-        const dot = indicator.querySelector(".status-dot");
-        const text = indicator.querySelector(".status-text");
-        try {
-          const res = await fetch("/api/health");
-          const data = await res.json();
-          if (data.status === "ok") {
-            dot?.classList.add("online");
-            dot?.classList.remove("offline");
-            if (text) text.textContent = "Connected";
-          } else {
+      <script>
+        // Connection status check
+        async function checkHealth() {
+          const indicator = document.getElementById("connection-status");
+          if (!indicator) return;
+          const dot = indicator.querySelector(".status-dot");
+          const text = indicator.querySelector(".status-text");
+          try {
+            const res = await fetch("/api/health");
+            const data = await res.json();
+            if (data.status === "ok") {
+              dot?.classList.add("online");
+              dot?.classList.remove("offline");
+              if (text) text.textContent = "Connected";
+            } else {
+              dot?.classList.remove("online");
+              dot?.classList.add("offline");
+              if (text) text.textContent = "DB Offline";
+            }
+          } catch {
             dot?.classList.remove("online");
             dot?.classList.add("offline");
-            if (text) text.textContent = "DB Offline";
+            if (text) text.textContent = "Disconnected";
           }
-        } catch {
-          dot?.classList.remove("online");
-          dot?.classList.add("offline");
-          if (text) text.textContent = "Disconnected";
         }
-      }
-      checkHealth();
-      setInterval(checkHealth, 30000);
+        checkHealth();
+        setInterval(checkHealth, 30000);
 
-      // Global error resilience — catch unhandled errors to prevent blank-page crashes
-      window.addEventListener("error", (e) => {
-        console.error("[Meitheal] Unhandled error:", e.error ?? e.message);
-      });
-      window.addEventListener("unhandledrejection", (e) => {
-        console.error("[Meitheal] Unhandled promise rejection:", e.reason);
-      });
+        // Global error resilience — catch unhandled errors to prevent blank-page crashes
+        window.addEventListener("error", (e) => {
+          console.error("[Meitheal] Unhandled error:", e.error ?? e.message);
+        });
+        window.addEventListener("unhandledrejection", (e) => {
+          console.error("[Meitheal] Unhandled promise rejection:", e.reason);
+        });
 
-      // Mobile menu toggle
-      document.getElementById("menu-toggle")?.addEventListener("click", () => {
-        document.getElementById("sidebar")?.classList.toggle("open");
-      });
+        // Mobile menu toggle
+        document
+          .getElementById("menu-toggle")
+          ?.addEventListener("click", () => {
+            document.getElementById("sidebar")?.classList.toggle("open");
+          });
 
-      // Active nav link
-      const currentPath = window.location.pathname;
-      document.querySelectorAll(".nav-link").forEach((link) => {
-        if (
-          link.getAttribute("href") === currentPath ||
-          (currentPath === "/" &&
-            link.getAttribute("data-page") === "dashboard")
-        ) {
-          link.classList.add("active");
-        }
-      });
+        // Active nav link
+        const currentPath = window.location.pathname;
+        document.querySelectorAll(".nav-link").forEach((link) => {
+          if (
+            link.getAttribute("href") === currentPath ||
+            (currentPath === "/" &&
+              link.getAttribute("data-page") === "dashboard")
+          ) {
+            link.classList.add("active");
+          }
+        });
 
-      // Global search
-      const searchInput = document.getElementById(
-        "global-search",
-      ) as HTMLInputElement;
-      const searchResults = document.getElementById("search-results")!;
-      let searchTimeout: ReturnType<typeof setTimeout> | null = null;
+        // Global search
+        const searchInput = document.getElementById(
+          "global-search",
+        ) as HTMLInputElement;
+        const searchResults = document.getElementById("search-results")!;
+        let searchTimeout: ReturnType<typeof setTimeout> | null = null;
 
-      searchInput?.addEventListener("input", () => {
-        const q = searchInput.value.trim();
-        if (searchTimeout) clearTimeout(searchTimeout);
-        if (!q) {
-          searchResults.style.display = "none";
-          return;
-        }
-        searchTimeout = setTimeout(async () => {
-          try {
-            const res = await fetch(
-              `/api/tasks?q=${encodeURIComponent(q)}&limit=8`,
-            );
-            const data = (await res.json()) as {
-              tasks: Array<Record<string, unknown>>;
-              total: number;
-            };
-            if (data.tasks.length === 0) {
-              searchResults.innerHTML =
-                '<div class="search-empty">No tasks found</div>';
-            } else {
-              searchResults.innerHTML = data.tasks
-                .map(
-                  (t) =>
-                    `<div class="search-item" data-task-id="${String(t.id ?? "")}" style="cursor:pointer;">
+        searchInput?.addEventListener("input", () => {
+          const q = searchInput.value.trim();
+          if (searchTimeout) clearTimeout(searchTimeout);
+          if (!q) {
+            searchResults.style.display = "none";
+            return;
+          }
+          searchTimeout = setTimeout(async () => {
+            try {
+              const res = await fetch(
+                `/api/tasks?q=${encodeURIComponent(q)}&limit=8`,
+              );
+              const data = (await res.json()) as {
+                tasks: Array<Record<string, unknown>>;
+                total: number;
+              };
+              if (data.tasks.length === 0) {
+                searchResults.innerHTML =
+                  '<div class="search-empty">No tasks found</div>';
+              } else {
+                searchResults.innerHTML = data.tasks
+                  .map(
+                    (t) =>
+                      `<div class="search-item" data-task-id="${String(t.id ?? "")}" style="cursor:pointer;">
                   <strong>${String(t.title ?? "")}</strong>
                   <span class="search-meta">${String(t.status ?? "pending")} · P${t.priority ?? 3}</span>
                 </div>`,
-                )
-                .join("");
+                  )
+                  .join("");
+              }
+              searchResults.style.display = "block";
+            } catch {
+              searchResults.style.display = "none";
             }
-            searchResults.style.display = "block";
-          } catch {
+          }, 300);
+        });
+
+        // Close search on click outside
+        document.addEventListener("click", (e) => {
+          if (!(e.target as Element)?.closest("#search-container")) {
             searchResults.style.display = "none";
           }
-        }, 300);
-      });
+        });
 
-      // Close search on click outside
-      document.addEventListener("click", (e) => {
-        if (!(e.target as Element)?.closest("#search-container")) {
-          searchResults.style.display = "none";
-        }
-      });
+        // "/" to focus search, Escape to blur, "n" for new task
+        document.addEventListener("keydown", (e) => {
+          const tag = (e.target as HTMLElement)?.tagName;
+          const isEditing =
+            ["INPUT", "TEXTAREA", "SELECT"].includes(tag) ||
+            (e.target as HTMLElement)?.contentEditable === "true";
 
-      // "/" to focus search, Escape to blur, "n" for new task
-      document.addEventListener("keydown", (e) => {
-        const tag = (e.target as HTMLElement)?.tagName;
-        const isEditing =
-          ["INPUT", "TEXTAREA", "SELECT"].includes(tag) ||
-          (e.target as HTMLElement)?.contentEditable === "true";
+          if (e.key === "Escape") {
+            // Close overlays in priority order: task detail > command palette > search > sidebar
+            const taskOverlay = document.getElementById("task-detail-overlay");
+            const cpOverlay = document.getElementById(
+              "command-palette-overlay",
+            );
+            const shortcutModal = document.getElementById("shortcut-modal");
+            const sidebar = document.getElementById("sidebar");
 
-        if (e.key === "Escape") {
-          // Close overlays in priority order: task detail > command palette > search > sidebar
+            if (shortcutModal && !shortcutModal.classList.contains("hidden")) {
+              shortcutModal.classList.add("hidden");
+              return;
+            }
+            if (taskOverlay && !taskOverlay.classList.contains("hidden")) {
+              taskOverlay.classList.add("hidden");
+              return;
+            }
+            if (cpOverlay && !cpOverlay.classList.contains("hidden")) {
+              cpOverlay.classList.add("hidden");
+              return;
+            }
+            if (document.activeElement === searchInput) {
+              searchInput?.blur();
+              searchResults.style.display = "none";
+              return;
+            }
+            if (sidebar?.classList.contains("open")) {
+              sidebar.classList.remove("open");
+              return;
+            }
+          }
+
+          if (isEditing) return;
+
+          // Suppress most shortcuts when task detail overlay is open
+          // Allow ?, Escape, and Tab through so users can access help and close/navigate
+          const taskDetailOpen = !document
+            .getElementById("task-detail-overlay")
+            ?.classList.contains("hidden");
+          if (
+            taskDetailOpen &&
+            e.key !== "?" &&
+            e.key !== "Escape" &&
+            e.key !== "Tab"
+          )
+            return;
+
+          if (e.key === "/" && !e.shiftKey) {
+            e.preventDefault();
+            searchInput?.focus();
+          }
+          if (e.key === "n") {
+            e.preventDefault();
+            // If on tasks page, click the create button; otherwise navigate
+            const createBtn = document.getElementById("create-task-btn");
+            if (createBtn) {
+              createBtn.click();
+            } else {
+              window.location.href = "/tasks";
+            }
+          }
+          if (e.key === "k") {
+            window.location.href = "/kanban";
+          }
+          if (e.key === "t") {
+            window.location.href = "/table";
+          }
+          if (e.key === "d") {
+            window.location.href = "/";
+          }
+          if (e.key === "?") {
+            e.preventDefault();
+            const modal = document.getElementById("shortcut-modal");
+            if (modal) modal.classList.toggle("hidden");
+          }
+
+          // --- Focus Trap Logic ---
           const taskOverlay = document.getElementById("task-detail-overlay");
           const cpOverlay = document.getElementById("command-palette-overlay");
           const shortcutModal = document.getElementById("shortcut-modal");
-          const sidebar = document.getElementById("sidebar");
 
-          if (shortcutModal && !shortcutModal.classList.contains("hidden")) {
-            shortcutModal.classList.add("hidden");
-            return;
-          }
-          if (taskOverlay && !taskOverlay.classList.contains("hidden")) {
-            taskOverlay.classList.add("hidden");
-            return;
-          }
-          if (cpOverlay && !cpOverlay.classList.contains("hidden")) {
-            cpOverlay.classList.add("hidden");
-            return;
-          }
-          if (document.activeElement === searchInput) {
-            searchInput?.blur();
-            searchResults.style.display = "none";
-            return;
-          }
-          if (sidebar?.classList.contains("open")) {
-            sidebar.classList.remove("open");
-            return;
-          }
-        }
+          // Find which overlay is active (priority order)
+          let activeOverlay: HTMLElement | null = null;
+          if (shortcutModal && !shortcutModal.classList.contains("hidden"))
+            activeOverlay = shortcutModal;
+          else if (taskOverlay && !taskOverlay.classList.contains("hidden"))
+            activeOverlay = taskOverlay;
+          else if (cpOverlay && !cpOverlay.classList.contains("hidden"))
+            activeOverlay = cpOverlay;
 
-        if (isEditing) return;
+          if (activeOverlay && e.key === "Tab") {
+            const focusableElements = activeOverlay.querySelectorAll(
+              'a[href], button, textarea, input, select, [tabindex]:not([tabindex="-1"])',
+            );
+            const firstElement = focusableElements[0] as HTMLElement;
+            const lastElement = focusableElements[
+              focusableElements.length - 1
+            ] as HTMLElement;
 
-        // Suppress most shortcuts when task detail overlay is open
-        // Allow ?, Escape, and Tab through so users can access help and close/navigate
-        const taskDetailOpen = !document.getElementById("task-detail-overlay")?.classList.contains("hidden");
-        if (taskDetailOpen && e.key !== "?" && e.key !== "Escape" && e.key !== "Tab") return;
-
-        if (e.key === "/" && !e.shiftKey) {
-          e.preventDefault();
-          searchInput?.focus();
-        }
-        if (e.key === "n") {
-          e.preventDefault();
-          // If on tasks page, click the create button; otherwise navigate
-          const createBtn = document.getElementById("create-task-btn");
-          if (createBtn) {
-            createBtn.click();
-          } else {
-            window.location.href = "/tasks";
-          }
-        }
-        if (e.key === "k") {
-          window.location.href = "/kanban";
-        }
-        if (e.key === "t") {
-          window.location.href = "/table";
-        }
-        if (e.key === "d") {
-          window.location.href = "/";
-        }
-        if (e.key === "?") {
-          e.preventDefault();
-          const modal = document.getElementById("shortcut-modal");
-          if (modal) modal.classList.toggle("hidden");
-        }
-
-        // --- Focus Trap Logic ---
-        const taskOverlay = document.getElementById("task-detail-overlay");
-        const cpOverlay = document.getElementById("command-palette-overlay");
-        const shortcutModal = document.getElementById("shortcut-modal");
-        
-        // Find which overlay is active (priority order)
-        let activeOverlay: HTMLElement | null = null;
-        if (shortcutModal && !shortcutModal.classList.contains("hidden")) activeOverlay = shortcutModal;
-        else if (taskOverlay && !taskOverlay.classList.contains("hidden")) activeOverlay = taskOverlay;
-        else if (cpOverlay && !cpOverlay.classList.contains("hidden")) activeOverlay = cpOverlay;
-
-        if (activeOverlay && e.key === "Tab") {
-          const focusableElements = activeOverlay.querySelectorAll('a[href], button, textarea, input, select, [tabindex]:not([tabindex="-1"])');
-          const firstElement = focusableElements[0] as HTMLElement;
-          const lastElement = focusableElements[focusableElements.length - 1] as HTMLElement;
-
-          if (e.shiftKey) { // Shift + Tab
-            if (document.activeElement === firstElement) {
-              lastElement?.focus();
-              e.preventDefault();
-            }
-          } else { // Tab
-            if (document.activeElement === lastElement) {
-              firstElement?.focus();
-              e.preventDefault();
-            }
-          }
-        }
-
-        // Phase 20 (ADHD Optimization): T/S/E shortcuts for detail panel task_type
-        if (taskOverlay && !taskOverlay.classList.contains("hidden")) {
-          const typeSelect = document.getElementById("td-task-type") as HTMLSelectElement | null;
-          if (typeSelect) {
-            let newType = null;
-            if (e.key.toLowerCase() === "t") newType = "task";
-            if (e.key.toLowerCase() === "s") newType = "story";
-            if (e.key.toLowerCase() === "e") newType = "epic";
-            
-            if (newType && typeSelect.value !== newType) {
-              e.preventDefault();
-              typeSelect.value = newType;
-              typeSelect.dispatchEvent(new Event("change"));
-            }
-          }
-        }
-      });
-
-      // Keyboard shortcut onboarding hint (show once)
-      if (!localStorage.getItem("meitheal_shortcut_hint_dismissed")) {
-        const hint = document.createElement("div");
-        hint.className = "shortcut-hint";
-        hint.textContent = "💡 Press ? for keyboard shortcuts";
-        hint.setAttribute("role", "tooltip");
-        hint.addEventListener("click", () => {
-          hint.remove();
-          localStorage.setItem("meitheal_shortcut_hint_dismissed", "1");
-        });
-        document.body.appendChild(hint);
-        setTimeout(() => hint.remove(), 8000);
-      }
-      // Board switcher
-      (async function initBoardSwitcher() {
-        const select = document.getElementById(
-          "board-select",
-        ) as HTMLSelectElement | null;
-        const addBtn = document.getElementById("add-board-btn");
-        if (!select) return;
-
-        // Load boards from API
-        try {
-          const res = await fetch("/api/boards");
-          if (res.ok) {
-            const data = await res.json();
-            const boards = data.boards ?? [];
-            select.innerHTML = "";
-            // "All Boards" option first
-            const allOpt = document.createElement("option");
-            allOpt.value = "all";
-            allOpt.textContent = "🗂 All Boards";
-            select.appendChild(allOpt);
-            boards.forEach((b: { id: string; title: string; icon: string }) => {
-              const opt = document.createElement("option");
-              opt.value = b.id;
-              opt.textContent = `${b.icon} ${b.title}`;
-              select.appendChild(opt);
-            });
-          }
-        } catch {
-          /* fallback to default option */
-        }
-
-        // Restore active board from localStorage
-        const saved = localStorage.getItem("meitheal_active_board") ?? "all";
-        if (select.querySelector(`option[value="${saved}"]`)) {
-          select.value = saved;
-        }
-
-        // Expose active board globally for page scripts
-        (window as any).__activeBoard = select.value;
-
-        // Apply board filter to visible items
-        function applyBoardFilter() {
-          const board = select!.value;
-          (window as any).__activeBoard = board;
-          // Filter task items (tasks page)
-          document.querySelectorAll(".task-item[data-board]").forEach((el) => {
-            const item = el as HTMLElement;
-            item.style.display =
-              board === "all" || item.dataset.board === board ? "" : "none";
-          });
-          // Filter kanban cards
-          document
-            .querySelectorAll(".kanban-card[data-board]")
-            .forEach((el) => {
-              const card = el as HTMLElement;
-              card.style.display =
-                board === "all" || card.dataset.board === board ? "" : "none";
-            });
-          // Filter table rows
-          document
-            .querySelectorAll("#task-table tbody tr[data-board]")
-            .forEach((el) => {
-              const row = el as HTMLElement;
-              row.style.display =
-                board === "all" || row.dataset.board === board ? "" : "none";
-            });
-        }
-
-        // Apply on load
-        applyBoardFilter();
-
-        // Switch board → save + filter
-        select.addEventListener("change", () => {
-          localStorage.setItem("meitheal_active_board", select.value);
-          applyBoardFilter();
-        });
-
-        // Add new board
-        addBtn?.addEventListener("click", async () => {
-          const title = prompt("Board name:");
-          if (!title?.trim()) return;
-          try {
-            const res = await fetch("/api/boards", {
-              method: "POST",
-              headers: { "content-type": "application/json" },
-              body: JSON.stringify({ title: title.trim() }),
-            });
-            if (res.ok) {
-              const board = await res.json();
-              localStorage.setItem("meitheal_active_board", board.id);
-              window.location.reload();
-            }
-          } catch {
-            /* ignore */
-          }
-        });
-      })();
-    </script>
-
-    <script>
-      import { askAIForTask } from "../domains/ai/ai-context-service";
-      import { saveAttachment, getAttachmentsByTaskId, deleteAttachment } from "../domains/offline/offline-store";
-
-      // === Task Detail Panel ===
-      const tdOverlay = document.getElementById(
-        "task-detail-overlay",
-      ) as HTMLDivElement;
-      let currentTaskId: string | null = null;
-
-      function closeTD() {
-        tdOverlay?.classList.add("hidden");
-        currentTaskId = null;
-        history.pushState(null, "", window.location.pathname);
-      }
-
-      async function openTaskDetail(taskId: string) {
-        if (!tdOverlay) return;
-        currentTaskId = taskId;
-        tdOverlay.classList.remove("hidden");
-        history.pushState(null, "", `#task-${taskId}`);
-
-        try {
-          // Populate status dropdown from lanes API
-          const statusSelect = document.getElementById("td-status") as HTMLSelectElement;
-          try {
-            const lanesRes = await fetch("/api/lanes");
-            if (lanesRes.ok) {
-              const lanesData = await lanesRes.json();
-              const lanes = lanesData.lanes || [];
-              statusSelect.innerHTML = "";
-              for (const lane of lanes) {
-                // Add the main key as an option
-                const opt = document.createElement("option");
-                opt.value = lane.key;
-                opt.textContent = `${lane.icon} ${lane.label}`;
-                statusSelect.appendChild(opt);
+            if (e.shiftKey) {
+              // Shift + Tab
+              if (document.activeElement === firstElement) {
+                lastElement?.focus();
+                e.preventDefault();
+              }
+            } else {
+              // Tab
+              if (document.activeElement === lastElement) {
+                firstElement?.focus();
+                e.preventDefault();
               }
             }
-          } catch { /* keep existing options */ }
-
-          const res = await fetch(`/api/tasks/${taskId}`);
-          if (!res.ok) return;
-          const t = (await res.json()) as Record<string, unknown>;
-
-          const parentEl = document.getElementById("td-parent") as HTMLAnchorElement | null;
-          if (parentEl && t.parent_id) {
-            parentEl.textContent = `↑ ${t.parent_title ?? t.parent_id}`;
-            parentEl.href = `#task-${t.parent_id}`;
-            parentEl.classList.remove("hidden");
-            parentEl.onclick = (e) => {
-              e.preventDefault();
-              openTaskDetail(String(t.parent_id));
-            };
-          } else if (parentEl) {
-            parentEl.classList.add("hidden");
           }
 
-          // Linked Tickets — parent display
-          const linkParentDisplay = document.getElementById("td-link-parent-display") as HTMLElement;
-          if (linkParentDisplay) {
-            if (t.parent_id) {
-              const parentTitle = String(t.parent_title ?? String(t.parent_id).slice(0, 8));
-              linkParentDisplay.innerHTML = `
+          // Phase 20 (ADHD Optimization): T/S/E shortcuts for detail panel task_type
+          if (taskOverlay && !taskOverlay.classList.contains("hidden")) {
+            const typeSelect = document.getElementById(
+              "td-task-type",
+            ) as HTMLSelectElement | null;
+            if (typeSelect) {
+              let newType = null;
+              if (e.key.toLowerCase() === "t") newType = "task";
+              if (e.key.toLowerCase() === "s") newType = "story";
+              if (e.key.toLowerCase() === "e") newType = "epic";
+
+              if (newType && typeSelect.value !== newType) {
+                e.preventDefault();
+                typeSelect.value = newType;
+                typeSelect.dispatchEvent(new Event("change"));
+              }
+            }
+          }
+        });
+
+        // Keyboard shortcut onboarding hint (show once)
+        if (!localStorage.getItem("meitheal_shortcut_hint_dismissed")) {
+          const hint = document.createElement("div");
+          hint.className = "shortcut-hint";
+          hint.textContent = "💡 Press ? for keyboard shortcuts";
+          hint.setAttribute("role", "tooltip");
+          hint.addEventListener("click", () => {
+            hint.remove();
+            localStorage.setItem("meitheal_shortcut_hint_dismissed", "1");
+          });
+          document.body.appendChild(hint);
+          setTimeout(() => hint.remove(), 8000);
+        }
+        // Board switcher
+        (async function initBoardSwitcher() {
+          const select = document.getElementById(
+            "board-select",
+          ) as HTMLSelectElement | null;
+          const addBtn = document.getElementById("add-board-btn");
+          if (!select) return;
+
+          // Load boards from API
+          try {
+            const res = await fetch("/api/boards");
+            if (res.ok) {
+              const data = await res.json();
+              const boards = data.boards ?? [];
+              select.innerHTML = "";
+              // "All Boards" option first
+              const allOpt = document.createElement("option");
+              allOpt.value = "all";
+              allOpt.textContent = "🗂 All Boards";
+              select.appendChild(allOpt);
+              boards.forEach(
+                (b: { id: string; title: string; icon: string }) => {
+                  const opt = document.createElement("option");
+                  opt.value = b.id;
+                  opt.textContent = `${b.icon} ${b.title}`;
+                  select.appendChild(opt);
+                },
+              );
+            }
+          } catch {
+            /* fallback to default option */
+          }
+
+          // Restore active board from localStorage
+          const saved = localStorage.getItem("meitheal_active_board") ?? "all";
+          if (select.querySelector(`option[value="${saved}"]`)) {
+            select.value = saved;
+          }
+
+          // Expose active board globally for page scripts
+          (window as any).__activeBoard = select.value;
+
+          // Apply board filter to visible items
+          function applyBoardFilter() {
+            const board = select!.value;
+            (window as any).__activeBoard = board;
+            // Filter task items (tasks page)
+            document
+              .querySelectorAll(".task-item[data-board]")
+              .forEach((el) => {
+                const item = el as HTMLElement;
+                item.style.display =
+                  board === "all" || item.dataset.board === board ? "" : "none";
+              });
+            // Filter kanban cards
+            document
+              .querySelectorAll(".kanban-card[data-board]")
+              .forEach((el) => {
+                const card = el as HTMLElement;
+                card.style.display =
+                  board === "all" || card.dataset.board === board ? "" : "none";
+              });
+            // Filter table rows
+            document
+              .querySelectorAll("#task-table tbody tr[data-board]")
+              .forEach((el) => {
+                const row = el as HTMLElement;
+                row.style.display =
+                  board === "all" || row.dataset.board === board ? "" : "none";
+              });
+          }
+
+          // Apply on load
+          applyBoardFilter();
+
+          // Switch board → save + filter
+          select.addEventListener("change", () => {
+            localStorage.setItem("meitheal_active_board", select.value);
+            applyBoardFilter();
+          });
+
+          // Add new board
+          addBtn?.addEventListener("click", async () => {
+            const title = prompt("Board name:");
+            if (!title?.trim()) return;
+            try {
+              const res = await fetch("/api/boards", {
+                method: "POST",
+                headers: { "content-type": "application/json" },
+                body: JSON.stringify({ title: title.trim() }),
+              });
+              if (res.ok) {
+                const board = await res.json();
+                localStorage.setItem("meitheal_active_board", board.id);
+                window.location.reload();
+              }
+            } catch {
+              /* ignore */
+            }
+          });
+        })();
+      </script>
+
+      <script>
+        import { askAIForTask } from "../domains/ai/ai-context-service";
+        import {
+          saveAttachment,
+          getAttachmentsByTaskId,
+          deleteAttachment,
+        } from "../domains/offline/offline-store";
+
+        // === Task Detail Panel ===
+        const tdOverlay = document.getElementById(
+          "task-detail-overlay",
+        ) as HTMLDivElement;
+        let currentTaskId: string | null = null;
+
+        function closeTD() {
+          tdOverlay?.classList.add("hidden");
+          currentTaskId = null;
+          history.pushState(null, "", window.location.pathname);
+        }
+
+        async function openTaskDetail(taskId: string) {
+          if (!tdOverlay) return;
+          currentTaskId = taskId;
+          tdOverlay.classList.remove("hidden");
+          history.pushState(null, "", `#task-${taskId}`);
+
+          try {
+            // Populate status dropdown from lanes API
+            const statusSelect = document.getElementById(
+              "td-status",
+            ) as HTMLSelectElement;
+            try {
+              const lanesRes = await fetch("/api/lanes");
+              if (lanesRes.ok) {
+                const lanesData = await lanesRes.json();
+                const lanes = lanesData.lanes || [];
+                statusSelect.innerHTML = "";
+                for (const lane of lanes) {
+                  // Add the main key as an option
+                  const opt = document.createElement("option");
+                  opt.value = lane.key;
+                  opt.textContent = `${lane.icon} ${lane.label}`;
+                  statusSelect.appendChild(opt);
+                }
+              }
+            } catch {
+              /* keep existing options */
+            }
+
+            const res = await fetch(`/api/tasks/${taskId}`);
+            if (!res.ok) return;
+            const t = (await res.json()) as Record<string, unknown>;
+
+            const parentEl = document.getElementById(
+              "td-parent",
+            ) as HTMLAnchorElement | null;
+            if (parentEl && t.parent_id) {
+              parentEl.textContent = `↑ ${t.parent_title ?? t.parent_id}`;
+              parentEl.href = `#task-${t.parent_id}`;
+              parentEl.classList.remove("hidden");
+              parentEl.onclick = (e) => {
+                e.preventDefault();
+                openTaskDetail(String(t.parent_id));
+              };
+            } else if (parentEl) {
+              parentEl.classList.add("hidden");
+            }
+
+            // Linked Tickets — parent display
+            const linkParentDisplay = document.getElementById(
+              "td-link-parent-display",
+            ) as HTMLElement;
+            if (linkParentDisplay) {
+              if (t.parent_id) {
+                const parentTitle = String(
+                  t.parent_title ?? String(t.parent_id).slice(0, 8),
+                );
+                linkParentDisplay.innerHTML = `
                 <a href="#" class="text-xs text-accent hover:underline td-parent-link" data-id="${t.parent_id}">${parentTitle}</a>
                 <button class="text-xs text-danger hover:text-red-400 ml-1 td-unlink-parent" title="Remove parent">✕</button>
               `;
-              linkParentDisplay.querySelector(".td-parent-link")?.addEventListener("click", (e) => {
-                e.preventDefault();
-                openTaskDetail(String(t.parent_id));
-              });
-              linkParentDisplay.querySelector(".td-unlink-parent")?.addEventListener("click", async () => {
-                await saveTD("parent_id", null);
-                linkParentDisplay.innerHTML = `<span class="text-xs text-text-muted italic">None</span>`;
-              });
-            } else {
-              linkParentDisplay.innerHTML = `<span class="text-xs text-text-muted italic">None</span>`;
-            }
-          }
-
-          // Linked Tickets — children
-          const childrenDiv = document.getElementById("td-link-children") as HTMLElement;
-          if (childrenDiv) {
-            childrenDiv.innerHTML = "";
-            try {
-              const childRes = await fetch(`/api/tasks?parent_id=${taskId}`);
-              if (childRes.ok) {
-                const childData = await childRes.json();
-                const children = childData.tasks ?? [];
-                if (children.length === 0) {
-                  childrenDiv.innerHTML = `<span class="text-xs text-text-muted italic">No children</span>`;
-                } else {
-                  children.forEach((c: Record<string, unknown>) => {
-                    const chip = document.createElement("a");
-                    chip.href = "#";
-                    chip.className = "text-xs text-accent hover:underline block";
-                    chip.textContent = `↳ ${String(c.title ?? c.id).slice(0, 50)}`;
-                    chip.addEventListener("click", (e) => {
-                      e.preventDefault();
-                      openTaskDetail(String(c.id));
-                    });
-                    childrenDiv.appendChild(chip);
+                linkParentDisplay
+                  .querySelector(".td-parent-link")
+                  ?.addEventListener("click", (e) => {
+                    e.preventDefault();
+                    openTaskDetail(String(t.parent_id));
                   });
-                }
+                linkParentDisplay
+                  .querySelector(".td-unlink-parent")
+                  ?.addEventListener("click", async () => {
+                    await saveTD("parent_id", null);
+                    linkParentDisplay.innerHTML = `<span class="text-xs text-text-muted italic">None</span>`;
+                  });
+              } else {
+                linkParentDisplay.innerHTML = `<span class="text-xs text-text-muted italic">None</span>`;
               }
-            } catch { childrenDiv.innerHTML = `<span class="text-xs text-text-muted italic">—</span>`; }
-          }
+            }
 
-          // Activity Log (ADR-0011) — lazy-loaded on expand
-          const activityDiv = document.getElementById("td-activity") as HTMLElement;
-          const activityDetails = activityDiv?.closest("details");
-          if (activityDetails && activityDiv) {
-            activityDiv.innerHTML = "";
-            const loadActivity = async () => {
+            // Linked Tickets — children
+            const childrenDiv = document.getElementById(
+              "td-link-children",
+            ) as HTMLElement;
+            if (childrenDiv) {
+              childrenDiv.innerHTML = "";
               try {
-                const actRes = await fetch(`/api/tasks/${taskId}/activity`);
-                if (!actRes.ok) return;
-                const entries = await actRes.json();
-                if (!Array.isArray(entries) || entries.length === 0) {
-                  activityDiv.innerHTML = `<span class="text-text-muted italic">No activity yet</span>`;
-                  return;
+                const childRes = await fetch(`/api/tasks?parent_id=${taskId}`);
+                if (childRes.ok) {
+                  const childData = await childRes.json();
+                  const children = childData.tasks ?? [];
+                  if (children.length === 0) {
+                    childrenDiv.innerHTML = `<span class="text-xs text-text-muted italic">No children</span>`;
+                  } else {
+                    children.forEach((c: Record<string, unknown>) => {
+                      const chip = document.createElement("a");
+                      chip.href = "#";
+                      chip.className =
+                        "text-xs text-accent hover:underline block";
+                      chip.textContent = `↳ ${String(c.title ?? c.id).slice(0, 50)}`;
+                      chip.addEventListener("click", (e) => {
+                        e.preventDefault();
+                        openTaskDetail(String(c.id));
+                      });
+                      childrenDiv.appendChild(chip);
+                    });
+                  }
                 }
-                activityDiv.innerHTML = "";
-                for (const e of entries.slice(0, 50)) {
-                  const ago = new Date(Number(e.created_at)).toLocaleString();
-                  const row = document.createElement("div");
-                  row.className = "flex gap-2 items-baseline py-1 border-b border-border/30";
-                  row.innerHTML = `
+              } catch {
+                childrenDiv.innerHTML = `<span class="text-xs text-text-muted italic">—</span>`;
+              }
+            }
+
+            // Activity Log (ADR-0011) — lazy-loaded on expand
+            const activityDiv = document.getElementById(
+              "td-activity",
+            ) as HTMLElement;
+            const activityDetails = activityDiv?.closest("details");
+            if (activityDetails && activityDiv) {
+              activityDiv.innerHTML = "";
+              const loadActivity = async () => {
+                try {
+                  const actRes = await fetch(`/api/tasks/${taskId}/activity`);
+                  if (!actRes.ok) return;
+                  const entries = await actRes.json();
+                  if (!Array.isArray(entries) || entries.length === 0) {
+                    activityDiv.innerHTML = `<span class="text-text-muted italic">No activity yet</span>`;
+                    return;
+                  }
+                  activityDiv.innerHTML = "";
+                  for (const e of entries.slice(0, 50)) {
+                    const ago = new Date(Number(e.created_at)).toLocaleString();
+                    const row = document.createElement("div");
+                    row.className =
+                      "flex gap-2 items-baseline py-1 border-b border-border/30";
+                    row.innerHTML = `
                     <span class="text-text-muted shrink-0">${ago}</span>
                     <span class="font-medium text-text-primary">${String(e.field)}</span>
                     <span class="text-text-muted">→</span>
                     <span class="text-accent truncate">${String(e.new_value ?? "—").slice(0, 60)}</span>
                   `;
-                  activityDiv.appendChild(row);
+                    activityDiv.appendChild(row);
+                  }
+                } catch {
+                  activityDiv.innerHTML = `<span class="text-text-muted italic">—</span>`;
                 }
-              } catch { activityDiv.innerHTML = `<span class="text-text-muted italic">—</span>`; }
-            };
-            // Lazy load: only fetch when expanded
-            activityDetails.addEventListener("toggle", () => {
-              if (activityDetails.open) loadActivity();
-            }, { once: true });
-          }
-
-          // ID — hidden, accessible via tooltip
-          const tdIdEl = document.getElementById("td-id") as HTMLElement;
-          tdIdEl.textContent = `#${String(t.id).slice(0, 8)}`;
-          tdIdEl.title = `Full ID: ${t.id}`;
-
-          (document.getElementById("td-title") as HTMLInputElement).value =
-            String(t.title ?? "");
-
-          // Priority dot color
-          const priorityDot = document.getElementById("td-priority-dot") as HTMLElement;
-          const priorityColors: Record<string, string> = {
-            "1": "#ef4444", "2": "#f97316", "3": "#eab308", "4": "#22c55e", "5": "#6b7280"
-          };
-          const pVal = String(t.priority ?? 3);
-          priorityDot.style.color = priorityColors[pVal] || "#eab308";
-          priorityDot.title = `Priority ${pVal}`;
-
-          // If the task's status isn't in the dropdown, add it as an option
-          const taskStatus = String(t.status ?? "pending");
-          if (!statusSelect.querySelector(`option[value="${taskStatus}"]`)) {
-            const opt = document.createElement("option");
-            opt.value = taskStatus;
-            opt.textContent = taskStatus;
-            statusSelect.appendChild(opt);
-          }
-          statusSelect.value = taskStatus;
-          (
-            document.getElementById("td-description") as HTMLTextAreaElement
-          ).value = String(t.description ?? "");
-
-
-          (document.getElementById("td-priority") as HTMLSelectElement).value =
-            String(t.priority ?? 3);
-          const progress = Number(t.progress ?? 0);
-          (document.getElementById("td-progress") as HTMLInputElement).value =
-            String(progress);
-          (
-            document.getElementById("td-progress-value") as HTMLElement
-          ).textContent = `${progress}%`;
-
-          // Progress bar fill
-          const progressBarFill = document.getElementById("td-progress-bar-fill") as HTMLElement;
-          if (progressBarFill) {
-            progressBarFill.style.width = `${progress}%`;
-            progressBarFill.style.background = progress === 100 ? "var(--success)" : "var(--accent)";
-          }
-
-          // Due date display with relative time
-          const dueRow = document.getElementById("td-due-row") as HTMLElement;
-          const dueDisplay = document.getElementById("td-due-display") as HTMLElement;
-          const dueVal = String(t.due_date ?? "");
-          if (dueVal && dueRow && dueDisplay) {
-            const dueDate = new Date(dueVal);
-            const now = new Date();
-            const diffDays = Math.ceil((dueDate.getTime() - now.getTime()) / (1000 * 60 * 60 * 24));
-            let relText = "";
-            if (diffDays < 0) relText = `${Math.abs(diffDays)}d overdue`;
-            else if (diffDays === 0) relText = "Today";
-            else if (diffDays === 1) relText = "Tomorrow";
-            else relText = `in ${diffDays}d`;
-            dueDisplay.textContent = `${dueDate.toLocaleDateString()} (${relText})`;
-            dueDisplay.style.color = diffDays < 0 ? "var(--danger)" : diffDays <= 3 ? "var(--warning)" : "var(--text-muted)";
-            dueRow.classList.remove("hidden");
-          } else if (dueRow) {
-            dueRow.classList.add("hidden");
-          }
-
-          (document.getElementById("td-color") as HTMLInputElement).value =
-            String(t.color ?? "#10b981");
-          (document.getElementById("td-due-date") as HTMLInputElement).value =
-            String(t.due_date ?? "");
-          (document.getElementById("td-start-date") as HTMLInputElement).value =
-            String(t.start_date ?? "");
-          (document.getElementById("td-end-date") as HTMLInputElement).value =
-            String(t.end_date ?? "");
-          (document.getElementById("td-time-tracked") as HTMLInputElement).value =
-            String(t.time_tracked ?? 0);
-          // Populate board dropdown
-          const boardSelect = document.getElementById("td-board") as HTMLSelectElement;
-          const currentBoardId = String(t.board_id ?? "default");
-          try {
-            const boardRes = await fetch("/api/boards");
-            if (boardRes.ok) {
-              const boardData = await boardRes.json();
-              const boards = boardData.boards ?? [];
-              boardSelect.innerHTML = "";
-              boards.forEach((b: { id: string; title: string; icon: string }) => {
-                const opt = document.createElement("option");
-                opt.value = b.id;
-                opt.textContent = `${b.icon} ${b.title}`;
-                boardSelect.appendChild(opt);
-              });
-              boardSelect.value = currentBoardId;
-            }
-          } catch {
-            boardSelect.innerHTML = `<option value="${currentBoardId}">${currentBoardId}</option>`;
-          }
-          // Phase 20: Agile hierarchy type
-          (document.getElementById("td-task-type") as HTMLSelectElement).value =
-            String(t.task_type ?? "task");
-
-          const isFav = Number(t.is_favorite ?? 0);
-          (
-            document.getElementById("td-toggle-favorite") as HTMLElement
-          ).textContent = isFav ? "★ Favorited" : "⭐ Add to Favorites";
-          const isDone =
-            String(t.status) === "done" || String(t.status) === "complete";
-          (
-            document.getElementById("td-toggle-done") as HTMLElement
-          ).textContent = isDone ? "↩ Mark as Undone" : "✓ Mark as Done";
-
-          // RICE scoring — display handled in sidebar, fields added after cfDiv cleared
-          // (settings + framework_payload cached for use after custom fields)
-          let _riceEnabled = false;
-          let _fp: Record<string, unknown> = {};
-          try {
-            _fp = JSON.parse(String(t.framework_payload ?? "{}"));
-            const riceRes = await fetch("/api/settings");
-            if (riceRes.ok) {
-              const allSettings = await riceRes.json();
-              _riceEnabled = allSettings?.frameworks_enabled?.rice === true;
-            }
-          } catch { /* default */ }
-          // RICE score text in sidebar
-          const rice = document.getElementById("td-rice") as HTMLElement;
-          if (_fp.rice_score) {
-            rice.textContent = `RICE Score: ${_fp.rice_score}`;
-          } else if (_riceEnabled) {
-            rice.textContent = "RICE Score: —";
-          } else {
-            rice.textContent = "";
-          }
-
-          // Labels (interactive chips)
-          const labelsDiv = document.getElementById("td-labels") as HTMLElement;
-          labelsDiv.innerHTML = "";
-          currentLabels = [];
-          try {
-            const labels = JSON.parse(String(t.labels ?? "[]"));
-            if (Array.isArray(labels)) {
-              currentLabels = labels.map((l: string | { name: string }) =>
-                typeof l === "string" ? l : l.name,
+              };
+              // Lazy load: only fetch when expanded
+              activityDetails.addEventListener(
+                "toggle",
+                () => {
+                  if (activityDetails.open) loadActivity();
+                },
+                { once: true },
               );
-              currentLabels.forEach((lbl) => addLabelChip(lbl));
             }
-          } catch {
-            /* skip */
-          }
 
-          // Custom fields (interactive rows)
-          const cfDiv = document.getElementById(
-            "td-custom-fields",
-          ) as HTMLElement;
-          cfDiv.innerHTML = "";
-          try {
-            const cf = JSON.parse(String(t.custom_fields ?? "{}")) as Record<
-              string,
-              string
-            >;
-            for (const [k, v] of Object.entries(cf)) {
-              if (v !== null && v !== undefined) addCFRow(k, String(v));
+            // ID — hidden, accessible via tooltip
+            const tdIdEl = document.getElementById("td-id") as HTMLElement;
+            tdIdEl.textContent = `#${String(t.id).slice(0, 8)}`;
+            tdIdEl.title = `Full ID: ${t.id}`;
+
+            (document.getElementById("td-title") as HTMLInputElement).value =
+              String(t.title ?? "");
+
+            // Priority dot color
+            const priorityDot = document.getElementById(
+              "td-priority-dot",
+            ) as HTMLElement;
+            const priorityColors: Record<string, string> = {
+              "1": "#ef4444",
+              "2": "#f97316",
+              "3": "#eab308",
+              "4": "#22c55e",
+              "5": "#6b7280",
+            };
+            const pVal = String(t.priority ?? 3);
+            priorityDot.style.color = priorityColors[pVal] || "#eab308";
+            priorityDot.title = `Priority ${pVal}`;
+
+            // If the task's status isn't in the dropdown, add it as an option
+            const taskStatus = String(t.status ?? "pending");
+            if (!statusSelect.querySelector(`option[value="${taskStatus}"]`)) {
+              const opt = document.createElement("option");
+              opt.value = taskStatus;
+              opt.textContent = taskStatus;
+              statusSelect.appendChild(opt);
             }
-          } catch {
-            /* skip */
+            statusSelect.value = taskStatus;
+            (
+              document.getElementById("td-description") as HTMLTextAreaElement
+            ).value = String(t.description ?? "");
+
+            (
+              document.getElementById("td-priority") as HTMLSelectElement
+            ).value = String(t.priority ?? 3);
+            const progress = Number(t.progress ?? 0);
+            (document.getElementById("td-progress") as HTMLInputElement).value =
+              String(progress);
+            (
+              document.getElementById("td-progress-value") as HTMLElement
+            ).textContent = `${progress}%`;
+
+            // Progress bar fill
+            const progressBarFill = document.getElementById(
+              "td-progress-bar-fill",
+            ) as HTMLElement;
+            if (progressBarFill) {
+              progressBarFill.style.width = `${progress}%`;
+              progressBarFill.style.background =
+                progress === 100 ? "var(--success)" : "var(--accent)";
+            }
+
+            // Due date display with relative time
+            const dueRow = document.getElementById("td-due-row") as HTMLElement;
+            const dueDisplay = document.getElementById(
+              "td-due-display",
+            ) as HTMLElement;
+            const dueVal = String(t.due_date ?? "");
+            if (dueVal && dueRow && dueDisplay) {
+              const dueDate = new Date(dueVal);
+              const now = new Date();
+              const diffDays = Math.ceil(
+                (dueDate.getTime() - now.getTime()) / (1000 * 60 * 60 * 24),
+              );
+              let relText = "";
+              if (diffDays < 0) relText = `${Math.abs(diffDays)}d overdue`;
+              else if (diffDays === 0) relText = "Today";
+              else if (diffDays === 1) relText = "Tomorrow";
+              else relText = `in ${diffDays}d`;
+              dueDisplay.textContent = `${dueDate.toLocaleDateString()} (${relText})`;
+              dueDisplay.style.color =
+                diffDays < 0
+                  ? "var(--danger)"
+                  : diffDays <= 3
+                    ? "var(--warning)"
+                    : "var(--text-muted)";
+              dueRow.classList.remove("hidden");
+            } else if (dueRow) {
+              dueRow.classList.add("hidden");
+            }
+
+            (document.getElementById("td-color") as HTMLInputElement).value =
+              String(t.color ?? "#10b981");
+            (document.getElementById("td-due-date") as HTMLInputElement).value =
+              String(t.due_date ?? "");
+            (
+              document.getElementById("td-start-date") as HTMLInputElement
+            ).value = String(t.start_date ?? "");
+            (document.getElementById("td-end-date") as HTMLInputElement).value =
+              String(t.end_date ?? "");
+            (
+              document.getElementById("td-time-tracked") as HTMLInputElement
+            ).value = String(t.time_tracked ?? 0);
+            // Populate board dropdown
+            const boardSelect = document.getElementById(
+              "td-board",
+            ) as HTMLSelectElement;
+            const currentBoardId = String(t.board_id ?? "default");
+            try {
+              const boardRes = await fetch("/api/boards");
+              if (boardRes.ok) {
+                const boardData = await boardRes.json();
+                const boards = boardData.boards ?? [];
+                boardSelect.innerHTML = "";
+                boards.forEach(
+                  (b: { id: string; title: string; icon: string }) => {
+                    const opt = document.createElement("option");
+                    opt.value = b.id;
+                    opt.textContent = `${b.icon} ${b.title}`;
+                    boardSelect.appendChild(opt);
+                  },
+                );
+                boardSelect.value = currentBoardId;
+              }
+            } catch {
+              boardSelect.innerHTML = `<option value="${currentBoardId}">${currentBoardId}</option>`;
+            }
+            // Phase 20: Agile hierarchy type
+            (
+              document.getElementById("td-task-type") as HTMLSelectElement
+            ).value = String(t.task_type ?? "task");
+
+            const isFav = Number(t.is_favorite ?? 0);
+            (
+              document.getElementById("td-toggle-favorite") as HTMLElement
+            ).textContent = isFav ? "★ Favorited" : "⭐ Add to Favorites";
+            const isDone =
+              String(t.status) === "done" || String(t.status) === "complete";
+            (
+              document.getElementById("td-toggle-done") as HTMLElement
+            ).textContent = isDone ? "↩ Mark as Undone" : "✓ Mark as Done";
+
+            // RICE scoring — display handled in sidebar, fields added after cfDiv cleared
+            // (settings + framework_payload cached for use after custom fields)
+            let _riceEnabled = false;
+            let _fp: Record<string, unknown> = {};
+            try {
+              _fp = JSON.parse(String(t.framework_payload ?? "{}"));
+              const riceRes = await fetch("/api/settings");
+              if (riceRes.ok) {
+                const allSettings = await riceRes.json();
+                _riceEnabled = allSettings?.frameworks_enabled?.rice === true;
+              }
+            } catch {
+              /* default */
+            }
+            // RICE score text in sidebar
+            const rice = document.getElementById("td-rice") as HTMLElement;
+            if (_fp.rice_score) {
+              rice.textContent = `RICE Score: ${_fp.rice_score}`;
+            } else if (_riceEnabled) {
+              rice.textContent = "RICE Score: —";
+            } else {
+              rice.textContent = "";
+            }
+
+            // Labels (interactive chips)
+            const labelsDiv = document.getElementById(
+              "td-labels",
+            ) as HTMLElement;
+            labelsDiv.innerHTML = "";
+            currentLabels = [];
+            try {
+              const labels = JSON.parse(String(t.labels ?? "[]"));
+              if (Array.isArray(labels)) {
+                currentLabels = labels.map((l: string | { name: string }) =>
+                  typeof l === "string" ? l : l.name,
+                );
+                currentLabels.forEach((lbl) => addLabelChip(lbl));
+              }
+            } catch {
+              /* skip */
+            }
+
+            // Custom fields (interactive rows)
+            const cfDiv = document.getElementById(
+              "td-custom-fields",
+            ) as HTMLElement;
+            cfDiv.innerHTML = "";
+            try {
+              const cf = JSON.parse(String(t.custom_fields ?? "{}")) as Record<
+                string,
+                string
+              >;
+              for (const [k, v] of Object.entries(cf)) {
+                if (v !== null && v !== undefined) addCFRow(k, String(v));
+              }
+            } catch {
+              /* skip */
+            }
+
+            // RICE fields — add AFTER custom fields (uses cached _riceEnabled and _fp)
+            if (
+              _riceEnabled ||
+              _fp.reach !== undefined ||
+              _fp.impact !== undefined ||
+              _fp.confidence !== undefined ||
+              _fp.effort !== undefined
+            ) {
+              addCFRow("Reach", String(_fp.reach ?? "0"));
+              addCFRow("Impact", String(_fp.impact ?? "0"));
+              addCFRow("Confidence", String(_fp.confidence ?? "0"));
+              addCFRow("Effort", String(_fp.effort ?? "0"));
+            }
+
+            // Timestamps
+            const created = t.created_at
+              ? new Date(Number(t.created_at)).toLocaleDateString()
+              : "";
+            const updated = t.updated_at
+              ? new Date(Number(t.updated_at)).toLocaleDateString()
+              : "";
+            (document.getElementById("td-created") as HTMLElement).textContent =
+              created ? `Created: ${created}` : "";
+            (document.getElementById("td-updated") as HTMLElement).textContent =
+              updated ? `Updated: ${updated}` : "";
+
+            // Load comments
+            loadComments(taskId);
+
+            // Load attachments (Phase 23)
+            loadAttachments(taskId);
+          } catch (e) {
+            console.error("Failed to load task detail", e);
           }
-
-          // RICE fields — add AFTER custom fields (uses cached _riceEnabled and _fp)
-          if (_riceEnabled || _fp.reach !== undefined || _fp.impact !== undefined || _fp.confidence !== undefined || _fp.effort !== undefined) {
-            addCFRow("Reach", String(_fp.reach ?? "0"));
-            addCFRow("Impact", String(_fp.impact ?? "0"));
-            addCFRow("Confidence", String(_fp.confidence ?? "0"));
-            addCFRow("Effort", String(_fp.effort ?? "0"));
-          }
-
-          // Timestamps
-          const created = t.created_at
-            ? new Date(Number(t.created_at)).toLocaleDateString()
-            : "";
-          const updated = t.updated_at
-            ? new Date(Number(t.updated_at)).toLocaleDateString()
-            : "";
-          (document.getElementById("td-created") as HTMLElement).textContent =
-            created ? `Created: ${created}` : "";
-          (document.getElementById("td-updated") as HTMLElement).textContent =
-            updated ? `Updated: ${updated}` : "";
-
-          // Load comments
-          loadComments(taskId);
-
-          // Load attachments (Phase 23)
-          loadAttachments(taskId);
-        } catch (e) {
-          console.error("Failed to load task detail", e);
         }
-      }
 
-      async function loadComments(taskId: string) {
-        const container = document.getElementById("td-comments") as HTMLElement;
-        try {
-          const res = await fetch(`/api/tasks/${taskId}/comments`);
-          const data = (await res.json()) as {
-            comments: Array<{
-              content: string;
-              author: string;
-              created_at: string;
-            }>;
-          };
-          container.innerHTML = (data.comments || [])
-            .map(
-              (c) =>
-                `<div class="bg-bg-card rounded-md p-3 border border-border">
+        async function loadComments(taskId: string) {
+          const container = document.getElementById(
+            "td-comments",
+          ) as HTMLElement;
+          try {
+            const res = await fetch(`/api/tasks/${taskId}/comments`);
+            const data = (await res.json()) as {
+              comments: Array<{
+                content: string;
+                author: string;
+                created_at: string;
+              }>;
+            };
+            container.innerHTML = (data.comments || [])
+              .map(
+                (c) =>
+                  `<div class="bg-bg-card rounded-md p-3 border border-border">
               <div class="flex justify-between text-xs text-text-muted mb-1"><span>${c.author}</span><span>${new Date(c.created_at).toLocaleString()}</span></div>
               <div class="text-sm text-text-primary">${c.content}</div>
             </div>`,
-            )
-            .join("");
-        } catch {
-          container.innerHTML = "";
-        }
-      }
-
-      // Phase 23 Attachments Loader
-      async function loadAttachments(taskId: string) {
-        const container = document.getElementById("td-attachments") as HTMLElement;
-        if (!container) return;
-        container.innerHTML = "";
-        
-        try {
-          const attachments = await getAttachmentsByTaskId(taskId);
-          if (attachments.length === 0) {
-            container.innerHTML = '<span class="text-[10px] text-text-muted italic">No attachments.</span>';
-            return;
+              )
+              .join("");
+          } catch {
+            container.innerHTML = "";
           }
+        }
 
-          attachments.forEach(att => {
-            const thumb = document.createElement("div");
-            thumb.className = "relative group cursor-pointer border border-border rounded-md overflow-hidden hover:border-accent transition-colors";
-            thumb.style.width = "64px";
-            thumb.style.height = "64px";
-            
-            const img = document.createElement("img");
-            img.src = att.base64Data;
-            img.className = "w-full h-full object-cover";
-            img.title = att.filename;
-            
-            // Delete overlay
-            const delOverlay = document.createElement("div");
-            delOverlay.className = "absolute inset-0 bg-black/60 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity";
-            const delBtn = document.createElement("button");
-            delBtn.className = "text-white text-xs hover:text-danger p-2";
-            delBtn.innerHTML = "🗑";
-            delBtn.onclick = async (e) => {
-              e.stopPropagation();
-              if (confirm("Delete this attachment?")) {
-                await deleteAttachment(att.id);
-                loadAttachments(taskId);
+        // Phase 23 Attachments Loader
+        async function loadAttachments(taskId: string) {
+          const container = document.getElementById(
+            "td-attachments",
+          ) as HTMLElement;
+          if (!container) return;
+          container.innerHTML = "";
+
+          try {
+            const attachments = await getAttachmentsByTaskId(taskId);
+            if (attachments.length === 0) {
+              container.innerHTML =
+                '<span class="text-[10px] text-text-muted italic">No attachments.</span>';
+              return;
+            }
+
+            attachments.forEach((att) => {
+              const thumb = document.createElement("div");
+              thumb.className =
+                "relative group cursor-pointer border border-border rounded-md overflow-hidden hover:border-accent transition-colors";
+              thumb.style.width = "64px";
+              thumb.style.height = "64px";
+
+              const img = document.createElement("img");
+              img.src = att.base64Data;
+              img.className = "w-full h-full object-cover";
+              img.title = att.filename;
+
+              // Delete overlay
+              const delOverlay = document.createElement("div");
+              delOverlay.className =
+                "absolute inset-0 bg-black/60 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity";
+              const delBtn = document.createElement("button");
+              delBtn.className = "text-white text-xs hover:text-danger p-2";
+              delBtn.innerHTML = "🗑";
+              delBtn.onclick = async (e) => {
+                e.stopPropagation();
+                if (confirm("Delete this attachment?")) {
+                  await deleteAttachment(att.id);
+                  loadAttachments(taskId);
+                }
+              };
+              delOverlay.appendChild(delBtn);
+
+              // Lightbox view on click
+              thumb.onclick = () => {
+                const html = `<html><body style="margin:0;background:#000;display:flex;align-items:center;justify-content:center;height:100vh;"><img src="${att.base64Data}" style="max-width:100%;max-height:100vh;" /></body></html>`;
+                const blob = new Blob([html], { type: "text/html" });
+                window.open(URL.createObjectURL(blob), "_blank");
+              };
+
+              thumb.appendChild(img);
+              thumb.appendChild(delOverlay);
+              container.appendChild(thumb);
+            });
+          } catch (e) {
+            console.error("Failed to load attachments", e);
+            container.innerHTML =
+              '<span class="text-xs text-danger">Failed to load attachments</span>';
+          }
+        }
+
+        async function saveTD(field: string, value: unknown) {
+          if (!currentTaskId) return;
+          try {
+            const res = await fetch(`/api/tasks/${currentTaskId}`, {
+              method: "PUT",
+              headers: { "content-type": "application/json" },
+              body: JSON.stringify({ [field]: value }),
+            });
+            if (!res.ok) {
+              console.warn(`[saveTD] Failed to save ${field}:`, res.status);
+            }
+          } catch (err) {
+            console.warn(`[saveTD] Network error saving ${field}:`, err);
+          }
+        }
+
+        // Auto-save on change
+        document
+          .getElementById("td-title")
+          ?.addEventListener("blur", (e) =>
+            saveTD("title", (e.target as HTMLInputElement).value),
+          );
+        document
+          .getElementById("td-description")
+          ?.addEventListener("blur", (e) =>
+            saveTD("description", (e.target as HTMLTextAreaElement).value),
+          );
+
+        // Phase 23: Image attachments upload
+        document
+          .getElementById("td-attachment-input")
+          ?.addEventListener("change", async (e) => {
+            if (!currentTaskId) return;
+            const input = e.target as HTMLInputElement;
+            const file = input.files?.[0];
+            if (!file) return;
+
+            // Convert to Base64
+            const reader = new FileReader();
+            reader.onload = async (re) => {
+              const base64Data = String(re.target?.result);
+              try {
+                await saveAttachment({
+                  id: crypto.randomUUID(),
+                  taskId: currentTaskId!,
+                  filename: file.name,
+                  mimeType: file.type,
+                  base64Data,
+                  createdAt: new Date().toISOString(),
+                });
+                loadAttachments(currentTaskId!);
+              } catch (err) {
+                console.error("Failed to save attachment", err);
+                alert(
+                  "Failed to save attachment due to storage limits or error.",
+                );
               }
             };
-            delOverlay.appendChild(delBtn);
+            reader.readAsDataURL(file);
 
-            // Lightbox view on click
-            thumb.onclick = () => {
-              const html = `<html><body style="margin:0;background:#000;display:flex;align-items:center;justify-content:center;height:100vh;"><img src="${att.base64Data}" style="max-width:100%;max-height:100vh;" /></body></html>`;
-              const blob = new Blob([html], { type: "text/html" });
-              window.open(URL.createObjectURL(blob), "_blank");
-            };
-
-            thumb.appendChild(img);
-            thumb.appendChild(delOverlay);
-            container.appendChild(thumb);
+            // Reset input so the same file can be selected again
+            input.value = "";
           });
-        } catch (e) {
-          console.error("Failed to load attachments", e);
-          container.innerHTML = '<span class="text-xs text-danger">Failed to load attachments</span>';
-        }
-      }
 
-      async function saveTD(field: string, value: unknown) {
-        if (!currentTaskId) return;
-        try {
-          const res = await fetch(`/api/tasks/${currentTaskId}`, {
-            method: "PUT",
-            headers: { "content-type": "application/json" },
-            body: JSON.stringify({ [field]: value }),
+        document
+          .getElementById("td-status")
+          ?.addEventListener("change", (e) => {
+            saveTD("status", (e.target as HTMLSelectElement).value);
+            const isDone = (e.target as HTMLSelectElement).value === "done";
+            (
+              document.getElementById("td-toggle-done") as HTMLElement
+            ).textContent = isDone ? "↩ Mark as Undone" : "✓ Mark as Done";
           });
-          if (!res.ok) {
-            console.warn(`[saveTD] Failed to save ${field}:`, res.status);
-          }
-        } catch (err) {
-          console.warn(`[saveTD] Network error saving ${field}:`, err);
-        }
-      }
-
-      // Auto-save on change
-      document
-        .getElementById("td-title")
-        ?.addEventListener("blur", (e) =>
-          saveTD("title", (e.target as HTMLInputElement).value),
-        );
-      document
-        .getElementById("td-description")
-        ?.addEventListener("blur", (e) =>
-          saveTD("description", (e.target as HTMLTextAreaElement).value),
-        );
-      
-      // Phase 23: Image attachments upload
-      document.getElementById("td-attachment-input")?.addEventListener("change", async (e) => {
-        if (!currentTaskId) return;
-        const input = e.target as HTMLInputElement;
-        const file = input.files?.[0];
-        if (!file) return;
-        
-        // Convert to Base64
-        const reader = new FileReader();
-        reader.onload = async (re) => {
-          const base64Data = String(re.target?.result);
-          try {
-            await saveAttachment({
-              id: crypto.randomUUID(),
-              taskId: currentTaskId!,
-              filename: file.name,
-              mimeType: file.type,
-              base64Data,
-              createdAt: new Date().toISOString()
-            });
-            loadAttachments(currentTaskId!);
-          } catch (err) {
-            console.error("Failed to save attachment", err);
-            alert("Failed to save attachment due to storage limits or error.");
-          }
-        };
-        reader.readAsDataURL(file);
-        
-        // Reset input so the same file can be selected again
-        input.value = "";
-      });
-
-      document.getElementById("td-status")?.addEventListener("change", (e) => {
-        saveTD("status", (e.target as HTMLSelectElement).value);
-        const isDone = (e.target as HTMLSelectElement).value === "done";
-        (document.getElementById("td-toggle-done") as HTMLElement).textContent =
-          isDone ? "↩ Mark as Undone" : "✓ Mark as Done";
-      });
-      document
-        .getElementById("td-priority")
-        ?.addEventListener("change", (e) =>
-          saveTD("priority", Number((e.target as HTMLSelectElement).value)),
-        );
-      // Phase 20: task_type auto-save
-      document
-        .getElementById("td-task-type")
-        ?.addEventListener("change", (e) => {
-          saveTD("task_type", (e.target as HTMLSelectElement).value);
-        });
-      // Phase 26: board change auto-save
-      document
-        .getElementById("td-board")
-        ?.addEventListener("change", (e) => {
+        document
+          .getElementById("td-priority")
+          ?.addEventListener("change", (e) =>
+            saveTD("priority", Number((e.target as HTMLSelectElement).value)),
+          );
+        // Phase 20: task_type auto-save
+        document
+          .getElementById("td-task-type")
+          ?.addEventListener("change", (e) => {
+            saveTD("task_type", (e.target as HTMLSelectElement).value);
+          });
+        // Phase 26: board change auto-save
+        document.getElementById("td-board")?.addEventListener("change", (e) => {
           saveTD("board_id", (e.target as HTMLSelectElement).value);
         });
-      document.getElementById("td-progress")?.addEventListener("input", (e) => {
-        const v = (e.target as HTMLInputElement).value;
-        (
-          document.getElementById("td-progress-value") as HTMLElement
-        ).textContent = `${v}%`;
-      });
-      document
-        .getElementById("td-progress")
-        ?.addEventListener("change", (e) =>
-          saveTD("progress", Number((e.target as HTMLInputElement).value)),
-        );
-      document
-        .getElementById("td-color")
-        ?.addEventListener("change", (e) =>
-          saveTD("color", (e.target as HTMLInputElement).value),
-        );
-      document
-        .getElementById("td-due-date")
-        ?.addEventListener("change", (e) =>
-          saveTD("due_date", (e.target as HTMLInputElement).value || null),
-        );
-      document
-        .getElementById("td-start-date")
-        ?.addEventListener("change", (e) =>
-          saveTD("start_date", (e.target as HTMLInputElement).value || null),
-        );
-      document
-        .getElementById("td-end-date")
-        ?.addEventListener("change", (e) =>
-          saveTD("end_date", (e.target as HTMLInputElement).value || null),
-        );
-      document
-        .getElementById("td-time-tracked")
-        ?.addEventListener("change", (e) =>
-          saveTD("time_tracked", Number((e.target as HTMLInputElement).value) || 0),
-        );
+        document
+          .getElementById("td-progress")
+          ?.addEventListener("input", (e) => {
+            const v = (e.target as HTMLInputElement).value;
+            (
+              document.getElementById("td-progress-value") as HTMLElement
+            ).textContent = `${v}%`;
+          });
+        document
+          .getElementById("td-progress")
+          ?.addEventListener("change", (e) =>
+            saveTD("progress", Number((e.target as HTMLInputElement).value)),
+          );
+        document
+          .getElementById("td-color")
+          ?.addEventListener("change", (e) =>
+            saveTD("color", (e.target as HTMLInputElement).value),
+          );
+        document
+          .getElementById("td-due-date")
+          ?.addEventListener("change", (e) =>
+            saveTD("due_date", (e.target as HTMLInputElement).value || null),
+          );
+        document
+          .getElementById("td-start-date")
+          ?.addEventListener("change", (e) =>
+            saveTD("start_date", (e.target as HTMLInputElement).value || null),
+          );
+        document
+          .getElementById("td-end-date")
+          ?.addEventListener("change", (e) =>
+            saveTD("end_date", (e.target as HTMLInputElement).value || null),
+          );
+        document
+          .getElementById("td-time-tracked")
+          ?.addEventListener("change", (e) =>
+            saveTD(
+              "time_tracked",
+              Number((e.target as HTMLInputElement).value) || 0,
+            ),
+          );
 
-      // ───── Labels interactive ─────
-      let currentLabels: string[] = [];
+        // ───── Labels interactive ─────
+        let currentLabels: string[] = [];
 
-      function addLabelChip(label: string) {
-        const labelsDiv = document.getElementById("td-labels") as HTMLElement;
-        const chip = document.createElement("span");
-        chip.className = "label-chip";
-        chip.style.cssText =
-          "cursor:pointer;display:inline-flex;align-items:center;gap:4px;";
-        chip.innerHTML = `${label}<span class="td-label-remove" style="font-size:14px;line-height:1;opacity:0.6;">&times;</span>`;
-        chip
-          .querySelector(".td-label-remove")!
-          .addEventListener("click", () => {
-            currentLabels = currentLabels.filter((l) => l !== label);
-            chip.remove();
+        function addLabelChip(label: string) {
+          const labelsDiv = document.getElementById("td-labels") as HTMLElement;
+          const chip = document.createElement("span");
+          chip.className = "label-chip";
+          chip.style.cssText =
+            "cursor:pointer;display:inline-flex;align-items:center;gap:4px;";
+          chip.innerHTML = `${label}<span class="td-label-remove" style="font-size:14px;line-height:1;opacity:0.6;">&times;</span>`;
+          chip
+            .querySelector(".td-label-remove")!
+            .addEventListener("click", () => {
+              currentLabels = currentLabels.filter((l) => l !== label);
+              chip.remove();
+              saveTD("labels", JSON.stringify(currentLabels));
+            });
+          labelsDiv.appendChild(chip);
+        }
+
+        document
+          .getElementById("td-label-input")
+          ?.addEventListener("keydown", (e) => {
+            if (e.key !== "Enter") return;
+            e.preventDefault();
+            const input = e.target as HTMLInputElement;
+            const val = input.value.trim();
+            if (!val || currentLabels.includes(val)) {
+              input.value = "";
+              return;
+            }
+            currentLabels.push(val);
+            addLabelChip(val);
+            input.value = "";
             saveTD("labels", JSON.stringify(currentLabels));
           });
-        labelsDiv.appendChild(chip);
-      }
 
-      document
-        .getElementById("td-label-input")
-        ?.addEventListener("keydown", (e) => {
-          if (e.key !== "Enter") return;
-          e.preventDefault();
-          const input = e.target as HTMLInputElement;
-          const val = input.value.trim();
-          if (!val || currentLabels.includes(val)) {
-            input.value = "";
-            return;
+        // ───── Custom Fields interactive ─────
+        const RICE_KEYS = ["Reach", "Impact", "Confidence", "Effort"];
+
+        function getCFFromUI(): Record<string, string> {
+          const result: Record<string, string> = {};
+          document.querySelectorAll(".td-cf-row").forEach((row) => {
+            const key = (
+              row.querySelector(".td-cf-key") as HTMLInputElement
+            )?.value.trim();
+            const val = (
+              row.querySelector(".td-cf-val") as HTMLInputElement
+            )?.value.trim();
+            if (key) result[key] = val;
+          });
+          return result;
+        }
+
+        function saveCF() {
+          const all = getCFFromUI();
+          // Split RICE keys → framework_payload, rest → custom_fields
+          const ricePayload: Record<string, number> = {};
+          const cfPayload: Record<string, string> = {};
+          let hasRice = false;
+          for (const [k, v] of Object.entries(all)) {
+            if (RICE_KEYS.includes(k)) {
+              ricePayload[k.toLowerCase()] = Number(v) || 0;
+              hasRice = true;
+            } else {
+              cfPayload[k] = v;
+            }
           }
-          currentLabels.push(val);
-          addLabelChip(val);
-          input.value = "";
-          saveTD("labels", JSON.stringify(currentLabels));
-        });
-
-      // ───── Custom Fields interactive ─────
-      const RICE_KEYS = ["Reach", "Impact", "Confidence", "Effort"];
-
-      function getCFFromUI(): Record<string, string> {
-        const result: Record<string, string> = {};
-        document.querySelectorAll(".td-cf-row").forEach((row) => {
-          const key = (
-            row.querySelector(".td-cf-key") as HTMLInputElement
-          )?.value.trim();
-          const val = (
-            row.querySelector(".td-cf-val") as HTMLInputElement
-          )?.value.trim();
-          if (key) result[key] = val;
-        });
-        return result;
-      }
-
-      function saveCF() {
-        const all = getCFFromUI();
-        // Split RICE keys → framework_payload, rest → custom_fields
-        const ricePayload: Record<string, number> = {};
-        const cfPayload: Record<string, string> = {};
-        let hasRice = false;
-        for (const [k, v] of Object.entries(all)) {
-          if (RICE_KEYS.includes(k)) {
-            ricePayload[k.toLowerCase()] = Number(v) || 0;
-            hasRice = true;
-          } else {
-            cfPayload[k] = v;
+          saveTD("custom_fields", JSON.stringify(cfPayload));
+          if (hasRice) {
+            // Compute RICE score: (Reach × Impact × Confidence) / Effort
+            const r = ricePayload.reach ?? 0;
+            const i = ricePayload.impact ?? 0;
+            const c = ricePayload.confidence ?? 0;
+            const e = ricePayload.effort ?? 1;
+            ricePayload.rice_score = Math.round((r * i * c) / Math.max(e, 1));
+            saveTD("framework_payload", JSON.stringify(ricePayload));
+            // Update the RICE score display
+            const riceEl = document.getElementById("td-rice");
+            if (riceEl)
+              riceEl.textContent = `RICE Score: ${ricePayload.rice_score}`;
           }
         }
-        saveTD("custom_fields", JSON.stringify(cfPayload));
-        if (hasRice) {
-          // Compute RICE score: (Reach × Impact × Confidence) / Effort
-          const r = ricePayload.reach ?? 0;
-          const i = ricePayload.impact ?? 0;
-          const c = ricePayload.confidence ?? 0;
-          const e = ricePayload.effort ?? 1;
-          ricePayload.rice_score = Math.round((r * i * c) / Math.max(e, 1));
-          saveTD("framework_payload", JSON.stringify(ricePayload));
-          // Update the RICE score display
-          const riceEl = document.getElementById("td-rice");
-          if (riceEl) riceEl.textContent = `RICE Score: ${ricePayload.rice_score}`;
-        }
-      }
 
-      function addCFRow(key: string, value: string) {
-        const cfDiv = document.getElementById(
-          "td-custom-fields",
-        ) as HTMLElement;
-        const row = document.createElement("div");
-        row.className = "td-cf-row";
-        row.style.cssText = "display:flex;gap:6px;align-items:center;";
-        row.innerHTML = `
+        function addCFRow(key: string, value: string) {
+          const cfDiv = document.getElementById(
+            "td-custom-fields",
+          ) as HTMLElement;
+          const row = document.createElement("div");
+          row.className = "td-cf-row";
+          row.style.cssText = "display:flex;gap:6px;align-items:center;";
+          row.innerHTML = `
           <input type="text" class="form-input td-cf-key text-sm py-1" placeholder="Field name" value="${key.replace(/"/g, "&quot;")}" style="flex:1;opacity:0.7;" readonly />
           <input type="text" class="form-input td-cf-val text-sm py-1" placeholder="Value" value="${value.replace(/"/g, "&quot;")}" style="flex:1;" />
           <button type="button" class="td-cf-remove" style="color:var(--danger);font-size:16px;cursor:pointer;background:none;border:none;padding:0 4px;">&times;</button>
         `;
-        row.querySelector(".td-cf-val")!.addEventListener("blur", saveCF);
-        row.querySelector(".td-cf-remove")!.addEventListener("click", () => {
-          row.remove();
-          saveCF();
-        });
-        cfDiv.appendChild(row);
-      }
-
-      // Categorized field groups for the dropdown
-      const fieldCategories: { label: string; fields: string[] }[] = [
-        { label: "🎯 RICE Framework", fields: ["Reach", "Impact", "Confidence", "Effort"] },
-        { label: "📋 Agile & Planning", fields: ["Estimate", "Sprint", "Team", "Component", "Environment", "Version", "Story Points", "Acceptance Criteria"] },
-        { label: "📊 Sizing & Value", fields: ["Complexity", "T-Shirt Size", "Business Value"] },
-      ];
-
-      function getAvailableFields(): { label: string; fields: string[] }[] {
-        const currentKeys = new Set(Object.keys(getCFFromUI()));
-        // Build categorized list filtered by what's already on the task
-        const result = fieldCategories.map((cat) => ({
-          label: cat.label,
-          fields: cat.fields.filter((f) => !currentKeys.has(f)),
-        })).filter((cat) => cat.fields.length > 0);
-        // Add any custom keys from existing rows not in our predefined lists
-        const allPredefined = new Set(fieldCategories.flatMap((c) => c.fields));
-        const existingCustom: string[] = [];
-        document.querySelectorAll(".td-cf-key").forEach((el) => {
-          const val = (el as HTMLInputElement).value.trim();
-          if (val && !allPredefined.has(val) && !currentKeys.has(val)) existingCustom.push(val);
-        });
-        if (existingCustom.length > 0) {
-          result.push({ label: "🔧 Custom", fields: [...new Set(existingCustom)].sort() });
-        }
-        return result;
-      }
-
-      function renderFieldDropdown(filter = "") {
-        const optionsDiv = document.getElementById("td-add-cf-options")!;
-        const lowerFilter = filter.toLowerCase();
-        const categories = getAvailableFields();
-        let html = "";
-        let totalCount = 0;
-        for (const cat of categories) {
-          const filtered = cat.fields.filter((f) => f.toLowerCase().includes(lowerFilter));
-          if (filtered.length === 0) continue;
-          totalCount += filtered.length;
-          html += `<div class="px-3 py-1 text-[10px] text-text-muted uppercase tracking-wide font-semibold border-t border-border first:border-t-0">${cat.label}</div>`;
-          html += filtered.map((f) =>
-            `<div class="td-cf-option px-3 py-1.5 text-sm cursor-pointer hover:bg-bg-hover" data-field="${f.replace(/"/g, '&quot;')}">${f}</div>`
-          ).join("");
-        }
-        optionsDiv.innerHTML = totalCount > 0
-          ? html
-          : `<div class="px-3 py-1.5 text-xs text-text-muted italic">Type a custom name and press Enter</div>`;
-        // Click handlers
-        optionsDiv.querySelectorAll(".td-cf-option").forEach((opt) => {
-          opt.addEventListener("click", () => {
-            addCFRow((opt as HTMLElement).dataset.field || "", "");
-            document.getElementById("td-add-cf-dropdown")!.style.display = "none";
-            (document.getElementById("td-add-cf-search") as HTMLInputElement).value = "";
+          row.querySelector(".td-cf-val")!.addEventListener("blur", saveCF);
+          row.querySelector(".td-cf-remove")!.addEventListener("click", () => {
+            row.remove();
+            saveCF();
           });
-        });
-      }
-
-      document.getElementById("td-add-cf")?.addEventListener("click", (e) => {
-        e.stopPropagation();
-        const dropdown = document.getElementById("td-add-cf-dropdown")!;
-        const isVisible = dropdown.style.display !== "none";
-        dropdown.style.display = isVisible ? "none" : "block";
-        if (!isVisible) {
-          renderFieldDropdown();
-          (document.getElementById("td-add-cf-search") as HTMLInputElement).focus();
+          cfDiv.appendChild(row);
         }
-      });
 
-      document.getElementById("td-add-cf-search")?.addEventListener("input", (e) => {
-        renderFieldDropdown((e.target as HTMLInputElement).value);
-      });
+        // Categorized field groups for the dropdown
+        const fieldCategories: { label: string; fields: string[] }[] = [
+          {
+            label: "🎯 RICE Framework",
+            fields: ["Reach", "Impact", "Confidence", "Effort"],
+          },
+          {
+            label: "📋 Agile & Planning",
+            fields: [
+              "Estimate",
+              "Sprint",
+              "Team",
+              "Component",
+              "Environment",
+              "Version",
+              "Story Points",
+              "Acceptance Criteria",
+            ],
+          },
+          {
+            label: "📊 Sizing & Value",
+            fields: ["Complexity", "T-Shirt Size", "Business Value"],
+          },
+        ];
 
-      document.getElementById("td-add-cf-search")?.addEventListener("keydown", (e) => {
-        if (e.key === "Enter") {
-          e.preventDefault();
-          const input = e.target as HTMLInputElement;
-          const val = input.value.trim();
-          if (val) {
-            addCFRow(val, "");
-            document.getElementById("td-add-cf-dropdown")!.style.display = "none";
-            input.value = "";
+        function getAvailableFields(): { label: string; fields: string[] }[] {
+          const currentKeys = new Set(Object.keys(getCFFromUI()));
+          // Build categorized list filtered by what's already on the task
+          const result = fieldCategories
+            .map((cat) => ({
+              label: cat.label,
+              fields: cat.fields.filter((f) => !currentKeys.has(f)),
+            }))
+            .filter((cat) => cat.fields.length > 0);
+          // Add any custom keys from existing rows not in our predefined lists
+          const allPredefined = new Set(
+            fieldCategories.flatMap((c) => c.fields),
+          );
+          const existingCustom: string[] = [];
+          document.querySelectorAll(".td-cf-key").forEach((el) => {
+            const val = (el as HTMLInputElement).value.trim();
+            if (val && !allPredefined.has(val) && !currentKeys.has(val))
+              existingCustom.push(val);
+          });
+          if (existingCustom.length > 0) {
+            result.push({
+              label: "🔧 Custom",
+              fields: [...new Set(existingCustom)].sort(),
+            });
           }
+          return result;
         }
-        if (e.key === "Escape") {
-          document.getElementById("td-add-cf-dropdown")!.style.display = "none";
-        }
-      });
 
-      // Close dropdown on outside click
-      document.addEventListener("click", (e) => {
-        if (!(e.target as Element)?.closest("#td-add-cf-dropdown") && !(e.target as Element)?.closest("#td-add-cf")) {
-          const dd = document.getElementById("td-add-cf-dropdown");
-          if (dd) dd.style.display = "none";
+        function renderFieldDropdown(filter = "") {
+          const optionsDiv = document.getElementById("td-add-cf-options")!;
+          const lowerFilter = filter.toLowerCase();
+          const categories = getAvailableFields();
+          let html = "";
+          let totalCount = 0;
+          for (const cat of categories) {
+            const filtered = cat.fields.filter((f) =>
+              f.toLowerCase().includes(lowerFilter),
+            );
+            if (filtered.length === 0) continue;
+            totalCount += filtered.length;
+            html += `<div class="px-3 py-1 text-[10px] text-text-muted uppercase tracking-wide font-semibold border-t border-border first:border-t-0">${cat.label}</div>`;
+            html += filtered
+              .map(
+                (f) =>
+                  `<div class="td-cf-option px-3 py-1.5 text-sm cursor-pointer hover:bg-bg-hover" data-field="${f.replace(/"/g, "&quot;")}">${f}</div>`,
+              )
+              .join("");
+          }
+          optionsDiv.innerHTML =
+            totalCount > 0
+              ? html
+              : `<div class="px-3 py-1.5 text-xs text-text-muted italic">Type a custom name and press Enter</div>`;
+          // Click handlers
+          optionsDiv.querySelectorAll(".td-cf-option").forEach((opt) => {
+            opt.addEventListener("click", () => {
+              addCFRow((opt as HTMLElement).dataset.field || "", "");
+              document.getElementById("td-add-cf-dropdown")!.style.display =
+                "none";
+              (
+                document.getElementById("td-add-cf-search") as HTMLInputElement
+              ).value = "";
+            });
+          });
         }
-        // Also close parent search results
-        if (!(e.target as Element)?.closest("#td-link-parent-search") && !(e.target as Element)?.closest("#td-link-parent-results")) {
-          const pr = document.getElementById("td-link-parent-results");
-          if (pr) pr.style.display = "none";
-        }
-      });
 
-      // Parent search — debounced type-ahead
-      let parentSearchTimer: ReturnType<typeof setTimeout>;
-      const parentSearchInput = document.getElementById("td-link-parent-search") as HTMLInputElement | null;
-      const parentResultsDiv = document.getElementById("td-link-parent-results");
+        document.getElementById("td-add-cf")?.addEventListener("click", (e) => {
+          e.stopPropagation();
+          const dropdown = document.getElementById("td-add-cf-dropdown")!;
+          const isVisible = dropdown.style.display !== "none";
+          dropdown.style.display = isVisible ? "none" : "block";
+          if (!isVisible) {
+            renderFieldDropdown();
+            (
+              document.getElementById("td-add-cf-search") as HTMLInputElement
+            ).focus();
+          }
+        });
 
-      parentSearchInput?.addEventListener("input", () => {
-        clearTimeout(parentSearchTimer);
-        const q = parentSearchInput.value.trim();
-        if (q.length < 2) {
-          if (parentResultsDiv) parentResultsDiv.style.display = "none";
-          return;
-        }
-        parentSearchTimer = setTimeout(async () => {
-          try {
-            const res = await fetch(`/api/tasks?q=${encodeURIComponent(q)}&limit=10`);
-            if (!res.ok || !parentResultsDiv) return;
-            const data = await res.json();
-            const tasks = (data.tasks ?? []).filter((t: Record<string, unknown>) => t.id !== currentTaskId);
-            if (tasks.length === 0) {
-              parentResultsDiv.innerHTML = `<div class="px-3 py-2 text-xs text-text-muted italic">No matches</div>`;
-            } else {
-              parentResultsDiv.innerHTML = tasks.map((t: Record<string, unknown>) => {
-                const typeIcon = t.task_type === "epic" ? "🎯" : t.task_type === "story" ? "📖" : "✅";
-                return `<div class="td-parent-result px-3 py-2 text-sm cursor-pointer hover:bg-bg-hover flex items-center gap-2" data-id="${t.id}">
+        document
+          .getElementById("td-add-cf-search")
+          ?.addEventListener("input", (e) => {
+            renderFieldDropdown((e.target as HTMLInputElement).value);
+          });
+
+        document
+          .getElementById("td-add-cf-search")
+          ?.addEventListener("keydown", (e) => {
+            if (e.key === "Enter") {
+              e.preventDefault();
+              const input = e.target as HTMLInputElement;
+              const val = input.value.trim();
+              if (val) {
+                addCFRow(val, "");
+                document.getElementById("td-add-cf-dropdown")!.style.display =
+                  "none";
+                input.value = "";
+              }
+            }
+            if (e.key === "Escape") {
+              document.getElementById("td-add-cf-dropdown")!.style.display =
+                "none";
+            }
+          });
+
+        // Close dropdown on outside click
+        document.addEventListener("click", (e) => {
+          if (
+            !(e.target as Element)?.closest("#td-add-cf-dropdown") &&
+            !(e.target as Element)?.closest("#td-add-cf")
+          ) {
+            const dd = document.getElementById("td-add-cf-dropdown");
+            if (dd) dd.style.display = "none";
+          }
+          // Also close parent search results
+          if (
+            !(e.target as Element)?.closest("#td-link-parent-search") &&
+            !(e.target as Element)?.closest("#td-link-parent-results")
+          ) {
+            const pr = document.getElementById("td-link-parent-results");
+            if (pr) pr.style.display = "none";
+          }
+        });
+
+        // Parent search — debounced type-ahead
+        let parentSearchTimer: ReturnType<typeof setTimeout>;
+        const parentSearchInput = document.getElementById(
+          "td-link-parent-search",
+        ) as HTMLInputElement | null;
+        const parentResultsDiv = document.getElementById(
+          "td-link-parent-results",
+        );
+
+        parentSearchInput?.addEventListener("input", () => {
+          clearTimeout(parentSearchTimer);
+          const q = parentSearchInput.value.trim();
+          if (q.length < 2) {
+            if (parentResultsDiv) parentResultsDiv.style.display = "none";
+            return;
+          }
+          parentSearchTimer = setTimeout(async () => {
+            try {
+              const res = await fetch(
+                `/api/tasks?q=${encodeURIComponent(q)}&limit=10`,
+              );
+              if (!res.ok || !parentResultsDiv) return;
+              const data = await res.json();
+              const tasks = (data.tasks ?? []).filter(
+                (t: Record<string, unknown>) => t.id !== currentTaskId,
+              );
+              if (tasks.length === 0) {
+                parentResultsDiv.innerHTML = `<div class="px-3 py-2 text-xs text-text-muted italic">No matches</div>`;
+              } else {
+                parentResultsDiv.innerHTML = tasks
+                  .map((t: Record<string, unknown>) => {
+                    const typeIcon =
+                      t.task_type === "epic"
+                        ? "🎯"
+                        : t.task_type === "story"
+                          ? "📖"
+                          : "✅";
+                    return `<div class="td-parent-result px-3 py-2 text-sm cursor-pointer hover:bg-bg-hover flex items-center gap-2" data-id="${t.id}">
                   <span>${typeIcon}</span>
                   <span class="truncate">${String(t.title).slice(0, 60)}</span>
                   <span class="text-xs text-text-muted ml-auto">${String(t.task_type ?? "task")}</span>
                 </div>`;
-              }).join("");
-              // Click handler for each result
-              parentResultsDiv.querySelectorAll(".td-parent-result").forEach((el) => {
-                el.addEventListener("click", async () => {
-                  const newParentId = (el as HTMLElement).dataset.id;
-                  if (newParentId) {
-                    await saveTD("parent_id", newParentId);
-                    parentSearchInput.value = "";
-                    parentResultsDiv.style.display = "none";
-                    // Refresh the panel to show the new parent
-                    openTaskDetail(currentTaskId!);
-                  }
-                });
-              });
+                  })
+                  .join("");
+                // Click handler for each result
+                parentResultsDiv
+                  .querySelectorAll(".td-parent-result")
+                  .forEach((el) => {
+                    el.addEventListener("click", async () => {
+                      const newParentId = (el as HTMLElement).dataset.id;
+                      if (newParentId) {
+                        await saveTD("parent_id", newParentId);
+                        parentSearchInput.value = "";
+                        parentResultsDiv.style.display = "none";
+                        // Refresh the panel to show the new parent
+                        openTaskDetail(currentTaskId!);
+                      }
+                    });
+                  });
+              }
+              parentResultsDiv.style.display = "block";
+            } catch {
+              /* search failed silently */
             }
-            parentResultsDiv.style.display = "block";
-          } catch { /* search failed silently */ }
-        }, 300);
-      });
-
-      parentSearchInput?.addEventListener("keydown", (e) => {
-        if (e.key === "Escape" && parentResultsDiv) {
-          parentResultsDiv.style.display = "none";
-          parentSearchInput.value = "";
-        }
-      });
-
-      // Toggle done
-      document
-        .getElementById("td-toggle-done")
-        ?.addEventListener("click", () => {
-          const statusEl = document.getElementById(
-            "td-status",
-          ) as HTMLSelectElement;
-          const newStatus = statusEl.value === "done" ? "pending" : "done";
-          statusEl.value = newStatus;
-          saveTD("status", newStatus);
-          (
-            document.getElementById("td-toggle-done") as HTMLElement
-          ).textContent =
-            newStatus === "done" ? "↩ Mark as Undone" : "✓ Mark as Done";
+          }, 300);
         });
 
-      // Toggle favorite
-      document
-        .getElementById("td-toggle-favorite")
-        ?.addEventListener("click", async () => {
-          if (!currentTaskId) return;
-          const btn = document.getElementById(
-            "td-toggle-favorite",
-          ) as HTMLElement;
-          const isFav = btn.textContent?.startsWith("★");
-          await saveTD("is_favorite", isFav ? 0 : 1);
-          btn.textContent = isFav ? "⭐ Add to Favorites" : "★ Favorited";
-        });
-
-      // Duplicate task
-      document
-        .getElementById("td-duplicate")
-        ?.addEventListener("click", async () => {
-          if (!currentTaskId) return;
-          const toast = document.createElement("div");
-          toast.className = "toast";
-          try {
-            const res = await fetch(`/api/tasks/${currentTaskId}/duplicate`, { method: "POST" });
-            if (!res.ok) { toast.className = "toast error"; toast.textContent = "Failed to duplicate"; document.querySelector(".toast-container")?.appendChild(toast); setTimeout(() => toast.remove(), 2500); return; }
-            const data = await res.json();
-            toast.className = "toast success";
-            toast.textContent = `Duplicated → ${data.title}`;
-            document.querySelector(".toast-container")?.appendChild(toast);
-            setTimeout(() => toast.remove(), 2500);
-            openTaskDetail(data.id);
-          } catch {
-            toast.className = "toast error";
-            toast.textContent = "Network error";
-            document.querySelector(".toast-container")?.appendChild(toast);
-            setTimeout(() => toast.remove(), 2500);
+        parentSearchInput?.addEventListener("keydown", (e) => {
+          if (e.key === "Escape" && parentResultsDiv) {
+            parentResultsDiv.style.display = "none";
+            parentSearchInput.value = "";
           }
         });
 
-      // Ask AI
-      document
-        .getElementById("td-ask-ai")
-        ?.addEventListener("click", async () => {
-          if (!currentTaskId) return;
-          try {
-            const btn = document.getElementById("td-ask-ai") as HTMLElement;
-            const originalText = btn.innerHTML;
-            btn.innerHTML = "⏳ Generating...";
-            await askAIForTask(currentTaskId);
-            btn.innerHTML = "✅ Copied!";
-            setTimeout(() => (btn.innerHTML = originalText), 2000);
-          } catch (err) {
-            console.error("AI Context error:", err);
-            alert("Failed to generate AI context.");
-          }
-        });
-
-      // Attach Image
-      document
-        .getElementById("td-attach-image")
-        ?.addEventListener("change", async (e) => {
-          if (!currentTaskId) return;
-          const input = e.target as HTMLInputElement;
-          const file = input.files?.[0];
-          if (!file) return;
-
-          // Convert to Base64
-          const reader = new FileReader();
-          reader.onload = async (evt) => {
-            const base64Data = evt.target?.result as string;
-            try {
-              await saveAttachment({
-                id: crypto.randomUUID(),
-                taskId: currentTaskId!,
-                filename: file.name,
-                mimeType: file.type,
-                base64Data,
-                createdAt: new Date().toISOString()
-              });
-              loadAttachments(currentTaskId!);
-            } catch (err) {
-              console.error("Attachment failed:", err);
-              alert("Failed to save attachment.");
-            } finally {
-              input.value = ""; // reset
-            }
-          };
-          reader.readAsDataURL(file);
-        });
-
-      // Delete
-      document
-        .getElementById("td-delete")
-        ?.addEventListener("click", async () => {
-          if (!currentTaskId || !confirm("Delete this task?")) return;
-          await fetch(`/api/tasks/${currentTaskId}`, { method: "DELETE" });
-          closeTD();
-          window.location.reload();
-        });
-
-      // Add comment
-      document
-        .getElementById("td-comment-submit")
-        ?.addEventListener("click", async () => {
-          const input = document.getElementById(
-            "td-comment-input",
-          ) as HTMLInputElement;
-          if (!input.value.trim() || !currentTaskId) return;
-          await fetch(`/api/tasks/${currentTaskId}/comments`, {
-            method: "POST",
-            headers: { "content-type": "application/json" },
-            body: JSON.stringify({ content: input.value.trim() }),
+        // Toggle done
+        document
+          .getElementById("td-toggle-done")
+          ?.addEventListener("click", () => {
+            const statusEl = document.getElementById(
+              "td-status",
+            ) as HTMLSelectElement;
+            const newStatus = statusEl.value === "done" ? "pending" : "done";
+            statusEl.value = newStatus;
+            saveTD("status", newStatus);
+            (
+              document.getElementById("td-toggle-done") as HTMLElement
+            ).textContent =
+              newStatus === "done" ? "↩ Mark as Undone" : "✓ Mark as Done";
           });
-          input.value = "";
-          loadComments(currentTaskId);
+
+        // Toggle favorite
+        document
+          .getElementById("td-toggle-favorite")
+          ?.addEventListener("click", async () => {
+            if (!currentTaskId) return;
+            const btn = document.getElementById(
+              "td-toggle-favorite",
+            ) as HTMLElement;
+            const isFav = btn.textContent?.startsWith("★");
+            await saveTD("is_favorite", isFav ? 0 : 1);
+            btn.textContent = isFav ? "⭐ Add to Favorites" : "★ Favorited";
+          });
+
+        // Duplicate task
+        document
+          .getElementById("td-duplicate")
+          ?.addEventListener("click", async () => {
+            if (!currentTaskId) return;
+            const toast = document.createElement("div");
+            toast.className = "toast";
+            try {
+              const res = await fetch(`/api/tasks/${currentTaskId}/duplicate`, {
+                method: "POST",
+              });
+              if (!res.ok) {
+                toast.className = "toast error";
+                toast.textContent = "Failed to duplicate";
+                document.querySelector(".toast-container")?.appendChild(toast);
+                setTimeout(() => toast.remove(), 2500);
+                return;
+              }
+              const data = await res.json();
+              toast.className = "toast success";
+              toast.textContent = `Duplicated → ${data.title}`;
+              document.querySelector(".toast-container")?.appendChild(toast);
+              setTimeout(() => toast.remove(), 2500);
+              openTaskDetail(data.id);
+            } catch {
+              toast.className = "toast error";
+              toast.textContent = "Network error";
+              document.querySelector(".toast-container")?.appendChild(toast);
+              setTimeout(() => toast.remove(), 2500);
+            }
+          });
+
+        // Ask AI
+        document
+          .getElementById("td-ask-ai")
+          ?.addEventListener("click", async () => {
+            if (!currentTaskId) return;
+            try {
+              const btn = document.getElementById("td-ask-ai") as HTMLElement;
+              const originalText = btn.innerHTML;
+              btn.innerHTML = "⏳ Generating...";
+              await askAIForTask(currentTaskId);
+              btn.innerHTML = "✅ Copied!";
+              setTimeout(() => (btn.innerHTML = originalText), 2000);
+            } catch (err) {
+              console.error("AI Context error:", err);
+              alert("Failed to generate AI context.");
+            }
+          });
+
+        // Attach Image
+        document
+          .getElementById("td-attach-image")
+          ?.addEventListener("change", async (e) => {
+            if (!currentTaskId) return;
+            const input = e.target as HTMLInputElement;
+            const file = input.files?.[0];
+            if (!file) return;
+
+            // Convert to Base64
+            const reader = new FileReader();
+            reader.onload = async (evt) => {
+              const base64Data = evt.target?.result as string;
+              try {
+                await saveAttachment({
+                  id: crypto.randomUUID(),
+                  taskId: currentTaskId!,
+                  filename: file.name,
+                  mimeType: file.type,
+                  base64Data,
+                  createdAt: new Date().toISOString(),
+                });
+                loadAttachments(currentTaskId!);
+              } catch (err) {
+                console.error("Attachment failed:", err);
+                alert("Failed to save attachment.");
+              } finally {
+                input.value = ""; // reset
+              }
+            };
+            reader.readAsDataURL(file);
+          });
+
+        // Delete
+        document
+          .getElementById("td-delete")
+          ?.addEventListener("click", async () => {
+            if (!currentTaskId || !confirm("Delete this task?")) return;
+            await fetch(`/api/tasks/${currentTaskId}`, { method: "DELETE" });
+            closeTD();
+            window.location.reload();
+          });
+
+        // Add comment
+        document
+          .getElementById("td-comment-submit")
+          ?.addEventListener("click", async () => {
+            const input = document.getElementById(
+              "td-comment-input",
+            ) as HTMLInputElement;
+            if (!input.value.trim() || !currentTaskId) return;
+            await fetch(`/api/tasks/${currentTaskId}/comments`, {
+              method: "POST",
+              headers: { "content-type": "application/json" },
+              body: JSON.stringify({ content: input.value.trim() }),
+            });
+            input.value = "";
+            loadComments(currentTaskId);
+          });
+
+        // Close
+        document.getElementById("td-close")?.addEventListener("click", closeTD);
+        tdOverlay?.addEventListener("click", (e) => {
+          if (e.target === tdOverlay) closeTD();
         });
 
-      // Close
-      document.getElementById("td-close")?.addEventListener("click", closeTD);
-      tdOverlay?.addEventListener("click", (e) => {
-        if (e.target === tdOverlay) closeTD();
-      });
-
-      // Hash navigation
-      function checkHash() {
-        const hash = window.location.hash;
-        if (hash.startsWith("#task-")) {
-          openTaskDetail(hash.replace("#task-", ""));
-        }
-      }
-      window.addEventListener("hashchange", checkHash);
-      checkHash();
-
-      // Expose openTaskDetail globally for cross-page use (table, index new-task flow)
-      (window as any).openTaskDetail = openTaskDetail;
-
-      // Delegated click → open task detail for any task element
-      document.body.addEventListener("click", (e) => {
-        const target = e.target as HTMLElement;
-        const taskEl = target.closest(
-          ".task-item, .kanban-card, tr[data-id], [data-task-id]",
-        ) as HTMLElement | null;
-        if (!taskEl) return;
-        // Don't intercept action buttons
-        if (target.closest("button, a, .task-actions, .action-btn")) return;
-        const taskId = taskEl.dataset.id || taskEl.dataset.taskId;
-        if (taskId) {
-          e.preventDefault();
-          e.stopPropagation();
-          // Clean up search dropdown if opened from search results
-          if (taskEl.closest("#search-results")) {
-            const sr = document.getElementById("search-results");
-            const si = document.getElementById("global-search") as HTMLInputElement;
-            if (sr) sr.style.display = "none";
-            if (si) si.value = "";
+        // Hash navigation
+        function checkHash() {
+          const hash = window.location.hash;
+          if (hash.startsWith("#task-")) {
+            openTaskDetail(hash.replace("#task-", ""));
           }
-          openTaskDetail(taskId);
         }
-      });
+        window.addEventListener("hashchange", checkHash);
+        checkHash();
 
-      // === Command Palette ===
-      const cpOverlay = document.getElementById(
-        "command-palette-overlay",
-      ) as HTMLDivElement;
-      const cpSearch = document.getElementById("cp-search") as HTMLInputElement;
-      const cpTasksSection = document.getElementById(
-        "cp-tasks-section",
-      ) as HTMLDivElement;
-      const cpTasks = document.getElementById("cp-tasks") as HTMLDivElement;
-      let cpAllTasks: Array<{ id: string; title: string }> = [];
+        // Expose openTaskDetail globally for cross-page use (table, index new-task flow)
+        (window as any).openTaskDetail = openTaskDetail;
 
-      function openCP() {
-        cpOverlay?.classList.remove("hidden");
-        cpSearch?.focus();
-        // Load tasks for search
-        fetch("/api/tasks?limit=200")
-          .then((r) => r.json())
-          .then((d: { tasks: Array<{ id: string; title: string }> }) => {
-            cpAllTasks = d.tasks || [];
-          })
-          .catch(() => {});
-      }
-
-      function closeCP() {
-        cpOverlay?.classList.add("hidden");
-        if (cpSearch) cpSearch.value = "";
-        cpTasksSection?.classList.add("hidden");
-      }
-
-      // Ctrl+K / Cmd+K
-      document.addEventListener("keydown", (e) => {
-        if ((e.ctrlKey || e.metaKey) && e.key === "k") {
-          e.preventDefault();
-          if (cpOverlay?.classList.contains("hidden")) openCP();
-          else closeCP();
-        }
-        if (e.key === "Escape") {
-          if (!tdOverlay?.classList.contains("hidden")) closeTD();
-          if (!cpOverlay?.classList.contains("hidden")) closeCP();
-        }
-      });
-
-      cpOverlay?.addEventListener("click", (e) => {
-        if (e.target === cpOverlay) closeCP();
-      });
-
-      // Search — filters both commands and tasks
-      cpSearch?.addEventListener("input", () => {
-        const q = cpSearch.value.toLowerCase().trim();
-        // Filter static command items
-        document.querySelectorAll("#cp-results > .cp-item[data-action]").forEach((el) => {
-          const text = (el as HTMLElement).textContent?.toLowerCase() ?? "";
-          (el as HTMLElement).style.display = !q || text.includes(q) ? "" : "none";
-        });
-        // Also hide section headers if all children hidden
-        document.querySelectorAll("#cp-results > div:not(.cp-item):not(#cp-tasks-section)").forEach((header) => {
-          const next = header.nextElementSibling;
-          if (next?.classList.contains("cp-item") && (next as HTMLElement).style.display === "none") {
-            (header as HTMLElement).style.display = "none";
-          } else {
-            (header as HTMLElement).style.display = "";
+        // Delegated click → open task detail for any task element
+        document.body.addEventListener("click", (e) => {
+          const target = e.target as HTMLElement;
+          const taskEl = target.closest(
+            ".task-item, .kanban-card, tr[data-id], [data-task-id]",
+          ) as HTMLElement | null;
+          if (!taskEl) return;
+          // Don't intercept action buttons
+          if (target.closest("button, a, .task-actions, .action-btn")) return;
+          const taskId = taskEl.dataset.id || taskEl.dataset.taskId;
+          if (taskId) {
+            e.preventDefault();
+            e.stopPropagation();
+            // Clean up search dropdown if opened from search results
+            if (taskEl.closest("#search-results")) {
+              const sr = document.getElementById("search-results");
+              const si = document.getElementById(
+                "global-search",
+              ) as HTMLInputElement;
+              if (sr) sr.style.display = "none";
+              if (si) si.value = "";
+            }
+            openTaskDetail(taskId);
           }
         });
 
-        if (!q) {
+        // === Command Palette ===
+        const cpOverlay = document.getElementById(
+          "command-palette-overlay",
+        ) as HTMLDivElement;
+        const cpSearch = document.getElementById(
+          "cp-search",
+        ) as HTMLInputElement;
+        const cpTasksSection = document.getElementById(
+          "cp-tasks-section",
+        ) as HTMLDivElement;
+        const cpTasks = document.getElementById("cp-tasks") as HTMLDivElement;
+        let cpAllTasks: Array<{ id: string; title: string }> = [];
+
+        function openCP() {
+          cpOverlay?.classList.remove("hidden");
+          cpSearch?.focus();
+          // Load tasks for search
+          fetch("/api/tasks?limit=200")
+            .then((r) => r.json())
+            .then((d: { tasks: Array<{ id: string; title: string }> }) => {
+              cpAllTasks = d.tasks || [];
+            })
+            .catch(() => {});
+        }
+
+        function closeCP() {
+          cpOverlay?.classList.add("hidden");
+          if (cpSearch) cpSearch.value = "";
           cpTasksSection?.classList.add("hidden");
-          return;
         }
 
-        const matches = cpAllTasks
-          .filter((t) => t.title.toLowerCase().includes(q))
-          .slice(0, 10);
-        if (matches.length > 0) {
-          cpTasksSection?.classList.remove("hidden");
-          cpTasks.innerHTML = matches
-            .map(
-              (t) =>
-                `<div class="cp-item px-4 py-2.5 cursor-pointer hover:bg-bg-hover text-sm text-text-primary" data-task-id="${t.id}">${t.title}</div>`,
+        // Ctrl+K / Cmd+K
+        document.addEventListener("keydown", (e) => {
+          if ((e.ctrlKey || e.metaKey) && e.key === "k") {
+            e.preventDefault();
+            if (cpOverlay?.classList.contains("hidden")) openCP();
+            else closeCP();
+          }
+          if (e.key === "Escape") {
+            if (!tdOverlay?.classList.contains("hidden")) closeTD();
+            if (!cpOverlay?.classList.contains("hidden")) closeCP();
+          }
+        });
+
+        cpOverlay?.addEventListener("click", (e) => {
+          if (e.target === cpOverlay) closeCP();
+        });
+
+        // Search — filters both commands and tasks
+        cpSearch?.addEventListener("input", () => {
+          const q = cpSearch.value.toLowerCase().trim();
+          // Filter static command items
+          document
+            .querySelectorAll("#cp-results > .cp-item[data-action]")
+            .forEach((el) => {
+              const text = (el as HTMLElement).textContent?.toLowerCase() ?? "";
+              (el as HTMLElement).style.display =
+                !q || text.includes(q) ? "" : "none";
+            });
+          // Also hide section headers if all children hidden
+          document
+            .querySelectorAll(
+              "#cp-results > div:not(.cp-item):not(#cp-tasks-section)",
             )
-            .join("");
-        } else {
-          cpTasksSection?.classList.add("hidden");
-        }
-      });
+            .forEach((header) => {
+              const next = header.nextElementSibling;
+              if (
+                next?.classList.contains("cp-item") &&
+                (next as HTMLElement).style.display === "none"
+              ) {
+                (header as HTMLElement).style.display = "none";
+              } else {
+                (header as HTMLElement).style.display = "";
+              }
+            });
 
-      // Click handlers
-      document.getElementById("cp-results")?.addEventListener("click", (e) => {
-        const target = (e.target as HTMLElement).closest(
-          ".cp-item",
-        ) as HTMLElement | null;
-        if (!target) return;
-        const action = target.dataset.action;
-        const taskId = target.dataset.taskId;
+          if (!q) {
+            cpTasksSection?.classList.add("hidden");
+            return;
+          }
 
-        closeCP();
+          const matches = cpAllTasks
+            .filter((t) => t.title.toLowerCase().includes(q))
+            .slice(0, 10);
+          if (matches.length > 0) {
+            cpTasksSection?.classList.remove("hidden");
+            cpTasks.innerHTML = matches
+              .map(
+                (t) =>
+                  `<div class="cp-item px-4 py-2.5 cursor-pointer hover:bg-bg-hover text-sm text-text-primary" data-task-id="${t.id}">${t.title}</div>`,
+              )
+              .join("");
+          } else {
+            cpTasksSection?.classList.add("hidden");
+          }
+        });
 
-        if (action === "new-task") {
-          // Open create modal if on tasks page, or navigate
-          const createBtn = document.querySelector(
-            "[data-action='create-task']",
-          ) as HTMLElement;
-          if (createBtn) createBtn.click();
-          else window.location.href = "/tasks";
-        } else if (action === "new-board") {
-          const boardBtn = document.querySelector(
-            ".board-add-btn",
-          ) as HTMLElement;
-          if (boardBtn) boardBtn.click();
-        } else if (action === "go-dashboard") {
-          window.location.href = "/";
-        } else if (action === "go-kanban") {
-          window.location.href = "/kanban";
-        } else if (action === "go-table") {
-          window.location.href = "/table";
-        } else if (action === "go-settings") {
-          window.location.href = "/settings";
-        } else if (action === "export-csv") {
-          window.location.href = "/api/export/tasks.csv";
-        } else if (taskId) {
-          openTaskDetail(taskId);
-        }
-      });
-    </script>
+        // Click handlers
+        document
+          .getElementById("cp-results")
+          ?.addEventListener("click", (e) => {
+            const target = (e.target as HTMLElement).closest(
+              ".cp-item",
+            ) as HTMLElement | null;
+            if (!target) return;
+            const action = target.dataset.action;
+            const taskId = target.dataset.taskId;
 
-    <!-- Keyboard Shortcuts Modal -->
-    <div
-      id="shortcut-modal"
-      class="shortcut-modal-overlay hidden"
-    >
-      <div
-        class="shortcut-modal-content"
-        onclick="arguments[0].stopPropagation()"
-      >
-        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px;">
-          <h3 style="margin:0;font-size:16px;color:var(--accent);">
-            ⌨ Keyboard Shortcuts
-          </h3>
-          <button
-            id="shortcut-modal-close"
-            style="background:none;border:none;color:var(--text-muted);cursor:pointer;font-size:18px;padding:4px 8px;"
-            aria-label="Close shortcuts">✕</button>
-        </div>
+            closeCP();
+
+            if (action === "new-task") {
+              // Open create modal if on tasks page, or navigate
+              const createBtn = document.querySelector(
+                "[data-action='create-task']",
+              ) as HTMLElement;
+              if (createBtn) createBtn.click();
+              else window.location.href = "/tasks";
+            } else if (action === "new-board") {
+              const boardBtn = document.querySelector(
+                ".board-add-btn",
+              ) as HTMLElement;
+              if (boardBtn) boardBtn.click();
+            } else if (action === "go-dashboard") {
+              window.location.href = "/";
+            } else if (action === "go-kanban") {
+              window.location.href = "/kanban";
+            } else if (action === "go-table") {
+              window.location.href = "/table";
+            } else if (action === "go-settings") {
+              window.location.href = "/settings";
+            } else if (action === "go-today") {
+              window.location.href = "/today";
+            } else if (action === "go-upcoming") {
+              window.location.href = "/upcoming";
+            } else if (action === "go-calendar") {
+              window.location.href = "/calendar";
+            } else if (action === "export-csv") {
+              window.location.href = "/api/export/tasks.csv";
+            } else if (taskId) {
+              openTaskDetail(taskId);
+            }
+          });
+      </script>
+
+      <!-- Keyboard Shortcuts Modal -->
+      <div id="shortcut-modal" class="shortcut-modal-overlay hidden">
         <div
-          style="display:grid;grid-template-columns:auto 1fr;gap:8px 16px;font-size:13px;"
+          class="shortcut-modal-content"
+          onclick="arguments[0].stopPropagation()"
         >
-          <kbd
-            style="background:var(--bg-secondary);border:1px solid var(--border);border-radius:4px;padding:2px 8px;font-family:monospace;font-size:12px;"
-            >/</kbd
-          ><span>Focus search</span>
-          <kbd
-            style="background:var(--bg-secondary);border:1px solid var(--border);border-radius:4px;padding:2px 8px;font-family:monospace;font-size:12px;"
-            >n</kbd
-          ><span>New task</span>
-          <kbd
-            style="background:var(--bg-secondary);border:1px solid var(--border);border-radius:4px;padding:2px 8px;font-family:monospace;font-size:12px;"
-            >d</kbd
-          ><span>Dashboard</span>
-          <kbd
-            style="background:var(--bg-secondary);border:1px solid var(--border);border-radius:4px;padding:2px 8px;font-family:monospace;font-size:12px;"
-            >k</kbd
-          ><span>Kanban board</span>
-          <kbd
-            style="background:var(--bg-secondary);border:1px solid var(--border);border-radius:4px;padding:2px 8px;font-family:monospace;font-size:12px;"
-            >t</kbd
-          ><span>Table view</span>
-          <kbd
-            style="background:var(--bg-secondary);border:1px solid var(--border);border-radius:4px;padding:2px 8px;font-family:monospace;font-size:12px;"
-            >⌘K</kbd
-          ><span>Command palette</span>
-          <kbd
-            style="background:var(--bg-secondary);border:1px solid var(--border);border-radius:4px;padding:2px 8px;font-family:monospace;font-size:12px;"
-            >?</kbd
-          ><span>This help</span>
-          <kbd
-            style="background:var(--bg-secondary);border:1px solid var(--border);border-radius:4px;padding:2px 8px;font-family:monospace;font-size:12px;"
-            >Esc</kbd
-          ><span>Close modal / blur</span>
+          <div
+            style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px;"
+          >
+            <h3 style="margin:0;font-size:16px;color:var(--accent);">
+              ⌨ Keyboard Shortcuts
+            </h3>
+            <button
+              id="shortcut-modal-close"
+              style="background:none;border:none;color:var(--text-muted);cursor:pointer;font-size:18px;padding:4px 8px;"
+              aria-label="Close shortcuts">✕</button
+            >
+          </div>
+          <div
+            style="display:grid;grid-template-columns:auto 1fr;gap:8px 16px;font-size:13px;"
+          >
+            <kbd
+              style="background:var(--bg-secondary);border:1px solid var(--border);border-radius:4px;padding:2px 8px;font-family:monospace;font-size:12px;"
+              >/</kbd
+            ><span>Focus search</span>
+            <kbd
+              style="background:var(--bg-secondary);border:1px solid var(--border);border-radius:4px;padding:2px 8px;font-family:monospace;font-size:12px;"
+              >n</kbd
+            ><span>New task</span>
+            <kbd
+              style="background:var(--bg-secondary);border:1px solid var(--border);border-radius:4px;padding:2px 8px;font-family:monospace;font-size:12px;"
+              >d</kbd
+            ><span>Dashboard</span>
+            <kbd
+              style="background:var(--bg-secondary);border:1px solid var(--border);border-radius:4px;padding:2px 8px;font-family:monospace;font-size:12px;"
+              >k</kbd
+            ><span>Kanban board</span>
+            <kbd
+              style="background:var(--bg-secondary);border:1px solid var(--border);border-radius:4px;padding:2px 8px;font-family:monospace;font-size:12px;"
+              >t</kbd
+            ><span>Table view</span>
+            <kbd
+              style="background:var(--bg-secondary);border:1px solid var(--border);border-radius:4px;padding:2px 8px;font-family:monospace;font-size:12px;"
+              >⌘K</kbd
+            ><span>Command palette</span>
+            <kbd
+              style="background:var(--bg-secondary);border:1px solid var(--border);border-radius:4px;padding:2px 8px;font-family:monospace;font-size:12px;"
+              >?</kbd
+            ><span>This help</span>
+            <kbd
+              style="background:var(--bg-secondary);border:1px solid var(--border);border-radius:4px;padding:2px 8px;font-family:monospace;font-size:12px;"
+              >Esc</kbd
+            ><span>Close modal / blur</span>
+          </div>
         </div>
       </div>
-    </div>
 
-    <script>
-      // Shortcut modal: close on overlay click or close button
-      const shortcutOverlay = document.getElementById("shortcut-modal");
-      shortcutOverlay?.addEventListener("click", (e) => {
-        if (e.target === shortcutOverlay) shortcutOverlay.classList.add("hidden");
-      });
-      document.getElementById("shortcut-modal-close")?.addEventListener("click", () => {
-        shortcutOverlay?.classList.add("hidden");
-      });
-    </script>
+      <script>
+        // Shortcut modal: close on overlay click or close button
+        const shortcutOverlay = document.getElementById("shortcut-modal");
+        shortcutOverlay?.addEventListener("click", (e) => {
+          if (e.target === shortcutOverlay)
+            shortcutOverlay.classList.add("hidden");
+        });
+        document
+          .getElementById("shortcut-modal-close")
+          ?.addEventListener("click", () => {
+            shortcutOverlay?.classList.add("hidden");
+          });
+      </script>
+    </div>
   </body>
 </html>
