@@ -66,3 +66,4 @@ export * from "./rate-limiter";
 export * from "./grocy-adapter";
 export * from "./runtime";
 export * from "./d1-adapter";
+export * from "./a2a-handler";

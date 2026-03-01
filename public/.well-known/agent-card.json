@@ -1,0 +1,46 @@
+{
+  "name": "Meitheal",
+  "description": "Home Assistant-native task management agent",
+  "supportedInterfaces": [
+    {
+      "url": "/api/a2a",
+      "protocolBinding": "HTTP+JSON",
+      "protocolVersion": "1.0"
+    }
+  ],
+  "provider": {
+    "organization": "Coolock Village",
+    "url": "https://github.com/Coolock-Village/meitheal"
+  },
+  "version": "0.3.0",
+  "capabilities": {
+    "streaming": false,
+    "pushNotifications": true
+  },
+  "defaultInputModes": ["application/json", "text/plain"],
+  "defaultOutputModes": ["application/json"],
+  "skills": [
+    {
+      "id": "task-management",
+      "name": "Task Management",
+      "description": "Create, read, update, and delete tasks",
+      "tags": ["tasks", "crud"],
+      "examples": ["Create a task titled 'Fix login bug'"]
+    },
+    {
+      "id": "task-search",
+      "name": "Task Search",
+      "description": "Search and filter tasks",
+      "tags": ["tasks", "search"],
+      "examples": ["Find high-priority tasks due this week"]
+    },
+    {
+      "id": "framework-scoring",
+      "name": "Framework Scoring",
+      "description": "Score tasks using RICE/HEART/KCS frameworks",
+      "tags": ["scoring", "prioritization"],
+      "examples": ["Score task MTH-42 using RICE"]
+    }
+  ],
+  "_note": "This is a static fallback. The dynamic Agent Card is at /api/a2a/agent-card"
+}

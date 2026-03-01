@@ -1,11 +1,95 @@
 {
-  "name": "meitheal-webmcp",
-  "version": "0.1.0",
-  "description": "WebMCP discovery for Meitheal",
-  "capabilities": [
-    "tasks",
-    "frameworks",
-    "integrations",
-    "observability"
-  ]
+  "name": "Meitheal",
+  "description": "Home Assistant-native, Astro-first task and life management engine with cooperative task orchestration.",
+  "mcp_version": "1.0",
+  "provider": {
+    "name": "Coolock Village",
+    "url": "https://github.com/Coolock-Village/meitheal"
+  },
+  "capabilities": ["tasks", "frameworks", "integrations", "observability", "calendar-sync"],
+  "endpoints": {
+    "api": "/api",
+    "health": "/api/health",
+    "tasks": "/api/tasks",
+    "a2a_agent_card": "/api/a2a/agent-card",
+    "a2a_message": "/api/a2a/message",
+    "export_json": "/api/export/tasks.json",
+    "export_csv": "/api/export/tasks.csv"
+  },
+  "tools": [
+    {
+      "name": "createTask",
+      "description": "Create a new task with title, description, priority, labels, and due date",
+      "inputSchema": {
+        "type": "object",
+        "required": ["title"],
+        "properties": {
+          "title": { "type": "string", "description": "Task title" },
+          "description": { "type": "string", "description": "Task description (HTML supported)" },
+          "priority": { "type": "integer", "minimum": 1, "maximum": 5, "description": "Priority 1-5 (1=highest)" },
+          "status": { "type": "string", "enum": ["todo", "in_progress", "done", "cancelled"] },
+          "labels": { "type": "array", "items": { "type": "string" }, "description": "Label names" },
+          "due_date": { "type": "string", "format": "date", "description": "Due date (YYYY-MM-DD)" }
+        }
+      }
+    },
+    {
+      "name": "searchTasks",
+      "description": "Search and filter tasks by status, priority, labels, or free text query",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "query": { "type": "string", "description": "Free text search" },
+          "status": { "type": "string", "enum": ["todo", "in_progress", "done", "cancelled"] },
+          "priority_gte": { "type": "integer", "minimum": 1, "maximum": 5 },
+          "labels": { "type": "array", "items": { "type": "string" } }
+        }
+      }
+    },
+    {
+      "name": "updateTaskStatus",
+      "description": "Change the status of an existing task",
+      "inputSchema": {
+        "type": "object",
+        "required": ["taskId", "status"],
+        "properties": {
+          "taskId": { "type": "integer", "description": "Task ID" },
+          "status": { "type": "string", "enum": ["todo", "in_progress", "done", "cancelled"] }
+        }
+      }
+    },
+    {
+      "name": "scoreTask",
+      "description": "Apply a product management framework (RICE, DRICE, HEART, KCS, DDD) to score a task",
+      "inputSchema": {
+        "type": "object",
+        "required": ["taskId", "framework"],
+        "properties": {
+          "taskId": { "type": "integer" },
+          "framework": { "type": "string", "enum": ["rice", "drice", "heart", "kcs", "ddd", "custom"] }
+        }
+      }
+    },
+    {
+      "name": "exportTasks",
+      "description": "Export all tasks in JSON or CSV format",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "format": { "type": "string", "enum": ["json", "csv"], "default": "json" }
+        }
+      }
+    }
+  ],
+  "agent_protocols": {
+    "a2a": {
+      "version": "1.0",
+      "agent_card": "/.well-known/agent-card.json",
+      "endpoint": "/api/a2a"
+    },
+    "webmcp": {
+      "status": "experimental",
+      "description": "Browser-side tool registration via navigator.ai.createModelContextProvider"
+    }
+  }
 }

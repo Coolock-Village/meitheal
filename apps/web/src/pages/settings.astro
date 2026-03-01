@@ -528,6 +528,108 @@ const locale: Locale = cookieLocale === "ga" ? "ga" : "en";
           >
         </div>
       </div>
+
+      <!-- Agent Protocols -->
+      <div class="integration-section">
+        <div class="integration-header">
+          <div>
+            <strong>🔗 Agent Protocols</strong>
+            <div class="integration-desc">
+              Expose Meitheal tools to AI agents via A2A, WebMCP, and MCP
+              protocols. Enable agent-to-agent collaboration, browser agent
+              tools, and tool discovery.
+            </div>
+          </div>
+          <span class="badge badge-pending" id="agent-protocols-status"
+            >Not configured</span
+          >
+        </div>
+        <div class="integration-config">
+          <!-- A2A -->
+          <div class="form-group">
+            <div
+              style="display: flex; align-items: center; gap: 12px; margin-bottom: 8px;"
+            >
+              <label
+                class="form-label"
+                style="margin-bottom: 0;"
+                for="agent-a2a-enabled">A2A (Agent-to-Agent)</label
+              >
+              <input type="checkbox" id="agent-a2a-enabled" checked />
+            </div>
+            <small
+              class="form-help-text"
+              style="color: var(--text-muted); font-size: 12px;"
+            >
+              Serve an Agent Card at <code>/.well-known/agent-card.json</code> so
+              other AI agents can discover and delegate tasks to Meitheal via the
+              A2A protocol.
+              <a
+                href="/api/a2a/agent-card"
+                target="_blank"
+                style="color: var(--accent);">View Agent Card →</a
+              >
+            </small>
+          </div>
+
+          <!-- WebMCP -->
+          <div class="form-group">
+            <div
+              style="display: flex; align-items: center; gap: 12px; margin-bottom: 8px;"
+            >
+              <label
+                class="form-label"
+                style="margin-bottom: 0;"
+                for="agent-webmcp-enabled">WebMCP (Browser Agent)</label
+              >
+              <input type="checkbox" id="agent-webmcp-enabled" />
+            </div>
+            <small
+              class="form-help-text"
+              style="color: var(--text-muted); font-size: 12px;"
+            >
+              Register Meitheal tools with your browser's AI assistant (Chrome
+              EPP). Allows browser agents to create tasks, search, and navigate
+              boards.
+              <span style="opacity: 0.7;"
+                >🧪 Experimental — requires Chrome with AI APIs.</span
+              >
+            </small>
+          </div>
+
+          <!-- MCP Discovery -->
+          <div class="form-group">
+            <div
+              style="display: flex; align-items: center; gap: 12px; margin-bottom: 8px;"
+            >
+              <label
+                class="form-label"
+                style="margin-bottom: 0;"
+                for="agent-mcp-enabled">MCP Discovery</label
+              >
+              <input type="checkbox" id="agent-mcp-enabled" checked />
+            </div>
+            <small
+              class="form-help-text"
+              style="color: var(--text-muted); font-size: 12px;"
+            >
+              Serve tool definitions at <code>/.well-known/mcp.json</code> for MCP-compatible
+              clients.
+              <a
+                href="/.well-known/mcp.json"
+                target="_blank"
+                style="color: var(--accent);">View MCP manifest →</a
+              >
+            </small>
+          </div>
+
+          <button
+            class="btn btn-primary"
+            id="save-agent-protocols"
+            style="font-size: 13px;">Save Agent Protocol Settings</button
+          >
+        </div>
+      </div>
     </div>
 
     <!-- Keyboard Shortcuts -->
@@ -1092,6 +1194,47 @@ const locale: Locale = cookieLocale === "ga" ? "ga" : "en";
     });
 
     // ───── Webhook Save + Test ─────
+
+    // ───── Agent Protocol Save ─────
+    document
+      .getElementById("save-agent-protocols")
+      ?.addEventListener("click", async () => {
+        const a2a =
+          (document.getElementById("agent-a2a-enabled") as HTMLInputElement)
+            ?.checked ?? true;
+        const webmcp =
+          (document.getElementById("agent-webmcp-enabled") as HTMLInputElement)
+            ?.checked ?? false;
+        const mcp =
+          (document.getElementById("agent-mcp-enabled") as HTMLInputElement)
+            ?.checked ?? true;
+
+        const saveBtn = document.getElementById(
+          "save-agent-protocols",
+        ) as HTMLButtonElement;
+        if (!saveBtn) return;
+        const origText = saveBtn.innerHTML;
+        saveBtn.innerHTML = "💾 Saving...";
+        saveBtn.disabled = true;
+
+        await saveSetting("agent-protocols-a2a-enabled", a2a);
+        await saveSetting("agent-protocols-webmcp-enabled", webmcp);
+        await saveSetting("agent-protocols-mcp-enabled", mcp);
+
+        // Update status badge
+        const statusEl = document.getElementById("agent-protocols-status");
+        if (statusEl) {
+          const anyEnabled = a2a || webmcp || mcp;
+          statusEl.textContent = anyEnabled ? "Active" : "Disabled";
+          statusEl.className = anyEnabled
+            ? "badge badge-active"
+            : "badge badge-pending";
+        }
+
+        saveBtn.innerHTML = origText;
+        saveBtn.disabled = false;
+        showToast("Agent protocol settings saved");
+      });
     document
       .getElementById("save-webhook")
       ?.addEventListener("click", async () => {
@@ -1364,6 +1507,43 @@ const locale: Locale = cookieLocale === "ga" ? "ga" : "en";
           if (el) {
             el.textContent = "Not configured";
             el.className = "badge badge-pending";
+          }
+        }
+
+        // Agent Protocols
+        const a2aEnabled = s["agent-protocols-a2a-enabled"];
+        const webmcpEnabled = s["agent-protocols-webmcp-enabled"];
+        const mcpEnabled = s["agent-protocols-mcp-enabled"];
+        if (a2aEnabled !== undefined)
+          (
+            document.getElementById("agent-a2a-enabled") as HTMLInputElement
+          ).checked = a2aEnabled === true || a2aEnabled === "true";
+        if (webmcpEnabled !== undefined)
+          (
+            document.getElementById("agent-webmcp-enabled") as HTMLInputElement
+          ).checked = webmcpEnabled === true || webmcpEnabled === "true";
+        if (mcpEnabled !== undefined)
+          (
+            document.getElementById("agent-mcp-enabled") as HTMLInputElement
+          ).checked = mcpEnabled === true || mcpEnabled === "true";
+        {
+          const anyConfigured =
+            a2aEnabled !== undefined ||
+            webmcpEnabled !== undefined ||
+            mcpEnabled !== undefined;
+          const anyActive =
+            a2aEnabled === true ||
+            a2aEnabled === "true" ||
+            webmcpEnabled === true ||
+            webmcpEnabled === "true" ||
+            mcpEnabled === true ||
+            mcpEnabled === "true";
+          const statusEl = document.getElementById("agent-protocols-status");
+          if (statusEl && anyConfigured) {
+            statusEl.textContent = anyActive ? "Active" : "Disabled";
+            statusEl.className = anyActive
+              ? "badge badge-active"
+              : "badge badge-pending";
           }
         }
       } catch {
