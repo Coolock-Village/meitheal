@@ -379,6 +379,11 @@ try {
                 class="w-full text-left px-3 py-2 text-sm rounded-md hover:bg-bg-hover transition-colors"
                 >⭐ Add to Favorites</button
               >
+              <button
+                id="td-duplicate"
+                class="w-full text-left px-3 py-2 text-sm rounded-md hover:bg-bg-hover transition-colors"
+                >📋 Duplicate Task</button
+              >
             </div>
 
             <div class="border-t border-border pt-3">
@@ -1703,6 +1708,30 @@ try {
           const isFav = btn.textContent?.startsWith("★");
           await saveTD("is_favorite", isFav ? 0 : 1);
           btn.textContent = isFav ? "⭐ Add to Favorites" : "★ Favorited";
+        });
+
+      // Duplicate task
+      document
+        .getElementById("td-duplicate")
+        ?.addEventListener("click", async () => {
+          if (!currentTaskId) return;
+          const toast = document.createElement("div");
+          toast.className = "toast";
+          try {
+            const res = await fetch(`/api/tasks/${currentTaskId}/duplicate`, { method: "POST" });
+            if (!res.ok) { toast.className = "toast error"; toast.textContent = "Failed to duplicate"; document.querySelector(".toast-container")?.appendChild(toast); setTimeout(() => toast.remove(), 2500); return; }
+            const data = await res.json();
+            toast.className = "toast success";
+            toast.textContent = `Duplicated → ${data.title}`;
+            document.querySelector(".toast-container")?.appendChild(toast);
+            setTimeout(() => toast.remove(), 2500);
+            openTaskDetail(data.id);
+          } catch {
+            toast.className = "toast error";
+            toast.textContent = "Network error";
+            document.querySelector(".toast-container")?.appendChild(toast);
+            setTimeout(() => toast.remove(), 2500);
+          }
         });
 
       // Ask AI
