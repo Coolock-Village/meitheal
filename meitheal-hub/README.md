@@ -25,7 +25,7 @@ This add-on is Astro-first and runs the Meitheal web runtime with SQLite persist
 ```bash
 # Build from repo root
 podman build --build-arg BUILD_FROM="ghcr.io/home-assistant/amd64-base:3.20" \
-  -f addons/meitheal-hub/Dockerfile -t local/meitheal-hub .
+  -f meitheal-hub/Dockerfile -t local/meitheal-hub .
 
 # Run standalone (no Supervisor)
 podman run --rm -p 3333:3000 -v /tmp/meitheal-data:/data \
@@ -44,10 +44,10 @@ For rapid iteration during development:
 docker login -u coolockvillage
 
 # Build and push :dev tag for both architectures
-./addons/meitheal-hub/build-push-dev.sh
+./meitheal-hub/build-push-dev.sh
 
 # Build and push a versioned release
-./addons/meitheal-hub/build-push-dev.sh v0.1.0
+./meitheal-hub/build-push-dev.sh v0.1.0
 ```
 
 ## Files

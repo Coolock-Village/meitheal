@@ -54,7 +54,7 @@ docs(kcs): Update PWA guide with attachment documentation
 - `apps/web` — Astro PWA frontend + API routes
 - `apps/api` — Cloudflare Workers adapter
 - `packages/domain-*` — Pure domain logic (DDD bounded contexts)
-- `addons/meitheal-hub` — Home Assistant OS add-on
+- `meitheal-hub` — Home Assistant OS add-on
 - `tests/e2e` — Playwright e2e tests
 - `tests/governance` — Repo standards enforcement
 - `docs/` — ADRs, KCS runbooks, methodology docs
@@ -69,11 +69,11 @@ docs(kcs): Update PWA guide with attachment documentation
 
 ## HA Add-on Development
 
-The HA add-on lives in `addons/meitheal-hub/`:
+The HA add-on lives in `meitheal-hub/`:
 
 ```bash
 # Build the add-on container locally
-docker build -t meitheal-hub --build-arg BUILD_FROM=ghcr.io/home-assistant/amd64-base:latest addons/meitheal-hub
+docker build -t meitheal-hub --build-arg BUILD_FROM=ghcr.io/home-assistant/amd64-base:latest meitheal-hub
 
 # Run locally (outside HA Supervisor)
 docker run -p 3000:3000 -v $(pwd)/data:/data meitheal-hub /run-local.sh

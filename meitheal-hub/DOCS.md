@@ -13,7 +13,7 @@
 
 1. Open Home Assistant → **Settings** → **Add-ons** → **Add-on Store**.
 2. Click **⋮** (top-right) → **Repositories**.
-3. Add: `https://github.com/Coolock-Village/meitheal/tree/main/addons`
+3. Add: `https://github.com/Coolock-Village/meitheal`
 4. Close the dialog, then search for **Meitheal Hub**.
 5. Click **Install** → **Start** → **Open Web UI**.
 
@@ -24,7 +24,7 @@
 ```bash
 # Build from repo root
 podman build --build-arg BUILD_FROM="ghcr.io/home-assistant/amd64-base:3.20" \
-  -f addons/meitheal-hub/Dockerfile -t local/meitheal-hub .
+  -f meitheal-hub/Dockerfile -t local/meitheal-hub .
 
 # Run standalone (no Supervisor)
 podman run --rm -p 3333:3000 -v /tmp/meitheal-data:/data \

@@ -53,8 +53,8 @@ fi
 
 # Placeholder for Alloy sidecar integration path.
 # In production add-on packaging, run alloy with config below.
-if [ -f /opt/meitheal/addons/meitheal-hub/rootfs/etc/alloy/config.river ]; then
-  echo "Alloy config present at /opt/meitheal/addons/meitheal-hub/rootfs/etc/alloy/config.river"
+if [ -f /opt/meitheal/meitheal-hub/rootfs/etc/alloy/config.river ]; then
+  echo "Alloy config present at /opt/meitheal/meitheal-hub/rootfs/etc/alloy/config.river"
 fi
 
 wait -n

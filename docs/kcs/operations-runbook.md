@@ -27,7 +27,7 @@ Recommended Loki filter sequence:
 
 1. Verify `X-Ingress-Path` and `HASSIO_TOKEN` forwarding.
 2. Check middleware rejection reason in auth logs.
-3. Validate add-on ingress settings in `addons/meitheal-hub/config.yaml`.
+3. Validate add-on ingress settings in `meitheal-hub/config.yaml`.
 
 ## Startup Health and Diagnostics
 

@@ -5,12 +5,12 @@
 #   docker login -u coolockvillage  (use PAT as password)
 #
 # Usage:
-#   ./addons/meitheal-hub/build-push-dev.sh          # builds amd64 + aarch64, pushes :dev
-#   ./addons/meitheal-hub/build-push-dev.sh v0.1.0   # builds and pushes :v0.1.0 + :latest
+#   ./meitheal-hub/build-push-dev.sh          # builds amd64 + aarch64, pushes :dev
+#   ./meitheal-hub/build-push-dev.sh v0.1.0   # builds and pushes :v0.1.0 + :latest
 #
 # After pushing, on your HA Green:
 #   1. Go to Settings → Add-ons → Add-on Store → ⋮ → Repositories
-#   2. Add: https://github.com/Coolock-Village/meitheal/tree/main/addons
+#   2. Add: https://github.com/Coolock-Village/meitheal
 #   3. Find "Meitheal Hub" → Install → Start → Open Web UI
 #
 set -euo pipefail
@@ -42,7 +42,7 @@ for ARCH in amd64 aarch64; do
   docker buildx build \
     --platform "${PLATFORM}" \
     --build-arg BUILD_FROM="${BUILD_FROM}" \
-    -f addons/meitheal-hub/Dockerfile \
+    -f meitheal-hub/Dockerfile \
     -t "${IMAGE}:${TAG}" \
     --push \
     "${REPO_ROOT}"
@@ -51,7 +51,7 @@ for ARCH in amd64 aarch64; do
     docker buildx build \
       --platform "${PLATFORM}" \
       --build-arg BUILD_FROM="${BUILD_FROM}" \
-      -f addons/meitheal-hub/Dockerfile \
+      -f meitheal-hub/Dockerfile \
       -t "${IMAGE}:latest" \
       --push \
       "${REPO_ROOT}"
@@ -65,7 +65,7 @@ echo "=== Done! ==="
 echo ""
 echo "To install on HA Green:"
 echo "  1. Settings → Add-ons → Add-on Store → ⋮ → Repositories"
-echo "  2. Add: https://github.com/Coolock-Village/meitheal/tree/main/addons"
+echo "  2. Add: https://github.com/Coolock-Village/meitheal"
 echo "  3. Find 'Meitheal Hub' → Install → Start"
 echo ""
 echo "To update after code changes, re-run this script and restart the add-on in HA."

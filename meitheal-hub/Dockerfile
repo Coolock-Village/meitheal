@@ -46,8 +46,8 @@ COPY apps/web/drizzle/ apps/web/drizzle/
 RUN pnpm install --frozen-lockfile=false --ignore-scripts --prod \
     && pnpm store prune
 
-COPY addons/meitheal-hub/run.sh /run.sh
-COPY addons/meitheal-hub/run-local.sh /run-local.sh
+COPY meitheal-hub/run.sh /run.sh
+COPY meitheal-hub/run-local.sh /run-local.sh
 RUN chmod +x /run.sh /run-local.sh
 
 # Ensure data directory exists and is writable by meitheal user

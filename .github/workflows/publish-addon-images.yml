@@ -51,8 +51,8 @@ jobs:
         id: meta
         run: |
           owner_lc="$(echo "${GITHUB_REPOSITORY_OWNER}" | tr '[:upper:]' '[:lower:]')"
-          version="$(awk -F'"' '/^version:/{print $2}' addons/meitheal-hub/config.yaml)"
-          build_from="$(jq -r ".build_from[\"${{ matrix.arch }}\"]" addons/meitheal-hub/build.json)"
+          version="$(awk -F'"' '/^version:/{print $2}' meitheal-hub/config.yaml)"
+          build_from="$(jq -r ".build_from[\"${{ matrix.arch }}\"]" meitheal-hub/build.json)"
 
           # Support tag override for dev builds
           tag="${{ inputs.tag_override }}"
@@ -73,7 +73,7 @@ jobs:
         run: |
           expected_tag="v${CONFIG_VERSION}"
           if [ "${RELEASE_TAG}" != "${expected_tag}" ]; then
-            echo "::error::Release tag ${RELEASE_TAG} does not match addons/meitheal-hub/config.yaml version ${CONFIG_VERSION} (expected ${expected_tag})."
+            echo "::error::Release tag ${RELEASE_TAG} does not match meitheal-hub/config.yaml version ${CONFIG_VERSION} (expected ${expected_tag})."
             exit 1
           fi
 
@@ -81,7 +81,7 @@ jobs:
         uses: docker/build-push-action@v6
         with:
           context: .
-          file: addons/meitheal-hub/Dockerfile
+          file: meitheal-hub/Dockerfile
           build-args: |
             BUILD_FROM=${{ steps.meta.outputs.build_from }}
           push: true

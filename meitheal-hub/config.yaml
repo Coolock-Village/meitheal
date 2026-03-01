@@ -4,7 +4,7 @@ slug: "meitheal_hub"
 description: "The cooperative task and life engine for your home"
 url: "https://github.com/Coolock-Village/meitheal"
 github: "Coolock-Village/meitheal"
-docs_url: "https://github.com/Coolock-Village/meitheal/tree/main/addons/meitheal-hub/DOCS.md"
+docs_url: "https://github.com/Coolock-Village/meitheal/tree/main/meitheal-hub/DOCS.md"
 image: "coolockvillage/meitheal-hub-{arch}"
 arch:
   - aarch64

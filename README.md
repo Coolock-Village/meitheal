@@ -43,7 +43,7 @@ Source context for the term and community model:
 - `apps/web`: Astro PWA frontend + API routes for HA runtime.
 - `apps/api`: Cloudflare runtime adapter.
 - `packages/domain-*`: pure domain logic.
-- `addons/meitheal-hub`: Home Assistant OS add-on package.
+- `meitheal-hub`: Home Assistant OS add-on package.
 - `integrations/home-assistant`: custom component skeleton.
 - `docs/`: ADRs, KCS runbooks, methodology docs, PRFAQ.
 - `tests/e2e` and `tests/governance`: quality and policy gates.
@@ -59,7 +59,7 @@ Meitheal uses a coordinated HA-compatible pipeline:
 4. Loki storage/query.
 5. Grafana dashboards and alerts.
 
-See `docs/decisions/0002-target-architecture.md` and `addons/meitheal-hub/rootfs/etc/alloy/config.river`.
+See `docs/decisions/0002-target-architecture.md` and `meitheal-hub/rootfs/etc/alloy/config.river`.
 
 ## Legal and Licensing
 
@@ -76,7 +76,7 @@ See `docs/decisions/0001-legal-and-naming-strategy.md`.
 
 Meitheal ships both:
 
-- an HA OS add-on runtime (`addons/meitheal-hub`), and
+- an HA OS add-on runtime (`meitheal-hub`), and
 - a Home Assistant custom component skeleton (`integrations/home-assistant`).
 
 Interop design is informed by existing HA/Vikunja integration patterns, including:
@@ -145,7 +145,7 @@ podman pull ghcr.io/home-assistant/amd64-base:3.20
 
 # Build from repo root
 podman build --build-arg BUILD_FROM="ghcr.io/home-assistant/amd64-base:3.20" \
-  -f addons/meitheal-hub/Dockerfile -t local/meitheal-hub .
+  -f meitheal-hub/Dockerfile -t local/meitheal-hub .
 
 # Run standalone (no HA Supervisor)
 podman run --rm --network=slirp4netns:port_handler=slirp4netns \
