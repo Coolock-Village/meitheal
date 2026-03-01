@@ -4,6 +4,7 @@ import { t } from "../i18n/translations";
 import type { Locale } from "../lib/locale";
 import Sidebar from "../components/layout/Sidebar.astro";
 import TopNavigation from "../components/layout/TopNavigation.astro";
+import StrategicEvaluator from "../components/tasks/StrategicEvaluator.astro";
 
 // i18n: resolve locale from cookie for SSR
 const cookieLocale = Astro.cookies.get("meitheal-locale")?.value;
@@ -548,7 +549,17 @@ Astro.response.headers.set("X-XSS-Protection", "1; mode=block");
               </div>
 
               <div class="border-t border-border pt-3">
-                <span id="td-rice" class="text-xs text-text-muted"></span>
+                <div id="td-strategic-badge" class="mb-2 hidden"></div>
+                <button
+                  id="td-evaluate-btn"
+                  class="w-full text-left px-3 py-2 text-sm text-accent rounded-md hover:bg-accent/10 transition-colors flex justify-between items-center"
+                >
+                  <span>⚖️ Add Strategic Lens</span>
+                  <span
+                    id="td-active-framework-name"
+                    class="text-[10px] uppercase font-bold text-text-muted px-2 py-0.5 rounded bg-bg-hover hidden"
+                  ></span>
+                </button>
               </div>
 
               <div class="border-t border-border pt-3 space-y-2">
@@ -706,7 +717,18 @@ Astro.response.headers.set("X-XSS-Protection", "1; mode=block");
       </div>
 
       <script>
+        declare global {
+          interface Window {
+            attachStrategicLens?: (
+              taskId: string,
+              taskType: string,
+              payload: string,
+            ) => void;
+          }
+        }
+
         import { confirmDialog } from "../lib/confirm-dialog";
+
         // Expose for is:inline scripts (kanban)
         (window as any).confirmDialog = confirmDialog;
         // Connection status check
@@ -1037,6 +1059,11 @@ Astro.response.headers.set("X-XSS-Protection", "1; mode=block");
           (window as any).__activeBoard = select.value;
 
           // Apply board filter to visible items
+          function isDoneStatus(s: string) {
+            return s === "done" || s === "cancelled";
+          }
+
+          // strategic lens payload integration
           function applyBoardFilter() {
             const board = select!.value;
             (window as any).__activeBoard = board;
@@ -1291,11 +1318,12 @@ Astro.response.headers.set("X-XSS-Protection", "1; mode=block");
               tdAnchor.textContent = t.ticket_key
                 ? String(t.ticket_key)
                 : (String(t.id).split("-")[0] ?? "");
-              tdAnchor.onclick = () => {
+              tdAnchor.onclick = async () => {
                 navigator.clipboard.writeText(
                   t.ticket_key ? String(t.ticket_key) : String(t.id),
                 );
-                // TODO: simple toast
+                const { showToast } = await import("../lib/toast");
+                showToast("ID copied to clipboard", "success");
               };
             }
             const tdIdEl = document.getElementById("td-id") as HTMLElement;
@@ -1444,46 +1472,28 @@ Astro.response.headers.set("X-XSS-Protection", "1; mode=block");
               document.getElementById("td-toggle-done") as HTMLElement
             ).textContent = isDone ? "↩ Mark as Undone" : "✓ Mark as Done";
 
-            // RICE scoring + settings-defined custom fields
-            // (settings + framework_payload cached for use after custom fields)
-            let _riceEnabled = false;
-            let _fp: Record<string, unknown> = {};
+            // Load settings-defined custom fields
             _settingsFields = [];
             try {
-              _fp = JSON.parse(String(t.framework_payload ?? "{}"));
-              const riceRes = await fetch("/api/settings");
-              if (riceRes.ok) {
-                const allSettings = await riceRes.json();
-                _riceEnabled = allSettings?.frameworks_enabled?.rice === true;
-                // Load settings-defined custom fields
+              const settingsRes = await fetch("/api/settings");
+              if (settingsRes.ok) {
+                const allSettings = await settingsRes.json();
                 if (allSettings?.custom_fields) {
                   try {
                     const parsed = JSON.parse(allSettings.custom_fields);
-                    console.log(
-                      "[Meitheal] Settings custom_fields parsed:",
-                      parsed?.length,
-                      "fields",
-                    );
                     if (Array.isArray(parsed)) _settingsFields = parsed;
-                  } catch (parseErr) {
-                    console.warn(
-                      "[Meitheal] Failed to parse custom_fields:",
-                      parseErr,
-                    );
-                  }
+                  } catch (e) {}
                 }
               }
-            } catch {
-              /* default */
-            }
-            // RICE score text in sidebar
-            const rice = document.getElementById("td-rice") as HTMLElement;
-            if (_fp.rice_score) {
-              rice.textContent = `RICE Score: ${_fp.rice_score}`;
-            } else if (_riceEnabled) {
-              rice.textContent = "RICE Score: —";
-            } else {
-              rice.textContent = "";
+            } catch {}
+
+            // Attach Strategic Lens Evaluator Payload Hook
+            if ((window as any).attachStrategicLens) {
+              (window as any).attachStrategicLens(
+                taskId,
+                String(t.task_type ?? "task"),
+                String(t.framework_payload ?? "{}"),
+              );
             }
 
             // Labels (interactive chips)
@@ -1533,19 +1543,7 @@ Astro.response.headers.set("X-XSS-Protection", "1; mode=block");
               }
             }
 
-            // RICE fields — add AFTER custom fields (uses cached _riceEnabled and _fp)
-            if (
-              _riceEnabled ||
-              _fp.reach !== undefined ||
-              _fp.impact !== undefined ||
-              _fp.confidence !== undefined ||
-              _fp.effort !== undefined
-            ) {
-              addCFRow("Reach", String(_fp.reach ?? "0"));
-              addCFRow("Impact", String(_fp.impact ?? "0"));
-              addCFRow("Confidence", String(_fp.confidence ?? "0"));
-              addCFRow("Effort", String(_fp.effort ?? "0"));
-            }
+            // Framework fields are no longer rendered as plain text custom fields
 
             // Timestamps
             const created = t.created_at
@@ -1902,54 +1900,12 @@ Astro.response.headers.set("X-XSS-Protection", "1; mode=block");
 
         let _saveCFTimer: ReturnType<typeof setTimeout> | null = null;
 
-        function updateRiceDisplay() {
-          const all = getCFFromUI();
-          const ricePayload: Record<string, number> = {};
-          let hasRice = false;
-          for (const [k, v] of Object.entries(all)) {
-            if (RICE_KEYS.includes(k)) {
-              ricePayload[k.toLowerCase()] = Number(v) || 0;
-              hasRice = true;
-            }
-          }
-          const riceEl = document.getElementById("td-rice");
-          if (hasRice && riceEl) {
-            const r = ricePayload.reach ?? 0;
-            const i = ricePayload.impact ?? 0;
-            const c = ricePayload.confidence ?? 0;
-            const e = ricePayload.effort ?? 1;
-            const score = Math.round((r * i * c) / Math.max(e, 1));
-            riceEl.textContent = `RICE Score: ${score}`;
-          }
-        }
-
         function saveCF() {
-          // Update RICE display instantly
-          updateRiceDisplay();
           // Debounce the actual API save
           if (_saveCFTimer) clearTimeout(_saveCFTimer);
           _saveCFTimer = setTimeout(() => {
             const all = getCFFromUI();
-            const ricePayload: Record<string, number> = {};
-            const cfPayload: Record<string, string> = {};
-            let hasRice = false;
-            for (const [k, v] of Object.entries(all)) {
-              if (RICE_KEYS.includes(k)) {
-                ricePayload[k.toLowerCase()] = Number(v) || 0;
-                hasRice = true;
-              } else {
-                cfPayload[k] = v;
-              }
-            }
-            saveTD("custom_fields", JSON.stringify(cfPayload));
-            if (hasRice) {
-              const r = ricePayload.reach ?? 0;
-              const i = ricePayload.impact ?? 0;
-              const c = ricePayload.confidence ?? 0;
-              const e = ricePayload.effort ?? 1;
-              ricePayload.rice_score = Math.round((r * i * c) / Math.max(e, 1));
-              saveTD("framework_payload", JSON.stringify(ricePayload));
-            }
+            saveTD("custom_fields", JSON.stringify(all));
           }, 400);
         }
 
@@ -2662,7 +2618,17 @@ Astro.response.headers.set("X-XSS-Protection", "1; mode=block");
             showToast(ce.detail.error, "error");
           }
         });
+
+        // ───── Route Transition Cleanup ─────
+        window.addEventListener("pagehide", () => {
+          const taskOverlay = document.getElementById("task-detail-overlay");
+          if (taskOverlay && !taskOverlay.classList.contains("hidden")) {
+            taskOverlay.classList.add("hidden");
+            document.body.style.overflow = "";
+          }
+        });
       </script>
     </div>
+    <StrategicEvaluator />
   </body>
 </html>

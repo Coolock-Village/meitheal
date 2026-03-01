@@ -354,7 +354,7 @@ const typeConfig: Record<
                     data-task-type={tt}
                     data-board={String(task.board_id ?? "default")}
                     ondragstart="arguments[0].dataTransfer.setData('text/plain', this.dataset.id); this.classList.add('dragging');"
-                    ondragend="this.classList.remove('dragging');"
+                    ondragend="this.classList.remove('dragging'); document.querySelectorAll('.drag-ghost').forEach(g=>g.remove()); document.querySelectorAll('.drag-over').forEach(c=>c.classList.remove('drag-over'));"
                     style={`border-left: 3px solid ${task.color ? String(task.color) : tc.color};`}
                   >
                     <div class="kanban-card-header">

@@ -299,7 +299,7 @@ const { locale, taskCounts } = Astro.props;
       </div>
     </div>
     <button
-      class="board-add-btn mt-2 w-full bg-bg-primary hover:bg-hover border border-border rounded-md py-1.5 text-sm font-medium transition-colors flex items-center justify-center gap-2"
+      class="board-add-btn mt-2 w-full bg-bg-primary hover:bg-bg-hover border border-border rounded-md py-1.5 text-sm font-medium transition-colors flex items-center justify-center gap-2"
       id="add-board-btn"
       title={t("sidebar.create_board", locale)}
       aria-label={t("sidebar.create_board", locale)}
@@ -356,7 +356,7 @@ const { locale, taskCounts } = Astro.props;
   }
 
   .nav-link:hover {
-    @apply bg-hover text-text-primary translate-x-1;
+    @apply bg-bg-hover text-text-primary translate-x-1;
   }
 
   .nav-link.active {

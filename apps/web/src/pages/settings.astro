@@ -152,126 +152,93 @@ const locale: Locale = cookieLocale === "ga" ? "ga" : "en";
         </div>
       </div>
 
-      <!-- Framework Scoring — Configurable enable/disable -->
+      <!-- Strategic Lenses — Contextual Mapping -->
       <div class="card">
         <div class="card-header">
           <div>
-            <div class="card-title">
-              {t("settings.frameworks_title", locale)}
-            </div>
+            <div class="card-title">Strategic Lenses</div>
             <div class="card-subtitle">
-              {t("settings.frameworks_subtitle", locale)}
+              Map evaluation frameworks contextually by Task Type.
             </div>
           </div>
         </div>
-        <div id="framework-list">
-          <div class="framework-row" data-framework="rice">
-            <div class="framework-info">
-              <label class="toggle-label">
-                <input
-                  type="checkbox"
-                  class="framework-toggle"
-                  data-fw="rice"
-                  checked
-                />
-                <span class="toggle-slider"></span>
-              </label>
-              <div>
-                <strong>RICE</strong>
-                <div class="framework-desc">
-                  Reach × Impact × Confidence / Effort
-                </div>
-              </div>
+        <div class="flex flex-col gap-3 mt-4">
+          <div
+            class="flex items-center justify-between p-3 border border-border rounded-md bg-bg-secondary"
+          >
+            <div>
+              <strong class="block text-sm">🎯 Epic</strong>
+              <span class="text-xs text-text-muted">High-level initiatives</span
+              >
             </div>
+            <select
+              class="form-select framework-mapping-select"
+              data-task-type="epic"
+            >
+              <option value="ddd">DDD (Domain-Driven Design)</option>
+              <option value="rice">RICE (Priority Math)</option>
+              <option value="drice">DRICE (Deps + RICE)</option>
+              <option value="heart">HEART (UX Matrix)</option>
+              <option value="kcs">KCS (Knowledge Workflow)</option>
+            </select>
           </div>
-          <div class="framework-row" data-framework="drice">
-            <div class="framework-info">
-              <label class="toggle-label">
-                <input
-                  type="checkbox"
-                  class="framework-toggle"
-                  data-fw="drice"
-                />
-                <span class="toggle-slider"></span>
-              </label>
-              <div>
-                <strong>DRICE</strong>
-                <div class="framework-desc">Dependencies + RICE</div>
-              </div>
+
+          <div
+            class="flex items-center justify-between p-3 border border-border rounded-md bg-bg-secondary"
+          >
+            <div>
+              <strong class="block text-sm">📖 Story</strong>
+              <span class="text-xs text-text-muted">User-facing features</span>
             </div>
+            <select
+              class="form-select framework-mapping-select"
+              data-task-type="story"
+            >
+              <option value="rice">RICE (Priority Math)</option>
+              <option value="drice">DRICE (Deps + RICE)</option>
+              <option value="ddd">DDD (Domain-Driven Design)</option>
+              <option value="heart">HEART (UX Matrix)</option>
+              <option value="kcs">KCS (Knowledge Workflow)</option>
+            </select>
           </div>
-          <div class="framework-row" data-framework="heart">
-            <div class="framework-info">
-              <label class="toggle-label">
-                <input
-                  type="checkbox"
-                  class="framework-toggle"
-                  data-fw="heart"
-                />
-                <span class="toggle-slider"></span>
-              </label>
-              <div>
-                <strong>HEART</strong>
-                <div class="framework-desc">
-                  Happiness, Engagement, Adoption, Retention, Task Success
-                </div>
-              </div>
+
+          <div
+            class="flex items-center justify-between p-3 border border-border rounded-md bg-bg-secondary"
+          >
+            <div>
+              <strong class="block text-sm">✅ Task</strong>
+              <span class="text-xs text-text-muted">Standard work items</span>
             </div>
+            <select
+              class="form-select framework-mapping-select"
+              data-task-type="task"
+            >
+              <option value="heart">HEART (UX Matrix)</option>
+              <option value="rice">RICE (Priority Math)</option>
+              <option value="drice">DRICE (Deps + RICE)</option>
+              <option value="ddd">DDD (Domain-Driven Design)</option>
+              <option value="kcs">KCS (Knowledge Workflow)</option>
+            </select>
           </div>
-          <div class="framework-row" data-framework="kcs">
-            <div class="framework-info">
-              <label class="toggle-label">
-                <input type="checkbox" class="framework-toggle" data-fw="kcs" />
-                <span class="toggle-slider"></span>
-              </label>
-              <div>
-                <strong>KCS</strong>
-                <div class="framework-desc">Knowledge-Centered Support</div>
-              </div>
+
+          <div
+            class="flex items-center justify-between p-3 border border-border rounded-md bg-bg-secondary"
+          >
+            <div>
+              <strong class="block text-sm">📝 Documentation</strong>
+              <span class="text-xs text-text-muted">Knowledge articles</span>
             </div>
+            <select
+              class="form-select framework-mapping-select"
+              data-task-type="documentation"
+            >
+              <option value="kcs">KCS (Knowledge Workflow)</option>
+              <option value="heart">HEART (UX Matrix)</option>
+              <option value="rice">RICE (Priority Math)</option>
+              <option value="drice">DRICE (Deps + RICE)</option>
+              <option value="ddd">DDD (Domain-Driven Design)</option>
+            </select>
           </div>
-          <div class="framework-row" data-framework="ddd">
-            <div class="framework-info">
-              <label class="toggle-label">
-                <input type="checkbox" class="framework-toggle" data-fw="ddd" />
-                <span class="toggle-slider"></span>
-              </label>
-              <div>
-                <strong>DDD</strong>
-                <div class="framework-desc">Domain-Driven Design scoring</div>
-              </div>
-            </div>
-          </div>
-          <div class="framework-row" data-framework="custom">
-            <div class="framework-info">
-              <label class="toggle-label">
-                <input
-                  type="checkbox"
-                  class="framework-toggle"
-                  data-fw="custom"
-                />
-                <span class="toggle-slider"></span>
-              </label>
-              <div>
-                <strong>Custom</strong>
-                <div class="framework-desc">User-defined scoring fields</div>
-              </div>
-            </div>
-          </div>
-        </div>
-        <div class="form-group" style="margin-top: 12px;">
-          <label class="form-label">Active Framework</label>
-          <select class="form-select" id="scoring-framework">
-            <option value="rice" selected>RICE</option>
-          </select>
-        </div>
-        <div class="form-group">
-          <label class="form-label">Score Display</label>
-          <select class="form-select" id="score-display">
-            <option value="badge">Badge (high/med/low)</option>
-            <option value="number" selected>Numeric score</option>
-            <option value="both">Both</option>
-          </select>
         </div>
       </div>
     </div>
@@ -1055,32 +1022,17 @@ const locale: Locale = cookieLocale === "ga" ? "ga" : "en";
         const res = await fetch("/api/settings");
         const settings = await res.json();
 
-        // Restore framework toggles
-        if (settings.frameworks_enabled) {
-          const enabled = settings.frameworks_enabled as Record<
-            string,
-            boolean
-          >;
-          document.querySelectorAll(".framework-toggle").forEach((cb) => {
-            const fw = (cb as HTMLInputElement).dataset.fw;
-            if (fw && fw in enabled) {
-              (cb as HTMLInputElement).checked = !!enabled[fw];
-            }
-          });
-        }
-
-        // Restore active framework
-        if (settings.active_framework) {
-          (
-            document.getElementById("scoring-framework") as HTMLSelectElement
-          ).value = String(settings.active_framework);
-        }
-
-        // Restore score display
-        if (settings.score_display) {
-          (
-            document.getElementById("score-display") as HTMLSelectElement
-          ).value = String(settings.score_display);
+        // Restore contextual framework mappings
+        if (settings.framework_mapping) {
+          const mapping = settings.framework_mapping as Record<string, string>;
+          document
+            .querySelectorAll(".framework-mapping-select")
+            .forEach((sel) => {
+              const taskType = (sel as HTMLSelectElement).dataset.taskType;
+              if (taskType && taskType in mapping) {
+                (sel as HTMLSelectElement).value = String(mapping[taskType]);
+              }
+            });
         }
 
         // Restore locale
@@ -1151,8 +1103,6 @@ const locale: Locale = cookieLocale === "ga" ? "ga" : "en";
             /* skip */
           }
         }
-
-        updateFrameworkSelect();
       } catch {
         /* API not available — try localStorage fallback for locale */
         const stored = localStorage.getItem("meitheal-locale") || "en";
@@ -1161,62 +1111,18 @@ const locale: Locale = cookieLocale === "ga" ? "ga" : "en";
       }
     }
 
-    // Update active framework select options based on enabled toggles
-    function updateFrameworkSelect() {
-      const select = document.getElementById(
-        "scoring-framework",
-      ) as HTMLSelectElement;
-      const current = select.value;
-      const labels: Record<string, string> = {
-        rice: "RICE",
-        drice: "DRICE",
-        heart: "HEART",
-        kcs: "KCS",
-        ddd: "DDD",
-        custom: "Custom",
-      };
-      select.innerHTML = "";
-      document.querySelectorAll(".framework-toggle:checked").forEach((cb) => {
-        const fw = (cb as HTMLInputElement).dataset.fw ?? "";
-        const opt = document.createElement("option");
-        opt.value = fw;
-        opt.textContent = labels[fw] ?? fw;
-        select.appendChild(opt);
-      });
-      if (select.querySelector(`option[value="${current}"]`)) {
-        select.value = current;
-      }
-    }
-
-    // Framework toggle change — save and update select
-    document.querySelectorAll(".framework-toggle").forEach((cb) => {
-      cb.addEventListener("change", () => {
-        const enabled: Record<string, boolean> = {};
-        document.querySelectorAll(".framework-toggle").forEach((c) => {
-          const fw = (c as HTMLInputElement).dataset.fw;
-          if (fw) enabled[fw] = (c as HTMLInputElement).checked;
+    // Contextual framework mapping change
+    document.querySelectorAll(".framework-mapping-select").forEach((sel) => {
+      sel.addEventListener("change", () => {
+        const mapping: Record<string, string> = {};
+        document.querySelectorAll(".framework-mapping-select").forEach((s) => {
+          const taskType = (s as HTMLSelectElement).dataset.taskType;
+          if (taskType) mapping[taskType] = (s as HTMLSelectElement).value;
         });
-        saveSetting("frameworks_enabled", enabled);
-        updateFrameworkSelect();
-        showToast("Frameworks updated");
+        saveSetting("framework_mapping", mapping);
+        showToast("Framework mapping updated");
       });
     });
-
-    // Active framework change
-    document
-      .getElementById("scoring-framework")
-      ?.addEventListener("change", (e) => {
-        saveSetting("active_framework", (e.target as HTMLSelectElement).value);
-        showToast("Active framework saved");
-      });
-
-    // Score display change
-    document
-      .getElementById("score-display")
-      ?.addEventListener("change", (e) => {
-        saveSetting("score_display", (e.target as HTMLSelectElement).value);
-        showToast("Display preference saved");
-      });
 
     // Test HA connection
     document

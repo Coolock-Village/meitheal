@@ -22,7 +22,7 @@ export interface LoggerConfig {
   minLevel: LogLevel;
   enabledCategories: string[];
   redactPatterns: RegExp[];
-  auditEnabled: boolean;
+  auditEnabled?: boolean;
 }
 
 const severity: Record<LogLevel, number> = {
@@ -52,6 +52,8 @@ function redact(value: string, patterns: RegExp[]): string {
 }
 
 export function createLogger(config: LoggerConfig) {
+  const auditEnabled = config.auditEnabled ?? (process.env.MEITHEAL_AUDIT_LOGS !== "false");
+  
   return {
     log(level: LogLevel, partial: Omit<LogEvent, "ts" | "level">): void {
       if (!shouldLog(level, config.minLevel)) {
@@ -74,7 +76,7 @@ export function createLogger(config: LoggerConfig) {
     },
 
     audit(partial: Omit<LogEvent, "ts" | "level">): void {
-      if (!config.auditEnabled) {
+      if (!auditEnabled) {
         return;
       }
       this.log("info", { ...partial, domain: "audit" });
