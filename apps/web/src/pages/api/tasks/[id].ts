@@ -2,6 +2,7 @@ import type { APIRoute } from "astro";
 import type { InValue } from "@libsql/client";
 import { ensureSchema, getPersistenceClient } from "@domains/tasks/persistence/store";
 import { stripHtml } from "../../../lib/strip-html";
+import { formatTicketKey } from "../../../lib/ticket-key";
 import { VALID_TASK_TYPES } from "@meitheal/domain-tasks";
 import type { TaskType } from "@meitheal/domain-tasks";
 
@@ -14,8 +15,8 @@ export const GET: APIRoute = async ({ params }) => {
     sql: `SELECT t.id, t.title, t.description, t.status, t.priority, t.due_date, t.labels,
                  t.framework_payload, t.calendar_sync_state, t.board_id, t.custom_fields,
                  t.parent_id, t.time_tracked, t.start_date, t.end_date, t.progress, t.color,
-                 t.is_favorite, t.task_type, t.created_at, t.updated_at,
-                 p.title as parent_title, p.task_type as parent_task_type
+                 t.is_favorite, t.task_type, t.ticket_number, t.created_at, t.updated_at,
+                 p.title as parent_title, p.task_type as parent_task_type, p.ticket_number as parent_ticket_number
           FROM tasks t
           LEFT JOIN tasks p ON t.parent_id = p.id
           WHERE t.id = ? LIMIT 1`,
@@ -30,7 +31,16 @@ export const GET: APIRoute = async ({ params }) => {
     });
   }
 
-  return new Response(JSON.stringify(row), {
+  // Derive human-readable ticket keys
+  const ticketNum = row.ticket_number != null ? Number(row.ticket_number) : null;
+  const parentTicketNum = row.parent_ticket_number != null ? Number(row.parent_ticket_number) : null;
+  const enriched = {
+    ...row,
+    ticket_key: formatTicketKey(ticketNum),
+    parent_ticket_key: formatTicketKey(parentTicketNum),
+  };
+
+  return new Response(JSON.stringify(enriched), {
     status: 200,
     headers: { "content-type": "application/json" },
   });
@@ -232,12 +242,15 @@ export const PUT: APIRoute = async ({ params, request }) => {
     sql: `SELECT id, title, description, status, priority, due_date, labels,
                  framework_payload, calendar_sync_state, board_id, custom_fields,
                  parent_id, time_tracked, start_date, end_date, progress, color,
-                 is_favorite, task_type, created_at, updated_at
+                 is_favorite, task_type, ticket_number, created_at, updated_at
           FROM tasks WHERE id = ? LIMIT 1`,
     args: [params.id!],
   });
 
-  return new Response(JSON.stringify(updated.rows[0]), {
+  const updatedRow = updated.rows[0] as Record<string, unknown>;
+  const updTicketNum = updatedRow?.ticket_number != null ? Number(updatedRow.ticket_number) : null;
+
+  return new Response(JSON.stringify({ ...updatedRow, ticket_key: formatTicketKey(updTicketNum) }), {
     status: 200,
     headers: { "content-type": "application/json" },
   });

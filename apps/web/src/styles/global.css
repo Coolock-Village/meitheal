@@ -87,7 +87,6 @@
 
 /* ===== Component Layer: Reusable patterns ===== */
 @layer components {
-
   /* --- Layout --- */
   .sidebar {
     @apply w-sidebar bg-bg-secondary flex flex-col border-r border-border fixed h-screen z-40;
@@ -336,7 +335,9 @@
 
   .kanban-card:hover {
     @apply border-accent/40;
-    box-shadow: 0 4px 16px rgba(16, 185, 129, 0.12), 0 2px 6px rgba(0, 0, 0, 0.3);
+    box-shadow:
+      0 4px 16px rgba(16, 185, 129, 0.12),
+      0 2px 6px rgba(0, 0, 0, 0.3);
     transform: translateY(-1px);
   }
 
@@ -416,13 +417,17 @@
 
   /* Scroll shadow indicator for table overflow */
   .table-container::after {
-    content: '';
+    content: "";
     position: absolute;
     top: 0;
     right: 0;
     bottom: 0;
     width: 40px;
-    background: linear-gradient(to left, var(--bg-primary) 0%, transparent 100%);
+    background: linear-gradient(
+      to left,
+      var(--bg-primary) 0%,
+      transparent 100%
+    );
     pointer-events: none;
     opacity: 0;
     transition: opacity 200ms;
@@ -494,7 +499,9 @@
   .td-progress-bar-fill {
     height: 100%;
     background: var(--accent);
-    transition: width 0.4s ease, background 0.3s ease;
+    transition:
+      width 0.4s ease,
+      background 0.3s ease;
     border-radius: 0 2px 2px 0;
   }
 
@@ -541,13 +548,18 @@
   .stat-card {
     @apply bg-bg-card border border-border rounded-lg p-4 flex items-center shadow-sm;
     gap: 12px;
-    transition: transform 0.2s ease, box-shadow 0.2s ease, border-color 0.2s ease;
+    transition:
+      transform 0.2s ease,
+      box-shadow 0.2s ease,
+      border-color 0.2s ease;
     cursor: default;
   }
 
   .stat-card:hover {
     transform: translateY(-2px) scale(1.02);
-    box-shadow: 0 4px 20px rgba(16, 185, 129, 0.12), var(--shadow-sm);
+    box-shadow:
+      0 4px 20px rgba(16, 185, 129, 0.12),
+      var(--shadow-sm);
     border-color: var(--accent);
   }
 
@@ -572,12 +584,13 @@
   .stat-card-danger {
     border-color: var(--danger) !important;
     background: rgba(239, 68, 68, 0.08) !important;
-    box-shadow: 0 0 16px rgba(239, 68, 68, 0.15), var(--shadow-sm);
+    box-shadow:
+      0 0 16px rgba(239, 68, 68, 0.15),
+      var(--shadow-sm);
     animation: pulse-danger 2s ease-in-out infinite;
   }
 
   @keyframes pulse-danger {
-
     0%,
     100% {
       box-shadow: 0 0 16px rgba(239, 68, 68, 0.15);
@@ -891,7 +904,108 @@
     @apply flex items-center justify-between py-2 px-3 bg-bg-secondary/50 rounded-md text-sm;
   }
 
+  /* --- Phase 31: Today / Upcoming / Calendar polish --- */
+  @keyframes card-enter {
+    from {
+      opacity: 0;
+      transform: translateY(8px);
+    }
+    to {
+      opacity: 1;
+      transform: translateY(0);
+    }
+  }
 
+  .card {
+    animation: card-enter 0.25s ease-out both;
+  }
+
+  .card:nth-child(2) {
+    animation-delay: 0.05s;
+  }
+  .card:nth-child(3) {
+    animation-delay: 0.1s;
+  }
+  .card:nth-child(4) {
+    animation-delay: 0.15s;
+  }
+  .card:nth-child(5) {
+    animation-delay: 0.2s;
+  }
+
+  /* Checklist items in task detail */
+  .checklist-item {
+    @apply flex items-center gap-2 py-1.5 text-sm;
+  }
+
+  .checklist-item input[type="checkbox"] {
+    @apply w-4 h-4 rounded border-2 border-border bg-transparent cursor-pointer appearance-none flex-shrink-0 transition-all;
+  }
+
+  .checklist-item input[type="checkbox"]:checked {
+    @apply bg-accent border-accent;
+  }
+
+  .checklist-item input[type="checkbox"]:checked + span {
+    @apply line-through text-text-muted;
+  }
+
+  /* Quick-add focus glow */
+  #quick-add-input:focus {
+    box-shadow: 0 0 0 3px rgba(16, 185, 129, 0.15);
+  }
+
+  /* Calendar today pulse */
+  .cal-day-today {
+    animation: today-pulse 2s ease-in-out infinite;
+  }
+
+  @keyframes today-pulse {
+    0%,
+    100% {
+      box-shadow: 0 0 0 0 rgba(16, 185, 129, 0.3);
+    }
+    50% {
+      box-shadow: 0 0 0 4px rgba(16, 185, 129, 0.1);
+    }
+  }
+
+  /* Progress bar color thresholds */
+  .progress-fill-low {
+    background: var(--danger);
+  }
+
+  .progress-fill-mid {
+    background: var(--warning);
+  }
+
+  .progress-fill-high {
+    background: var(--accent);
+  }
+
+  /* Task completion strike-through animation */
+  @keyframes check-strike {
+    from {
+      width: 0;
+    }
+    to {
+      width: 100%;
+    }
+  }
+
+  .task-completing {
+    position: relative;
+  }
+
+  .task-completing::after {
+    content: "";
+    position: absolute;
+    top: 50%;
+    left: 0;
+    height: 1px;
+    background: var(--text-muted);
+    animation: check-strike 0.3s ease-out forwards;
+  }
 }
 
 /* ===== Responsive ===== */
@@ -1011,7 +1125,6 @@
 /* ===== Accessibility: Reduced Motion ===== */
 /* VPAT 2.2.2 — disable animations for users who prefer reduced motion */
 @media (prefers-reduced-motion: reduce) {
-
   *,
   *::before,
   *::after {

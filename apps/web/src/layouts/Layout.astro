@@ -1221,7 +1221,7 @@ try {
               "td-parent",
             ) as HTMLAnchorElement | null;
             if (parentEl && t.parent_id) {
-              parentEl.textContent = `↑ ${t.parent_title ?? t.parent_id}`;
+              parentEl.textContent = `↑ ${t.parent_ticket_key ?? t.parent_title ?? t.parent_id}`;
               parentEl.href = `#task-${t.parent_id}`;
               parentEl.classList.remove("hidden");
               parentEl.onclick = (e) => {
@@ -1239,7 +1239,9 @@ try {
             if (linkParentDisplay) {
               if (t.parent_id) {
                 const parentTitle = String(
-                  t.parent_title ?? String(t.parent_id).slice(0, 8),
+                  t.parent_ticket_key ??
+                    t.parent_title ??
+                    String(t.parent_id).slice(0, 8),
                 );
                 linkParentDisplay.innerHTML = `
                 <a href="#" class="text-xs text-accent hover:underline td-parent-link" data-id="${t.parent_id}">${parentTitle}</a>
@@ -1281,7 +1283,7 @@ try {
                       chip.href = "#";
                       chip.className =
                         "text-xs text-accent hover:underline block";
-                      chip.textContent = `↳ ${String(c.title ?? c.id).slice(0, 50)}`;
+                      chip.textContent = `↳ ${c.ticket_key ? c.ticket_key + " " : ""}${String(c.title ?? c.id).slice(0, 50)}`;
                       chip.addEventListener("click", (e) => {
                         e.preventDefault();
                         openTaskDetail(String(c.id));
@@ -1341,8 +1343,11 @@ try {
 
             // ID — hidden, accessible via tooltip
             const tdIdEl = document.getElementById("td-id") as HTMLElement;
-            tdIdEl.textContent = `#${String(t.id).slice(0, 8)}`;
-            tdIdEl.title = `Full ID: ${t.id}`;
+            tdIdEl.textContent = t.ticket_key
+              ? String(t.ticket_key)
+              : `#${String(t.id).slice(0, 8)}`;
+            tdIdEl.title = `${t.ticket_key ? String(t.ticket_key) + " • " : ""}Full ID: ${t.id}`;
+            tdIdEl.classList.remove("hidden");
 
             (document.getElementById("td-title") as HTMLInputElement).value =
               String(t.title ?? "");
