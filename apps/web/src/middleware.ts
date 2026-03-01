@@ -77,6 +77,33 @@ function applyRateLimitHeaders(response: Response, remaining: number, resetAt: n
   response.headers.set("x-ratelimit-reset", String(Math.ceil(resetAt / 1000)));
 }
 
+/**
+ * Rewrite absolute asset paths in HTML responses when behind HA ingress.
+ * The ingress proxy maps /{ingressPath}/* → http://addon:port/*
+ * but if the HTML contains absolute paths like /_astro/page.js,
+ * the browser resolves them against the HA root, bypassing ingress → 404.
+ */
+async function rewriteIngressPaths(response: Response, ingressPath: string): Promise<Response> {
+  const contentType = response.headers.get("content-type") ?? "";
+  if (!contentType.includes("text/html")) return response;
+
+  const html = await response.text();
+  // Prefix absolute paths with the ingress path
+  const rewritten = html
+    .replace(/"\/_astro\//g, `"${ingressPath}/_astro/`)
+    .replace(/'\/_astro\//g, `'${ingressPath}/_astro/`)
+    .replace(/"\/api\//g, `"${ingressPath}/api/`)
+    .replace(/'\/api\//g, `'${ingressPath}/api/`)
+    .replace(/"\/manifest\.webmanifest"/g, `"${ingressPath}/manifest.webmanifest"`)
+    .replace(/"\/icon-192\.png"/g, `"${ingressPath}/icon-192.png"`);
+
+  return new Response(rewritten, {
+    status: response.status,
+    statusText: response.statusText,
+    headers: response.headers,
+  });
+}
+
 export const onRequest: MiddlewareHandler = async ({ request, locals }, next) => {
   const startTime = Date.now();
   const requestId = request.headers.get("x-request-id") ?? crypto.randomUUID();
@@ -180,7 +207,11 @@ export const onRequest: MiddlewareHandler = async ({ request, locals }, next) =>
   if (shouldEnforceIngressHeaders(request.url, ingressPath)) {
     const missingHeaders = getMissingRequiredIngressHeaders(requiredIngressHeaders, request.headers);
     if (missingHeaders.length === 0) {
-      const response = await next();
+      let response = await next();
+      // Rewrite HTML paths when behind HA ingress
+      if (ingressPath) {
+        response = await rewriteIngressPaths(response, ingressPath);
+      }
       // Inject security + observability headers
       for (const [key, value] of Object.entries(securityHeaders)) {
         response.headers.set(key, value);
@@ -215,7 +246,11 @@ export const onRequest: MiddlewareHandler = async ({ request, locals }, next) =>
     );
   }
 
-  const response = await next();
+  let response = await next();
+  // Rewrite HTML paths when behind HA ingress
+  if (ingressPath) {
+    response = await rewriteIngressPaths(response, ingressPath);
+  }
   // Inject security + observability headers on all responses
   for (const [key, value] of Object.entries(securityHeaders)) {
     response.headers.set(key, value);
