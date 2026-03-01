@@ -86,7 +86,7 @@ With `auth_api: true`, Meitheal can validate user credentials against the Home A
 - **CSRF**: Origin/referer validation on mutating requests
 - **Rate limiting**: Per-IP rate limiting (120 req/min) with `X-Forwarded-For` support for ingress proxy
 - **Security headers**: X-Content-Type-Options, CSP, Referrer-Policy, Permissions-Policy
-- **Non-root container**: Runs as the `meitheal` user, not root
+- **Container isolation**: Runs with Docker namespace isolation + AppArmor profile
 - **tmpfs**: `/tmp` mounted as tmpfs (ephemeral, no disk persistence)
 - **Panel admin**: Sidebar panel restricted to HA admin users
 

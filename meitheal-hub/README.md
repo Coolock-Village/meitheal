@@ -16,9 +16,7 @@ This add-on is Astro-first and runs the Meitheal web runtime with SQLite persist
 
 ## Screenshots
 
-![Meitheal Hub Home](../../docs/images/meitheal-hub-home.png)
-
-*Meitheal Hub running in HA container*
+*Screenshots will be added once the UI is fully styled.*
 
 ## Local Testing
 
