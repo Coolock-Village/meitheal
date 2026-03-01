@@ -1418,13 +1418,16 @@ Astro.response.headers.set("X-XSS-Protection", "1; mode=block");
 
             // If the task's status isn't in the dropdown, add it as an option
             const taskStatus = String(t.status ?? "pending");
-            if (!statusSelect.querySelector(`option[value="${taskStatus}"]`)) {
+            if (
+              statusSelect &&
+              !statusSelect.querySelector(`option[value="${taskStatus}"]`)
+            ) {
               const opt = document.createElement("option");
               opt.value = taskStatus;
               opt.textContent = taskStatus;
               statusSelect.appendChild(opt);
             }
-            statusSelect.value = taskStatus;
+            if (statusSelect) statusSelect.value = taskStatus;
             const tdDesc = document.getElementById(
               "td-description",
             ) as HTMLTextAreaElement;

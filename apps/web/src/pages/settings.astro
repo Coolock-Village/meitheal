@@ -132,13 +132,20 @@ const locale: Locale = cookieLocale === "ga" ? "ga" : "en";
               >+ Add Custom Link</button
             >
           </div>
-          <button
-            type="button"
-            class="btn btn-primary"
-            id="save-sidebar"
-            style="font-size: 13px; margin-top: 16px;"
-            >Save Sidebar Config</button
-          >
+          <div style="display: flex; gap: 8px; margin-top: 16px;">
+            <button
+              type="button"
+              class="btn btn-primary"
+              id="save-sidebar"
+              style="font-size: 13px;">Save Sidebar Config</button
+            >
+            <button
+              type="button"
+              class="btn btn-ghost"
+              id="reset-sidebar"
+              style="font-size: 13px;">Reset to Default</button
+            >
+          </div>
         </div>
       </div>
 
@@ -1562,6 +1569,21 @@ const locale: Locale = cookieLocale === "ga" ? "ga" : "en";
         btn.disabled = false;
         showToast("settings.sidebar_saved");
         setTimeout(() => window.location.reload(), 1000);
+      });
+
+    // Reset sidebar to defaults
+    document
+      .getElementById("reset-sidebar")
+      ?.addEventListener("click", async () => {
+        const confirmed = await confirmDialog({
+          message:
+            "Reset sidebar to default configuration? Custom links and reordering will be lost.",
+          variant: "warning",
+        });
+        if (!confirmed) return;
+        await saveSetting("sidebar_config", {});
+        showToast("Sidebar reset to defaults");
+        setTimeout(() => window.location.reload(), 500);
       });
 
     // Add custom field
