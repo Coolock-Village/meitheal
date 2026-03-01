@@ -25,6 +25,22 @@ profile meitheal_hub flags=(attach_disconnected,mediate_deleted) {
   # ── Application files (read-only) ──
   /opt/meitheal/** r,
   /opt/meitheal/node_modules/.pnpm/**/node_modules/** r,
+  /opt/meitheal/apps/web/scripts/** ix,
+
+  # ── pnpm + npm ──
+  /usr/local/bin/pnpm ix,
+  /usr/local/bin/npm ix,
+  /usr/local/lib/node_modules/** r,
+
+  # ── s6-overlay (init system) ──
+  /init ix,
+  /command/** ix,
+  /package/** r,
+  /etc/s6-overlay/** r,
+  /run/s6/** rwk,
+  /run/s6-rc.* rwk,
+  /etc/services.d/** rx,
+  /etc/cont-init.d/** rx,
 
   # ── Entrypoints ──
   /run.sh ix,

@@ -1,5 +1,5 @@
 name: "Meitheal Hub"
-version: "0.1.4"
+version: "0.1.5"
 slug: "meitheal_hub"
 description: "The cooperative task and life engine for your home"
 url: "https://github.com/Coolock-Village/meitheal"
@@ -20,7 +20,7 @@ hassio_role: default
 auth_api: true
 panel_icon: mdi:account-group
 panel_admin: true
-apparmor: false
+apparmor: true
 tmpfs: true
 stage: experimental
 options:
