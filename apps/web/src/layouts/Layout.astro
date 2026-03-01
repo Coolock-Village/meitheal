@@ -74,8 +74,21 @@ Astro.response.headers.set("X-XSS-Protection", "1; mode=block");
     <script is:inline>
       (function () {
         var t = localStorage.getItem("meitheal-theme") || "dark";
-        if (t !== "dark")
-          document.documentElement.setAttribute("data-theme", t);
+        if (t === "custom") {
+          document.documentElement.setAttribute("data-theme", "dark");
+          var css = localStorage.getItem("meitheal-custom-theme-css");
+          if (css) {
+            var s = document.createElement("style");
+            s.id = "meitheal-custom-theme";
+            s.textContent = css;
+            document.head.appendChild(s);
+          }
+        } else if (t === "auto") {
+          document.documentElement.setAttribute("data-theme", "auto");
+        } else if (t === "light") {
+          document.documentElement.setAttribute("data-theme", "light");
+        }
+        // dark = default (no data-theme needed, :root vars apply)
       })();
     </script>
     <meta charset="utf-8" />
@@ -129,7 +142,9 @@ Astro.response.headers.set("X-XSS-Protection", "1; mode=block");
     <a href="#main-content" class="skip-to-content"
       >{t("nav.skip_to_content", locale)}</a
     >
-    <Sidebar locale={locale} taskCounts={taskCounts} />
+    <div transition:persist="sidebar">
+      <Sidebar locale={locale} taskCounts={taskCounts} />
+    </div>
     <div class="main-content">
       <TopNavigation locale={locale}>
         <Fragment slot="page-title"><slot name="page-title" /></Fragment>

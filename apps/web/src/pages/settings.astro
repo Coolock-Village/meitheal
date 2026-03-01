@@ -837,7 +837,52 @@ const locale: Locale = cookieLocale === "ga" ? "ga" : "en";
             <option value="dark">Dark</option>
             <option value="light">Light</option>
             <option value="auto">Auto (System)</option>
+            <option value="custom">Custom</option>
           </select>
+        </div>
+        <div
+          id="custom-theme-section"
+          class="form-group"
+          style="margin-top: 12px; display: none;"
+        >
+          <div
+            id="custom-theme-empty"
+            style="display: flex; align-items: center; gap: 8px;"
+          >
+            <label
+              class="btn btn-secondary"
+              style="cursor: pointer; margin: 0; padding: 6px 16px; display: inline-flex; align-items: center; gap: 6px;"
+            >
+              🎨 Import CSS Theme
+              <input
+                type="file"
+                id="custom-theme-input"
+                accept=".css"
+                style="display: none;"
+              />
+            </label>
+            <small style="color: var(--text-muted); font-size: 11px;"
+              >Max 50KB · .css only · 1 theme</small
+            >
+          </div>
+          <div
+            id="custom-theme-loaded"
+            style="display: none; align-items: center; gap: 8px; margin-top: 8px; padding: 8px 12px; background: var(--bg-secondary); border: 1px solid var(--border); border-radius: var(--radius-sm);"
+          >
+            <span style="font-size: 14px;">🎨</span>
+            <a
+              id="custom-theme-filename"
+              href="#"
+              style="flex: 1; font-size: 13px; font-weight: 500; color: var(--accent); cursor: pointer;"
+            ></a>
+            <button
+              type="button"
+              id="custom-theme-delete"
+              class="btn-icon"
+              style="color: var(--danger); font-size: 14px; padding: 2px 6px;"
+              title="Remove custom theme">×</button
+            >
+          </div>
         </div>
         <div class="form-group" style="margin-top: 12px;">
           <label class="form-label" for="timezone-select">Timezone</label>
@@ -1076,9 +1121,7 @@ const locale: Locale = cookieLocale === "ga" ? "ga" : "en";
     });
 
     import { exportLocalDataAsJson } from "../domains/offline/export-service";
-    import { confirmDialog } from "../lib/confirm-dialog";
 
-    // Export Tasks Binding
     document
       .getElementById("export-json-btn")
       ?.addEventListener("click", async (e) => {
@@ -1125,6 +1168,27 @@ const locale: Locale = cookieLocale === "ga" ? "ga" : "en";
     }
 
     import { showToast } from "../lib/toast";
+    import {
+      setTheme as importedSetTheme,
+      applyCustomTheme as importedApplyCustomTheme,
+    } from "../lib/theme-watcher";
+    import type { ThemeMode } from "../lib/theme-watcher";
+
+    /** Max custom theme CSS file size in bytes */
+    const MAX_THEME_SIZE = 51200; // 50KB
+
+    /** Dangerous CSS patterns to strip from imported themes */
+    const DANGEROUS_CSS_PATTERNS = [
+      /@import\b[^;]*;/gi,
+      /url\s*\([^)]*\)/gi,
+      /expression\s*\([^)]*\)/gi,
+      /javascript\s*:/gi,
+      /behavior\s*:/gi,
+      /-moz-binding\s*:/gi,
+      /<script/gi,
+      /<\/style/gi,
+      /<\/script/gi,
+    }
 
     // Save a setting to the API
     async function saveSetting(key: string, value: unknown) {
@@ -1182,21 +1246,29 @@ const locale: Locale = cookieLocale === "ga" ? "ga" : "en";
           ).value = stored;
         }
 
-        // Restore theme
+        // Restore theme using theme-watcher for proper class + data-theme handling
         const savedTheme =
           settings.theme || localStorage.getItem("meitheal-theme") || "dark";
-        localStorage.setItem("meitheal-theme", String(savedTheme));
         const themeEl = document.getElementById(
           "theme-select",
         ) as HTMLSelectElement;
         if (themeEl) themeEl.value = String(savedTheme);
-        if (savedTheme !== "dark") {
-          document.documentElement.setAttribute(
-            "data-theme",
-            String(savedTheme),
+        // Use setTheme from theme-watcher which handles data-theme, classes, and custom CSS
+        importedSetTheme(
+          String(savedTheme) as import("../lib/theme-watcher").ThemeMode,
+        );
+        // Restore custom theme CSS if saved
+        if (savedTheme === "custom" && settings.custom_theme_css) {
+          localStorage.setItem(
+            "meitheal-custom-theme-css",
+            String(settings.custom_theme_css),
           );
-        } else {
-          document.documentElement.removeAttribute("data-theme");
+          importedApplyCustomTheme(String(settings.custom_theme_css));
+        }
+        // Show custom theme UI if custom is selected
+        showCustomThemeSection(String(savedTheme) === "custom");
+        if (settings.custom_theme_name) {
+          updateCustomThemeDisplay(String(settings.custom_theme_name));
         }
 
         // Restore timezone
@@ -1485,25 +1557,15 @@ const locale: Locale = cookieLocale === "ga" ? "ga" : "en";
         showToast("settings.ha_saved");
       });
 
-    // Theme Config
+    // Theme Config — init select from localStorage
     const themeSelect = document.getElementById(
       "theme-select",
     ) as HTMLSelectElement;
     if (themeSelect) {
       themeSelect.value = localStorage.getItem("meitheal-theme") || "dark";
+      // Show custom section if already on custom
+      showCustomThemeSection(themeSelect.value === "custom");
     }
-
-    document.getElementById("save-theme")?.addEventListener("click", () => {
-      const val = themeSelect.value;
-      localStorage.setItem("meitheal-theme", val);
-      if (val === "dark") {
-        document.documentElement.removeAttribute("data-theme");
-      } else {
-        document.documentElement.setAttribute("data-theme", val);
-      }
-      showToast("Theme updated locally");
-      setTimeout(() => window.location.reload(), 300);
-    });
 
     // Save sidebar config
     document
@@ -2137,25 +2199,142 @@ const locale: Locale = cookieLocale === "ga" ? "ga" : "en";
         setTimeout(() => window.location.reload(), 800);
       });
 
-    // Theme selector — instant apply + persist
+    // Theme selector — instant apply + persist via theme-watcher
     document
       .getElementById("theme-select")
       ?.addEventListener("change", async (e) => {
-        const theme = (e.target as HTMLSelectElement).value;
-        localStorage.setItem("meitheal-theme", theme);
-        if (theme === "dark") {
-          document.documentElement.removeAttribute("data-theme");
-        } else {
-          document.documentElement.setAttribute("data-theme", theme);
-        }
+        const theme = (e.target as HTMLSelectElement).value as ThemeMode;
+        // Use theme-watcher for proper class + data-theme + meta handling
+        importedSetTheme(theme);
         await saveSetting("theme", theme);
+        showCustomThemeSection(theme === "custom");
         showToast(
           theme === "dark"
             ? "Theme: Dark"
             : theme === "light"
               ? "Theme: Light"
-              : "Theme: Auto (System)",
+              : theme === "auto"
+                ? "Theme: Auto (System)"
+                : "Theme: Custom",
         );
+      });
+
+    // Custom theme file import handler
+    document
+      .getElementById("custom-theme-input")
+      ?.addEventListener("change", async (e) => {
+        const file = (e.target as HTMLInputElement).files?.[0];
+        if (!file) return;
+
+        // Validate file extension
+        if (!file.name.endsWith(".css")) {
+          showToast("Only .css files are allowed", "error");
+          (e.target as HTMLInputElement).value = "";
+          return;
+        }
+
+        // Validate MIME type
+        if (
+          file.type &&
+          file.type !== "text/css" &&
+          !file.type.startsWith("text/")
+        ) {
+          showToast("Invalid file type — must be a CSS file", "error");
+          (e.target as HTMLInputElement).value = "";
+          return;
+        }
+
+        // Validate size
+        if (file.size > MAX_THEME_SIZE) {
+          showToast(
+            `File too large (${Math.round(file.size / 1024)}KB) — max 50KB`,
+            "error",
+          );
+          (e.target as HTMLInputElement).value = "";
+          return;
+        }
+
+        try {
+          const rawCSS = await file.text();
+          const cleanCSS = sanitizeCSS(rawCSS);
+
+          // Store in localStorage for instant apply
+          localStorage.setItem("meitheal-custom-theme-css", cleanCSS);
+
+          // Apply immediately
+          importedSetTheme("custom");
+          importedApplyCustomTheme(cleanCSS);
+
+          // Persist to server
+          await saveSetting("custom_theme_css", cleanCSS);
+          await saveSetting("custom_theme_name", file.name);
+          await saveSetting("theme", "custom");
+
+          // Update UI
+          updateCustomThemeDisplay(file.name);
+          const themeEl = document.getElementById(
+            "theme-select",
+          ) as HTMLSelectElement;
+          if (themeEl) themeEl.value = "custom";
+          showToast(`Theme imported: ${file.name}`);
+        } catch (err) {
+          console.error("Failed to import custom theme:", err);
+          showToast("Failed to import theme", "error");
+        }
+
+        // Reset input so re-importing same file works
+        (e.target as HTMLInputElement).value = "";
+      });
+
+    // Custom theme delete handler
+    document
+      .getElementById("custom-theme-delete")
+      ?.addEventListener("click", async () => {
+        const ok = await confirmDialog({
+          message: "Remove custom theme? The app will revert to Dark mode.",
+          variant: "warning",
+        });
+        if (!ok) return;
+
+        // Clear from localStorage
+        localStorage.removeItem("meitheal-custom-theme-css");
+
+        // Remove injected style
+        importedApplyCustomTheme(null);
+
+        // Revert to dark
+        importedSetTheme("dark");
+        const themeEl = document.getElementById(
+          "theme-select",
+        ) as HTMLSelectElement;
+        if (themeEl) themeEl.value = "dark";
+
+        // Clear from server
+        await saveSetting("theme", "dark");
+        await saveSetting("custom_theme_css", "");
+        await saveSetting("custom_theme_name", "");
+
+        // Update UI
+        updateCustomThemeDisplay(null);
+        showToast("Custom theme removed — reverted to Dark");
+      });
+
+    // Custom theme filename click — download the stored CSS
+    document
+      .getElementById("custom-theme-filename")
+      ?.addEventListener("click", (e) => {
+        e.preventDefault();
+        const css = localStorage.getItem("meitheal-custom-theme-css");
+        if (!css) return;
+        const blob = new Blob([css], { type: "text/css" });
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement("a");
+        a.href = url;
+        a.download =
+          document.getElementById("custom-theme-filename")?.textContent ||
+          "custom-theme.css";
+        a.click();
+        URL.revokeObjectURL(url);
       });
 
     // Timezone selector — persist to API + localStorage

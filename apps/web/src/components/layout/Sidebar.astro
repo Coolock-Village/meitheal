@@ -341,16 +341,23 @@ const navItems = order
   checkHealth();
   setInterval(checkHealth, 30000);
 
-  // Active nav link
-  const currentPath = window.location.pathname;
-  document.querySelectorAll(".sidebar .nav-link").forEach((link) => {
-    if (
-      link.getAttribute("href") === currentPath ||
-      (currentPath === "/" && link.getAttribute("data-page") === "dashboard")
-    ) {
-      link.classList.add("active");
-    }
-  });
+  // Active nav link — reusable for View Transitions
+  function updateActiveNavLink() {
+    const currentPath = window.location.pathname;
+    document.querySelectorAll(".sidebar .nav-link").forEach((link) => {
+      link.classList.remove("active");
+      if (
+        link.getAttribute("href") === currentPath ||
+        (currentPath === "/" && link.getAttribute("data-page") === "dashboard")
+      ) {
+        link.classList.add("active");
+      }
+    });
+  }
+  updateActiveNavLink();
+
+  // Re-run after View Transitions swap
+  document.addEventListener("astro:after-swap", updateActiveNavLink);
 
   // Board Switcher
   (async function initBoardSwitcher() {

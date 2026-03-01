@@ -29,6 +29,8 @@ const ALLOWED_KEYS = new Set([
     "grocy_url", "grocy_api_key", "grocy_sync_mode",
     // ── Custom Fields ──
     "custom_fields",
+    // ── Custom Theme ──
+    "custom_theme_css", "custom_theme_name",
 ]);
 
 export const POST: APIRoute = async ({ request }) => {

@@ -85,9 +85,10 @@ export const PUT: APIRoute = async ({ request }) => {
     }
 
     const value = JSON.stringify(body.value ?? null);
-    // Cap value size at 10KB to prevent abuse
-    if (value.length > 10240) {
-      return apiError("value exceeds 10KB limit", 400);
+    // Cap value size: 64KB for custom theme CSS, 10KB for everything else
+    const maxSize = key === "custom_theme_css" ? 65536 : 10240;
+    if (value.length > maxSize) {
+      return apiError(`value exceeds ${maxSize > 10240 ? "64KB" : "10KB"} limit`, 400);
     }
     const now = Date.now();
 
