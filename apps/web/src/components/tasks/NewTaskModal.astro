@@ -6,7 +6,7 @@ const cookieLocale = Astro.cookies.get("meitheal-locale")?.value;
 const locale: Locale = cookieLocale === "ga" ? "ga" : "en";
 ---
 
-<div id="new-task-overlay" class="modal-overlay hidden relative z-[200]">
+<div id="new-task-overlay" class="modal-overlay relative z-[200]">
   <div class="modal-content max-w-lg w-full p-6 animate-slide-in">
     <div
       class="modal-header flex items-center justify-between mb-4 border-b border-border pb-3"
@@ -107,7 +107,7 @@ const locale: Locale = cookieLocale === "ga" ? "ga" : "en";
   const form = document.getElementById("new-task-form") as HTMLFormElement;
 
   function closeNewTaskModal() {
-    overlay?.classList.add("hidden");
+    overlay?.classList.remove("open");
     form?.reset();
   }
 
@@ -124,7 +124,7 @@ const locale: Locale = cookieLocale === "ga" ? "ga" : "en";
     document.getElementById("task-detail-overlay")?.classList.add("hidden");
 
     form?.reset();
-    overlay?.classList.remove("hidden");
+    overlay?.classList.add("open");
     setTimeout(() => {
       document.getElementById("new-task-title-input")?.focus();
     }, 50);

@@ -1242,12 +1242,12 @@ const locale: Locale = cookieLocale === "ga" ? "ga" : "en";
           calendar: "Calendar",
         };
 
-        const configStr = document.getElementById(
-          "initial-sidebar-config",
-        )!.textContent;
         let sidebarConfig: Record<string, any> = {};
         try {
-          sidebarConfig = JSON.parse(configStr || "{}");
+          const raw = settings.sidebar_config;
+          if (raw) {
+            sidebarConfig = typeof raw === "string" ? JSON.parse(raw) : raw;
+          }
         } catch {}
 
         let orderItems = Array.isArray(sidebarConfig.order)
