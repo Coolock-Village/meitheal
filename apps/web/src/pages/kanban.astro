@@ -789,7 +789,7 @@ const typeConfig: Record<
         form.style.cssText = "display:flex;gap:6px;margin-top:8px;";
         form.innerHTML = `
           <input type="text" class="form-input" placeholder="Task title..." style="flex:1;font-size:13px;padding:6px 10px;" autofocus />
-          <button class="btn btn-primary" style="font-size:13px;padding:6px 12px;">Add</button>
+          <button type="button" class="btn btn-primary" style="font-size:13px;padding:6px 12px;">Add</button>
         `;
         btn.parentElement.insertBefore(form, btn);
         btn.style.display = "none";
@@ -903,8 +903,8 @@ const typeConfig: Record<
           ${
             !lane.builtIn
               ? `
-            <button class="lane-edit" data-id="${lane.id}" data-label="${lane.label}" title="Rename" style="background:none;border:none;cursor:pointer;color:var(--text-muted);font-size:14px;">✏️</button>
-            <button class="lane-remove" data-id="${lane.id}" title="Remove" style="background:none;border:none;cursor:pointer;color:var(--danger);font-size:14px;">×</button>
+            <button type="button" class="lane-edit" data-id="${lane.id}" data-label="${lane.label}" title="Rename" style="background:none;border:none;cursor:pointer;color:var(--text-muted);font-size:14px;">✏️</button>
+            <button type="button" class="lane-remove" data-id="${lane.id}" title="Remove" style="background:none;border:none;cursor:pointer;color:var(--danger);font-size:14px;">×</button>
           `
               : '<span style="font-size:11px;color:var(--text-muted);">built-in</span>'
           }

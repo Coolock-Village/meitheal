@@ -1,6 +1,7 @@
 ---
 import Layout from "../layouts/Layout.astro";
 import TaskViewTabs from "../components/tasks/TaskViewTabs.astro";
+import EmptyState from "../components/ui/EmptyState.astro";
 import { t } from "../i18n/translations";
 import type { Locale } from "../lib/locale";
 import { formatTicketKey } from "../lib/ticket-key";
@@ -42,285 +43,301 @@ const priorityColors: Record<number, string> = {
     >
   </div>
 
-  <div
-    class="table-filter-bar"
-    id="table-filter-bar"
-    style="display: flex; gap: 12px; padding: 12px 16px; align-items: center; flex-wrap: wrap;"
-  >
-    <input
-      type="text"
-      class="form-input"
-      id="table-search"
-      placeholder={t("table.filter_placeholder", locale)}
-      style="max-width: 200px; padding: 6px 10px; font-size: 13px;"
-      aria-label="Filter table rows"
-    />
-    <select
-      class="form-select"
-      id="table-filter-rice"
-      style="max-width: 140px; padding: 6px 8px; font-size: 13px;"
-      aria-label="Filter by RICE score"
-    >
-      <option value="">{t("tasks.all_rice", locale)}</option>
-      <option value="high">{t("tasks.rice_high", locale)}</option>
-      <option value="medium">{t("tasks.rice_medium", locale)}</option>
-      <option value="low">{t("tasks.rice_low", locale)}</option>
-    </select>
-  </div>
-  <div class="table-container">
-    <table class="data-table" id="task-table">
-      <thead>
-        <tr>
-          <th style="width: 40px;"
-            ><input
-              type="checkbox"
-              id="select-all"
-              aria-label="Select all tasks"
-            /></th
+  <TaskViewTabs activeView="table" />
+
+  {
+    tasks.length === 0 ? (
+      <EmptyState
+        title={t("table.no_tasks", locale)}
+        description="Create your first task to see the table view."
+        actionText={t("tasks.new_task", locale)}
+        actionHref="/tasks"
+      />
+    ) : (
+      <>
+        <div
+          class="table-filter-bar"
+          id="table-filter-bar"
+          style="display: flex; gap: 12px; padding: 12px 16px; align-items: center; flex-wrap: wrap;"
+        >
+          <input
+            type="text"
+            class="form-input"
+            id="table-search"
+            placeholder={t("table.filter_placeholder", locale)}
+            style="max-width: 200px; padding: 6px 10px; font-size: 13px;"
+            aria-label="Filter table rows"
+          />
+          <select
+            class="form-select"
+            id="table-filter-rice"
+            style="max-width: 140px; padding: 6px 8px; font-size: 13px;"
+            aria-label="Filter by RICE score"
           >
-          <th class="sortable" data-col="key" style="width: 90px;">Key</th>
-          <th class="sortable" data-col="title"
-            >{t("table.col_title", locale)}</th
-          >
-          <th class="sortable" data-col="type" style="width: 70px;">Type</th>
-          <th class="sortable" data-col="status" style="width: 100px;"
-            >{t("table.col_status", locale)}</th
-          >
-          <th class="sortable" data-col="priority" style="width: 100px;"
-            >{t("table.col_priority", locale)}</th
-          >
-          <th class="sortable" data-col="due_date" style="width: 120px;"
-            >{t("table.col_due_date", locale)}</th
-          >
-          <th class="sortable" data-col="rice" style="width: 80px;"
-            >{t("table.col_rice", locale)}</th
-          >
-          <th style="width: 70px;" title={t("table.col_calendar", locale)}
-            >📅</th
-          >
-          <th style="width: 100px;">{t("table.col_custom_fields", locale)}</th>
-          <th style="width: 80px;">{t("table.col_actions", locale)}</th>
-        </tr>
-      </thead>
-      <tbody>
-        {
-          tasks.length === 0 ? (
-            <tr>
-              <td
-                colspan="11"
-                style="text-align: center; padding: 40px; color: var(--text-muted);"
-              >
-                {t("table.no_tasks", locale)}
-              </td>
-            </tr>
-          ) : (
-            tasks.map((task) => {
-              const p = Number(task.priority ?? 3);
-              const s = String(task.status);
-              const isDone = s === "complete" || s === "done";
-              const fp =
-                typeof task.framework_payload === "string"
-                  ? JSON.parse(String(task.framework_payload))
-                  : {};
-              const rice =
-                fp.reach && fp.impact && fp.confidence && fp.effort
-                  ? Math.round(
-                      (Number(fp.reach) *
-                        Number(fp.impact) *
-                        Number(fp.confidence)) /
-                        Number(fp.effort),
-                    )
-                  : null;
-              const customFields = (() => {
-                try {
-                  const cf =
-                    typeof task.custom_fields === "string"
-                      ? JSON.parse(String(task.custom_fields))
-                      : {};
-                  return Object.entries(cf).filter(
-                    ([_, v]) => v !== null && v !== undefined,
-                  );
-                } catch {
-                  return [];
-                }
-              })();
-              return (
-                <tr
-                  data-id={String(task.id)}
-                  data-rice={rice !== null ? String(rice) : ""}
-                  data-board={String(task.board_id ?? "default")}
-                  class={isDone ? "row-done" : ""}
+            <option value="">{t("tasks.all_rice", locale)}</option>
+            <option value="high">{t("tasks.rice_high", locale)}</option>
+            <option value="medium">{t("tasks.rice_medium", locale)}</option>
+            <option value="low">{t("tasks.rice_low", locale)}</option>
+          </select>
+        </div>
+        <div class="table-container">
+          <table class="data-table" id="task-table">
+            <thead>
+              <tr>
+                <th style="width: 40px;">
+                  <input
+                    type="checkbox"
+                    id="select-all"
+                    aria-label="Select all tasks"
+                  />
+                </th>
+                <th class="sortable" data-col="key" style="width: 90px;">
+                  Key
+                </th>
+                <th class="sortable" data-col="title">
+                  {t("table.col_title", locale)}
+                </th>
+                <th class="sortable" data-col="type" style="width: 70px;">
+                  Type
+                </th>
+                <th class="sortable" data-col="status" style="width: 100px;">
+                  {t("table.col_status", locale)}
+                </th>
+                <th class="sortable" data-col="priority" style="width: 100px;">
+                  {t("table.col_priority", locale)}
+                </th>
+                <th class="sortable" data-col="due_date" style="width: 120px;">
+                  {t("table.col_due_date", locale)}
+                </th>
+                <th class="sortable" data-col="rice" style="width: 80px;">
+                  {t("table.col_rice", locale)}
+                </th>
+                <th
+                  style="width: 70px;"
+                  title={t("table.col_calendar", locale)}
                 >
-                  <td>
-                    <input
-                      type="checkbox"
-                      class="row-check"
-                      data-id={String(task.id)}
-                      aria-label={`Select task: ${String(task.title)}`}
-                    />
-                  </td>
-                  <td>
-                    <span
-                      class="ticket-key-badge"
-                      title={`Task ${formatTicketKey(Number(task.ticket_number)) ?? String(task.id).slice(0, 8)}`}
-                    >
-                      {formatTicketKey(Number(task.ticket_number)) ??
-                        `#${String(task.id).slice(0, 8)}`}
-                    </span>
-                  </td>
-                  <td>
-                    <span
-                      class="editable-cell"
-                      contenteditable="true"
-                      data-field="title"
-                      data-id={String(task.id)}
-                    >
-                      {String(task.title)}
-                    </span>
-                    {task.description && (
-                      <div style="font-size: 11px; color: var(--text-muted); margin-top: 2px;">
-                        {String(task.description).slice(0, 60)}
-                      </div>
-                    )}
-                  </td>
-                  <td>
-                    <span
-                      style="font-size: 14px;"
-                      title={String(task.task_type ?? "task")}
-                    >
-                      {String(task.task_type) === "epic"
-                        ? "🎯"
-                        : String(task.task_type) === "story"
-                          ? "📖"
-                          : "✅"}
-                    </span>
-                  </td>
-                  <td>
-                    <select
-                      class="inline-select"
-                      data-field="status"
-                      data-id={String(task.id)}
-                      aria-label={`Status for ${String(task.title)}`}
-                    >
-                      <option
-                        value="pending"
-                        selected={s === "pending" || s === "todo"}
-                      >
-                        Pending
-                      </option>
-                      <option
-                        value="active"
-                        selected={s === "active" || s === "in_progress"}
-                      >
-                        Active
-                      </option>
-                      <option value="complete" selected={isDone}>
-                        Complete
-                      </option>
-                    </select>
-                  </td>
-                  <td>
-                    <select
-                      class="inline-select"
-                      data-field="priority"
-                      data-id={String(task.id)}
-                      aria-label={`Priority for ${String(task.title)}`}
-                      style={`color: ${priorityColors[p]}`}
-                    >
-                      <option
-                        value="1"
-                        selected={p === 1}
-                        style="color: #ef4444;"
-                      >
-                        {t("priority.critical", locale)}
-                      </option>
-                      <option
-                        value="2"
-                        selected={p === 2}
-                        style="color: #f59e0b;"
-                      >
-                        {t("priority.high", locale)}
-                      </option>
-                      <option
-                        value="3"
-                        selected={p === 3}
-                        style="color: #3b82f6;"
-                      >
-                        {t("priority.medium", locale)}
-                      </option>
-                      <option
-                        value="4"
-                        selected={p === 4}
-                        style="color: #10b981;"
-                      >
-                        {t("priority.low", locale)}
-                      </option>
-                      <option
-                        value="5"
-                        selected={p === 5}
-                        style="color: #6b7280;"
-                      >
-                        {t("priority.minimal", locale)}
-                      </option>
-                    </select>
-                  </td>
-                  <td style="font-size: 13px; color: var(--text-secondary);">
-                    {task.due_date ? String(task.due_date).split("T")[0] : "—"}
-                  </td>
-                  <td>
-                    {rice ? (
+                  📅
+                </th>
+                <th style="width: 100px;">
+                  {t("table.col_custom_fields", locale)}
+                </th>
+                <th style="width: 80px;">{t("table.col_actions", locale)}</th>
+              </tr>
+            </thead>
+            <tbody>
+              {tasks.map((task) => {
+                const p = Number(task.priority ?? 3);
+                const s = String(task.status);
+                const isDone = s === "complete" || s === "done";
+                const fp =
+                  typeof task.framework_payload === "string"
+                    ? JSON.parse(String(task.framework_payload))
+                    : {};
+                const rice =
+                  fp.reach && fp.impact && fp.confidence && fp.effort
+                    ? Math.round(
+                        (Number(fp.reach) *
+                          Number(fp.impact) *
+                          Number(fp.confidence)) /
+                          Number(fp.effort),
+                      )
+                    : null;
+                const customFields = (() => {
+                  try {
+                    const cf =
+                      typeof task.custom_fields === "string"
+                        ? JSON.parse(String(task.custom_fields))
+                        : {};
+                    return Object.entries(cf).filter(
+                      ([_, v]) => v !== null && v !== undefined,
+                    );
+                  } catch {
+                    return [];
+                  }
+                })();
+                return (
+                  <tr
+                    data-id={String(task.id)}
+                    data-rice={rice !== null ? String(rice) : ""}
+                    data-board={String(task.board_id ?? "default")}
+                    class={isDone ? "row-done" : ""}
+                  >
+                    <td>
+                      <input
+                        type="checkbox"
+                        class="row-check"
+                        data-id={String(task.id)}
+                        aria-label={`Select task: ${String(task.title)}`}
+                      />
+                    </td>
+                    <td>
                       <span
-                        class={`rice-badge ${rice >= 50 ? "rice-high" : rice >= 20 ? "rice-med" : "rice-low"}`}
+                        class="ticket-key-badge"
+                        title={`Task ${formatTicketKey(Number(task.ticket_number)) ?? String(task.id).slice(0, 8)}`}
                       >
-                        {rice}
+                        {formatTicketKey(Number(task.ticket_number)) ??
+                          `#${String(task.id).slice(0, 8)}`}
                       </span>
-                    ) : (
-                      <span style="color: var(--text-muted);">—</span>
-                    )}
-                  </td>
-                  <td>
-                    {String(task.calendar_sync_state) === "confirmed" ? (
+                    </td>
+                    <td>
                       <span
-                        title="Calendar synced"
-                        style="color: var(--accent);"
+                        class="editable-cell"
+                        contenteditable="true"
+                        data-field="title"
+                        data-id={String(task.id)}
                       >
-                        ✅
+                        {String(task.title)}
                       </span>
-                    ) : String(task.calendar_sync_state) === "pending" ? (
-                      <span title="Sync pending" style="color: var(--warning);">
-                        ⏳
-                      </span>
-                    ) : (
+                      {task.description && (
+                        <div style="font-size: 11px; color: var(--text-muted); margin-top: 2px;">
+                          {String(task.description).slice(0, 60)}
+                        </div>
+                      )}
+                    </td>
+                    <td>
                       <span
-                        title="Not synced"
-                        style="color: var(--text-muted);"
+                        style="font-size: 14px;"
+                        title={String(task.task_type ?? "task")}
                       >
-                        —
+                        {String(task.task_type) === "epic"
+                          ? "🎯"
+                          : String(task.task_type) === "story"
+                            ? "📖"
+                            : "✅"}
                       </span>
-                    )}
-                  </td>
-                  <td style="font-size: 11px; color: var(--text-muted);">
-                    {customFields.length > 0
-                      ? customFields.map(([k, v]) => `${k}: ${v}`).join(", ")
-                      : "—"}
-                  </td>
-                  <td>
-                    <button
-                      class="btn-icon delete-row"
-                      data-id={String(task.id)}
-                      title="Delete"
-                    >
-                      🗑
-                    </button>
-                  </td>
-                </tr>
-              );
-            })
-          )
-        }
-      </tbody>
-    </table>
-  </div>
+                    </td>
+                    <td>
+                      <select
+                        class="inline-select"
+                        data-field="status"
+                        data-id={String(task.id)}
+                        aria-label={`Status for ${String(task.title)}`}
+                      >
+                        <option
+                          value="pending"
+                          selected={s === "pending" || s === "todo"}
+                        >
+                          Pending
+                        </option>
+                        <option
+                          value="active"
+                          selected={s === "active" || s === "in_progress"}
+                        >
+                          Active
+                        </option>
+                        <option value="complete" selected={isDone}>
+                          Complete
+                        </option>
+                      </select>
+                    </td>
+                    <td>
+                      <select
+                        class="inline-select"
+                        data-field="priority"
+                        data-id={String(task.id)}
+                        aria-label={`Priority for ${String(task.title)}`}
+                        style={`color: ${priorityColors[p]}`}
+                      >
+                        <option
+                          value="1"
+                          selected={p === 1}
+                          style="color: #ef4444;"
+                        >
+                          {t("priority.critical", locale)}
+                        </option>
+                        <option
+                          value="2"
+                          selected={p === 2}
+                          style="color: #f59e0b;"
+                        >
+                          {t("priority.high", locale)}
+                        </option>
+                        <option
+                          value="3"
+                          selected={p === 3}
+                          style="color: #3b82f6;"
+                        >
+                          {t("priority.medium", locale)}
+                        </option>
+                        <option
+                          value="4"
+                          selected={p === 4}
+                          style="color: #10b981;"
+                        >
+                          {t("priority.low", locale)}
+                        </option>
+                        <option
+                          value="5"
+                          selected={p === 5}
+                          style="color: #6b7280;"
+                        >
+                          {t("priority.minimal", locale)}
+                        </option>
+                      </select>
+                    </td>
+                    <td style="font-size: 13px; color: var(--text-secondary);">
+                      {task.due_date
+                        ? String(task.due_date).split("T")[0]
+                        : "—"}
+                    </td>
+                    <td>
+                      {rice ? (
+                        <span
+                          class={`rice-badge ${rice >= 50 ? "rice-high" : rice >= 20 ? "rice-med" : "rice-low"}`}
+                        >
+                          {rice}
+                        </span>
+                      ) : (
+                        <span style="color: var(--text-muted);">—</span>
+                      )}
+                    </td>
+                    <td>
+                      {String(task.calendar_sync_state) === "confirmed" ? (
+                        <span
+                          title="Calendar synced"
+                          style="color: var(--accent);"
+                        >
+                          ✅
+                        </span>
+                      ) : String(task.calendar_sync_state) === "pending" ? (
+                        <span
+                          title="Sync pending"
+                          style="color: var(--warning);"
+                        >
+                          ⏳
+                        </span>
+                      ) : (
+                        <span
+                          title="Not synced"
+                          style="color: var(--text-muted);"
+                        >
+                          —
+                        </span>
+                      )}
+                    </td>
+                    <td style="font-size: 11px; color: var(--text-muted);">
+                      {customFields.length > 0
+                        ? customFields.map(([k, v]) => `${k}: ${v}`).join(", ")
+                        : "—"}
+                    </td>
+                    <td>
+                      <button
+                        class="btn-icon delete-row"
+                        data-id={String(task.id)}
+                        title="Delete"
+                      >
+                        🗑
+                      </button>
+                    </td>
+                  </tr>
+                );
+              })}
+            </tbody>
+          </table>
+        </div>
+      </>
+    )
+  }
 
   <div class="bulk-bar" id="bulk-bar" style="display: none;">
     <span id="selected-count">0 selected</span>

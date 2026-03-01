@@ -1,5 +1,6 @@
 ---
 import Layout from "../layouts/Layout.astro";
+import EmptyState from "../components/ui/EmptyState.astro";
 import {
   ensureSchema,
   getPersistenceClient,
@@ -104,6 +105,17 @@ const totalTasks = days.reduce((sum, d) => sum + d.tasks.length, 0);
     {totalTasks}
     {totalTasks === 1 ? "task" : "tasks"} in the next 7 days
   </div>
+
+  {
+    totalTasks === 0 && (
+      <EmptyState
+        title="No upcoming tasks"
+        description="Your schedule is clear for the next 7 days."
+        actionText="Plan something"
+        actionHref="/tasks"
+      />
+    )
+  }
 
   <div class="upcoming-grid">
     {

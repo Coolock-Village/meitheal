@@ -1561,10 +1561,93 @@ Astro.response.headers.set("X-XSS-Protection", "1; mode=block");
             const updated = t.updated_at
               ? new Date(Number(t.updated_at)).toLocaleDateString()
               : "";
-            (document.getElementById("td-created") as HTMLElement).textContent =
-              created ? `Created: ${created}` : "";
             (document.getElementById("td-updated") as HTMLElement).textContent =
               updated ? `Updated: ${updated}` : "";
+
+            // Render Checklists
+            const checklistsContainer = document.getElementById(
+              "td-checklists",
+            ) as HTMLElement;
+            const clDoneSpan = document.getElementById(
+              "td-checklist-done",
+            ) as HTMLElement;
+            const clTotalSpan = document.getElementById(
+              "td-checklist-total",
+            ) as HTMLElement;
+            const clProgressDiv = document.getElementById(
+              "td-checklist-progress",
+            ) as HTMLElement;
+
+            (window as any).__currentChecklists = [];
+            try {
+              if (t.checklists) {
+                (window as any).__currentChecklists =
+                  typeof t.checklists === "string"
+                    ? JSON.parse(String(t.checklists))
+                    : t.checklists;
+              }
+            } catch {
+              /* skip */
+            }
+
+            (window as any).refreshChecklistsVisuals = () => {
+              const list = (window as any).__currentChecklists || [];
+              if (checklistsContainer) {
+                checklistsContainer.innerHTML = "";
+                let doneCount = 0;
+                list.forEach((item: any, index: number) => {
+                  if (item.done) doneCount++;
+                  const row = document.createElement("div");
+                  row.className = "flex items-center gap-2 group";
+                  row.innerHTML = `
+                    <input type="checkbox" class="form-checkbox h-4 w-4 bg-transparent border-border rounded" ${item.done ? "checked" : ""} />
+                    <input type="text" class="form-input flex-1 text-sm bg-transparent border-transparent px-1 py-0.5 focus:bg-[var(--bg-input)] focus:border-[var(--border-focus)] hover:bg-[var(--bg-hover)]" value="${item.text.replace(/"/g, "&quot;")}" placeholder="Checklist item..." />
+                    <button type="button" class="text-danger opacity-0 group-hover:opacity-100 transition-opacity text-xs p-1" title="Delete item">×</button>
+                  `;
+                  // Toggle done
+                  const cb = row.querySelector(
+                    "input[type=checkbox]",
+                  ) as HTMLInputElement;
+                  cb.addEventListener("change", () => {
+                    list[index].done = cb.checked;
+                    saveTD("checklists", JSON.stringify(list));
+                    (window as any).refreshChecklistsVisuals();
+                  });
+                  // Edit text
+                  const txt = row.querySelector(
+                    "input[type=text]",
+                  ) as HTMLInputElement;
+                  txt.addEventListener("blur", () => {
+                    if (txt.value.trim() !== list[index].text) {
+                      list[index].text = txt.value.trim();
+                      saveTD("checklists", JSON.stringify(list));
+                    }
+                  });
+                  txt.addEventListener("keydown", (e: KeyboardEvent) => {
+                    if (e.key === "Enter") txt.blur();
+                  });
+                  // Delete
+                  const del = row.querySelector("button") as HTMLButtonElement;
+                  del.addEventListener("click", () => {
+                    list.splice(index, 1);
+                    saveTD("checklists", JSON.stringify(list));
+                    (window as any).refreshChecklistsVisuals();
+                  });
+                  checklistsContainer.appendChild(row);
+                });
+
+                if (clProgressDiv && clDoneSpan && clTotalSpan) {
+                  if (list.length > 0) {
+                    clProgressDiv.style.display = "block";
+                    clDoneSpan.textContent = String(doneCount);
+                    clTotalSpan.textContent = String(list.length);
+                  } else {
+                    clProgressDiv.style.display = "none";
+                  }
+                }
+              }
+            };
+            (window as any).refreshChecklistsVisuals();
 
             // Load comments
             loadComments(taskId);
@@ -1786,6 +1869,32 @@ Astro.response.headers.set("X-XSS-Protection", "1; mode=block");
 
             // Reset input so the same file can be selected again
             input.value = "";
+          });
+
+        // Global Add Checklist Item handler
+        document
+          .getElementById("td-add-checklist-item")
+          ?.addEventListener("click", () => {
+            if (!currentTaskId) return;
+            const list = (window as any).__currentChecklists || [];
+            list.push({ text: "New Item", done: false });
+            (window as any).__currentChecklists = list;
+            saveTD("checklists", JSON.stringify(list)).then(() => {
+              if (
+                typeof (window as any).refreshChecklistsVisuals === "function"
+              ) {
+                (window as any).refreshChecklistsVisuals();
+                // focus the newly added input
+                const container = document.getElementById("td-checklists");
+                if (container) {
+                  const inputs = container.querySelectorAll("input[type=text]");
+                  if (inputs.length > 0) {
+                    (inputs[inputs.length - 1] as HTMLElement).focus();
+                    (inputs[inputs.length - 1] as HTMLInputElement).select();
+                  }
+                }
+              }
+            });
           });
 
         document

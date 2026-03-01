@@ -18,7 +18,9 @@ const PRECACHE_URLS = [
   "/today",
   "/tasks",
   "/kanban",
+  "/table",
   "/calendar",
+  "/settings",
   "/manifest.webmanifest",
   "/icon-192.png",
 ];
@@ -53,6 +55,9 @@ self.addEventListener("fetch", (event) => {
 
   // Skip non-GET requests (POST/PUT/DELETE go straight to network)
   if (event.request.method !== "GET") return;
+
+  // Ignore non-http/https requests (e.g. chrome-extension://)
+  if (!url.protocol.startsWith("http")) return;
 
   // API routes: network-first with cache fallback
   if (url.pathname.startsWith("/api/")) {

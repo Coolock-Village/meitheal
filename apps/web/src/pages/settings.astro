@@ -172,8 +172,9 @@ const locale: Locale = cookieLocale === "ga" ? "ga" : "en";
               >
             </div>
             <select
-              class="form-select framework-mapping-select"
+              class="form-select framework-mapping-select h-24"
               data-task-type="epic"
+              multiple
             >
               <option value="ddd">DDD (Domain-Driven Design)</option>
               <option value="rice">RICE (Priority Math)</option>
@@ -191,8 +192,9 @@ const locale: Locale = cookieLocale === "ga" ? "ga" : "en";
               <span class="text-xs text-text-muted">User-facing features</span>
             </div>
             <select
-              class="form-select framework-mapping-select"
+              class="form-select framework-mapping-select h-24"
               data-task-type="story"
+              multiple
             >
               <option value="rice">RICE (Priority Math)</option>
               <option value="drice">DRICE (Deps + RICE)</option>
@@ -210,8 +212,9 @@ const locale: Locale = cookieLocale === "ga" ? "ga" : "en";
               <span class="text-xs text-text-muted">Standard work items</span>
             </div>
             <select
-              class="form-select framework-mapping-select"
+              class="form-select framework-mapping-select h-24"
               data-task-type="task"
+              multiple
             >
               <option value="heart">HEART (UX Matrix)</option>
               <option value="rice">RICE (Priority Math)</option>
@@ -229,8 +232,9 @@ const locale: Locale = cookieLocale === "ga" ? "ga" : "en";
               <span class="text-xs text-text-muted">Knowledge articles</span>
             </div>
             <select
-              class="form-select framework-mapping-select"
+              class="form-select framework-mapping-select h-24"
               data-task-type="documentation"
+              multiple
             >
               <option value="kcs">KCS (Knowledge Workflow)</option>
               <option value="heart">HEART (UX Matrix)</option>
@@ -1022,15 +1026,26 @@ const locale: Locale = cookieLocale === "ga" ? "ga" : "en";
         const res = await fetch("/api/settings");
         const settings = await res.json();
 
-        // Restore contextual framework mappings
+        // Restore contextual framework mappings (arrays)
         if (settings.framework_mapping) {
-          const mapping = settings.framework_mapping as Record<string, string>;
+          const mapping = settings.framework_mapping as Record<
+            string,
+            string[]
+          >;
           document
             .querySelectorAll(".framework-mapping-select")
             .forEach((sel) => {
-              const taskType = (sel as HTMLSelectElement).dataset.taskType;
-              if (taskType && taskType in mapping) {
-                (sel as HTMLSelectElement).value = String(mapping[taskType]);
+              const select = sel as HTMLSelectElement;
+              const taskType = select.dataset.taskType;
+              if (
+                taskType &&
+                mapping[taskType] &&
+                Array.isArray(mapping[taskType])
+              ) {
+                const selectedVals = mapping[taskType];
+                Array.from(select.options).forEach((opt) => {
+                  opt.selected = selectedVals.includes(opt.value);
+                });
               }
             });
         }
@@ -1066,7 +1081,7 @@ const locale: Locale = cookieLocale === "ga" ? "ga" : "en";
                     <option value="${field.type}" selected>${field.type.charAt(0).toUpperCase() + field.type.slice(1)}</option>
                   </select>
                   <span style="color: var(--text-muted); font-size: 12px;">Saved</span>
-                  <button class="btn btn-ghost" style="padding: 4px 8px; color: var(--danger);" title="Remove field definition (data on existing tasks is preserved)">×</button>
+                  <button type="button" class="btn btn-ghost" style="padding: 4px 8px; color: var(--danger);" title="Remove field definition (data on existing tasks is preserved)">×</button>
                 `;
                 row
                   .querySelector("button")
@@ -1111,16 +1126,21 @@ const locale: Locale = cookieLocale === "ga" ? "ga" : "en";
       }
     }
 
-    // Contextual framework mapping change
+    // Contextual framework mapping change (multiple)
     document.querySelectorAll(".framework-mapping-select").forEach((sel) => {
       sel.addEventListener("change", () => {
-        const mapping: Record<string, string> = {};
+        const mapping: Record<string, string[]> = {};
         document.querySelectorAll(".framework-mapping-select").forEach((s) => {
-          const taskType = (s as HTMLSelectElement).dataset.taskType;
-          if (taskType) mapping[taskType] = (s as HTMLSelectElement).value;
+          const select = s as HTMLSelectElement;
+          const taskType = select.dataset.taskType;
+          if (taskType) {
+            mapping[taskType] = Array.from(select.selectedOptions).map(
+              (o) => o.value,
+            );
+          }
         });
         saveSetting("framework_mapping", mapping);
-        showToast("Framework mapping updated");
+        showToast("Framework mappings updated");
       });
     });
 
@@ -1205,8 +1225,8 @@ const locale: Locale = cookieLocale === "ga" ? "ga" : "en";
           <option value="date">Date</option>
           <option value="checkbox">Checkbox</option>
         </select>
-        <button class="btn btn-primary custom-field-save" style="padding: 4px 12px; font-size: 12px;">Save</button>
-        <button class="btn btn-ghost" style="padding: 4px 8px; color: var(--danger);" onclick="this.closest('.custom-field-row')?.remove()">×</button>
+        <button type="button" class="btn btn-primary custom-field-save" style="padding: 4px 12px; font-size: 12px;">Save</button>
+        <button type="button" class="btn btn-ghost" style="padding: 4px 8px; color: var(--danger);" onclick="this.closest('.custom-field-row')?.remove()">×</button>
       `;
         list.appendChild(row);
         row.querySelector("input")?.focus();

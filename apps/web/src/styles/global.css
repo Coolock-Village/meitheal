@@ -161,6 +161,26 @@
     @apply flex items-center justify-between px-6 py-4 bg-bg-secondary/50 border-b border-border;
   }
 
+    /* --- Empty State --- */
+    .empty-state {
+      @apply flex flex-col items-center justify-center p-12 text-center rounded-xl border border-dashed border-border/60 bg-bg-secondary/30 my-8 mx-auto w-full max-w-2xl;
+    }
+  
+    .empty-state-icon {
+      @apply mb-4 flex items-center justify-center;
+    }
+  
+    .empty-state-title {
+      @apply text-lg font-semibold text-text-primary mb-2 tracking-tight;
+    }
+  
+    .empty-state-desc {
+      @apply text-sm text-text-secondary max-w-sm mx-auto mb-6;
+    }
+  
+    .empty-state-actions {
+      @apply flex items-center justify-center gap-3 mt-2;
+    }
   .content-area {
     @apply flex-1 p-6;
   }

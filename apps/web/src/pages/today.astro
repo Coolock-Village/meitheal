@@ -1,5 +1,6 @@
 ---
 import Layout from "../layouts/Layout.astro";
+import EmptyState from "../components/ui/EmptyState.astro";
 import {
   ensureSchema,
   getPersistenceClient,
@@ -68,7 +69,9 @@ const typeIcons: Record<string, string> = {
 <Layout title="Meitheal — Today">
   <span slot="page-title">☀️ Today</span>
   <div slot="actions">
-    <button class="btn btn-primary" id="create-task-btn">+ New Task</button>
+    <button type="button" class="btn btn-primary" id="create-task-btn"
+      >+ New Task</button
+    >
   </div>
 
   <!-- Persona 10: Quick-add inline -->
@@ -188,15 +191,10 @@ const typeIcons: Record<string, string> = {
     <div class="task-list" id="today-tasks">
       {
         todayTasks.length === 0 ? (
-          <div style="padding: 32px 16px; text-align: center;">
-            <div style="font-size: 32px; margin-bottom: 8px;">🎉</div>
-            <div style="font-size: 14px; color: var(--text-primary); font-weight: 500;">
-              No tasks due today
-            </div>
-            <div style="font-size: 12px; color: var(--text-muted); margin-top: 4px;">
-              You're on top of things!
-            </div>
-          </div>
+          <EmptyState
+            title="No tasks due today"
+            description="You're on top of things! 🎉"
+          />
         ) : (
           todayTasks.map((task) => {
             const p = Number(task.priority ?? 3);
