@@ -88,12 +88,15 @@ async function rewriteIngressPaths(response: Response, ingressPath: string): Pro
   if (!contentType.includes("text/html")) return response;
 
   const html = await response.text();
+
+  // Inject runtime ingress path for client-side JS (must come before any scripts)
+  const ingressScript = `<script>window.__ingress_path="${ingressPath}";</script>`;
+
   // Prefix absolute paths with the ingress path
   const rewritten = html
+    .replace("<head>", `<head>${ingressScript}`)
     .replace(/"\/_astro\//g, `"${ingressPath}/_astro/`)
     .replace(/'\/_astro\//g, `'${ingressPath}/_astro/`)
-    .replace(/"\/api\//g, `"${ingressPath}/api/`)
-    .replace(/'\/api\//g, `'${ingressPath}/api/`)
     .replace(/"\/manifest\.webmanifest"/g, `"${ingressPath}/manifest.webmanifest"`)
     .replace(/"\/icon-192\.png"/g, `"${ingressPath}/icon-192.png"`);
 

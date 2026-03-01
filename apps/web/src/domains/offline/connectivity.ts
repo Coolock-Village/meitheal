@@ -17,9 +17,10 @@ export interface ConnectivityEventDetail {
   previousState: ConnectivityState
 }
 
+import { apiUrl } from "../../lib/ingress-fetch"
+
 // --- Configuration ---
 
-const HEALTH_CHECK_URL = "/api/health"
 const HEALTH_CHECK_INTERVAL_MS = 30_000
 const DEBOUNCE_MS = 2_000
 
@@ -55,7 +56,7 @@ async function checkHealth(): Promise<boolean> {
   try {
     const controller = new AbortController()
     const timeout = setTimeout(() => controller.abort(), 5_000)
-    const response = await fetch(HEALTH_CHECK_URL, {
+    const response = await fetch(apiUrl("/api/health"), {
       method: "HEAD",
       signal: controller.signal,
       cache: "no-store",

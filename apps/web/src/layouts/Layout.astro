@@ -63,6 +63,26 @@ Astro.response.headers.set("X-Content-Type-Options", "nosniff");
 <!doctype html>
 <html lang={locale}>
   <head>
+    <!-- Ingress-aware fetch: prefix /api/ paths with HA ingress path -->
+    <script is:inline>
+      (function () {
+        var ip = window.__ingress_path;
+        if (ip) {
+          var _f = window.fetch;
+          window.fetch = function (input, init) {
+            if (typeof input === "string" && input.startsWith("/")) {
+              input = ip + input;
+            } else if (input instanceof Request && input.url) {
+              var u = new URL(input.url);
+              if (u.pathname.startsWith("/") && u.origin === location.origin) {
+                input = new Request(ip + u.pathname + u.search, input);
+              }
+            }
+            return _f.call(this, input, init);
+          };
+        }
+      })();
+    </script>
     <!-- Theme init — runs before paint to prevent flash -->
     <script is:inline>
       (function () {
