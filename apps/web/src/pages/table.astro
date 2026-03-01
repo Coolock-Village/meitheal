@@ -86,6 +86,7 @@ const priorityColors: Record<number, string> = {
             /></th
           >
           <th class="sortable" data-col="title">Title</th>
+          <th class="sortable" data-col="type" style="width: 70px;">Type</th>
           <th class="sortable" data-col="status" style="width: 100px;"
             >Status</th
           >
@@ -106,7 +107,7 @@ const priorityColors: Record<number, string> = {
           tasks.length === 0 ? (
             <tr>
               <td
-                colspan="9"
+                colspan="10"
                 style="text-align: center; padding: 40px; color: var(--text-muted);"
               >
                 No tasks yet — create one to get started
@@ -165,6 +166,14 @@ const priorityColors: Record<number, string> = {
                         {String(task.description).slice(0, 60)}
                       </div>
                     )}
+                  </td>
+                  <td>
+                    <span
+                      style="font-size: 14px;"
+                      title={String(task.task_type ?? "task")}
+                    >
+                      {String(task.task_type) === "epic" ? "🎯" : String(task.task_type) === "story" ? "📖" : "✅"}
+                    </span>
                   </td>
                   <td>
                     <select
