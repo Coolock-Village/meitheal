@@ -402,6 +402,23 @@ import Layout from "../layouts/Layout.astro";
       </div>
     </div>
 
+    <!-- Language -->
+    <div class="card">
+      <div class="card-header">
+        <div>
+          <div class="card-title">🌐 Language</div>
+          <div class="card-subtitle">Interface language — content stays in its original language</div>
+        </div>
+      </div>
+      <div class="form-group" style="margin-top: 12px;">
+        <label class="form-label" for="locale-select">Display Language</label>
+        <select class="form-select" id="locale-select" style="max-width: 240px;">
+          <option value="en">English</option>
+          <option value="ga">Gaeilge</option>
+        </select>
+      </div>
+    </div>
+
     <!-- Data Portability -->
     <div class="card">
       <div class="card-header">
@@ -523,15 +540,7 @@ import Layout from "../layouts/Layout.astro";
       });
     }
 
-    function showToast(message: string, type: "success" | "error" = "success") {
-      const container = document.getElementById("toast-container");
-      if (!container) return;
-      const toast = document.createElement("div");
-      toast.className = `toast ${type}`;
-      toast.textContent = message;
-      container.appendChild(toast);
-      setTimeout(() => toast.remove(), 3000);
-    }
+    import { showToast } from "../lib/toast";
 
     // Save a setting to the API
     async function saveSetting(key: string, value: unknown) {
@@ -683,6 +692,8 @@ import Layout from "../layouts/Layout.astro";
       e.preventDefault();
       const haUrl = (document.getElementById("ha-url") as HTMLInputElement)
         .value;
+      const haToken = (document.getElementById("ha-token") as HTMLInputElement)
+        .value;
       const calEntity = (
         document.getElementById("calendar-entity") as HTMLInputElement
       ).value;
@@ -693,6 +704,7 @@ import Layout from "../layouts/Layout.astro";
       saveBtn.disabled = true;
 
       await saveSetting("ha_url", haUrl);
+      if (haToken) await saveSetting("ha_token", haToken);
       await saveSetting("calendar_entity", calEntity);
       
       saveBtn.innerHTML = origText;
