@@ -173,7 +173,6 @@ export const onRequest: MiddlewareHandler = async ({ request, locals }, next) =>
       "base-uri 'self'",
       "form-action 'self'",
       `frame-ancestors ${frameAncestors}`,
-      "upgrade-insecure-requests",
     ].join("; "),
   };
 
