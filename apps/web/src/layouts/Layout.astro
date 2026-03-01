@@ -1429,7 +1429,7 @@ try {
             if (tdAnchor) {
               tdAnchor.textContent = t.ticket_key
                 ? String(t.ticket_key)
-                : String(t.id).split("-")[0];
+                : (String(t.id).split("-")[0] ?? "");
               tdAnchor.onclick = () => {
                 navigator.clipboard.writeText(
                   t.ticket_key ? String(t.ticket_key) : String(t.id),
@@ -2789,6 +2789,18 @@ try {
             })
             .catch((err) => console.warn("SW registration failed:", err));
         }
+
+        // ───── Sync Notifications ─────
+        window.addEventListener("meitheal-sync", async (e: Event) => {
+          const ce = e as CustomEvent;
+          if (ce.detail?.type === "conflict-resolved") {
+            const { showToast } = await import("../lib/toast");
+            showToast("Sync conflict merged with server changes.", "success");
+          } else if (ce.detail?.type === "sync-error" && ce.detail.error) {
+            const { showToast } = await import("../lib/toast");
+            showToast(ce.detail.error, "error");
+          }
+        });
       </script>
     </div>
   </body>

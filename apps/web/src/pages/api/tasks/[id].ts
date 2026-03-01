@@ -78,7 +78,7 @@ export const PUT: APIRoute = async ({ params, request }) => {
 
   // Optimistic locking: reject stale updates (Persona #7)
   if (typeof body.updated_at === "number") {
-    const stored = Number((existing.rows[0] as Record<string, unknown>).updated_at ?? 0);
+    const stored = Number((existing.rows[0]! as Record<string, unknown>).updated_at ?? 0);
     if (body.updated_at < stored) {
       return new Response(JSON.stringify({
         error: "Conflict: task was modified since your last read",
@@ -211,7 +211,7 @@ export const PUT: APIRoute = async ({ params, request }) => {
     });
   }
 
-  const resolvedId = existing.rows[0].id as string;
+  const resolvedId = existing.rows[0]!.id as string;
 
   updates.push("updated_at = ?");
   args.push(now);
@@ -291,7 +291,7 @@ export const DELETE: APIRoute = async ({ params }) => {
     });
   }
 
-  const resolvedId = existing.rows[0].id as string;
+  const resolvedId = existing.rows[0]!.id as string;
   await client.execute({ sql: "DELETE FROM tasks WHERE id = ?", args: [resolvedId] });
 
   return new Response(null, { status: 204 });
