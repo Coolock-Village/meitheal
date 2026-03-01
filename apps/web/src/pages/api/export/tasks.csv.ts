@@ -1,6 +1,7 @@
 import type { APIRoute } from "astro";
 import { ensureSchema, getPersistenceClient } from "@domains/tasks/persistence/store";
 import { formatTicketKey } from "../../../lib/ticket-key";
+import { exportFilename } from "../../../lib/export-filename";
 
 export const GET: APIRoute = async () => {
     try {
@@ -23,7 +24,7 @@ export const GET: APIRoute = async () => {
                 status: 200,
                 headers: {
                     "Content-Type": "text/csv; charset=utf-8",
-                    "Content-Disposition": `attachment; filename="meitheal-tasks-${new Date().toISOString().split("T")[0]}.csv"`
+                    "Content-Disposition": `attachment; filename="${exportFilename("Tasks", "csv")}"`
                 }
             });
         }
@@ -69,7 +70,7 @@ export const GET: APIRoute = async () => {
             status: 200,
             headers: {
                 "Content-Type": "text/csv; charset=utf-8",
-                "Content-Disposition": `attachment; filename="meitheal-tasks-${new Date().toISOString().split("T")[0]}.csv"`
+                "Content-Disposition": `attachment; filename="${exportFilename("Tasks", "csv")}"`
             }
         });
     } catch (error) {

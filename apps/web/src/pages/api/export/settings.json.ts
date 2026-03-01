@@ -1,5 +1,6 @@
 import type { APIRoute } from "astro";
 import { ensureSchema, getPersistenceClient } from "@domains/tasks/persistence/store";
+import { exportFilename } from "../../../lib/export-filename";
 
 export const GET: APIRoute = async () => {
     try {
@@ -25,7 +26,7 @@ export const GET: APIRoute = async () => {
             status: 200,
             headers: {
                 "Content-Type": "application/json",
-                "Content-Disposition": `attachment; filename="meitheal-settings-${new Date().toISOString().split("T")[0]}.json"`
+                "Content-Disposition": `attachment; filename="${exportFilename("Settings", "json")}"`
             }
         });
 

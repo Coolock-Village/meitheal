@@ -1,6 +1,7 @@
 import type { APIRoute } from "astro";
 import { readFileSync, existsSync } from "fs";
 import path from "path";
+import { exportFilename } from "../../../lib/export-filename";
 
 export const GET: APIRoute = async () => {
     try {
@@ -24,7 +25,7 @@ export const GET: APIRoute = async () => {
             status: 200,
             headers: {
                 "Content-Type": "application/x-sqlite3",
-                "Content-Disposition": `attachment; filename="meitheal-${new Date().toISOString().split("T")[0]}.db"`,
+                "Content-Disposition": `attachment; filename="${exportFilename("Database", "db")}"`,
                 "Content-Length": buffer.length.toString()
             }
         });

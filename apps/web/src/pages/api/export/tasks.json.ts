@@ -1,6 +1,7 @@
 import type { APIRoute } from "astro";
 import { ensureSchema, getPersistenceClient } from "@domains/tasks/persistence/store";
 import { formatTicketKey } from "../../../lib/ticket-key";
+import { exportFilename } from "../../../lib/export-filename";
 
 /**
  * Export Tasks as JSON
@@ -36,7 +37,7 @@ export const GET: APIRoute = async () => {
             status: 200,
             headers: {
                 "Content-Type": "application/json",
-                "Content-Disposition": `attachment; filename="meitheal-tasks-${new Date().toISOString().split("T")[0]}.json"`,
+                "Content-Disposition": `attachment; filename="${exportFilename("Tasks", "json")}"`,
                 "X-Content-Type-Options": "nosniff"
             }
         });
