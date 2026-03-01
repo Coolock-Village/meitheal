@@ -966,6 +966,62 @@ const locale: Locale = cookieLocale === "ga" ? "ga" : "en";
           ).value = stored;
         }
 
+        // Render saved custom fields
+        if (settings.custom_fields) {
+          try {
+            const fields = JSON.parse(settings.custom_fields) as Array<{
+              name: string;
+              type: string;
+            }>;
+            const list = document.getElementById("custom-fields-list");
+            if (list && fields.length > 0) {
+              for (const field of fields) {
+                const row = document.createElement("div");
+                row.className = "custom-field-row";
+                row.innerHTML = `
+                  <input type="text" class="form-input" value="${field.name.replace(/"/g, "&quot;")}" disabled />
+                  <select class="form-select" disabled>
+                    <option value="${field.type}" selected>${field.type.charAt(0).toUpperCase() + field.type.slice(1)}</option>
+                  </select>
+                  <span style="color: var(--text-muted); font-size: 12px;">Saved</span>
+                  <button class="btn btn-ghost" style="padding: 4px 8px; color: var(--danger);" title="Remove field definition (data on existing tasks is preserved)">×</button>
+                `;
+                row
+                  .querySelector("button")
+                  ?.addEventListener("click", async () => {
+                    try {
+                      const curRes = await fetch("/api/settings");
+                      const curSettings = curRes.ok ? await curRes.json() : {};
+                      const curFields = curSettings.custom_fields
+                        ? JSON.parse(curSettings.custom_fields)
+                        : [];
+                      const updated = curFields.filter(
+                        (f: { name: string }) => f.name !== field.name,
+                      );
+                      await fetch("/api/settings", {
+                        method: "PUT",
+                        headers: { "content-type": "application/json" },
+                        body: JSON.stringify({
+                          key: "custom_fields",
+                          value: JSON.stringify(updated),
+                        }),
+                      });
+                      row.remove();
+                      showToast(
+                        `Field "${field.name}" removed (data on tasks preserved)`,
+                      );
+                    } catch {
+                      showToast("Failed to remove field", "error");
+                    }
+                  });
+                list.appendChild(row);
+              }
+            }
+          } catch {
+            /* skip */
+          }
+        }
+
         updateFrameworkSelect();
       } catch {
         /* API not available — try localStorage fallback for locale */

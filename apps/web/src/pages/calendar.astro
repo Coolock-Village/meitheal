@@ -1,5 +1,6 @@
 ---
 import Layout from "../layouts/Layout.astro";
+import TaskViewTabs from "../components/tasks/TaskViewTabs.astro";
 import {
   ensureSchema,
   getPersistenceClient,
@@ -121,6 +122,8 @@ for (let week = 0; week < 6; week++) {
       >📅 Upcoming</a
     >
   </div>
+
+  <TaskViewTabs activeView="calendar" />
 
   <div class="calendar-controls">
     <a

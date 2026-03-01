@@ -1,5 +1,6 @@
 ---
 import Layout from "../layouts/Layout.astro";
+import TaskViewTabs from "../components/tasks/TaskViewTabs.astro";
 import { t } from "../i18n/translations";
 import type { Locale } from "../lib/locale";
 import { formatTicketKey } from "../lib/ticket-key";
@@ -126,26 +127,6 @@ const typeConfig: Record<
 <Layout title={`Meitheal — ${t("kanban.title", locale)}`}>
   <span slot="page-title">{t("kanban.title", locale)}</span>
   <div slot="actions" style="display: flex; gap: 8px; align-items: center;">
-    <div class="view-switcher" role="group" aria-label="View mode">
-      <a
-        href="/tasks"
-        class="view-btn"
-        title={t("tasks.list_view", locale)}
-        aria-label={t("tasks.list_view", locale)}>☰</a
-      >
-      <a
-        href="/kanban"
-        class="view-btn active"
-        title={t("tasks.kanban_board", locale)}
-        aria-label={t("tasks.kanban_board", locale)}>▦</a
-      >
-      <a
-        href="/table"
-        class="view-btn"
-        title={t("tasks.table_view", locale)}
-        aria-label={t("tasks.table_view", locale)}>⊞</a
-      >
-    </div>
     <button
       class="btn btn-ghost"
       id="manage-lanes-btn"
@@ -156,6 +137,8 @@ const typeConfig: Record<
       >{t("kanban.new_task", locale)}</button
     >
   </div>
+
+  <TaskViewTabs activeView="board" />
 
   <!-- Phase 20: Type filter + grouping toolbar -->
   <div
@@ -256,8 +239,8 @@ const typeConfig: Record<
             role="region"
             aria-label={`${col.label} Swimlane`}
             ondrop="handleDrop(arguments[0])"
-            ondragover="arguments[0].preventDefault(); this.classList.add('drag-over')"
-            ondragleave="this.classList.remove('drag-over')"
+            ondragover="arguments[0].preventDefault(); if(!this.classList.contains('drag-over')) { this.classList.add('drag-over'); const cards = this.querySelector('.kanban-cards') || this.querySelector('.swimlane-cards'); if(cards && !cards.querySelector('.drag-ghost') && !cards.querySelector('.kanban-empty')) { const ghost = document.createElement('div'); ghost.className = 'drag-ghost'; ghost.style.cssText = 'height:80px;border:2px dashed var(--accent);border-radius:6px;background:rgba(16,185,129,0.05);margin-bottom:8px;transition:all 0.2s'; cards.appendChild(ghost); } }"
+            ondragleave="this.classList.remove('drag-over'); const ghost = this.querySelector('.drag-ghost'); if(ghost) ghost.remove();"
           >
             <div class="kanban-column-header">
               <span>
@@ -375,7 +358,10 @@ const typeConfig: Record<
                     style={`border-left: 3px solid ${task.color ? String(task.color) : tc.color};`}
                   >
                     <div class="kanban-card-header">
-                      <div class="kanban-card-title">
+                      <div
+                        class="kanban-card-title"
+                        style="font-weight: 600; line-height: 1.4; padding-bottom: 2px;"
+                      >
                         <span
                           class="type-badge"
                           style={`background: ${tc.color}20; color: ${tc.color}; border-color: ${tc.color}40;`}
@@ -385,7 +371,7 @@ const typeConfig: Record<
                         </span>
                         <span
                           class="kanban-ticket-key"
-                          style="font-size:10px;font-family:'JetBrains Mono',monospace;color:var(--text-muted);margin-right:4px;"
+                          style="font-size:11px;font-family:'JetBrains Mono',monospace;color:var(--text-muted);margin-right:6px;font-weight:500;background:rgba(255,255,255,0.05);padding:2px 4px;border-radius:4px;"
                         >
                           {formatTicketKey(Number(task.ticket_number))}
                         </span>
@@ -653,6 +639,11 @@ const typeConfig: Record<
         // Remove empty state if present
         const empty = targetCards.querySelector(".kanban-empty");
         if (empty) empty.remove();
+
+        // Remove ghost if present
+        const ghost = targetCards.querySelector(".drag-ghost");
+        if (ghost) ghost.remove();
+
         targetCards.appendChild(card);
         card.dataset.status = newStatus;
         if (targetSwimlane) {

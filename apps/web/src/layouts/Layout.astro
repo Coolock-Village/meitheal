@@ -235,7 +235,7 @@ try {
     >
       <div
         id="task-detail-panel"
-        class="absolute right-0 top-0 h-full w-full max-w-3xl bg-bg-secondary border-l border-border shadow-lg overflow-y-auto animate-slide-in"
+        class="absolute right-0 top-0 h-full w-full max-w-4xl bg-bg-secondary/90 backdrop-blur-xl border-l border-border shadow-2xl overflow-y-auto animate-slide-in"
       >
         <div class="px-6 pt-4">
           <a
@@ -246,21 +246,21 @@ try {
           <div
             class="flex items-center justify-between pb-2 border-b border-border"
           >
-            <div class="flex items-center gap-3 w-full">
+            <div class="flex items-center gap-4 w-full">
               <span
                 id="td-priority-dot"
-                class="td-priority-dot"
+                class="td-priority-dot text-xl"
                 title="Priority">●</span
               >
               <input
                 id="td-title"
-                class="form-input bg-transparent border-none text-lg font-bold p-0 focus:ring-0"
+                class="form-input bg-transparent border-none text-2xl font-bold p-0 focus:ring-0 leading-tight"
                 placeholder="Task title"
               />
               <span
                 id="td-id"
                 class="hidden"
-                style="font-size:11px;font-family:'JetBrains Mono',monospace;color:var(--accent);background:rgba(16,185,129,0.1);border:1px solid rgba(16,185,129,0.2);padding:2px 8px;border-radius:6px;white-space:nowrap;cursor:help;flex-shrink:0;"
+                style="font-size:12px;font-family:'JetBrains Mono',monospace;color:var(--accent);background:rgba(16,185,129,0.1);border:1px solid rgba(16,185,129,0.2);padding:4px 10px;border-radius:6px;white-space:nowrap;cursor:help;flex-shrink:0;"
                 title="Task ID"></span>
             </div>
             <button
@@ -288,9 +288,9 @@ try {
               class="text-xs text-text-muted font-medium"></span>
           </div>
 
-          <div class="flex flex-col lg:flex-row">
+          <div class="flex flex-col lg:flex-row gap-6">
             <!-- Left: Content -->
-            <div class="flex-1 p-6 space-y-6">
+            <div class="flex-1 p-6 lg:p-8 space-y-8">
               <!-- Status + Board -->
               <div class="flex items-center gap-3">
                 <select id="td-status" class="inline-select">
@@ -312,16 +312,45 @@ try {
                 ></select>
               </div>
 
-              <!-- Description -->
-              <div>
-                <label
-                  class="text-xs text-text-muted font-semibold uppercase tracking-wide mb-2 block"
-                  >Description</label
+              <!-- Description (Markdown Editor) -->
+              <div class="mb-5">
+                <div class="flex items-center justify-between mb-3">
+                  <label
+                    class="text-sm text-text-muted font-semibold uppercase tracking-wider block"
+                  >
+                    Description
+                  </label>
+                  <div class="flex gap-2">
+                    <button
+                      id="td-desc-edit-btn"
+                      class="btn btn-ghost text-xs px-2 py-1 bg-[var(--bg-hover)]"
+                      type="button">Edit</button
+                    >
+                    <button
+                      id="td-desc-preview-btn"
+                      class="btn btn-ghost text-xs px-2 py-1"
+                      type="button">Preview</button
+                    >
+                  </div>
+                </div>
+                <div id="td-desc-edit-container">
+                  <textarea
+                    id="td-description"
+                    class="form-input min-h-[160px] resize-y text-base w-full"
+                    placeholder="Add a description (Markdown supported)..."
+                  ></textarea>
+                </div>
+                <div
+                  id="td-desc-preview-container"
+                  class="hidden min-h-[160px] p-4 bg-[var(--bg-secondary)] border border-border rounded-md text-base mt-2"
+                  style="max-width: 100%;"
                 >
-                <textarea
-                  id="td-description"
-                  class="form-input min-h-[120px] resize-y"
-                  placeholder="Add a description..."></textarea>
+                  <div
+                    class="prose prose-sm dark:prose-invert max-w-none break-words"
+                    id="td-desc-preview"
+                  >
+                  </div>
+                </div>
               </div>
 
               <!-- Checklists (Phase 31) -->
@@ -523,7 +552,7 @@ try {
 
             <!-- Right: Action Sidebar -->
             <div
-              class="w-full lg:w-64 border-t lg:border-t-0 lg:border-l border-border p-4 space-y-3"
+              class="w-full lg:w-72 border-t lg:border-t-0 lg:border-l border-border px-6 lg:px-8 py-6 space-y-5"
             >
               <div class="space-y-1">
                 <button
@@ -1201,12 +1230,17 @@ try {
           getAttachmentsByTaskId,
           deleteAttachment,
         } from "../domains/offline/offline-store";
+        import { confirmDialog } from "../lib/confirm-dialog";
+        import { marked } from "marked";
+        import DOMPurify from "dompurify";
 
         // === Task Detail Panel ===
         const tdOverlay = document.getElementById(
           "task-detail-overlay",
         ) as HTMLDivElement;
         let currentTaskId: string | null = null;
+        let _settingsFields: Array<{ name: string; type: string }> = [];
+        const RICE_KEYS = ["Reach", "Impact", "Confidence", "Effort"];
 
         function closeTD() {
           tdOverlay?.classList.add("hidden");
@@ -1406,9 +1440,17 @@ try {
               statusSelect.appendChild(opt);
             }
             statusSelect.value = taskStatus;
-            (
-              document.getElementById("td-description") as HTMLTextAreaElement
-            ).value = String(t.description ?? "");
+            const tdDesc = document.getElementById(
+              "td-description",
+            ) as HTMLTextAreaElement;
+            tdDesc.value = String(t.description ?? "");
+
+            // Switch to preview mode automatically when opening a task that has a description
+            if (t.description) {
+              document.getElementById("td-desc-preview-btn")?.click();
+            } else {
+              document.getElementById("td-desc-edit-btn")?.click();
+            }
 
             (
               document.getElementById("td-priority") as HTMLSelectElement
@@ -1510,16 +1552,34 @@ try {
               document.getElementById("td-toggle-done") as HTMLElement
             ).textContent = isDone ? "↩ Mark as Undone" : "✓ Mark as Done";
 
-            // RICE scoring — display handled in sidebar, fields added after cfDiv cleared
+            // RICE scoring + settings-defined custom fields
             // (settings + framework_payload cached for use after custom fields)
             let _riceEnabled = false;
             let _fp: Record<string, unknown> = {};
+            _settingsFields = [];
             try {
               _fp = JSON.parse(String(t.framework_payload ?? "{}"));
               const riceRes = await fetch("/api/settings");
               if (riceRes.ok) {
                 const allSettings = await riceRes.json();
                 _riceEnabled = allSettings?.frameworks_enabled?.rice === true;
+                // Load settings-defined custom fields
+                if (allSettings?.custom_fields) {
+                  try {
+                    const parsed = JSON.parse(allSettings.custom_fields);
+                    console.log(
+                      "[Meitheal] Settings custom_fields parsed:",
+                      parsed?.length,
+                      "fields",
+                    );
+                    if (Array.isArray(parsed)) _settingsFields = parsed;
+                  } catch (parseErr) {
+                    console.warn(
+                      "[Meitheal] Failed to parse custom_fields:",
+                      parseErr,
+                    );
+                  }
+                }
               }
             } catch {
               /* default */
@@ -1557,16 +1617,28 @@ try {
               "td-custom-fields",
             ) as HTMLElement;
             cfDiv.innerHTML = "";
+            const renderedKeys = new Set<string>();
             try {
               const cf = JSON.parse(String(t.custom_fields ?? "{}")) as Record<
                 string,
                 string
               >;
               for (const [k, v] of Object.entries(cf)) {
-                if (v !== null && v !== undefined) addCFRow(k, String(v));
+                if (v !== null && v !== undefined) {
+                  addCFRow(k, String(v));
+                  renderedKeys.add(k);
+                }
               }
             } catch {
               /* skip */
+            }
+
+            // Pre-populate settings-defined fields that aren't already on this task
+            for (const sf of _settingsFields) {
+              if (!renderedKeys.has(sf.name) && !RICE_KEYS.includes(sf.name)) {
+                addCFRow(sf.name, "");
+                renderedKeys.add(sf.name);
+              }
             }
 
             // RICE fields — add AFTER custom fields (uses cached _riceEnabled and _fp)
@@ -1715,6 +1787,49 @@ try {
             console.warn(`[saveTD] Network error saving ${field}:`, err);
           }
         }
+
+        // Markdown Editor Toggle Logic
+        const descEditBtn = document.getElementById("td-desc-edit-btn");
+        const descPreviewBtn = document.getElementById("td-desc-preview-btn");
+        const descEditContainer = document.getElementById(
+          "td-desc-edit-container",
+        );
+        const descPreviewContainer = document.getElementById(
+          "td-desc-preview-container",
+        );
+        const descPreview = document.getElementById("td-desc-preview");
+        const tdDescription = document.getElementById(
+          "td-description",
+        ) as HTMLTextAreaElement;
+
+        descEditBtn?.addEventListener("click", () => {
+          descEditContainer?.classList.remove("hidden");
+          descPreviewContainer?.classList.add("hidden");
+          descEditBtn.classList.add("bg-[var(--bg-hover)]");
+          descPreviewBtn?.classList.remove("bg-[var(--bg-hover)]");
+          tdDescription?.focus();
+        });
+
+        descPreviewBtn?.addEventListener("click", () => {
+          descEditContainer?.classList.add("hidden");
+          descPreviewContainer?.classList.remove("hidden");
+          descPreviewBtn.classList.add("bg-[var(--bg-hover)]");
+          descEditBtn?.classList.remove("bg-[var(--bg-hover)]");
+
+          if (descPreview && tdDescription) {
+            const rawMarkdown = tdDescription.value;
+            try {
+              // Parse markdown synchronously and sanitize
+              const dirtyHtml = marked.parse(
+                rawMarkdown || "*No description provided.*",
+              ) as string;
+              descPreview.innerHTML = DOMPurify.sanitize(dirtyHtml);
+            } catch (e: any) {
+              console.error("Markdown render error:", e);
+              descPreview.innerHTML = `<div class="text-red-500">Error rendering markdown: ${e.message}</div>`;
+            }
+          }
+        });
 
         // Auto-save on change
         document
@@ -1868,7 +1983,6 @@ try {
           });
 
         // ───── Custom Fields interactive ─────
-        const RICE_KEYS = ["Reach", "Impact", "Confidence", "Effort"];
 
         function getCFFromUI(): Record<string, string> {
           const result: Record<string, string> = {};
@@ -1993,6 +2107,21 @@ try {
               fields: cat.fields.filter((f) => !currentKeys.has(f)),
             }))
             .filter((cat) => cat.fields.length > 0);
+          // Inject settings-defined fields not already present
+          if (_settingsFields.length > 0) {
+            const allPredefinedNames = new Set(
+              fieldCategories.flatMap((c) => c.fields),
+            );
+            const settingsOnly = _settingsFields
+              .map((sf) => sf.name)
+              .filter((n) => !currentKeys.has(n) && !allPredefinedNames.has(n));
+            if (settingsOnly.length > 0) {
+              result.unshift({
+                label: "📋 Settings Fields",
+                fields: settingsOnly,
+              });
+            }
+          }
           // Add any custom keys from existing rows not in our predefined lists
           const allPredefined = new Set(
             fieldCategories.flatMap((c) => c.fields),

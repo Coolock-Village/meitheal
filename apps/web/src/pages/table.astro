@@ -1,5 +1,6 @@
 ---
 import Layout from "../layouts/Layout.astro";
+import TaskViewTabs from "../components/tasks/TaskViewTabs.astro";
 import { t } from "../i18n/translations";
 import type { Locale } from "../lib/locale";
 import { formatTicketKey } from "../lib/ticket-key";
@@ -36,23 +37,6 @@ const priorityColors: Record<number, string> = {
 <Layout title={`Meitheal — ${t("table.title", locale)}`}>
   <span slot="page-title">{t("table.title", locale)}</span>
   <div slot="actions" style="display: flex; gap: 8px; align-items: center;">
-    <div class="view-switcher" role="group" aria-label="View mode">
-      <a href="/tasks" class="view-btn" title="List view" aria-label="List view"
-        >☰</a
-      >
-      <a
-        href="/kanban"
-        class="view-btn"
-        title="Kanban board"
-        aria-label="Kanban board">▦</a
-      >
-      <a
-        href="/table"
-        class="view-btn active"
-        title="Table view"
-        aria-label="Table view">⊞</a
-      >
-    </div>
     <button class="btn btn-primary" id="create-task-btn"
       >{t("tasks.new_task", locale)}</button
     >

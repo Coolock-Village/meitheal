@@ -1,5 +1,6 @@
 ---
 import Layout from "../layouts/Layout.astro";
+import TaskViewTabs from "../components/tasks/TaskViewTabs.astro";
 import { t } from "../i18n/translations";
 import type { Locale } from "../lib/locale";
 import { formatTicketKey } from "../lib/ticket-key";
@@ -51,30 +52,12 @@ const statusLabels: Record<string, string> = {
 <Layout title={`Meitheal — ${t("tasks.title", locale)}`}>
   <span slot="page-title">{t("tasks.title", locale)}</span>
   <div slot="actions" style="display: flex; gap: 8px; align-items: center;">
-    <div class="view-switcher" role="group" aria-label="View mode">
-      <a
-        href="/tasks"
-        class="view-btn active"
-        title={t("tasks.list_view", locale)}
-        aria-label={t("tasks.list_view", locale)}>☰</a
-      >
-      <a
-        href="/kanban"
-        class="view-btn"
-        title={t("tasks.kanban_board", locale)}
-        aria-label={t("tasks.kanban_board", locale)}>▦</a
-      >
-      <a
-        href="/table"
-        class="view-btn"
-        title={t("tasks.table_view", locale)}
-        aria-label={t("tasks.table_view", locale)}>⊞</a
-      >
-    </div>
     <button class="btn btn-primary" id="create-task-btn"
       >{t("tasks.new_task", locale)}</button
     >
   </div>
+
+  <TaskViewTabs activeView="list" />
 
   <!-- Filters -->
   <div class="filter-bar" id="filter-bar">
@@ -183,13 +166,19 @@ const statusLabels: Record<string, string> = {
                 data-id={String(task.id)}
               />
               <div class="task-content">
-                <div class={`task-title ${isDone ? "done" : ""}`}>
+                <div
+                  class={`task-title ${isDone ? "done" : ""}`}
+                  style="display: flex; align-items: center; gap: 8px;"
+                >
                   {formatTicketKey(Number(task.ticket_number)) && (
-                    <span style="font-size:10px;font-family:'JetBrains Mono',monospace;color:var(--accent);opacity:0.7;margin-right:6px;">
+                    <span
+                      class="kanban-ticket-key"
+                      style="font-size:11px;font-family:'JetBrains Mono',monospace;color:var(--text-muted);font-weight:500;background:rgba(255,255,255,0.05);padding:2px 6px;border-radius:4px;flex-shrink:0;"
+                    >
                       {formatTicketKey(Number(task.ticket_number))}
                     </span>
                   )}
-                  {String(task.title)}
+                  <span style="font-weight: 500;">{String(task.title)}</span>
                 </div>
                 <div class="task-meta">
                   <span style={`color: ${priorityColors[p] ?? "#6b7280"}`}>

@@ -89,7 +89,7 @@
 @layer components {
   /* --- Layout --- */
   .sidebar {
-    @apply w-sidebar bg-bg-secondary flex flex-col border-r border-border fixed h-screen z-40;
+    @apply w-sidebar bg-bg-secondary/90 backdrop-blur-md flex flex-col border-r border-border fixed h-screen z-40;
   }
 
   .sidebar-header {
@@ -168,12 +168,12 @@
   /* --- Forms --- */
   .form-input,
   .form-select {
-    @apply w-full bg-bg-input border border-border rounded-md px-3 py-2.5 text-text-primary text-sm transition-colors;
+    @apply w-full bg-bg-input/60 backdrop-blur-sm border border-border rounded-md px-3 py-2.5 text-text-primary text-sm transition-all;
   }
 
   .form-input:focus,
   .form-select:focus {
-    @apply outline-none border-accent ring-2 ring-accent/15;
+    @apply outline-none border-accent ring-2 ring-accent/20 bg-bg-input/80;
   }
 
   .form-input::placeholder {
@@ -198,7 +198,11 @@
 
   /* --- Cards --- */
   .card {
-    @apply bg-bg-card border border-border rounded-lg p-5 shadow-sm;
+    @apply bg-bg-card/80 backdrop-blur-md border border-border rounded-lg p-5 shadow-sm transition-all;
+  }
+  
+  .card:hover {
+    @apply shadow-md border-border-focus/50;
   }
 
   .card-header {
@@ -220,21 +224,21 @@
 
   /* --- Badges --- */
   .task-badge {
-    @apply text-xs font-medium px-2.5 py-1 rounded-[8px];
+    @apply text-xs font-semibold px-2.5 py-1 rounded-md border;
   }
 
   .badge-pending {
-    @apply bg-info/15 text-info;
+    @apply bg-info/10 text-info border-info/20;
   }
 
   .badge-active,
   .badge-in_progress {
-    @apply bg-warning/15 text-warning;
+    @apply bg-warning/10 text-warning border-warning/30;
   }
 
   .badge-done,
   .badge-complete {
-    @apply bg-accent/15 text-accent;
+    @apply bg-accent/10 text-accent border-accent/20;
   }
 
   /* --- Filter bar --- */
@@ -248,11 +252,12 @@
   }
 
   .task-item {
-    @apply flex items-center gap-3 bg-bg-card border border-border rounded-lg px-4 py-3 transition-all cursor-pointer;
+    @apply flex items-center gap-3 bg-bg-card/60 backdrop-blur-[2px] border border-border rounded-lg px-4 py-1.5 transition-all cursor-pointer;
   }
 
   .task-item:hover {
-    @apply bg-bg-hover border-border-focus shadow-md;
+    @apply bg-bg-hover/80 border-border-focus shadow-md;
+    transform: translateX(2px);
   }
 
   .task-item.task-done {
@@ -314,7 +319,8 @@
   }
 
   .kanban-column {
-    @apply min-w-[260px] max-w-[300px] bg-bg-secondary/50 rounded-lg border border-border flex flex-col;
+    @apply min-w-[260px] max-w-[300px] bg-bg-secondary/40 backdrop-blur-md rounded-lg border border-border flex flex-col;
+    box-shadow: inset 0 1px 0 0 rgba(255, 255, 255, 0.05);
   }
 
   .kanban-column-header {
@@ -330,22 +336,31 @@
   }
 
   .kanban-card {
-    @apply bg-bg-card border border-border rounded-md p-3 cursor-grab shadow-sm transition-all relative;
+    @apply bg-bg-card/90 backdrop-blur-sm border border-border rounded-md p-3 cursor-grab shadow-sm relative;
+    transition:
+      transform 0.25s cubic-bezier(0.175, 0.885, 0.32, 1.275),
+      box-shadow 0.25s ease,
+      border-color 0.25s ease,
+      background-color 0.25s ease;
   }
 
   .kanban-card:hover {
-    @apply border-accent/40;
+    @apply bg-bg-card border-accent/60;
     box-shadow:
-      0 4px 16px rgba(16, 185, 129, 0.12),
-      0 2px 6px rgba(0, 0, 0, 0.3);
-    transform: translateY(-1px);
+      0 6px 20px rgba(16, 185, 129, 0.15),
+      0 3px 8px rgba(0, 0, 0, 0.3);
+    transform: translateY(-2px) scale(1.02);
   }
 
   .kanban-card.dragging {
-    @apply opacity-40;
-    transform: rotate(2deg) scale(0.95);
-    border: 2px dashed var(--accent);
-    box-shadow: 0 8px 24px rgba(0, 0, 0, 0.4);
+    @apply bg-bg-card opacity-80;
+    transform: rotate(3deg) scale(1.05);
+    border: 1px solid var(--accent);
+    box-shadow:
+      0 12px 32px rgba(0, 0, 0, 0.6),
+      0 0 0 2px rgba(16, 185, 129, 0.3);
+    z-index: 50;
+    cursor: grabbing;
   }
 
   .kanban-card-title {
@@ -368,11 +383,14 @@
   }
 
   .kanban-card-actions {
-    @apply absolute bottom-2 right-2 flex gap-1 opacity-0 transition-opacity;
+    @apply absolute bottom-2 right-2 flex gap-1 opacity-0 pointer-events-none;
+    transition: opacity 0.2s ease, transform 0.2s ease;
+    transform: translateY(4px);
   }
 
   .kanban-card:hover .kanban-card-actions {
-    @apply opacity-100;
+    @apply opacity-100 pointer-events-auto;
+    transform: translateY(0);
   }
 
   .card-action-btn {
@@ -546,20 +564,22 @@
 
   /* --- Dashboard --- */
   .stat-card {
-    @apply bg-bg-card border border-border rounded-lg p-4 flex items-center shadow-sm;
+    @apply bg-bg-card/80 backdrop-blur-md border border-border rounded-lg p-4 flex items-center shadow-sm;
     gap: 12px;
     transition:
-      transform 0.2s ease,
+      transform 0.2s cubic-bezier(0.175, 0.885, 0.32, 1.275),
       box-shadow 0.2s ease,
-      border-color 0.2s ease;
+      border-color 0.2s ease,
+      background-color 0.2s ease;
     cursor: default;
   }
 
   .stat-card:hover {
+    @apply bg-bg-card/95;
     transform: translateY(-2px) scale(1.02);
     box-shadow:
       0 4px 20px rgba(16, 185, 129, 0.12),
-      var(--shadow-sm);
+      var(--shadow-md);
     border-color: var(--accent);
   }
 
@@ -581,11 +601,12 @@
     animation: flash-success 0.6s ease;
   }
 
+  /* Curated danger: Ruby Red #F05D5E */
   .stat-card-danger {
-    border-color: var(--danger) !important;
-    background: rgba(239, 68, 68, 0.08) !important;
+    border-color: #f05d5e !important;
+    background: rgba(240, 93, 94, 0.1) !important;
     box-shadow:
-      0 0 16px rgba(239, 68, 68, 0.15),
+      0 0 16px rgba(240, 93, 94, 0.15),
       var(--shadow-sm);
     animation: pulse-danger 2s ease-in-out infinite;
   }
@@ -593,11 +614,11 @@
   @keyframes pulse-danger {
     0%,
     100% {
-      box-shadow: 0 0 16px rgba(239, 68, 68, 0.15);
+      box-shadow: 0 0 16px rgba(240, 93, 94, 0.15);
     }
 
     50% {
-      box-shadow: 0 0 24px rgba(239, 68, 68, 0.25);
+      box-shadow: 0 0 24px rgba(240, 93, 94, 0.25);
     }
   }
 
@@ -781,7 +802,8 @@
     @apply fixed inset-0 bg-black/60 z-50 hidden items-center justify-center;
   }
 
-  .modal-overlay.active {
+  .modal-overlay.active,
+  .modal-overlay.open {
     @apply flex;
   }
 
