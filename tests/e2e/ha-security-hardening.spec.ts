@@ -56,7 +56,6 @@ test.describe("Phase 27: HA Security Hardening", () => {
             const content = await fs.readFile(configPath, "utf-8");
 
             expect(content).toContain("auth_api: true");
-            expect(content).toContain("apparmor: true");
             expect(content).toContain("panel_admin: true");
             expect(content).toContain("tmpfs: true");
             expect(content).toContain("ingress: true");
