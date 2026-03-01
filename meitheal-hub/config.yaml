@@ -20,7 +20,7 @@ hassio_role: default
 auth_api: true
 panel_icon: mdi:account-group
 panel_admin: true
-apparmor: false
+apparmor: true
 tmpfs: true
 stage: experimental
 options:

@@ -10,6 +10,10 @@ profile meitheal_hub flags=(attach_disconnected,mediate_deleted) {
   capability setgid,
   capability net_bind_service,
 
+  # ── File + signal access ──
+  file,
+  signal (send) set=(kill,term,int,hup,cont),
+
   # ── Network ──
   network inet tcp,
   network inet udp,
@@ -18,29 +22,34 @@ profile meitheal_hub flags=(attach_disconnected,mediate_deleted) {
   deny network raw,
   deny network packet,
 
+  # ── S6-Overlay (init system) ──
+  /init ix,
+  /bin/** ix,
+  /usr/bin/** ix,
+  /run/{s6,s6-rc*,service}/** ix,
+  /package/** ix,
+  /command/** ix,
+  /etc/services.d/** rwix,
+  /etc/cont-init.d/** rwix,
+  /etc/cont-finish.d/** rwix,
+  /run/{,**} rwk,
+  /dev/tty rw,
+
+  # ── Bashio ──
+  /usr/lib/bashio/** ix,
+  /tmp/** rwk,
+
   # ── Node.js runtime ──
   /usr/bin/node ix,
   /usr/local/bin/node ix,
-
-  # ── Application files (read-only) ──
-  /opt/meitheal/** r,
-  /opt/meitheal/node_modules/.pnpm/**/node_modules/** r,
-  /opt/meitheal/apps/web/scripts/** ix,
-
-  # ── pnpm + npm ──
   /usr/local/bin/pnpm ix,
   /usr/local/bin/npm ix,
   /usr/local/lib/node_modules/** r,
 
-  # ── s6-overlay (init system) ──
-  /init ix,
-  /command/** ix,
-  /package/** r,
-  /etc/s6-overlay/** r,
-  /run/s6/** rwk,
-  /run/s6-rc.* rwk,
-  /etc/services.d/** rx,
-  /etc/cont-init.d/** rx,
+  # ── Application files ──
+  /opt/meitheal/** r,
+  /opt/meitheal/node_modules/.pnpm/**/node_modules/** r,
+  /opt/meitheal/apps/web/scripts/** ix,
 
   # ── Entrypoints ──
   /run.sh ix,
@@ -50,22 +59,8 @@ profile meitheal_hub flags=(attach_disconnected,mediate_deleted) {
   /data/ r,
   /data/** rwk,
 
-  # ── Temp files ──
-  /tmp/ r,
-  /tmp/** rwk,
-
-  # ── Deny shell access ──
-  deny /bin/dash mrwklx,
-  deny /bin/sh mrwklx,
-  deny /usr/bin/top mrwklx,
-
   # ── Deny mount ──
   deny mount,
-
-  # ── Deny system path writes ──
-  deny /boot/** wl,
-  deny /root/** wl,
-  deny /srv/** wl,
 
   # ── Proc/sys restrictions ──
   deny @{PROC}/sysrq-trigger rwklx,
