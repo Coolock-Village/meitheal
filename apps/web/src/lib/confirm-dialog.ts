@@ -81,6 +81,9 @@ export function confirmDialog(options: ConfirmOptions): Promise<boolean> {
     overlay.appendChild(dialog);
     document.body.appendChild(overlay);
 
+    // Save previously focused element for restoration
+    const previouslyFocused = document.activeElement as HTMLElement | null;
+
     // Focus the cancel button by default (safer)
     const cancelBtn = dialog.querySelector("#confirm-cancel") as HTMLButtonElement;
     const okBtn = dialog.querySelector("#confirm-ok") as HTMLButtonElement;
@@ -88,7 +91,12 @@ export function confirmDialog(options: ConfirmOptions): Promise<boolean> {
 
     function cleanup(result: boolean) {
       overlay.style.opacity = "0";
-      setTimeout(() => overlay.remove(), 100);
+      document.removeEventListener("keydown", onKey, true);
+      setTimeout(() => {
+        overlay.remove();
+        // Restore focus to the element that was focused before the dialog
+        previouslyFocused?.focus();
+      }, 100);
       resolve(result);
     }
 
@@ -98,17 +106,26 @@ export function confirmDialog(options: ConfirmOptions): Promise<boolean> {
       if (e.target === overlay) cleanup(false);
     });
 
-    // Keyboard: Enter confirms, Escape cancels
+    // Keyboard: Enter confirms, Escape cancels, Tab traps focus
+    const focusable = [cancelBtn, okBtn].filter(Boolean);
     function onKey(e: KeyboardEvent) {
       if (e.key === "Escape") {
         e.preventDefault();
         e.stopPropagation();
         cleanup(false);
-        document.removeEventListener("keydown", onKey, true);
       } else if (e.key === "Enter" && document.activeElement === okBtn) {
         e.preventDefault();
         cleanup(true);
-        document.removeEventListener("keydown", onKey, true);
+      } else if (e.key === "Tab" && focusable.length > 0) {
+        // Focus trap — cycle between cancel and confirm
+        const idx = focusable.indexOf(document.activeElement as HTMLButtonElement);
+        if (e.shiftKey) {
+          e.preventDefault();
+          focusable[idx <= 0 ? focusable.length - 1 : idx - 1]?.focus();
+        } else {
+          e.preventDefault();
+          focusable[idx >= focusable.length - 1 ? 0 : idx + 1]?.focus();
+        }
       }
     }
     document.addEventListener("keydown", onKey, true);
