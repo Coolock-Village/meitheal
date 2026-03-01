@@ -1,9 +1,15 @@
 ---
 import Layout from "../layouts/Layout.astro";
+import { t } from "../i18n/translations";
+import type { Locale } from "../lib/locale";
 import {
   ensureSchema,
   getPersistenceClient,
 } from "@domains/tasks/persistence/store";
+
+// i18n: resolve locale from cookie
+const cookieLocale = Astro.cookies.get("meitheal-locale")?.value;
+const locale: Locale = cookieLocale === "ga" ? "ga" : "en";
 
 let tasks: Record<string, unknown>[] = [];
 let favorites: Record<string, unknown>[] = [];
@@ -46,37 +52,29 @@ try {
 }
 
 const priorityLabels: Record<number, string> = {
-  1: "Critical",
-  2: "High",
-  3: "Medium",
-  4: "Low",
-  5: "Minimal",
+  1: t("priority.critical", locale),
+  2: t("priority.high", locale),
+  3: t("priority.medium", locale),
+  4: t("priority.low", locale),
+  5: t("priority.minimal", locale),
 };
 const statusLabels: Record<string, string> = {
-  pending: "Pending",
-  active: "Active",
-  in_progress: "Active",
-  complete: "Complete",
-  done: "Complete",
-  todo: "Pending",
+  pending: t("task_status.pending", locale),
+  active: t("task_status.active", locale),
+  in_progress: t("task_status.active", locale),
+  complete: t("task_status.complete", locale),
+  done: t("task_status.complete", locale),
+  todo: t("task_status.pending", locale),
 };
-
-function dueDateLabel(dateStr: string): string {
-  if (!dateStr) return "";
-  const d = new Date(dateStr);
-  const now = new Date();
-  const diffMs = d.getTime() - now.getTime();
-  const diffDays = Math.ceil(diffMs / (1000 * 60 * 60 * 24));
-  if (diffDays < 0) return "Overdue";
-  if (diffDays === 0) return "Due today";
-  if (diffDays === 1) return "Due tomorrow";
-  return `Due ${d.toLocaleDateString("en-IE", { month: "short", day: "numeric" })}`;
-}
 
 // Vikunja-inspired: time-of-day greeting
 const hour = new Date().getHours();
 const greeting =
-  hour < 12 ? "Good Morning" : hour < 18 ? "Good Afternoon" : "Good Evening";
+  hour < 12
+    ? t("dashboard.greeting_morning", locale)
+    : hour < 18
+      ? t("dashboard.greeting_afternoon", locale)
+      : t("dashboard.greeting_evening", locale);
 
 // Relative time helper for due dates
 function relativeTime(dueDate: string): string {
@@ -96,7 +94,7 @@ function relativeTime(dueDate: string): string {
 <Layout title={`Meitheal — ${greeting}!`}>
   <span slot="page-title">{greeting}! ☘</span>
   <button slot="actions" class="btn btn-primary" id="quick-add-btn"
-    >+ New Task</button
+    >{t("dashboard.new_task", locale)}</button
   >
 
   <div class="stats-grid">
@@ -104,21 +102,21 @@ function relativeTime(dueDate: string): string {
       <span class="stat-icon">📋</span>
       <div>
         <div class="stat-value">{stats.total}</div>
-        <div class="stat-label">Total Tasks</div>
+        <div class="stat-label">{t("dashboard.total_tasks", locale)}</div>
       </div>
     </div>
     <div class="stat-card">
       <span class="stat-icon">⚡</span>
       <div>
         <div class="stat-value">{stats.active}</div>
-        <div class="stat-label">Active</div>
+        <div class="stat-label">{t("dashboard.active", locale)}</div>
       </div>
     </div>
     <div class="stat-card">
       <span class="stat-icon">✅</span>
       <div>
         <div class="stat-value">{stats.completed}</div>
-        <div class="stat-label">Completed</div>
+        <div class="stat-label">{t("dashboard.completed", locale)}</div>
       </div>
     </div>
     <div class={`stat-card ${stats.overdue > 0 ? "stat-card-danger" : ""}`}>
@@ -130,45 +128,74 @@ function relativeTime(dueDate: string): string {
         >
           {stats.overdue}
         </div>
-        <div class="stat-label">Overdue</div>
+        <div class="stat-label">{t("dashboard.overdue", locale)}</div>
       </div>
     </div>
   </div>
 
-  {favorites.length > 0 && (
-    <div class="card" style="margin-bottom: 20px;">
-      <div class="card-header">
-        <div>
-          <div class="card-title">⭐ Favorites</div>
-          <div class="card-subtitle">{favorites.length} pinned task{favorites.length !== 1 ? "s" : ""}</div>
+  {
+    favorites.length > 0 && (
+      <div class="card" style="margin-bottom: 20px;">
+        <div class="card-header">
+          <div>
+            <div class="card-title">⭐ {t("dashboard.favorites", locale)}</div>
+            <div class="card-subtitle">
+              {favorites.length}{" "}
+              {favorites.length !== 1
+                ? t("dashboard.pinned_tasks_plural", locale, {
+                    count: String(favorites.length),
+                  })
+                : t("dashboard.pinned_tasks", locale, {
+                    count: String(favorites.length),
+                  })}
+            </div>
+          </div>
+        </div>
+        <div class="task-list">
+          {favorites.map((fav) => (
+            <div
+              class="task-item"
+              data-id={String(fav.id)}
+              style="cursor:pointer;"
+            >
+              <div class="task-title">
+                <span
+                  class="priority-dot"
+                  style={`color: ${
+                    Number(fav.priority) === 1
+                      ? "#ef4444"
+                      : Number(fav.priority) === 2
+                        ? "#f97316"
+                        : Number(fav.priority) === 4
+                          ? "#22c55e"
+                          : Number(fav.priority) === 5
+                            ? "#6b7280"
+                            : "#eab308"
+                  }`}
+                >
+                  ●
+                </span>
+                {String(fav.title)}
+              </div>
+              {fav.due_date && (
+                <span class="text-xs text-text-muted">
+                  {relativeTime(String(fav.due_date))}
+                </span>
+              )}
+            </div>
+          ))}
         </div>
       </div>
-      <div class="task-list">
-        {favorites.map((fav) => (
-          <div class="task-item" data-id={String(fav.id)} style="cursor:pointer;">
-            <div class="task-title">
-              <span class="priority-dot" style={`color: ${
-                Number(fav.priority) === 1 ? "#ef4444" :
-                Number(fav.priority) === 2 ? "#f97316" :
-                Number(fav.priority) === 4 ? "#22c55e" :
-                Number(fav.priority) === 5 ? "#6b7280" : "#eab308"
-              }`}>●</span>
-              {String(fav.title)}
-            </div>
-            {fav.due_date && (
-              <span class="text-xs text-text-muted">{relativeTime(String(fav.due_date))}</span>
-            )}
-          </div>
-        ))}
-      </div>
-    </div>
-  )}
+    )
+  }
 
   <div class="card" style="margin-bottom: 20px;">
     <div class="card-header">
       <div>
-        <div class="card-title">Quick Add</div>
-        <div class="card-subtitle">Press Enter to create a task instantly</div>
+        <div class="card-title">{t("dashboard.quick_add", locale)}</div>
+        <div class="card-subtitle">
+          {t("dashboard.quick_add_subtitle", locale)}
+        </div>
       </div>
     </div>
     <form id="quick-add-form" style="display: flex; gap: 10px;">
@@ -176,32 +203,45 @@ function relativeTime(dueDate: string): string {
         type="text"
         class="form-input"
         id="quick-title"
-        placeholder="What needs to be done?"
+        placeholder={t("dashboard.quick_add_placeholder", locale)}
         autocomplete="off"
         autofocus
         required
         minlength="2"
         maxlength="200"
       />
-      <button type="submit" class="btn btn-primary">Add</button>
+      <button type="submit" class="btn btn-primary"
+        >{t("dashboard.add", locale)}</button
+      >
     </form>
   </div>
 
   <div class="card">
     <div class="card-header">
       <div>
-        <div class="card-title">Recent Tasks</div>
-        <div class="card-subtitle">{tasks.length} of {stats.total} tasks</div>
+        <div class="card-title">{t("dashboard.recent_tasks", locale)}</div>
+        <div class="card-subtitle">
+          {
+            t("dashboard.tasks_of_total", locale, {
+              count: String(tasks.length),
+              total: String(stats.total),
+            })
+          }
+        </div>
       </div>
-      <a href="/tasks" class="btn btn-ghost">View All →</a>
+      <a href="/tasks" class="btn btn-ghost"
+        >{t("dashboard.view_all", locale)}</a
+      >
     </div>
     <div class="task-list" id="task-list">
       {
         tasks.length === 0 ? (
           <div class="empty-state">
             <div class="empty-icon">☘</div>
-            <div class="empty-text">No tasks yet</div>
-            <div class="empty-sub">Create your first task to get started</div>
+            <div class="empty-text">{t("dashboard.no_tasks_yet", locale)}</div>
+            <div class="empty-sub">
+              {t("dashboard.create_first_task", locale)}
+            </div>
           </div>
         ) : (
           tasks.map((task) => (
@@ -244,7 +284,13 @@ function relativeTime(dueDate: string): string {
     </div>
   </div>
 
-  <div id="toast-container" class="toast-container" aria-live="polite" role="status"></div>
+  <div
+    id="toast-container"
+    class="toast-container"
+    aria-live="polite"
+    role="status"
+  >
+  </div>
 
   <script>
     import { showToast } from "../lib/toast";
@@ -293,7 +339,10 @@ function relativeTime(dueDate: string): string {
           const res = await fetch("/api/tasks", {
             method: "POST",
             headers: { "content-type": "application/json" },
-            body: JSON.stringify({ title, board_id: activeBoard === "all" ? "default" : activeBoard }),
+            body: JSON.stringify({
+              title,
+              board_id: activeBoard === "all" ? "default" : activeBoard,
+            }),
           });
           if (res.ok) {
             showToast("Task created!");
@@ -355,24 +404,32 @@ function relativeTime(dueDate: string): string {
     });
 
     // Header "+ New Task" button → focus Quick Add input
-    document.getElementById("quick-add-btn")?.addEventListener("click", async () => {
-      try {
-        const activeBoard = (window as any).__activeBoard ?? "default";
-        const res = await fetch("/api/tasks", {
-          method: "POST",
-          headers: { "content-type": "application/json" },
-          body: JSON.stringify({ title: "Untitled Task", board_id: activeBoard === "all" ? "default" : activeBoard }),
-        });
-        if (!res.ok) { showToast("Failed to create task", "error"); return; }
-        const task = await res.json();
-        showToast("Task created — fill in the details");
-        if (typeof (window as any).openTaskDetail === "function") {
-          (window as any).openTaskDetail(task.id);
+    document
+      .getElementById("quick-add-btn")
+      ?.addEventListener("click", async () => {
+        try {
+          const activeBoard = (window as any).__activeBoard ?? "default";
+          const res = await fetch("/api/tasks", {
+            method: "POST",
+            headers: { "content-type": "application/json" },
+            body: JSON.stringify({
+              title: "Untitled Task",
+              board_id: activeBoard === "all" ? "default" : activeBoard,
+            }),
+          });
+          if (!res.ok) {
+            showToast("Failed to create task", "error");
+            return;
+          }
+          const task = await res.json();
+          showToast("Task created — fill in the details");
+          if (typeof (window as any).openTaskDetail === "function") {
+            (window as any).openTaskDetail(task.id);
+          }
+        } catch {
+          showToast("Network error", "error");
         }
-      } catch {
-        showToast("Network error", "error");
-      }
-    });
+      });
 
     // Keyboard shortcut: n -> focus quick add
     document.addEventListener("keydown", (e) => {

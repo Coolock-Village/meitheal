@@ -1,9 +1,15 @@
 ---
 import Layout from "../layouts/Layout.astro";
+import { t } from "../i18n/translations";
+import type { Locale } from "../lib/locale";
 import {
   ensureSchema,
   getPersistenceClient,
 } from "@domains/tasks/persistence/store";
+
+// i18n: resolve locale from cookie
+const cookieLocale = Astro.cookies.get("meitheal-locale")?.value;
+const locale: Locale = (cookieLocale === "ga" ? "ga" : "en");
 
 let tasks: Record<string, unknown>[] = [];
 try {
@@ -26,8 +32,8 @@ const priorityColors: Record<number, string> = {
 };
 ---
 
-<Layout title="Meitheal — Table">
-  <span slot="page-title">Table View</span>
+<Layout title={`Meitheal — ${t("table.title", locale)}`}>
+  <span slot="page-title">{t("table.title", locale)}</span>
   <div slot="actions" style="display: flex; gap: 8px; align-items: center;">
     <div class="view-switcher" role="group" aria-label="View mode">
       <a href="/tasks" class="view-btn" title="List view" aria-label="List view"
@@ -46,7 +52,7 @@ const priorityColors: Record<number, string> = {
         aria-label="Table view">⊞</a
       >
     </div>
-    <button class="btn btn-primary" id="create-task-btn">+ New Task</button>
+    <button class="btn btn-primary" id="create-task-btn">{t("tasks.new_task", locale)}</button>
   </div>
 
   <div
@@ -58,7 +64,7 @@ const priorityColors: Record<number, string> = {
       type="text"
       class="form-input"
       id="table-search"
-      placeholder="Filter..."
+      placeholder={t("table.filter_placeholder", locale)}
       style="max-width: 200px; padding: 6px 10px; font-size: 13px;"
       aria-label="Filter table rows"
     />
@@ -68,10 +74,10 @@ const priorityColors: Record<number, string> = {
       style="max-width: 140px; padding: 6px 8px; font-size: 13px;"
       aria-label="Filter by RICE score"
     >
-      <option value="">All RICE</option>
-      <option value="high">High (≥15)</option>
-      <option value="medium">Medium (8–14)</option>
-      <option value="low">Low (&lt;8)</option>
+      <option value="">{t("tasks.all_rice", locale)}</option>
+      <option value="high">{t("tasks.rice_high", locale)}</option>
+      <option value="medium">{t("tasks.rice_medium", locale)}</option>
+      <option value="low">{t("tasks.rice_low", locale)}</option>
     </select>
   </div>
   <div class="table-container">
@@ -85,21 +91,21 @@ const priorityColors: Record<number, string> = {
               aria-label="Select all tasks"
             /></th
           >
-          <th class="sortable" data-col="title">Title</th>
+          <th class="sortable" data-col="title">{t("table.col_title", locale)}</th>
           <th class="sortable" data-col="type" style="width: 70px;">Type</th>
           <th class="sortable" data-col="status" style="width: 100px;"
-            >Status</th
+            >{t("table.col_status", locale)}</th
           >
           <th class="sortable" data-col="priority" style="width: 100px;"
-            >Priority</th
+            >{t("table.col_priority", locale)}</th
           >
           <th class="sortable" data-col="due_date" style="width: 120px;"
-            >Due Date</th
+            >{t("table.col_due_date", locale)}</th
           >
-          <th class="sortable" data-col="rice" style="width: 80px;">RICE</th>
-          <th style="width: 70px;" title="Calendar Sync">📅</th>
-          <th style="width: 100px;">Custom Fields</th>
-          <th style="width: 80px;">Actions</th>
+          <th class="sortable" data-col="rice" style="width: 80px;">{t("table.col_rice", locale)}</th>
+          <th style="width: 70px;" title={t("table.col_calendar", locale)}>📅</th>
+          <th style="width: 100px;">{t("table.col_custom_fields", locale)}</th>
+          <th style="width: 80px;">{t("table.col_actions", locale)}</th>
         </tr>
       </thead>
       <tbody>
@@ -110,7 +116,7 @@ const priorityColors: Record<number, string> = {
                 colspan="10"
                 style="text-align: center; padding: 40px; color: var(--text-muted);"
               >
-                No tasks yet — create one to get started
+                {t("table.no_tasks", locale)}
               </td>
             </tr>
           ) : (
@@ -207,11 +213,11 @@ const priorityColors: Record<number, string> = {
                       aria-label={`Priority for ${String(task.title)}`}
                       style={`color: ${priorityColors[p]}`}
                     >
-                      <option value="1" selected={p === 1} style="color: #ef4444;">Critical</option>
-                      <option value="2" selected={p === 2} style="color: #f59e0b;">High</option>
-                      <option value="3" selected={p === 3} style="color: #3b82f6;">Medium</option>
-                      <option value="4" selected={p === 4} style="color: #10b981;">Low</option>
-                      <option value="5" selected={p === 5} style="color: #6b7280;">Minimal</option>
+                      <option value="1" selected={p === 1} style="color: #ef4444;">{t("priority.critical", locale)}</option>
+                      <option value="2" selected={p === 2} style="color: #f59e0b;">{t("priority.high", locale)}</option>
+                      <option value="3" selected={p === 3} style="color: #3b82f6;">{t("priority.medium", locale)}</option>
+                      <option value="4" selected={p === 4} style="color: #10b981;">{t("priority.low", locale)}</option>
+                      <option value="5" selected={p === 5} style="color: #6b7280;">{t("priority.minimal", locale)}</option>
                     </select>
                   </td>
                   <td style="font-size: 13px; color: var(--text-secondary);">
@@ -275,15 +281,15 @@ const priorityColors: Record<number, string> = {
   <div class="bulk-bar" id="bulk-bar" style="display: none;">
     <span id="selected-count">0 selected</span>
     <select class="form-select" id="bulk-status" style="max-width: 140px;">
-      <option value="">Change status...</option>
-      <option value="pending">Pending</option>
-      <option value="active">Active</option>
-      <option value="complete">Complete</option>
+      <option value="">{t("table.change_status", locale)}</option>
+      <option value="pending">{t("task_status.pending", locale)}</option>
+      <option value="active">{t("task_status.active", locale)}</option>
+      <option value="complete">{t("task_status.complete", locale)}</option>
     </select>
     <button
       class="btn btn-danger"
       id="bulk-delete"
-      style="padding: 6px 12px; font-size: 13px;">Delete Selected</button
+      style="padding: 6px 12px; font-size: 13px;">{t("table.delete_selected", locale)}</button
     >
   </div>
 

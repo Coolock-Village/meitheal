@@ -1,9 +1,15 @@
 ---
 import Layout from "../layouts/Layout.astro";
+import { t } from "../i18n/translations";
+import type { Locale } from "../lib/locale";
 import {
   ensureSchema,
   getPersistenceClient,
 } from "@domains/tasks/persistence/store";
+
+// i18n: resolve locale from cookie
+const cookieLocale = Astro.cookies.get("meitheal-locale")?.value;
+const locale: Locale = (cookieLocale === "ga" ? "ga" : "en");
 
 await ensureSchema();
 const client = getPersistenceClient();
@@ -87,11 +93,11 @@ if (columns.length === 0) {
 }
 
 const priorityLabels: Record<number, string> = {
-  1: "Critical",
-  2: "High",
-  3: "Medium",
-  4: "Low",
-  5: "Minimal",
+  1: t("priority.critical", locale),
+  2: t("priority.high", locale),
+  3: t("priority.medium", locale),
+  4: t("priority.low", locale),
+  5: t("priority.minimal", locale),
 };
 const priorityColors: Record<number, string> = {
   1: "#ef4444",
@@ -112,8 +118,8 @@ const typeConfig: Record<
 };
 ---
 
-<Layout title="Meitheal — Kanban">
-  <span slot="page-title">Kanban Board</span>
+<Layout title={`Meitheal — ${t("kanban.title", locale)}`}>
+  <span slot="page-title">{t("kanban.title", locale)}</span>
   <div slot="actions" style="display: flex; gap: 8px; align-items: center;">
     <div class="view-switcher" role="group" aria-label="View mode">
       <a href="/tasks" class="view-btn" title="List view" aria-label="List view"
@@ -132,10 +138,10 @@ const typeConfig: Record<
         aria-label="Table view">⊞</a
       >
     </div>
-    <button class="btn btn-ghost" id="manage-lanes-btn" title="Manage swimlanes"
-      >⚙ Lanes</button
+    <button class="btn btn-ghost" id="manage-lanes-btn" title={t("kanban.manage_swimlanes", locale)}
+      >{t("kanban.manage_lanes", locale)}</button
     >
-    <button class="btn btn-primary" id="kanban-new-task-btn">+ New Task</button>
+    <button class="btn btn-primary" id="kanban-new-task-btn">{t("kanban.new_task", locale)}</button>
   </div>
 
   <!-- Phase 20: Type filter + grouping toolbar -->
@@ -150,37 +156,37 @@ const typeConfig: Record<
         data-type="all"
         title="Show all types"
       >
-        📋 All
+        📋 {t("kanban.all_types", locale)}
       </button>
       <button
         class="type-filter-btn active"
         data-type="epic"
         title="Toggle Epics"
       >
-        <span class="type-dot" style="background: #8b5cf6;"></span> Epics
+        <span class="type-dot" style="background: #8b5cf6;"></span> {t("kanban.epics", locale)}
       </button>
       <button
         class="type-filter-btn active"
         data-type="story"
         title="Toggle Stories"
       >
-        <span class="type-dot" style="background: #3b82f6;"></span> Stories
+        <span class="type-dot" style="background: #3b82f6;"></span> {t("kanban.stories", locale)}
       </button>
       <button
         class="type-filter-btn active"
         data-type="task"
         title="Toggle Tasks"
       >
-        <span class="type-dot" style="background: #10b981;"></span> Tasks
+        <span class="type-dot" style="background: #10b981;"></span> {t("kanban.tasks_label", locale)}
       </button>
     </div>
     <div class="type-group-toggle">
-      <label class="text-xs text-text-muted" for="group-by-select" style="margin-right: 4px;">≡ Group</label>
+      <label class="text-xs text-text-muted" for="group-by-select" style="margin-right: 4px;">≡ {t("kanban.group", locale)}</label>
       <select id="group-by-select" class="inline-select" title="Group swimlanes by">
-        <option value="none">None</option>
-        <option value="type" selected>Type</option>
-        <option value="board">Board</option>
-        <option value="priority">Priority</option>
+        <option value="none">{t("kanban.group_none", locale)}</option>
+        <option value="type" selected>{t("kanban.group_type", locale)}</option>
+        <option value="board">{t("kanban.group_board", locale)}</option>
+        <option value="priority">{t("kanban.group_priority", locale)}</option>
       </select>
     </div>
   </div>
@@ -188,20 +194,20 @@ const typeConfig: Record<
   <!-- Lane management panel -->
   <div class="lane-mgmt" id="lane-mgmt" style="display: none;">
     <div class="lane-mgmt-inner">
-      <strong>Manage Swimlanes</strong>
+      <strong>{t("kanban.manage_swimlanes", locale)}</strong>
       <div id="lane-list"></div>
       <div style="display: flex; gap: 8px; margin-top: 8px;">
         <input
           type="text"
           class="form-input"
           id="new-lane-input"
-          placeholder="New lane name..."
+          placeholder={t("kanban.new_lane_placeholder", locale)}
           style="flex: 1; font-size: 13px;"
         />
         <button
           class="btn btn-primary"
           id="add-lane-btn"
-          style="font-size: 13px;">+ Add</button
+          style="font-size: 13px;">{t("kanban.add_lane", locale)}</button
         >
       </div>
     </div>
@@ -533,7 +539,7 @@ const typeConfig: Record<
                 );
               })}
               {colTasks.length === 0 && (
-                <div class="kanban-empty">Drop tasks here</div>
+                <div class="kanban-empty">{t("kanban.drop_tasks_here", locale)}</div>
               )}
             </div>
             <button
@@ -541,7 +547,7 @@ const typeConfig: Record<
               data-status={col.key}
               aria-label={`Add task to ${col.label}`}
             >
-              + Add Task
+              + {t("kanban.add_task", locale)}
             </button>
           </div>
         );

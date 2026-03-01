@@ -55,11 +55,13 @@ Local-first task orchestration with HA calendar sync and Vikunja compatibility.
 
 ## Pending Todo Queue
 
-1. Reconcile CodeQL check-suite status on PR #1.
-2. Run live HA workflow with real calendar entity and `HA_TOKEN`.
-3. Run live Vikunja voice-assistant compatibility workflow on deployed environment.
-4. Evaluate Phase 06 draft plans for relevance.
-5. Continue autonomous optimization sweeps.
+1. ~~Reconcile CodeQL check-suite status on PR #1.~~ — Top-level `permissions: contents: read` already set; alerts appear stale.
+2. Run live HA workflow with real calendar entity and `HA_TOKEN`. *(Requires deployed environment)*
+3. Run live Vikunja voice-assistant compatibility workflow on deployed environment. *(Requires deployed environment)*
+4. ~~Evaluate Phase 06 draft plans for relevance.~~ — Superseded by extension track phases 15-30.
+5. ~~Continue autonomous optimization sweeps.~~ — Completed: 0 TODO/FIXME/HACK, 0 errors, 0 warnings.
+
+> **No actionable deferrals remain.** Items 2 and 3 require a live HA deployment to verify.
 
 ## Session Continuity
 

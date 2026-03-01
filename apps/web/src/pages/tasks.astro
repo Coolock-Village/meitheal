@@ -1,9 +1,15 @@
 ---
 import Layout from "../layouts/Layout.astro";
+import { t } from "../i18n/translations";
+import type { Locale } from "../lib/locale";
 import {
   ensureSchema,
   getPersistenceClient,
 } from "@domains/tasks/persistence/store";
+
+// i18n: resolve locale from cookie
+const cookieLocale = Astro.cookies.get("meitheal-locale")?.value;
+const locale: Locale = (cookieLocale === "ga" ? "ga" : "en");
 
 let tasks: Record<string, unknown>[] = [];
 try {
@@ -18,11 +24,11 @@ try {
 }
 
 const priorityLabels: Record<number, string> = {
-  1: "Critical",
-  2: "High",
-  3: "Medium",
-  4: "Low",
-  5: "Minimal",
+  1: t("priority.critical", locale),
+  2: t("priority.high", locale),
+  3: t("priority.medium", locale),
+  4: t("priority.low", locale),
+  5: t("priority.minimal", locale),
 };
 const priorityColors: Record<number, string> = {
   1: "#ef4444",
@@ -32,39 +38,39 @@ const priorityColors: Record<number, string> = {
   5: "#6b7280",
 };
 const statusLabels: Record<string, string> = {
-  pending: "Pending",
-  active: "Active",
-  in_progress: "Active",
-  complete: "Complete",
-  done: "Complete",
-  todo: "Pending",
+  pending: t("task_status.pending", locale),
+  active: t("task_status.active", locale),
+  in_progress: t("task_status.active", locale),
+  complete: t("task_status.complete", locale),
+  done: t("task_status.complete", locale),
+  todo: t("task_status.pending", locale),
 };
 ---
 
-<Layout title="Meitheal — Tasks">
-  <span slot="page-title">Tasks</span>
+<Layout title={`Meitheal — ${t("tasks.title", locale)}`}>
+  <span slot="page-title">{t("tasks.title", locale)}</span>
   <div slot="actions" style="display: flex; gap: 8px; align-items: center;">
     <div class="view-switcher" role="group" aria-label="View mode">
       <a
         href="/tasks"
         class="view-btn active"
-        title="List view"
-        aria-label="List view">☰</a
+        title={t("tasks.list_view", locale)}
+        aria-label={t("tasks.list_view", locale)}>☰</a
       >
       <a
         href="/kanban"
         class="view-btn"
-        title="Kanban board"
-        aria-label="Kanban board">▦</a
+        title={t("tasks.kanban_board", locale)}
+        aria-label={t("tasks.kanban_board", locale)}>▦</a
       >
       <a
         href="/table"
         class="view-btn"
-        title="Table view"
-        aria-label="Table view">⊞</a
+        title={t("tasks.table_view", locale)}
+        aria-label={t("tasks.table_view", locale)}>⊞</a
       >
     </div>
-    <button class="btn btn-primary" id="create-task-btn">+ New Task</button>
+    <button class="btn btn-primary" id="create-task-btn">{t("tasks.new_task", locale)}</button>
   </div>
 
   <!-- Filters -->
@@ -73,7 +79,7 @@ const statusLabels: Record<string, string> = {
       type="text"
       class="form-input"
       id="search-input"
-      placeholder="Search tasks... (press /)"
+      placeholder={t("tasks.search_placeholder", locale)}
       style="max-width: 300px;"
     />
     <select
@@ -82,10 +88,10 @@ const statusLabels: Record<string, string> = {
       style="max-width: 150px;"
       aria-label="Filter by status"
     >
-      <option value="">All Statuses</option>
-      <option value="pending">Pending</option>
-      <option value="active">Active</option>
-      <option value="complete">Complete</option>
+      <option value="">{t("tasks.all_statuses", locale)}</option>
+      <option value="pending">{t("task_status.pending", locale)}</option>
+      <option value="active">{t("task_status.active", locale)}</option>
+      <option value="complete">{t("task_status.complete", locale)}</option>
     </select>
     <select
       class="form-select"
@@ -93,12 +99,12 @@ const statusLabels: Record<string, string> = {
       style="max-width: 150px;"
       aria-label="Filter by priority"
     >
-      <option value="">All Priorities</option>
-      <option value="1">Critical</option>
-      <option value="2">High</option>
-      <option value="3">Medium</option>
-      <option value="4">Low</option>
-      <option value="5">Minimal</option>
+      <option value="">{t("tasks.all_priorities", locale)}</option>
+      <option value="1">{t("priority.critical", locale)}</option>
+      <option value="2">{t("priority.high", locale)}</option>
+      <option value="3">{t("priority.medium", locale)}</option>
+      <option value="4">{t("priority.low", locale)}</option>
+      <option value="5">{t("priority.minimal", locale)}</option>
     </select>
     <select
       class="form-select"
@@ -106,10 +112,10 @@ const statusLabels: Record<string, string> = {
       style="max-width: 150px;"
       aria-label="Filter by RICE score"
     >
-      <option value="">All RICE</option>
-      <option value="high">High (≥15)</option>
-      <option value="medium">Medium (8–14)</option>
-      <option value="low">Low (&lt;8)</option>
+      <option value="">{t("tasks.all_rice", locale)}</option>
+      <option value="high">{t("tasks.rice_high", locale)}</option>
+      <option value="medium">{t("tasks.rice_medium", locale)}</option>
+      <option value="low">{t("tasks.rice_low", locale)}</option>
     </select>
     <select
       class="form-select"
@@ -117,14 +123,14 @@ const statusLabels: Record<string, string> = {
       style="max-width: 160px;"
       aria-label="Sort tasks"
     >
-      <option value="created_at-desc">Newest First</option>
-      <option value="created_at-asc">Oldest First</option>
-      <option value="priority-asc">Priority ↑</option>
-      <option value="priority-desc">Priority ↓</option>
-      <option value="rice-desc">RICE ↓</option>
-      <option value="rice-asc">RICE ↑</option>
-      <option value="title-asc">Title A-Z</option>
-      <option value="due_date-asc">Due Soonest</option>
+      <option value="created_at-desc">{t("tasks.newest_first", locale)}</option>
+      <option value="created_at-asc">{t("tasks.oldest_first", locale)}</option>
+      <option value="priority-asc">{t("tasks.priority_up", locale)}</option>
+      <option value="priority-desc">{t("tasks.priority_down", locale)}</option>
+      <option value="rice-desc">{t("tasks.rice_down", locale)}</option>
+      <option value="rice-asc">{t("tasks.rice_up", locale)}</option>
+      <option value="title-asc">{t("tasks.title_az", locale)}</option>
+      <option value="due_date-asc">{t("tasks.due_soonest", locale)}</option>
     </select>
   </div>
 
@@ -280,11 +286,11 @@ const statusLabels: Record<string, string> = {
   <!-- Create/Edit Modal -->
   <div class="modal-overlay" id="task-modal">
     <div class="modal">
-      <div class="modal-title" id="modal-title">New Task</div>
+      <div class="modal-title" id="modal-title">{t("tasks.new_task_modal", locale)}</div>
       <form id="task-form">
         <input type="hidden" id="task-id" />
         <div class="form-group">
-          <label class="form-label" for="task-title-input">Title</label>
+          <label class="form-label" for="task-title-input">{t("tasks.title_label", locale)}</label>
           <input
             type="text"
             class="form-input"
@@ -294,16 +300,16 @@ const statusLabels: Record<string, string> = {
           />
         </div>
         <div class="form-group">
-          <label class="form-label" for="task-desc-input">Description</label>
+          <label class="form-label" for="task-desc-input">{t("tasks.description", locale)}</label>
           <textarea
             class="form-input"
             id="task-desc-input"
             rows="3"
-            placeholder="Optional description (Markdown supported)"></textarea>
+            placeholder={t("tasks.description_placeholder", locale)}></textarea>
         </div>
         <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 12px;">
           <div class="form-group">
-            <label class="form-label" for="task-priority-input">Priority</label>
+            <label class="form-label" for="task-priority-input">{t("tasks.priority_label", locale)}</label>
             <select class="form-select" id="task-priority-input">
               <option value="1">🔴 Critical</option>
               <option value="2">🟠 High</option>
@@ -313,16 +319,16 @@ const statusLabels: Record<string, string> = {
             </select>
           </div>
           <div class="form-group">
-            <label class="form-label" for="task-status-input">Status</label>
+            <label class="form-label" for="task-status-input">{t("tasks.status_label", locale)}</label>
             <select class="form-select" id="task-status-input">
-              <option value="pending">Pending</option>
-              <option value="active">Active</option>
-              <option value="complete">Complete</option>
+              <option value="pending">{t("task_status.pending", locale)}</option>
+              <option value="active">{t("task_status.active", locale)}</option>
+              <option value="complete">{t("task_status.complete", locale)}</option>
             </select>
           </div>
         </div>
         <div class="form-group">
-          <label class="form-label" for="task-due-input">Due Date</label>
+          <label class="form-label" for="task-due-input">{t("tasks.due_date", locale)}</label>
           <input type="datetime-local" class="form-input" id="task-due-input" />
         </div>
         <div class="form-group">
@@ -424,7 +430,7 @@ const statusLabels: Record<string, string> = {
         </div>
         <!-- Custom Fields -->
         <div class="form-group">
-          <label class="form-label">Custom Fields</label>
+          <label class="form-label">{t("tasks.custom_fields", locale)}</label>
           <div
             id="custom-fields-container"
             style="display: flex; flex-direction: column; gap: 6px;"
@@ -435,15 +441,15 @@ const statusLabels: Record<string, string> = {
             class="btn btn-ghost"
             id="add-custom-field-btn"
             style="margin-top: 6px; font-size: 12px; padding: 4px 12px;"
-            >+ Add Field</button
+            >{t("tasks.add_field", locale)}</button
           >
         </div>
         <div class="modal-actions">
           <button type="button" class="btn btn-ghost" id="cancel-modal"
-            >Cancel</button
+            >{t("tasks.cancel", locale)}</button
           >
           <button type="submit" class="btn btn-primary" id="save-task-btn"
-            >Create Task</button
+            >{t("tasks.create_task", locale)}</button
           >
         </div>
       </form>
@@ -453,13 +459,13 @@ const statusLabels: Record<string, string> = {
   <!-- Delete Confirmation -->
   <div class="modal-overlay" id="delete-modal">
     <div class="modal">
-      <div class="modal-title">Delete Task?</div>
+      <div class="modal-title">{t("tasks.delete_task", locale)}</div>
       <p style="color: var(--text-secondary); margin-bottom: 16px;">
-        This action cannot be undone.
+        {t("tasks.cannot_undo", locale)}
       </p>
       <div class="modal-actions">
-        <button class="btn btn-ghost" id="cancel-delete">Cancel</button>
-        <button class="btn btn-danger" id="confirm-delete">Delete</button>
+        <button class="btn btn-ghost" id="cancel-delete">{t("tasks.cancel", locale)}</button>
+        <button class="btn btn-danger" id="confirm-delete">{t("tasks.delete", locale)}</button>
       </div>
     </div>
   </div>

@@ -1,17 +1,22 @@
 ---
 import Layout from "../layouts/Layout.astro";
+import { t } from "../i18n/translations";
+import type { Locale } from "../lib/locale";
+
+const cookieLocale = Astro.cookies.get("meitheal-locale")?.value;
+const locale: Locale = cookieLocale === "ga" ? "ga" : "en";
 ---
 
-<Layout title="Meitheal — Settings">
-  <span slot="page-title">Settings</span>
+<Layout title={`Meitheal — ${t("settings.title", locale)}`}>
+  <span slot="page-title">{t("settings.title", locale)}</span>
 
   <div class="settings-grid">
     <!-- HA Connection -->
     <div class="card">
       <div class="card-header">
         <div>
-          <div class="card-title">☘ Home Assistant</div>
-          <div class="card-subtitle">Connection and integration settings</div>
+          <div class="card-title">{t("settings.ha_title", locale)}</div>
+          <div class="card-subtitle">{t("settings.ha_subtitle", locale)}</div>
         </div>
       </div>
       <form id="ha-form">
@@ -27,7 +32,9 @@ import Layout from "../layouts/Layout.astro";
           />
         </div>
         <div class="form-group">
-          <label class="form-label" for="ha-token">Long-Lived Access Token</label>
+          <label class="form-label" for="ha-token"
+            >Long-Lived Access Token</label
+          >
           <input
             type="password"
             class="form-input"
@@ -39,7 +46,8 @@ import Layout from "../layouts/Layout.astro";
           </small>
         </div>
         <div class="form-group">
-          <label class="form-label" for="calendar-entity">Calendar Entity</label>
+          <label class="form-label" for="calendar-entity">Calendar Entity</label
+          >
           <input
             type="text"
             class="form-input"
@@ -51,7 +59,9 @@ import Layout from "../layouts/Layout.astro";
           <button type="button" class="btn btn-ghost" id="test-connection"
             >Test Connection</button
           >
-          <button type="submit" class="btn btn-primary" id="save-ha">💾 Save</button>
+          <button type="submit" class="btn btn-primary" id="save-ha"
+            >💾 Save</button
+          >
         </div>
         <div id="ha-status" style="margin-top: 12px;"></div>
       </form>
@@ -61,8 +71,12 @@ import Layout from "../layouts/Layout.astro";
     <div class="card">
       <div class="card-header">
         <div>
-          <div class="card-title">📋 Custom Fields</div>
-          <div class="card-subtitle">Define custom fields for tasks</div>
+          <div class="card-title">
+            {t("settings.custom_fields_title", locale)}
+          </div>
+          <div class="card-subtitle">
+            {t("settings.custom_fields_subtitle", locale)}
+          </div>
         </div>
         <button class="btn btn-ghost" id="add-custom-field">+ Add Field</button>
       </div>
@@ -222,7 +236,10 @@ import Layout from "../layouts/Layout.astro";
       <div class="card-header">
         <div>
           <div class="card-title">🔗 Integrations</div>
-          <div class="card-subtitle">Connect Meitheal to external services for automation, sync, and enhanced workflows</div>
+          <div class="card-subtitle">
+            Connect Meitheal to external services for automation, sync, and
+            enhanced workflows
+          </div>
         </div>
       </div>
 
@@ -231,24 +248,51 @@ import Layout from "../layouts/Layout.astro";
         <div class="integration-header">
           <div>
             <strong>📅 Calendar Sync</strong>
-            <div class="integration-desc">Sync tasks with due dates to your Home Assistant or CalDAV calendar. Tasks appear as events with priority color coding.</div>
+            <div class="integration-desc">
+              Sync tasks with due dates to your Home Assistant or CalDAV
+              calendar. Tasks appear as events with priority color coding.
+            </div>
           </div>
           <span class="badge badge-active" id="cal-status">Connected</span>
         </div>
         <div class="integration-config">
           <div class="form-group">
             <label class="form-label" for="cal-entity">Calendar Entity</label>
-            <input type="text" class="form-input" id="cal-entity" placeholder="calendar.meitheal_tasks" />
-            <small style="color: var(--text-muted); font-size: 11px;">The HA calendar entity to sync tasks to. Find it in HA → Developer Tools → States → search "calendar."</small>
+            <input
+              type="text"
+              class="form-input"
+              id="cal-entity"
+              placeholder="calendar.meitheal_tasks"
+            />
+            <small style="color: var(--text-muted); font-size: 11px;"
+              >The HA calendar entity to sync tasks to. Find it in HA →
+              Developer Tools → States → search "calendar."</small
+            >
           </div>
           <div class="form-group">
-            <label class="form-label" for="caldav-url">CalDAV URL (optional)</label>
-            <input type="url" class="form-input" id="caldav-url" placeholder="https://your-server.com/dav/calendars/" />
-            <small style="color: var(--text-muted); font-size: 11px;">For direct CalDAV sync (Nextcloud, Radicale, etc). Leave blank to use HA calendar only.</small>
+            <label class="form-label" for="caldav-url"
+              >CalDAV URL (optional)</label
+            >
+            <input
+              type="url"
+              class="form-input"
+              id="caldav-url"
+              placeholder="https://your-server.com/dav/calendars/"
+            />
+            <small style="color: var(--text-muted); font-size: 11px;"
+              >For direct CalDAV sync (Nextcloud, Radicale, etc). Leave blank to
+              use HA calendar only.</small
+            >
           </div>
           <div style="display: flex; gap: 8px; align-items: center;">
-            <button class="btn btn-primary" id="save-cal" style="font-size: 13px;">Save Calendar Settings</button>
-            <button class="btn btn-ghost" id="test-cal" style="font-size: 13px;">Test Sync</button>
+            <button
+              class="btn btn-primary"
+              id="save-cal"
+              style="font-size: 13px;">Save Calendar Settings</button
+            >
+            <button class="btn btn-ghost" id="test-cal" style="font-size: 13px;"
+              >Test Sync</button
+            >
           </div>
         </div>
       </div>
@@ -258,20 +302,40 @@ import Layout from "../layouts/Layout.astro";
         <div class="integration-header">
           <div>
             <strong>🛒 Grocy</strong>
-            <div class="integration-desc">Connect to Grocy for household inventory and chore management. Meitheal can import Grocy tasks and expose its own tasks back.</div>
+            <div class="integration-desc">
+              Connect to Grocy for household inventory and chore management.
+              Meitheal can import Grocy tasks and expose its own tasks back.
+            </div>
           </div>
-          <span class="badge badge-pending" id="grocy-status">Not configured</span>
+          <span class="badge badge-pending" id="grocy-status"
+            >Not configured</span
+          >
         </div>
         <div class="integration-config">
           <div class="form-group">
             <label class="form-label" for="grocy-url">Grocy URL</label>
-            <input type="url" class="form-input" id="grocy-url" placeholder="http://homeassistant.local:9192" />
-            <small style="color: var(--text-muted); font-size: 11px;">The URL of your Grocy instance. Often runs as a HA add-on on port 9192.</small>
+            <input
+              type="url"
+              class="form-input"
+              id="grocy-url"
+              placeholder="http://homeassistant.local:9192"
+            />
+            <small style="color: var(--text-muted); font-size: 11px;"
+              >The URL of your Grocy instance. Often runs as a HA add-on on port
+              9192.</small
+            >
           </div>
           <div class="form-group">
             <label class="form-label" for="grocy-key">API Key</label>
-            <input type="password" class="form-input" id="grocy-key" placeholder="••••••••" />
-            <small style="color: var(--text-muted); font-size: 11px;">Generate in Grocy → Settings → API Keys → Add.</small>
+            <input
+              type="password"
+              class="form-input"
+              id="grocy-key"
+              placeholder="••••••••"
+            />
+            <small style="color: var(--text-muted); font-size: 11px;"
+              >Generate in Grocy → Settings → API Keys → Add.</small
+            >
           </div>
           <div class="form-group">
             <label class="form-label" for="grocy-sync-mode">Sync Mode</label>
@@ -281,7 +345,11 @@ import Layout from "../layouts/Layout.astro";
               <option value="bidirectional">Bidirectional sync</option>
             </select>
           </div>
-          <button class="btn btn-primary" id="save-grocy" style="font-size: 13px;">Save Grocy Settings</button>
+          <button
+            class="btn btn-primary"
+            id="save-grocy"
+            style="font-size: 13px;">Save Grocy Settings</button
+          >
         </div>
       </div>
 
@@ -290,34 +358,71 @@ import Layout from "../layouts/Layout.astro";
         <div class="integration-header">
           <div>
             <strong>⚙ n8n / Node-RED</strong>
-            <div class="integration-desc">Trigger automation workflows when tasks are created, updated, or completed. Create complex pipelines that react to task events.</div>
+            <div class="integration-desc">
+              Trigger automation workflows when tasks are created, updated, or
+              completed. Create complex pipelines that react to task events.
+            </div>
           </div>
-          <span class="badge badge-pending" id="n8n-status">Not configured</span>
+          <span class="badge badge-pending" id="n8n-status">Not configured</span
+          >
         </div>
         <div class="integration-config">
           <div class="form-group">
             <label class="form-label" for="n8n-webhook-url">Webhook URL</label>
-            <input type="url" class="form-input" id="n8n-webhook-url" placeholder="https://n8n.example.com/webhook/meitheal" />
-            <small style="color: var(--text-muted); font-size: 11px;">The webhook URL from your n8n/Node-RED flow. Meitheal will POST task events here.</small>
+            <input
+              type="url"
+              class="form-input"
+              id="n8n-webhook-url"
+              placeholder="https://n8n.example.com/webhook/meitheal"
+            />
+            <small style="color: var(--text-muted); font-size: 11px;"
+              >The webhook URL from your n8n/Node-RED flow. Meitheal will POST
+              task events here.</small
+            >
           </div>
           <div class="form-group">
             <label class="form-label">Trigger Events</label>
             <div style="display: flex; gap: 12px; flex-wrap: wrap;">
-              <label style="font-size: 13px; display: flex; gap: 4px; align-items: center;">
-                <input type="checkbox" class="n8n-event" value="task.created" checked /> Created
+              <label
+                style="font-size: 13px; display: flex; gap: 4px; align-items: center;"
+              >
+                <input
+                  type="checkbox"
+                  class="n8n-event"
+                  value="task.created"
+                  checked
+                /> Created
               </label>
-              <label style="font-size: 13px; display: flex; gap: 4px; align-items: center;">
-                <input type="checkbox" class="n8n-event" value="task.updated" checked /> Updated
+              <label
+                style="font-size: 13px; display: flex; gap: 4px; align-items: center;"
+              >
+                <input
+                  type="checkbox"
+                  class="n8n-event"
+                  value="task.updated"
+                  checked
+                /> Updated
               </label>
-              <label style="font-size: 13px; display: flex; gap: 4px; align-items: center;">
-                <input type="checkbox" class="n8n-event" value="task.completed" checked /> Completed
+              <label
+                style="font-size: 13px; display: flex; gap: 4px; align-items: center;"
+              >
+                <input
+                  type="checkbox"
+                  class="n8n-event"
+                  value="task.completed"
+                  checked
+                /> Completed
               </label>
-              <label style="font-size: 13px; display: flex; gap: 4px; align-items: center;">
+              <label
+                style="font-size: 13px; display: flex; gap: 4px; align-items: center;"
+              >
                 <input type="checkbox" class="n8n-event" value="task.deleted" /> Deleted
               </label>
             </div>
           </div>
-          <button class="btn btn-primary" id="save-n8n" style="font-size: 13px;">Save n8n Settings</button>
+          <button class="btn btn-primary" id="save-n8n" style="font-size: 13px;"
+            >Save n8n Settings</button
+          >
         </div>
       </div>
 
@@ -326,19 +431,38 @@ import Layout from "../layouts/Layout.astro";
         <div class="integration-header">
           <div>
             <strong>🔔 Webhooks</strong>
-            <div class="integration-desc">Generic outgoing webhooks for any service. Each event sends a JSON payload with the full task object and event type.</div>
+            <div class="integration-desc">
+              Generic outgoing webhooks for any service. Each event sends a JSON
+              payload with the full task object and event type.
+            </div>
           </div>
           <span class="badge badge-active" id="webhook-status">Active</span>
         </div>
         <div class="integration-config">
           <div class="form-group">
-            <label class="form-label" for="webhook-endpoint">Endpoint URL</label>
-            <input type="url" class="form-input" id="webhook-endpoint" placeholder="https://your-service.com/webhook" />
+            <label class="form-label" for="webhook-endpoint">Endpoint URL</label
+            >
+            <input
+              type="url"
+              class="form-input"
+              id="webhook-endpoint"
+              placeholder="https://your-service.com/webhook"
+            />
           </div>
           <div class="form-group">
-            <label class="form-label" for="webhook-secret">Signing Secret (optional)</label>
-            <input type="password" class="form-input" id="webhook-secret" placeholder="••••••••" />
-            <small style="color: var(--text-muted); font-size: 11px;">HMAC-SHA256 secret used to sign webhook payloads. Verify with the X-Webhook-Signature header.</small>
+            <label class="form-label" for="webhook-secret"
+              >Signing Secret (optional)</label
+            >
+            <input
+              type="password"
+              class="form-input"
+              id="webhook-secret"
+              placeholder="••••••••"
+            />
+            <small style="color: var(--text-muted); font-size: 11px;"
+              >HMAC-SHA256 secret used to sign webhook payloads. Verify with the
+              X-Webhook-Signature header.</small
+            >
           </div>
           <div class="form-group">
             <label class="form-label">Payload Format</label>
@@ -348,8 +472,16 @@ import Layout from "../layouts/Layout.astro";
             </select>
           </div>
           <div style="display: flex; gap: 8px;">
-            <button class="btn btn-primary" id="save-webhook" style="font-size: 13px;">Save Webhook</button>
-            <button class="btn btn-ghost" id="test-webhook" style="font-size: 13px;">Send Test</button>
+            <button
+              class="btn btn-primary"
+              id="save-webhook"
+              style="font-size: 13px;">Save Webhook</button
+            >
+            <button
+              class="btn btn-ghost"
+              id="test-webhook"
+              style="font-size: 13px;">Send Test</button
+            >
           </div>
         </div>
       </div>
@@ -359,7 +491,10 @@ import Layout from "../layouts/Layout.astro";
         <div class="integration-header">
           <div>
             <strong>🤖 AI Provider</strong>
-            <div class="integration-desc">Configure which AI service the "Ask AI" button sends tasks to. Generates a pre-filled prompt with task context for analysis.</div>
+            <div class="integration-desc">
+              Configure which AI service the "Ask AI" button sends tasks to.
+              Generates a pre-filled prompt with task context for analysis.
+            </div>
           </div>
           <span class="badge badge-active">ChatGPT</span>
         </div>
@@ -374,11 +509,22 @@ import Layout from "../layouts/Layout.astro";
               <option value="custom">Custom URL</option>
             </select>
           </div>
-          <div class="form-group" id="ai-custom-url-group" style="display: none;">
+          <div
+            class="form-group"
+            id="ai-custom-url-group"
+            style="display: none;"
+          >
             <label class="form-label" for="ai-custom-url">Custom API URL</label>
-            <input type="url" class="form-input" id="ai-custom-url" placeholder="http://localhost:11434/api/chat" />
+            <input
+              type="url"
+              class="form-input"
+              id="ai-custom-url"
+              placeholder="http://localhost:11434/api/chat"
+            />
           </div>
-          <button class="btn btn-primary" id="save-ai" style="font-size: 13px;">Save AI Settings</button>
+          <button class="btn btn-primary" id="save-ai" style="font-size: 13px;"
+            >Save AI Settings</button
+          >
         </div>
       </div>
     </div>
@@ -407,12 +553,18 @@ import Layout from "../layouts/Layout.astro";
       <div class="card-header">
         <div>
           <div class="card-title">🌐 Language</div>
-          <div class="card-subtitle">Interface language — content stays in its original language</div>
+          <div class="card-subtitle">
+            Interface language — content stays in its original language
+          </div>
         </div>
       </div>
       <div class="form-group" style="margin-top: 12px;">
         <label class="form-label" for="locale-select">Display Language</label>
-        <select class="form-select" id="locale-select" style="max-width: 240px;">
+        <select
+          class="form-select"
+          id="locale-select"
+          style="max-width: 240px;"
+        >
           <option value="en">English</option>
           <option value="ga">Gaeilge</option>
         </select>
@@ -424,32 +576,82 @@ import Layout from "../layouts/Layout.astro";
       <div class="card-header">
         <div>
           <div class="card-title">💾 Data Portability</div>
-          <div class="card-subtitle">Meitheal is local-first. You own your data.</div>
+          <div class="card-subtitle">
+            Meitheal is local-first. You own your data.
+          </div>
         </div>
       </div>
       <div class="form-group" style="margin-top: 12px;">
-        <label class="form-label" style="margin-bottom: 8px;">Export Tasks</label>
+        <label class="form-label" style="margin-bottom: 8px;"
+          >Export Tasks</label
+        >
         <div style="display: flex; gap: 8px;">
-          <a href="#" class="btn btn-primary" id="export-json-btn" style="flex: 1; text-align: center; text-decoration: none;">📥 Download JSON</a>
-          <a href="/api/export/tasks.csv" download class="btn btn-secondary" id="export-csv-btn" style="flex: 1; text-align: center; text-decoration: none;">📊 Download CSV</a>
-          <a href="/api/export/database.sqlite" download class="btn btn-secondary" id="export-db-btn" style="flex: 1; text-align: center; text-decoration: none;">🗄️ Raw DB</a>
+          <a
+            href="#"
+            class="btn btn-primary"
+            id="export-json-btn"
+            style="flex: 1; text-align: center; text-decoration: none;"
+            >📥 Download JSON</a
+          >
+          <a
+            href="/api/export/tasks.csv"
+            download
+            class="btn btn-secondary"
+            id="export-csv-btn"
+            style="flex: 1; text-align: center; text-decoration: none;"
+            >📊 Download CSV</a
+          >
+          <a
+            href="/api/export/database.sqlite"
+            download
+            class="btn btn-secondary"
+            id="export-db-btn"
+            style="flex: 1; text-align: center; text-decoration: none;"
+            >🗄️ Raw DB</a
+          >
         </div>
-        <small style="color: var(--text-muted); font-size: 11px; display: block; margin-top: 6px;">
-          Export your tasks to JSON/CSV, or download the entire raw SQLite database file for full local-first data sovereignty.
+        <small
+          style="color: var(--text-muted); font-size: 11px; display: block; margin-top: 6px;"
+        >
+          Export your tasks to JSON/CSV, or download the entire raw SQLite
+          database file for full local-first data sovereignty.
         </small>
       </div>
 
-      <div class="form-group" style="margin-top: 16px; border-top: 1px solid var(--border-color); padding-top: 16px;">
-        <label class="form-label" style="margin-bottom: 8px;">Settings Configuration</label>
+      <div
+        class="form-group"
+        style="margin-top: 16px; border-top: 1px solid var(--border-color); padding-top: 16px;"
+      >
+        <label class="form-label" style="margin-bottom: 8px;"
+          >Settings Configuration</label
+        >
         <div style="display: flex; gap: 8px;">
-          <a href="/api/export/settings.json" download class="btn btn-secondary" id="export-settings-btn" style="flex: 1; text-align: center; text-decoration: none;">⚙️ Export Config</a>
-          <label class="btn btn-secondary" style="flex: 1; text-align: center; cursor: pointer; margin: 0; padding: 6px 16px; display: inline-flex; justify-content: center; align-items: center;">
+          <a
+            href="/api/export/settings.json"
+            download
+            class="btn btn-secondary"
+            id="export-settings-btn"
+            style="flex: 1; text-align: center; text-decoration: none;"
+            >⚙️ Export Config</a
+          >
+          <label
+            class="btn btn-secondary"
+            style="flex: 1; text-align: center; cursor: pointer; margin: 0; padding: 6px 16px; display: inline-flex; justify-content: center; align-items: center;"
+          >
             🔄 Import Config
-            <input type="file" id="import-settings-input" accept=".json" style="display: none;" />
+            <input
+              type="file"
+              id="import-settings-input"
+              accept=".json"
+              style="display: none;"
+            />
           </label>
         </div>
-        <small style="color: var(--text-muted); font-size: 11px; display: block; margin-top: 6px;">
-          Backup or restore your tokens, shortcuts, UI layouts, and active integrations. Restoring will trigger a page reload.
+        <small
+          style="color: var(--text-muted); font-size: 11px; display: block; margin-top: 6px;"
+        >
+          Backup or restore your tokens, shortcuts, UI layouts, and active
+          integrations. Restoring will trigger a page reload.
         </small>
       </div>
     </div>
@@ -482,36 +684,60 @@ import Layout from "../layouts/Layout.astro";
     <div class="card" style="border-color: var(--danger); border-width: 2px;">
       <div class="card-header">
         <div>
-          <div class="card-title" style="color: var(--danger);">⚠ Danger Zone</div>
-          <div class="card-subtitle">Irreversible actions — proceed with caution</div>
+          <div class="card-title" style="color: var(--danger);">
+            ⚠ Danger Zone
+          </div>
+          <div class="card-subtitle">
+            Irreversible actions — proceed with caution
+          </div>
         </div>
       </div>
       <div style="display: flex; gap: 8px; flex-wrap: wrap;">
-        <button class="btn" id="purge-tasks" style="border-color: var(--danger); color: var(--danger);">🗑 Purge All Tasks</button>
-        <button class="btn" id="reset-settings" style="border-color: var(--danger); color: var(--danger);">🔄 Reset Settings</button>
+        <button
+          class="btn"
+          id="purge-tasks"
+          style="border-color: var(--danger); color: var(--danger);"
+          >🗑 Purge All Tasks</button
+        >
+        <button
+          class="btn"
+          id="reset-settings"
+          style="border-color: var(--danger); color: var(--danger);"
+          >🔄 Reset Settings</button
+        >
       </div>
     </div>
   </div>
 
-  <div id="toast-container" class="toast-container" aria-live="polite" role="status"></div>
+  <div
+    id="toast-container"
+    class="toast-container"
+    aria-live="polite"
+    role="status"
+  >
+  </div>
 
   <script>
     import { exportLocalDataAsJson } from "../domains/offline/export-service";
 
     // Export Tasks Binding
-    document.getElementById("export-json-btn")?.addEventListener("click", async (e) => {
-      e.preventDefault();
-      try {
-        await exportLocalDataAsJson();
-        showToast("Local data and attachments exported successfully.");
-      } catch (err) {
-        console.error("Failed to export JSON:", err);
-        showToast("Failed to generate local export.", "error");
-      }
-    });
+    document
+      .getElementById("export-json-btn")
+      ?.addEventListener("click", async (e) => {
+        e.preventDefault();
+        try {
+          await exportLocalDataAsJson();
+          showToast("Local data and attachments exported successfully.");
+        } catch (err) {
+          console.error("Failed to export JSON:", err);
+          showToast("Failed to generate local export.", "error");
+        }
+      });
 
     // Import Config Binding
-    const importInput = document.getElementById("import-settings-input") as HTMLInputElement;
+    const importInput = document.getElementById(
+      "import-settings-input",
+    ) as HTMLInputElement;
     if (importInput) {
       importInput.addEventListener("change", async (e) => {
         const file = (e.target as HTMLInputElement).files?.[0];
@@ -524,7 +750,7 @@ import Layout from "../layouts/Layout.astro";
           const response = await fetch("/api/import/settings", {
             method: "POST",
             headers: { "Content-Type": "application/json" },
-            body: JSON.stringify(payload)
+            body: JSON.stringify(payload),
           });
 
           if (!response.ok) {
@@ -591,18 +817,23 @@ import Layout from "../layouts/Layout.astro";
 
         // Restore locale
         if (settings.locale) {
-          (document.getElementById("locale-select") as HTMLSelectElement).value = String(settings.locale);
+          (
+            document.getElementById("locale-select") as HTMLSelectElement
+          ).value = String(settings.locale);
         } else {
           // Fall back to localStorage / cookie
           const stored = localStorage.getItem("meitheal-locale") || "en";
-          (document.getElementById("locale-select") as HTMLSelectElement).value = stored;
+          (
+            document.getElementById("locale-select") as HTMLSelectElement
+          ).value = stored;
         }
 
         updateFrameworkSelect();
       } catch {
         /* API not available — try localStorage fallback for locale */
         const stored = localStorage.getItem("meitheal-locale") || "en";
-        (document.getElementById("locale-select") as HTMLSelectElement).value = stored;
+        (document.getElementById("locale-select") as HTMLSelectElement).value =
+          stored;
       }
     }
 
@@ -699,29 +930,32 @@ import Layout from "../layouts/Layout.astro";
       });
 
     // Save HA settings
-    document.getElementById("ha-form")?.addEventListener("submit", async (e) => {
-      e.preventDefault();
-      const haUrl = (document.getElementById("ha-url") as HTMLInputElement)
-        .value;
-      const haToken = (document.getElementById("ha-token") as HTMLInputElement)
-        .value;
-      const calEntity = (
-        document.getElementById("calendar-entity") as HTMLInputElement
-      ).value;
-      
-      const saveBtn = document.getElementById("save-ha") as HTMLButtonElement;
-      const origText = saveBtn.innerHTML;
-      saveBtn.innerHTML = "💾 Saving...";
-      saveBtn.disabled = true;
+    document
+      .getElementById("ha-form")
+      ?.addEventListener("submit", async (e) => {
+        e.preventDefault();
+        const haUrl = (document.getElementById("ha-url") as HTMLInputElement)
+          .value;
+        const haToken = (
+          document.getElementById("ha-token") as HTMLInputElement
+        ).value;
+        const calEntity = (
+          document.getElementById("calendar-entity") as HTMLInputElement
+        ).value;
 
-      await saveSetting("ha_url", haUrl);
-      if (haToken) await saveSetting("ha_token", haToken);
-      await saveSetting("calendar_entity", calEntity);
-      
-      saveBtn.innerHTML = origText;
-      saveBtn.disabled = false;
-      showToast("HA settings saved");
-    });
+        const saveBtn = document.getElementById("save-ha") as HTMLButtonElement;
+        const origText = saveBtn.innerHTML;
+        saveBtn.innerHTML = "💾 Saving...";
+        saveBtn.disabled = true;
+
+        await saveSetting("ha_url", haUrl);
+        if (haToken) await saveSetting("ha_token", haToken);
+        await saveSetting("calendar_entity", calEntity);
+
+        saveBtn.innerHTML = origText;
+        saveBtn.disabled = false;
+        showToast("HA settings saved");
+      });
 
     // Add custom field
     document
@@ -748,52 +982,71 @@ import Layout from "../layouts/Layout.astro";
         row.querySelector("input")?.focus();
 
         // Attach save handler to new row
-        row.querySelector(".custom-field-save")?.addEventListener("click", async function() {
-          const nameInput = row.querySelector("input") as HTMLInputElement;
-          const typeSelect = row.querySelector("select") as HTMLSelectElement;
-          const name = nameInput?.value?.trim();
-          const type = typeSelect?.value || "text";
-          if (!name) { nameInput?.focus(); return; }
-
-          try {
-            const settingsRes = await fetch("/api/settings");
-            const settings = settingsRes.ok ? await settingsRes.json() : {};
-            const existing = settings.custom_fields ? JSON.parse(settings.custom_fields) : [];
-            existing.push({ name, type });
-
-            await fetch("/api/settings", {
-              method: "PUT",
-              headers: { "content-type": "application/json" },
-              body: JSON.stringify({ key: "custom_fields", value: JSON.stringify(existing) }),
-            });
-
-            nameInput.disabled = true;
-            typeSelect.disabled = true;
-            const saveBtn = row.querySelector(".custom-field-save") as HTMLButtonElement;
-            if (saveBtn) {
-              saveBtn.textContent = "✓ Saved";
-              saveBtn.disabled = true;
-              saveBtn.style.color = "var(--success)";
+        row
+          .querySelector(".custom-field-save")
+          ?.addEventListener("click", async function () {
+            const nameInput = row.querySelector("input") as HTMLInputElement;
+            const typeSelect = row.querySelector("select") as HTMLSelectElement;
+            const name = nameInput?.value?.trim();
+            const type = typeSelect?.value || "text";
+            if (!name) {
+              nameInput?.focus();
+              return;
             }
-            showToast("Custom field saved!");
-          } catch {
-            showToast("Failed to save field", "error");
-          }
-        });
+
+            try {
+              const settingsRes = await fetch("/api/settings");
+              const settings = settingsRes.ok ? await settingsRes.json() : {};
+              const existing = settings.custom_fields
+                ? JSON.parse(settings.custom_fields)
+                : [];
+              existing.push({ name, type });
+
+              await fetch("/api/settings", {
+                method: "PUT",
+                headers: { "content-type": "application/json" },
+                body: JSON.stringify({
+                  key: "custom_fields",
+                  value: JSON.stringify(existing),
+                }),
+              });
+
+              nameInput.disabled = true;
+              typeSelect.disabled = true;
+              const saveBtn = row.querySelector(
+                ".custom-field-save",
+              ) as HTMLButtonElement;
+              if (saveBtn) {
+                saveBtn.textContent = "✓ Saved";
+                saveBtn.disabled = true;
+                saveBtn.style.color = "var(--success)";
+              }
+              showToast("Custom field saved!");
+            } catch {
+              showToast("Failed to save field", "error");
+            }
+          });
       });
 
     // AI provider custom URL toggle
-    document.getElementById("ai-provider")?.addEventListener("change", function() {
-      const group = document.getElementById("ai-custom-url-group");
-      if (group) {
-        group.style.display = (this as HTMLSelectElement).value === "custom" ? "block" : "none";
-      }
-    });
+    document
+      .getElementById("ai-provider")
+      ?.addEventListener("change", function () {
+        const group = document.getElementById("ai-custom-url-group");
+        if (group) {
+          group.style.display =
+            (this as HTMLSelectElement).value === "custom" ? "block" : "none";
+        }
+      });
 
     document.getElementById("save-ai")?.addEventListener("click", async () => {
-      const provider = (document.getElementById("ai-provider") as HTMLSelectElement).value;
-      const customUrl = (document.getElementById("ai-custom-url") as HTMLInputElement).value;
-      
+      const provider = (
+        document.getElementById("ai-provider") as HTMLSelectElement
+      ).value;
+      const customUrl = (
+        document.getElementById("ai-custom-url") as HTMLInputElement
+      ).value;
+
       const saveBtn = document.getElementById("save-ai") as HTMLButtonElement;
       if (!saveBtn) return;
       const origText = saveBtn.innerHTML;
@@ -811,48 +1064,82 @@ import Layout from "../layouts/Layout.astro";
     });
 
     // ───── Danger Zone ─────
-    document.getElementById("purge-tasks")?.addEventListener("click", async () => {
-      if (!confirm("⚠ This will permanently delete ALL tasks. Are you sure?")) return;
-      if (!confirm("This action is IRREVERSIBLE. Type 'yes' in the next prompt to confirm.")) return;
-      const typed = prompt("Type YES to confirm purge:");
-      if (typed?.toUpperCase() !== "YES") { showToast("Purge cancelled", "error"); return; }
-      try {
-        const res = await fetch("/api/tasks?purge=all", { method: "DELETE" });
-        if (res.ok) { showToast("All tasks purged"); setTimeout(() => window.location.reload(), 1000); }
-        else showToast("Purge failed", "error");
-      } catch { showToast("Network error", "error"); }
-    });
+    document
+      .getElementById("purge-tasks")
+      ?.addEventListener("click", async () => {
+        if (!confirm("⚠ This will permanently delete ALL tasks. Are you sure?"))
+          return;
+        if (
+          !confirm(
+            "This action is IRREVERSIBLE. Type 'yes' in the next prompt to confirm.",
+          )
+        )
+          return;
+        const typed = prompt("Type YES to confirm purge:");
+        if (typed?.toUpperCase() !== "YES") {
+          showToast("Purge cancelled", "error");
+          return;
+        }
+        try {
+          const res = await fetch("/api/tasks?purge=all", { method: "DELETE" });
+          if (res.ok) {
+            showToast("All tasks purged");
+            setTimeout(() => window.location.reload(), 1000);
+          } else showToast("Purge failed", "error");
+        } catch {
+          showToast("Network error", "error");
+        }
+      });
 
-    document.getElementById("reset-settings")?.addEventListener("click", async () => {
-      if (!confirm("⚠ This will reset ALL settings to defaults. Continue?")) return;
-      try {
-        const res = await fetch("/api/settings?reset=all", { method: "DELETE" });
-        if (res.ok) { showToast("Settings reset to defaults"); setTimeout(() => window.location.reload(), 1000); }
-        else showToast("Reset failed", "error");
-      } catch { showToast("Network error", "error"); }
-    });
+    document
+      .getElementById("reset-settings")
+      ?.addEventListener("click", async () => {
+        if (!confirm("⚠ This will reset ALL settings to defaults. Continue?"))
+          return;
+        try {
+          const res = await fetch("/api/settings?reset=all", {
+            method: "DELETE",
+          });
+          if (res.ok) {
+            showToast("Settings reset to defaults");
+            setTimeout(() => window.location.reload(), 1000);
+          } else showToast("Reset failed", "error");
+        } catch {
+          showToast("Network error", "error");
+        }
+      });
 
     // Language selector — persist to API, cookie, localStorage
-    document.getElementById("locale-select")?.addEventListener("change", async (e) => {
-      const locale = (e.target as HTMLSelectElement).value;
-      // Store in localStorage
-      localStorage.setItem("meitheal-locale", locale);
-      // Set cookie for SSR
-      document.cookie = `meitheal-locale=${locale};path=/;max-age=31536000;SameSite=Lax`;
-      // Persist to settings API
-      try {
-        await fetch("/api/settings", {
-          method: "PUT",
-          headers: { "content-type": "application/json" },
-          body: JSON.stringify({ key: "locale", value: locale }),
-        });
-      } catch { /* ignore API errors */ }
-      // Dispatch event for any listening components
-      window.dispatchEvent(new CustomEvent("meitheal:locale-changed", { detail: { locale } }));
-      // Reload to get SSR-rendered translations
-      showToast(locale === "ga" ? "Teanga athraithe go Gaeilge" : "Language changed to English");
-      setTimeout(() => window.location.reload(), 800);
-    });
+    document
+      .getElementById("locale-select")
+      ?.addEventListener("change", async (e) => {
+        const locale = (e.target as HTMLSelectElement).value;
+        // Store in localStorage
+        localStorage.setItem("meitheal-locale", locale);
+        // Set cookie for SSR
+        document.cookie = `meitheal-locale=${locale};path=/;max-age=31536000;SameSite=Lax`;
+        // Persist to settings API
+        try {
+          await fetch("/api/settings", {
+            method: "PUT",
+            headers: { "content-type": "application/json" },
+            body: JSON.stringify({ key: "locale", value: locale }),
+          });
+        } catch {
+          /* ignore API errors */
+        }
+        // Dispatch event for any listening components
+        window.dispatchEvent(
+          new CustomEvent("meitheal:locale-changed", { detail: { locale } }),
+        );
+        // Reload to get SSR-rendered translations
+        showToast(
+          locale === "ga"
+            ? "Teanga athraithe go Gaeilge"
+            : "Language changed to English",
+        );
+        setTimeout(() => window.location.reload(), 800);
+      });
 
     // Init
     loadSettings();

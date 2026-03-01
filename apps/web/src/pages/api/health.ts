@@ -1,6 +1,6 @@
 import type { APIRoute } from "astro";
 import { ensureSchema, getPersistenceClient } from "@domains/tasks/persistence/store";
-import { apiError, apiJson } from "../../lib/api-response";
+import { apiJson } from "../../lib/api-response";
 
 /** Process startup time for uptime calculation. */
 const startedAt = Date.now();
