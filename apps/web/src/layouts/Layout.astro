@@ -640,6 +640,14 @@ try {
       checkHealth();
       setInterval(checkHealth, 30000);
 
+      // Global error resilience — catch unhandled errors to prevent blank-page crashes
+      window.addEventListener("error", (e) => {
+        console.error("[Meitheal] Unhandled error:", e.error ?? e.message);
+      });
+      window.addEventListener("unhandledrejection", (e) => {
+        console.error("[Meitheal] Unhandled promise rejection:", e.reason);
+      });
+
       // Mobile menu toggle
       document.getElementById("menu-toggle")?.addEventListener("click", () => {
         document.getElementById("sidebar")?.classList.toggle("open");
