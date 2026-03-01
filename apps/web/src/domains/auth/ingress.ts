@@ -13,7 +13,13 @@ export function hasHassioToken(headers: Headers): boolean {
 }
 
 export function shouldEnforceIngressHeaders(url: string, ingressPath: string | undefined): boolean {
-  return url.includes("/api/") && Boolean(ingressPath);
+  try {
+    const { pathname } = new URL(url);
+    return (pathname === "/api" || pathname.startsWith("/api/")) && Boolean(ingressPath);
+  } catch {
+    // Fallback for non-parseable URLs
+    return url.includes("/api/") && Boolean(ingressPath);
+  }
 }
 
 export function getMissingRequiredIngressHeaders(requiredHeaders: string[], headers: Headers): string[] {

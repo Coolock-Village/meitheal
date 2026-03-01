@@ -41,4 +41,8 @@ test("ingress checks only enforce for API routes with ingress context", () => {
   expect(shouldEnforceIngressHeaders("https://meitheal.local/api/tasks/create", "/api-hassio/ingress/abc")).toBeTruthy();
   expect(shouldEnforceIngressHeaders("https://meitheal.local/", "/api-hassio/ingress/abc")).toBeFalsy();
   expect(shouldEnforceIngressHeaders("https://meitheal.local/api/tasks/create", undefined)).toBeFalsy();
+  // Regression: query-string containing /api/ path should NOT enforce on non-API route
+  expect(shouldEnforceIngressHeaders("https://meitheal.local/?next=/api/tasks/create", "/api-hassio/ingress/abc")).toBeFalsy();
+  // Regression: /api without trailing slash SHOULD enforce
+  expect(shouldEnforceIngressHeaders("https://meitheal.local/api", "/api-hassio/ingress/abc")).toBeTruthy();
 });
