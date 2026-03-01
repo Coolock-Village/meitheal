@@ -737,15 +737,17 @@ const statusLabels: Record<string, string> = {
             body: JSON.stringify(body),
           });
           if (res.ok) {
-            showToast(editingId ? "Task updated!" : "Task created!");
-            modal.classList.remove("open");
-            // Optimistic: reload handled by next navigation; avoid jarring page refresh
+            editingId = null;
+            showToast(
+              editingId ? "common.task_updated" : "common.task_created",
+            );
+            setTimeout(() => window.location.reload(), 800);
           } else {
             const data = await res.json();
-            showToast(data.error || "Failed", "error");
+            showToast(data.error || "common.failed", "error");
           }
         } catch {
-          showToast("Network error", "error");
+          showToast("common.network_error", "error");
         } finally {
           saveBtn.classList.remove("loading");
           saveBtn.disabled = false;
@@ -773,16 +775,14 @@ const statusLabels: Record<string, string> = {
           });
           // Treat 204 (deleted) and 404 (already gone) as success
           if (res.ok || res.status === 404) {
-            showToast("Task deleted");
             deleteModal.classList.remove("open");
-            document
-              .querySelector(`.task-item[data-id="${deletingId}"]`)
-              ?.remove();
+            showToast("common.task_deleted");
+            setTimeout(() => window.location.reload(), 800);
           } else {
-            showToast("Failed to delete", "error");
+            showToast("common.failed_delete", "error");
           }
         } catch {
-          showToast("Failed to delete", "error");
+          showToast("common.failed_delete", "error");
         }
       });
 
@@ -820,9 +820,11 @@ const statusLabels: Record<string, string> = {
             headers: { "content-type": "application/json" },
             body: JSON.stringify({ status: newStatus }),
           });
-          showToast(target.checked ? "Task completed!" : "Task reopened");
+          showToast(
+            target.checked ? "common.task_completed" : "common.task_reopened",
+          );
         } catch {
-          showToast("Failed to update", "error");
+          showToast("common.failed_update", "error");
           target.checked = !target.checked; // Revert
         }
       });
@@ -838,22 +840,11 @@ const statusLabels: Record<string, string> = {
           const res = await fetch(`/api/tasks/${id}`);
           if (!res.ok) return;
           const task = await res.json();
-          const dupRes = await fetch("/api/tasks", {
+          const dupRes = await fetch(`/api/tasks/${id}/duplicate`, {
             method: "POST",
-            headers: { "content-type": "application/json" },
-            body: JSON.stringify({
-              title: `${task.title} (Copy)`,
-              description: task.description ?? "",
-              priority: task.priority ?? 3,
-              status: "pending",
-              due_date: task.due_date ?? null,
-              labels: task.labels ?? "[]",
-              framework_payload: task.framework_payload ?? "{}",
-            }),
           });
           if (dupRes.ok) {
-            showToast("Task duplicated!");
-            // Optimistic: clone the card DOM node
+            showToast("common.task_created");
             const original = document.querySelector(
               `.task-item[data-id="${id}"]`,
             );
@@ -864,9 +855,11 @@ const statusLabels: Record<string, string> = {
               clone.style.animation = "fade-in 300ms ease";
               original.parentElement?.insertBefore(clone, original.nextSibling);
             }
+          } else {
+            showToast("common.failed", "error");
           }
         } catch {
-          showToast("Failed to duplicate", "error");
+          showToast("common.failed", "error");
         }
       });
     });
@@ -1070,7 +1063,7 @@ Can you help me break this down, suggest next steps, estimate effort, or identif
       row.innerHTML = `
         <input type="text" class="form-input cf-key" placeholder="Field name" value="${key.replace(/"/g, "&quot;")}" style="flex:1;font-size:13px;padding:6px 10px;" />
         <input type="${type}" class="form-input cf-value" placeholder="Value" ${valAttr} style="flex:1;font-size:13px;padding:6px 10px;" />
-        <button type="button" class="btn-icon cf-remove" title="Remove" style="color:var(--danger);font-size:16px;">×</button>
+        <button type="button" class="btn-icon cf-remove" title="Remove" aria-label="Remove custom field" style="color:var(--danger);font-size:16px;">×</button>
       `;
       row
         .querySelector(".cf-remove")!

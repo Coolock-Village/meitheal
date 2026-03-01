@@ -1,7 +1,7 @@
 import type { APIRoute } from "astro";
 import type { InValue } from "@libsql/client";
 import { ensureSchema, getPersistenceClient } from "@domains/tasks/persistence/store";
-import { stripHtml } from "../../../../lib/strip-html";
+import { sanitize } from "../../../../lib/sanitize";
 import { apiError, apiJson } from "../../../../lib/api-response";
 import { createLogger, defaultRedactionPatterns } from "@meitheal/domain-observability";
 
@@ -58,7 +58,7 @@ export const POST: APIRoute = async ({ params, request }) => {
 
         // Validate content
         const rawContent = typeof body.content === "string" ? body.content.trim() : "";
-        const content = stripHtml(rawContent);
+        const content = sanitize(rawContent);
         if (!content) {
             return apiError("content is required", 400);
         }
@@ -66,7 +66,7 @@ export const POST: APIRoute = async ({ params, request }) => {
             return apiError("content must be 5000 characters or less", 400);
         }
 
-        const author = typeof body.author === "string" ? stripHtml(body.author.trim()).slice(0, 100) : "user";
+        const author = typeof body.author === "string" ? sanitize(body.author.trim()).slice(0, 100) : "user";
 
         await client.execute({
             sql: "INSERT INTO comments (task_id, content, author) VALUES (?, ?, ?)",

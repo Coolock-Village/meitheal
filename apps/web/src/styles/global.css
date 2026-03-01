@@ -248,17 +248,17 @@
   }
 
   .badge-pending {
-    @apply bg-info/10 text-info border-info/20;
+    @apply bg-info/10 text-blue-400 border-info/20;
   }
 
   .badge-active,
   .badge-in_progress {
-    @apply bg-warning/10 text-warning border-warning/30;
+    @apply bg-warning/10 text-amber-400 border-warning/30;
   }
 
   .badge-done,
   .badge-complete {
-    @apply bg-accent/10 text-accent border-accent/20;
+    @apply bg-accent/10 text-emerald-400 border-accent/20;
   }
 
   /* --- Filter bar --- */

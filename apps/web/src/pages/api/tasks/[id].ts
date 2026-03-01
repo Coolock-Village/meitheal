@@ -1,7 +1,7 @@
 import type { APIRoute } from "astro";
 import type { InValue } from "@libsql/client";
 import { ensureSchema, getPersistenceClient } from "@domains/tasks/persistence/store";
-import { stripHtml } from "../../../lib/strip-html";
+import { sanitize } from "../../../lib/sanitize";
 import { formatTicketKey } from "../../../lib/ticket-key";
 import { dispatchTaskEvent } from "../../../lib/webhook-dispatcher";
 import { VALID_TASK_TYPES } from "@meitheal/domain-tasks";
@@ -96,7 +96,7 @@ export const PUT: APIRoute = async ({ params, request }) => {
   const sanitized: Record<string, InValue> = {};
 
   if (typeof body.title === "string") {
-    const t = stripHtml(body.title.trim());
+    const t = sanitize(body.title.trim());
     if (!t) {
       return new Response(JSON.stringify({ error: "title cannot be empty" }), {
         status: 400, headers: { "content-type": "application/json" },
@@ -110,7 +110,7 @@ export const PUT: APIRoute = async ({ params, request }) => {
     sanitized.title = t;
   }
   if (typeof body.description === "string") {
-    sanitized.description = stripHtml(body.description.slice(0, 10000));
+    sanitized.description = sanitize(body.description.slice(0, 10000));
   }
   if (typeof body.status === "string") {
     const st = body.status.trim().toLowerCase().replace(/[^a-z0-9_]/g, "");

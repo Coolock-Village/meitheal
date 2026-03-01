@@ -7,6 +7,9 @@ import Sidebar from "../components/layout/Sidebar.astro";
 import TopNavigation from "../components/layout/TopNavigation.astro";
 import StrategicEvaluator from "../components/tasks/StrategicEvaluator.astro";
 
+import dtEn from "../i18n/en.json";
+import dtGa from "../i18n/ga.json";
+
 // i18n: resolve locale from cookie for SSR
 const cookieLocale = Astro.cookies.get("meitheal-locale")?.value;
 const locale: Locale = cookieLocale === "ga" ? "ga" : "en";
@@ -82,6 +85,22 @@ Astro.response.headers.set("X-XSS-Protection", "1; mode=block");
       rel="stylesheet"
     />
     <ViewTransitions fallback="swap" />
+    <!-- Inject localization maps into the window for client-scripts like toast.ts -->
+    <script is:inline define:vars={{ locale, dtEn, dtGa }}>
+      window.mI18n = {
+        locale,
+        get: function (key) {
+          const dict = locale === "ga" ? dtGa : dtEn;
+          const parts = key.split(".");
+          let val = dict;
+          for (const p of parts) {
+            if (!val || typeof val !== "object") return key;
+            val = val[p];
+          }
+          return typeof val === "string" ? val : key;
+        },
+      };
+    </script>
   </head>
   <body>
     <a href="#main-content" class="skip-to-content"

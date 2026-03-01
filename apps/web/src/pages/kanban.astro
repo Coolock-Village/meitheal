@@ -903,8 +903,8 @@ const typeConfig: Record<
           ${
             !lane.builtIn
               ? `
-            <button type="button" class="lane-edit" data-id="${lane.id}" data-label="${lane.label}" title="Rename" style="background:none;border:none;cursor:pointer;color:var(--text-muted);font-size:14px;">✏️</button>
-            <button type="button" class="lane-remove" data-id="${lane.id}" title="Remove" style="background:none;border:none;cursor:pointer;color:var(--danger);font-size:14px;">×</button>
+            <button type="button" class="lane-edit" data-id="${lane.id}" data-label="${lane.label}" title="Rename" aria-label="Rename lane" style="background:none;border:none;cursor:pointer;color:var(--text-muted);font-size:14px;">✏️</button>
+            <button type="button" class="lane-remove" data-id="${lane.id}" title="Remove" aria-label="Remove lane" style="background:none;border:none;cursor:pointer;color:var(--danger);font-size:14px;">×</button>
           `
               : '<span style="font-size:11px;color:var(--text-muted);">built-in</span>'
           }

@@ -1190,10 +1190,14 @@ const locale: Locale = cookieLocale === "ga" ? "ga" : "en";
                       });
                       row.remove();
                       showToast(
-                        `Field "${field.name}" removed (data on tasks preserved)`,
+                        typeof window !== "undefined" && (window as any).mI18n
+                          ? (window as any).mI18n.get(
+                              "settings.field_removed",
+                            ) || `Field "${field.name}" removed`
+                          : `Field "${field.name}" removed`,
                       );
                     } catch {
-                      showToast("Failed to remove field", "error");
+                      showToast("common.failed_delete", "error");
                     }
                   });
                 list.appendChild(row);
@@ -1225,7 +1229,7 @@ const locale: Locale = cookieLocale === "ga" ? "ga" : "en";
           }
         });
         saveSetting("framework_mapping", mapping);
-        showToast("Framework mappings updated");
+        showToast("settings.frameworks_updated");
       });
     });
 
@@ -1289,7 +1293,7 @@ const locale: Locale = cookieLocale === "ga" ? "ga" : "en";
 
         saveBtn.innerHTML = origText;
         saveBtn.disabled = false;
-        showToast("HA settings saved");
+        showToast("settings.ha_saved");
       });
 
     // Save sidebar config
@@ -1329,7 +1333,7 @@ const locale: Locale = cookieLocale === "ga" ? "ga" : "en";
 
         btn.textContent = oText;
         btn.disabled = false;
-        showToast("Sidebar configuration saved");
+        showToast("settings.sidebar_saved");
         setTimeout(() => window.location.reload(), 1000);
       });
 
@@ -1397,9 +1401,9 @@ const locale: Locale = cookieLocale === "ga" ? "ga" : "en";
                 saveBtn.disabled = true;
                 saveBtn.style.color = "var(--success)";
               }
-              showToast("Custom field saved!");
+              showToast("settings.custom_field_saved");
             } catch {
-              showToast("Failed to save field", "error");
+              showToast("settings.failed_save_field", "error");
             }
           });
       });
@@ -1436,7 +1440,7 @@ const locale: Locale = cookieLocale === "ga" ? "ga" : "en";
 
       saveBtn.innerHTML = origText;
       saveBtn.disabled = false;
-      showToast("AI settings saved");
+      showToast("settings.ai_saved");
     });
 
     // ───── Webhook Save + Test ─────
@@ -1479,7 +1483,7 @@ const locale: Locale = cookieLocale === "ga" ? "ga" : "en";
 
         saveBtn.innerHTML = origText;
         saveBtn.disabled = false;
-        showToast("Agent protocol settings saved");
+        showToast("settings.agent_protocols_saved");
       });
     document
       .getElementById("save-webhook")
@@ -1495,7 +1499,7 @@ const locale: Locale = cookieLocale === "ga" ? "ga" : "en";
         ).value;
 
         if (!endpoint) {
-          showToast("Webhook endpoint URL is required", "error");
+          showToast("settings.webhook_required", "error");
           return;
         }
 
@@ -1511,7 +1515,7 @@ const locale: Locale = cookieLocale === "ga" ? "ga" : "en";
 
         btn.textContent = "Save Webhook";
         btn.disabled = false;
-        showToast("Webhook settings saved");
+        showToast("settings.webhook_saved");
       });
 
     document
@@ -1521,7 +1525,7 @@ const locale: Locale = cookieLocale === "ga" ? "ga" : "en";
           document.getElementById("webhook-endpoint") as HTMLInputElement
         ).value;
         if (!endpoint) {
-          showToast("Enter a webhook URL first", "error");
+          showToast("settings.webhook_enter_url", "error");
           return;
         }
 
@@ -1567,7 +1571,7 @@ const locale: Locale = cookieLocale === "ga" ? "ga" : "en";
         document.getElementById("n8n-webhook-url") as HTMLInputElement
       ).value;
       if (!webhookUrl) {
-        showToast("n8n webhook URL is required", "error");
+        showToast("settings.n8n_required", "error");
         return;
       }
 
@@ -1591,7 +1595,7 @@ const locale: Locale = cookieLocale === "ga" ? "ga" : "en";
 
       btn.textContent = "Save n8n Settings";
       btn.disabled = false;
-      showToast("n8n settings saved");
+      showToast("settings.n8n_saved");
     });
 
     // ───── Grocy Save ─────
@@ -1607,7 +1611,7 @@ const locale: Locale = cookieLocale === "ga" ? "ga" : "en";
         ).value;
 
         if (!url) {
-          showToast("Grocy URL is required", "error");
+          showToast("settings.grocy_required", "error");
           return;
         }
 
@@ -1627,7 +1631,7 @@ const locale: Locale = cookieLocale === "ga" ? "ga" : "en";
 
         btn.textContent = "Save Grocy Settings";
         btn.disabled = false;
-        showToast("Grocy settings saved");
+        showToast("settings.grocy_saved");
       });
 
     // ───── Calendar Save + Test ─────

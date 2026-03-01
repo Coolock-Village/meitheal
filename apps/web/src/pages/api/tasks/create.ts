@@ -7,6 +7,7 @@ import {
   resolveHomeAssistantAuthFromEnv
 } from "@meitheal/integration-core";
 import { createTaskAndSyncCalendar, type CalendarDefaults } from "@domains/tasks/task-sync-service";
+import { sanitize } from "../../../lib/sanitize";
 
 const logger = createLogger({
   service: "meitheal-web",
@@ -92,7 +93,10 @@ export const POST: APIRoute = async ({ request }) => {
     };
   };
 
-  if (!body.title?.trim()) {
+  const rawTitle = typeof body.title === "string" ? body.title : "";
+  const title = sanitize(rawTitle).trim();
+
+  if (!title) {
     return new Response(JSON.stringify({ error: "title is required" }), {
       status: 400,
       headers: { "content-type": "application/json" }
@@ -107,7 +111,7 @@ export const POST: APIRoute = async ({ request }) => {
 
   const result = await createTaskAndSyncCalendar(
     {
-      title: body.title,
+      title,
       ...(body.frameworkPayload ? { frameworkPayload: body.frameworkPayload } : {}),
       requestId,
       idempotencyKey,

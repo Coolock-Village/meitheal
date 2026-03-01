@@ -1,7 +1,7 @@
 import type { APIRoute } from "astro";
 import type { InValue } from "@libsql/client";
 import { ensureSchema, getPersistenceClient } from "@domains/tasks/persistence/store";
-import { stripHtml } from "../../../lib/strip-html";
+import { sanitize } from "../../../lib/sanitize";
 import { formatTicketKey } from "../../../lib/ticket-key";
 import { dispatchTaskEvent } from "../../../lib/webhook-dispatcher";
 import { VALID_TASK_TYPES } from "@meitheal/domain-tasks";
@@ -114,7 +114,7 @@ export const POST: APIRoute = async ({ request }) => {
 
   // OA-604: Input sanitization
   const rawTitle = typeof body.title === "string" ? body.title.trim() : "";
-  const title = stripHtml(rawTitle); // Recursive HTML tag removal (CodeQL-safe)
+  const title = sanitize(rawTitle); // XSS prevention
   if (!title) {
     return new Response(JSON.stringify({ error: "title is required" }), {
       status: 400,
@@ -141,7 +141,7 @@ export const POST: APIRoute = async ({ request }) => {
 
   // Sanitize description (strip HTML tags like title)
   const rawDesc = typeof body.description === "string" ? body.description.slice(0, 10000) : "";
-  const description = stripHtml(rawDesc);
+  const description = sanitize(rawDesc);
 
   // Validate status — any non-empty alphanumeric/underscore string up to 50 chars
   const rawStatus = typeof body.status === "string" ? body.status.trim().toLowerCase().replace(/[^a-z0-9_]/g, "") : "";

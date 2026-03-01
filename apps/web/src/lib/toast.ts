@@ -15,9 +15,19 @@ export function showToast(
         container.className = "toast-container";
         document.body.appendChild(container);
     }
+    
+    let displayMessage = message;
+    // Attempt local i18n resolution mapped via Layout.astro <script is:inline>
+    if (typeof window !== "undefined" && (window as any).mI18n) {
+        const translated = (window as any).mI18n.get(message);
+        if (translated && translated !== message) {
+            displayMessage = translated;
+        }
+    }
+
     const toast = document.createElement("div");
     toast.className = `toast ${type}`;
-    toast.textContent = message;
+    toast.textContent = displayMessage;
     toast.setAttribute("role", "alert");
     toast.setAttribute("aria-live", "polite");
     container.appendChild(toast);

@@ -349,18 +349,18 @@ function relativeTime(dueDate: string): string {
             }),
           });
           if (res.ok) {
-            showToast("Task created!");
+            showToast("common.task_created");
             // Green flash on form
             const form = document.getElementById("quick-add-form");
             form?.classList.add("flash-success");
             setTimeout(() => form?.classList.remove("flash-success"), 600);
           } else {
             const data = await res.json();
-            showToast(data.error || "Failed to create task", "error");
+            showToast(data.error || "common.failed_create", "error");
             newCard.remove(); // Revert on error
           }
         } catch {
-          showToast("Network error", "error");
+          showToast("common.network_error", "error");
           newCard.remove();
         }
       });
@@ -398,9 +398,11 @@ function relativeTime(dueDate: string): string {
             headers: { "content-type": "application/json" },
             body: JSON.stringify({ status: newStatus }),
           });
-          showToast(target.checked ? "Task completed!" : "Task reopened");
+          showToast(
+            target.checked ? "common.task_completed" : "common.task_reopened",
+          );
         } catch {
-          showToast("Failed to update", "error");
+          showToast("common.failed_update", "error");
           // Revert
           target.checked = !target.checked;
         }
@@ -422,16 +424,16 @@ function relativeTime(dueDate: string): string {
             }),
           });
           if (!res.ok) {
-            showToast("Failed to create task", "error");
+            showToast("common.failed_create", "error");
             return;
           }
           const task = await res.json();
-          showToast("Task created — fill in the details");
+          showToast("common.task_created");
           if (typeof (window as any).openTaskDetail === "function") {
             (window as any).openTaskDetail(task.id);
           }
         } catch {
-          showToast("Network error", "error");
+          showToast("common.network_error", "error");
         }
       });
 
