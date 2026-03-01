@@ -6,7 +6,7 @@
 /* ===== Base Layer: Global resets + typography ===== */
 @layer base {
   :root {
-    /* Runtime CSS vars — keep for JS access + inline styles */
+    /* Runtime CSS vars — hex values for JS access + inline styles */
     --bg-primary: #0f0f1a;
     --bg-secondary: #1a1a2e;
     --bg-card: #16213e;
@@ -23,6 +23,22 @@
     --info: #3b82f6;
     --border: #2a2a42;
     --border-focus: #10b981;
+/* RGB channel vars — Tailwind <alpha-value> support */
+  --bg-primary-rgb: 15 15 26;
+  --bg-secondary-rgb: 26 26 46;
+  --bg-card-rgb: 22 33 62;
+  --bg-hover-rgb: 30 45 79;
+  --bg-input-rgb: 10 10 20;
+  --text-primary-rgb: 232 232 240;
+  --text-secondary-rgb: 155 155 180;
+  --text-muted-rgb: 94 94 120;
+  --accent-rgb: 16 185 129;
+  --accent-hover-rgb: 5 150 105;
+  --warning-rgb: 245 158 11;
+  --danger-rgb: 239 68 68;
+  --info-rgb: 59 130 246;
+  --border-rgb: 42 42 66;
+  --border-focus-rgb: 16 185 129;
     --radius-sm: 6px;
     --radius-md: 10px;
     --radius-lg: 16px;
@@ -54,6 +70,22 @@
       --shadow-sm: 0 1px 3px rgba(0, 0, 0, 0.08);
       --shadow-md: 0 4px 12px rgba(0, 0, 0, 0.1);
       --shadow-lg: 0 8px 24px rgba(0, 0, 0, 0.12);
+/* RGB channels for Tailwind opacity modifiers */
+  --bg-primary-rgb: 248 249 252;
+  --bg-secondary-rgb: 238 240 245;
+  --bg-card-rgb: 255 255 255;
+  --bg-hover-rgb: 226 230 238;
+  --bg-input-rgb: 255 255 255;
+  --text-primary-rgb: 26 26 46;
+  --text-secondary-rgb: 74 74 106;
+  --text-muted-rgb: 136 136 164;
+  --accent-rgb: 5 150 105;
+  --accent-hover-rgb: 4 120 87;
+  --warning-rgb: 217 119 6;
+  --danger-rgb: 220 38 38;
+  --info-rgb: 37 99 235;
+  --border-rgb: 209 213 224;
+  --border-focus-rgb: 5 150 105;
     }
   
     /* Auto theme — follows OS preference */
@@ -78,6 +110,22 @@
         --shadow-sm: 0 1px 3px rgba(0, 0, 0, 0.08);
         --shadow-md: 0 4px 12px rgba(0, 0, 0, 0.1);
         --shadow-lg: 0 8px 24px rgba(0, 0, 0, 0.12);
+/* RGB channels for Tailwind opacity modifiers */
+  --bg-primary-rgb: 248 249 252;
+  --bg-secondary-rgb: 238 240 245;
+  --bg-card-rgb: 255 255 255;
+  --bg-hover-rgb: 226 230 238;
+  --bg-input-rgb: 255 255 255;
+  --text-primary-rgb: 26 26 46;
+  --text-secondary-rgb: 74 74 106;
+  --text-muted-rgb: 136 136 164;
+  --accent-rgb: 5 150 105;
+  --accent-hover-rgb: 4 120 87;
+  --warning-rgb: 217 119 6;
+  --danger-rgb: 220 38 38;
+  --info-rgb: 37 99 235;
+  --border-rgb: 209 213 224;
+  --border-focus-rgb: 5 150 105;
       }
     }
   html {

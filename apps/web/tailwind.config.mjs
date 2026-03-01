@@ -7,29 +7,32 @@ export default {
             /* Meitheal Design Tokens — Irish navy + emerald */
             colors: {
                 bg: {
-                    primary: '#0f0f1a',
-                    secondary: '#1a1a2e',
-                    card: '#16213e',
-                    hover: '#1e2d4f',
-                    input: '#0a0a14',
+                    primary: 'rgb(var(--bg-primary-rgb) / <alpha-value>)',
+                    secondary: 'rgb(var(--bg-secondary-rgb) / <alpha-value>)',
+                    card: 'rgb(var(--bg-card-rgb) / <alpha-value>)',
+                    hover: 'rgb(var(--bg-hover-rgb) / <alpha-value>)',
+                    input: 'rgb(var(--bg-input-rgb) / <alpha-value>)',
                 },
                 text: {
-                    primary: '#e8e8f0',
-                    secondary: '#9b9bb4',
-                    muted: '#5e5e78',
+                    primary: 'rgb(var(--text-primary-rgb) / <alpha-value>)',
+                    secondary: 'rgb(var(--text-secondary-rgb) / <alpha-value>)',
+                    muted: 'rgb(var(--text-muted-rgb) / <alpha-value>)',
                 },
                 accent: {
-                    DEFAULT: '#10b981',
-                    hover: '#059669',
-                    light: 'rgba(16, 185, 129, 0.12)',
+                    DEFAULT: 'rgb(var(--accent-rgb) / <alpha-value>)',
+                    hover: 'rgb(var(--accent-hover-rgb) / <alpha-value>)',
+                    light: 'var(--accent-light)',
                 },
-                warning: '#f59e0b',
-                danger: '#ef4444',
-                info: '#3b82f6',
+                warning: 'rgb(var(--warning-rgb) / <alpha-value>)',
+                danger: 'rgb(var(--danger-rgb) / <alpha-value>)',
+                info: 'rgb(var(--info-rgb) / <alpha-value>)',
                 border: {
-                    DEFAULT: '#2a2a42',
-                    focus: '#10b981',
+                    DEFAULT: 'rgb(var(--border-rgb) / <alpha-value>)',
+                    focus: 'rgb(var(--border-focus-rgb) / <alpha-value>)',
                 },
+                /* Keep standard colors for non-themed utilities */
+                black: '#000000',
+                white: '#ffffff',
             },
             borderRadius: {
                 sm: '6px',
@@ -37,9 +40,9 @@ export default {
                 lg: '16px',
             },
             boxShadow: {
-                sm: '0 1px 3px rgba(0, 0, 0, 0.3)',
-                md: '0 4px 12px rgba(0, 0, 0, 0.4)',
-                lg: '0 8px 24px rgba(0, 0, 0, 0.5)',
+                sm: 'var(--shadow-sm)',
+                md: 'var(--shadow-md)',
+                lg: 'var(--shadow-lg)',
             },
             fontFamily: {
                 sans: ['Inter', '-apple-system', 'BlinkMacSystemFont', 'sans-serif'],
