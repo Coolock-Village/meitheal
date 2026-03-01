@@ -1257,11 +1257,12 @@ const locale: Locale = cookieLocale === "ga" ? "ga" : "en";
           }
         } catch {}
 
-        let orderItems = Array.isArray(sidebarConfig.order)
-          ? sidebarConfig.order.filter((k: string) =>
-              DEFAULT_SIDEBAR.includes(k),
-            )
-          : DEFAULT_SIDEBAR;
+        let orderItems =
+          Array.isArray(sidebarConfig.order) && sidebarConfig.order.length > 0
+            ? sidebarConfig.order.filter((k: string) =>
+                DEFAULT_SIDEBAR.includes(k),
+              )
+            : [...DEFAULT_SIDEBAR];
         // Make sure missing default items are appended
         DEFAULT_SIDEBAR.forEach((k) => {
           if (!orderItems.includes(k)) {
@@ -1581,7 +1582,10 @@ const locale: Locale = cookieLocale === "ga" ? "ga" : "en";
           variant: "warning",
         });
         if (!confirmed) return;
-        await saveSetting("sidebar_config", {});
+        await fetch("/api/settings?key=sidebar_config", {
+          method: "DELETE",
+        }).catch(() => {});
+        await saveSetting("sidebar_config", null);
         showToast("Sidebar reset to defaults");
         setTimeout(() => window.location.reload(), 500);
       });

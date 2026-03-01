@@ -133,9 +133,15 @@ if (Array.isArray(sidebarConfig.customItems)) {
 }
 
 /** Build ordered, filtered nav item list */
-const order: NavKey[] = Array.isArray(sidebarConfig.order)
-  ? (sidebarConfig.order as string[]).filter((k: string) => k in NAV_ITEMS)
-  : DEFAULT_ORDER;
+const rawOrder: NavKey[] =
+  Array.isArray(sidebarConfig.order) && sidebarConfig.order.length > 0
+    ? (sidebarConfig.order as string[]).filter((k: string) => k in NAV_ITEMS)
+    : [];
+// Fall back to defaults if saved order is empty / invalid, then append any missing defaults
+const order: NavKey[] = rawOrder.length > 0 ? rawOrder : [...DEFAULT_ORDER];
+DEFAULT_ORDER.forEach((k) => {
+  if (!order.includes(k)) order.push(k);
+});
 
 const labels: Record<string, string> =
   (sidebarConfig.labels as Record<string, string>) ?? {};
