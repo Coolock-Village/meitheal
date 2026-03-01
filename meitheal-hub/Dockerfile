@@ -1,3 +1,7 @@
+# ── Global build args ──
+# BUILD_FROM is passed by HA Supervisor (e.g. ghcr.io/home-assistant/aarch64-base:3.20)
+ARG BUILD_FROM
+
 # ── Stage 1: Build ──
 # Clones the monorepo from GitHub and builds the Astro app.
 # HA Supervisor uses the addon directory as Docker build context,
@@ -20,7 +24,6 @@ RUN pnpm --filter @meitheal/web build
 
 # ── Stage 2: Runtime ──
 # Lean HA add-on image with only production artifacts.
-ARG BUILD_FROM
 FROM ${BUILD_FROM}
 
 LABEL io.hass.type="addon"
