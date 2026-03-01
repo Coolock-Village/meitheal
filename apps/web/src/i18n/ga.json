@@ -4,6 +4,9 @@
         "tasks": "Tascanna",
         "kanban": "Kanban",
         "table": "Tábla",
+        "today": "Inniu",
+        "upcoming": "Ag Teacht",
+        "calendar": "Féilire",
         "settings": "Socruithe",
         "skip_to_content": "Léim go dtí an t-ábhar"
     },
@@ -206,7 +209,19 @@
         "type_task": "✅ Tasc",
         "type_story": "📖 Scéal",
         "type_epic": "🎯 Eipic",
-        "due": "Dlite"
+        "due": "Dlite",
+        "checklists": "Seicliostáí",
+        "add_checklist_item": "+ Cuir Mír Leis",
+        "checklist_complete": "críochnaithe",
+        "recurrence": "Atharlú",
+        "recurrence_none": "Gan cheann",
+        "recurrence_daily": "Gach lá",
+        "recurrence_weekly": "Gach seachtain",
+        "recurrence_weekday": "Gach lá oibre",
+        "recurrence_monthly": "Gach mí",
+        "recurrence_yearly": "Gach bliain",
+        "recurrence_biweekly": "Gach 2 sheachtain",
+        "reminder": "Meabhrúchán"
     },
     "settings": {
         "title": "Socruithe",
@@ -316,6 +331,9 @@
         "go_kanban": "📋 Téigh go Clár Kanban",
         "go_table": "📄 Téigh go Amharc Tábla",
         "go_settings": "⚙ Téigh go Socruithe",
+        "go_today": "☀️ Téigh go hInniu",
+        "go_upcoming": "📅 Téigh go hAg Teacht",
+        "go_calendar": "🗓️ Téigh go Féilire",
         "export_csv": "📥 Easpórtáil Tascanna CSV",
         "tasks_section": "Tascanna"
     },

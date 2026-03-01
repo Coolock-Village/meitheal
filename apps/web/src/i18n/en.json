@@ -4,6 +4,9 @@
         "tasks": "Tasks",
         "kanban": "Kanban",
         "table": "Table",
+        "today": "Today",
+        "upcoming": "Upcoming",
+        "calendar": "Calendar",
         "settings": "Settings",
         "skip_to_content": "Skip to content"
     },
@@ -206,7 +209,19 @@
         "type_task": "✅ Task",
         "type_story": "📖 Story",
         "type_epic": "🎯 Epic",
-        "due": "Due"
+        "due": "Due",
+        "checklists": "Checklists",
+        "add_checklist_item": "+ Add Item",
+        "checklist_complete": "complete",
+        "recurrence": "Recurrence",
+        "recurrence_none": "None",
+        "recurrence_daily": "Every day",
+        "recurrence_weekly": "Every week",
+        "recurrence_weekday": "Every weekday",
+        "recurrence_monthly": "Every month",
+        "recurrence_yearly": "Every year",
+        "recurrence_biweekly": "Every 2 weeks",
+        "reminder": "Reminder"
     },
     "settings": {
         "title": "Settings",
@@ -316,6 +331,9 @@
         "go_kanban": "📋 Go to Kanban Board",
         "go_table": "📄 Go to Table View",
         "go_settings": "⚙ Go to Settings",
+        "go_today": "☀️ Go to Today",
+        "go_upcoming": "📅 Go to Upcoming",
+        "go_calendar": "🗓️ Go to Calendar",
         "export_csv": "📥 Export Tasks CSV",
         "tasks_section": "Tasks"
     },

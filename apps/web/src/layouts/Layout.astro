@@ -121,8 +121,12 @@ try {
           >
         </li>
         <li>
-          <a href="/today" class="nav-link" data-page="today" aria-label="Today"
-            ><span class="nav-icon">☀️</span> Today</a
+          <a
+            href="/today"
+            class="nav-link"
+            data-page="today"
+            aria-label={t("nav.today", locale)}
+            ><span class="nav-icon">☀️</span> {t("nav.today", locale)}</a
           >
         </li>
         <li>
@@ -130,7 +134,8 @@ try {
             href="/upcoming"
             class="nav-link"
             data-page="upcoming"
-            aria-label="Upcoming"><span class="nav-icon">📅</span> Upcoming</a
+            aria-label={t("nav.upcoming", locale)}
+            ><span class="nav-icon">📅</span> {t("nav.upcoming", locale)}</a
           >
         </li>
         <li>
@@ -138,7 +143,8 @@ try {
             href="/calendar"
             class="nav-link"
             data-page="calendar"
-            aria-label="Calendar"><span class="nav-icon">🗓️</span> Calendar</a
+            aria-label={t("nav.calendar", locale)}
+            ><span class="nav-icon">🗓️</span> {t("nav.calendar", locale)}</a
           >
         </li>
         <li>

@@ -4,9 +4,11 @@ import {
   ensureSchema,
   getPersistenceClient,
 } from "@domains/tasks/persistence/store";
+import { t } from "../i18n/translations";
+import type { Locale } from "../lib/locale";
 
 const cookieLocale = Astro.cookies.get("meitheal-locale")?.value;
-const locale = cookieLocale === "ga" ? "ga" : "en";
+const locale: Locale = cookieLocale === "ga" ? "ga" : "en";
 
 let overdueTasks: Record<string, unknown>[] = [];
 let todayTasks: Record<string, unknown>[] = [];
@@ -30,7 +32,7 @@ try {
     sql: `SELECT * FROM tasks
           WHERE due_date = ?
             AND status NOT IN ('complete', 'done')
-          ORDER BY priority ASC, created_at ASC`,
+          ORDER BY priority DESC, created_at ASC`,
     args: [today],
   });
   todayTasks = todayResult.rows as Record<string, unknown>[];
@@ -39,7 +41,7 @@ try {
     sql: `SELECT * FROM tasks
           WHERE due_date IS NULL
             AND status NOT IN ('complete', 'done')
-          ORDER BY priority ASC, created_at DESC
+          ORDER BY priority DESC, created_at DESC
           LIMIT 10`,
     args: [],
   });
@@ -48,18 +50,27 @@ try {
   /* DB not available */
 }
 
+const priorityLabels: Record<number, string> = {
+  1: "Lowest",
+  2: "Low",
+  3: "Medium",
+  4: "High",
+  5: "Highest",
+};
 const priorityColors: Record<number, string> = {
-  1: "#ef4444",
-  2: "#f59e0b",
+  1: "#6b7280",
+  2: "#10b981",
   3: "#3b82f6",
-  4: "#10b981",
-  5: "#6b7280",
+  4: "#f59e0b",
+  5: "#ef4444",
 };
 const typeIcons: Record<string, string> = {
   epic: "🎯",
   story: "📖",
   task: "✅",
 };
+
+const totalActive = overdueTasks.length + todayTasks.length;
 ---
 
 <Layout title="Meitheal — Today">
@@ -68,18 +79,47 @@ const typeIcons: Record<string, string> = {
     <button class="btn btn-primary" id="create-task-btn">+ New Task</button>
   </div>
 
+  <!-- Persona 10: Quick-add inline -->
+  <div class="card" style="margin-bottom: 16px; padding: 12px 16px;">
+    <form
+      id="quick-add-form"
+      style="display: flex; gap: 8px; align-items: center;"
+    >
+      <input
+        type="text"
+        id="quick-add-input"
+        class="form-input flex-1"
+        placeholder="Add a task... (try 'Buy groceries tomorrow' or 'Review docs every monday')"
+        autocomplete="off"
+        style="font-size: 14px;"
+      />
+      <button
+        type="submit"
+        class="btn btn-primary"
+        style="padding: 8px 16px; white-space: nowrap;">Add</button
+      >
+    </form>
+    <div
+      id="quick-add-feedback"
+      style="display: none; font-size: 11px; color: var(--text-muted); margin-top: 4px; padding-left: 2px;"
+    >
+    </div>
+  </div>
+
   {
     overdueTasks.length > 0 && (
       <div
         class="card"
-        style="margin-bottom: 20px; border-left: 3px solid var(--danger);"
+        style="margin-bottom: 16px; border-left: 3px solid var(--danger);"
       >
-        <div class="card-header">
+        <div class="card-header" style="padding: 12px 16px;">
           <div>
-            <div class="card-title" style="color: var(--danger);">
+            <div
+              class="card-title"
+              style="color: var(--danger); font-size: 14px;"
+            >
               ⚠️ Overdue ({overdueTasks.length})
             </div>
-            <div class="card-subtitle">Tasks past their due date</div>
           </div>
         </div>
         <div class="task-list">
@@ -90,36 +130,42 @@ const typeIcons: Record<string, string> = {
               <div
                 class="task-item"
                 data-id={String(task.id)}
-                style="cursor:pointer;"
+                style="cursor:pointer; padding: 10px 16px; display: flex; align-items: center; gap: 10px; border-bottom: 1px solid var(--border); transition: background 0.15s;"
+                role="button"
+                tabindex="0"
+                aria-label={`${String(task.title)}, priority ${priorityLabels[p] ?? "Medium"}, overdue since ${String(task.due_date)}`}
               >
                 <input
                   type="checkbox"
                   class="task-checkbox"
                   data-id={String(task.id)}
+                  aria-label={`Complete ${String(task.title)}`}
                 />
-                <div class="task-content">
-                  <div class="task-title">
-                    <span style="margin-right:4px;">
-                      {typeIcons[tt] ?? "✅"}
+                <span
+                  style={`color: ${priorityColors[p] ?? "#3b82f6"}; font-size: 10px; flex-shrink: 0;`}
+                  title={`Priority: ${priorityLabels[p] ?? "Medium"}`}
+                >
+                  ●
+                </span>
+                <div style="flex: 1; min-width: 0;">
+                  <div style="font-size: 14px; font-weight: 500; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">
+                    <span style="margin-right: 4px; font-size: 12px;">
+                      {typeIcons[tt] ?? ""}
                     </span>
                     {String(task.title)}
                   </div>
-                  <div class="task-meta">
-                    <span
-                      style={`color: ${priorityColors[p] ?? "#6b7280"}; font-size: 11px;`}
-                    >
-                      ●
-                    </span>
-                    {task.due_date && (
-                      <span class="text-xs text-danger">
-                        {String(task.due_date)}
-                      </span>
-                    )}
-                    {task.recurrence_rule && (
-                      <span class="text-xs text-text-muted">🔁</span>
-                    )}
+                  <div style="font-size: 11px; color: var(--danger); margin-top: 2px;">
+                    {String(task.due_date)}
                   </div>
                 </div>
+                {task.recurrence_rule && (
+                  <span
+                    style="font-size: 11px; color: var(--text-muted);"
+                    title="Recurring task"
+                  >
+                    🔁
+                  </span>
+                )}
               </div>
             );
           })}
@@ -128,20 +174,36 @@ const typeIcons: Record<string, string> = {
     )
   }
 
-  <div class="card" style="margin-bottom: 20px;">
-    <div class="card-header">
+  <div class="card" style="margin-bottom: 16px;">
+    <div class="card-header" style="padding: 12px 16px;">
       <div>
-        <div class="card-title">☀️ Due Today ({todayTasks.length})</div>
-        <div class="card-subtitle">Focus on these tasks today</div>
+        <div class="card-title" style="font-size: 14px;">
+          {
+            todayTasks.length > 0
+              ? `☀️ Due Today (${todayTasks.length})`
+              : "☀️ Today"
+          }
+        </div>
+        {
+          todayTasks.length > 0 && (
+            <div class="card-subtitle" style="font-size: 12px;">
+              Focus on these tasks
+            </div>
+          )
+        }
       </div>
     </div>
     <div class="task-list" id="today-tasks">
       {
         todayTasks.length === 0 ? (
-          <div class="empty-state">
-            <div class="empty-icon">🎉</div>
-            <div class="empty-text">No tasks due today</div>
-            <div class="empty-sub">You're on top of things!</div>
+          <div style="padding: 32px 16px; text-align: center;">
+            <div style="font-size: 32px; margin-bottom: 8px;">🎉</div>
+            <div style="font-size: 14px; color: var(--text-primary); font-weight: 500;">
+              No tasks due today
+            </div>
+            <div style="font-size: 12px; color: var(--text-muted); margin-top: 4px;">
+              You're on top of things!
+            </div>
           </div>
         ) : (
           todayTasks.map((task) => {
@@ -152,38 +214,55 @@ const typeIcons: Record<string, string> = {
               <div
                 class="task-item"
                 data-id={String(task.id)}
-                style="cursor:pointer;"
+                style="cursor:pointer; padding: 10px 16px; display: flex; align-items: center; gap: 10px; border-bottom: 1px solid var(--border); transition: background 0.15s;"
+                role="button"
+                tabindex="0"
+                aria-label={`${String(task.title)}, priority ${priorityLabels[p] ?? "Medium"}`}
               >
                 <input
                   type="checkbox"
                   class="task-checkbox"
                   data-id={String(task.id)}
+                  aria-label={`Complete ${String(task.title)}`}
                 />
-                <div class="task-content">
-                  <div class="task-title">
-                    <span style="margin-right:4px;">
-                      {typeIcons[tt] ?? "✅"}
+                <span
+                  style={`color: ${priorityColors[p] ?? "#3b82f6"}; font-size: 10px; flex-shrink: 0;`}
+                  title={`Priority: ${priorityLabels[p] ?? "Medium"}`}
+                >
+                  ●
+                </span>
+                <div style="flex: 1; min-width: 0;">
+                  <div style="font-size: 14px; font-weight: 500; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">
+                    <span style="margin-right: 4px; font-size: 12px;">
+                      {typeIcons[tt] ?? ""}
                     </span>
                     {String(task.title)}
                   </div>
-                  <div class="task-meta">
-                    <span
-                      style={`color: ${priorityColors[p] ?? "#6b7280"}; font-size: 11px;`}
-                    >
-                      ●
-                    </span>
-                    {progress > 0 && (
-                      <span class="text-xs text-text-muted">{progress}%</span>
-                    )}
-                    {task.recurrence_rule && (
-                      <span class="text-xs text-text-muted">🔁</span>
-                    )}
-                  </div>
+                  {progress > 0 && (
+                    <div style="margin-top: 4px; display: flex; align-items: center; gap: 6px;">
+                      <div style="flex: 1; height: 3px; background: var(--border); border-radius: 2px; overflow: hidden;">
+                        <div
+                          style={`width: ${progress}%; height: 100%; background: var(--accent); border-radius: 2px; transition: width 0.3s;`}
+                        />
+                      </div>
+                      <span style="font-size: 10px; color: var(--text-muted);">
+                        {progress}%
+                      </span>
+                    </div>
+                  )}
                 </div>
                 {task.color && (
                   <span
-                    style={`width:4px;height:100%;border-radius:2px;background:${String(task.color)};`}
+                    style={`width: 4px; height: 24px; border-radius: 2px; background: ${String(task.color)}; flex-shrink: 0;`}
                   />
+                )}
+                {task.recurrence_rule && (
+                  <span
+                    style="font-size: 11px; color: var(--text-muted);"
+                    title="Recurring task"
+                  >
+                    🔁
+                  </span>
                 )}
               </div>
             );
@@ -196,11 +275,13 @@ const typeIcons: Record<string, string> = {
   {
     noDueTasks.length > 0 && (
       <div class="card">
-        <div class="card-header">
+        <div class="card-header" style="padding: 12px 16px;">
           <div>
-            <div class="card-title">📌 Unscheduled ({noDueTasks.length})</div>
-            <div class="card-subtitle">
-              Tasks without a due date — consider scheduling them
+            <div class="card-title" style="font-size: 14px;">
+              📌 Unscheduled ({noDueTasks.length})
+            </div>
+            <div class="card-subtitle" style="font-size: 12px;">
+              Consider scheduling these
             </div>
           </div>
         </div>
@@ -212,26 +293,29 @@ const typeIcons: Record<string, string> = {
               <div
                 class="task-item"
                 data-id={String(task.id)}
-                style="cursor:pointer;"
+                style="cursor:pointer; padding: 10px 16px; display: flex; align-items: center; gap: 10px; border-bottom: 1px solid var(--border); transition: background 0.15s;"
+                role="button"
+                tabindex="0"
+                aria-label={`${String(task.title)}, priority ${priorityLabels[p] ?? "Medium"}, no due date`}
               >
                 <input
                   type="checkbox"
                   class="task-checkbox"
                   data-id={String(task.id)}
+                  aria-label={`Complete ${String(task.title)}`}
                 />
-                <div class="task-content">
-                  <div class="task-title">
-                    <span style="margin-right:4px;">
-                      {typeIcons[tt] ?? "✅"}
+                <span
+                  style={`color: ${priorityColors[p] ?? "#3b82f6"}; font-size: 10px; flex-shrink: 0;`}
+                  title={`Priority: ${priorityLabels[p] ?? "Medium"}`}
+                >
+                  ●
+                </span>
+                <div style="flex: 1; min-width: 0;">
+                  <div style="font-size: 14px; font-weight: 500; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">
+                    <span style="margin-right: 4px; font-size: 12px;">
+                      {typeIcons[tt] ?? ""}
                     </span>
                     {String(task.title)}
-                  </div>
-                  <div class="task-meta">
-                    <span
-                      style={`color: ${priorityColors[p] ?? "#6b7280"}; font-size: 11px;`}
-                    >
-                      ●
-                    </span>
                   </div>
                 </div>
               </div>
@@ -242,6 +326,19 @@ const typeIcons: Record<string, string> = {
     )
   }
 </Layout>
+
+<style>
+  .task-item:hover {
+    background: var(--bg-hover);
+  }
+  .task-item:focus-visible {
+    outline: 2px solid var(--accent);
+    outline-offset: -2px;
+  }
+  .task-done .task-item {
+    opacity: 0.5;
+  }
+</style>
 
 <script>
   // Task checkbox completion
@@ -257,7 +354,12 @@ const typeIcons: Record<string, string> = {
             headers: { "Content-Type": "application/json" },
             body: JSON.stringify({ status: cb.checked ? "done" : "pending" }),
           });
-          cb.closest(".task-item")?.classList.toggle("task-done", cb.checked);
+          const item = cb.closest(".task-item") as HTMLElement | null;
+          if (cb.checked && item) {
+            item.style.opacity = "0.4";
+            item.style.transition = "opacity 0.3s";
+            setTimeout(() => item.remove(), 800);
+          }
         } catch {
           /* retry silently */
         }
@@ -271,10 +373,71 @@ const typeIcons: Record<string, string> = {
       const id = item.dataset.id;
       if (id) window.location.href = `/tasks#task-${id}`;
     });
+    // Keyboard: Enter/Space to activate
+    item.addEventListener("keydown", (e) => {
+      if (e.key === "Enter" || e.key === " ") {
+        e.preventDefault();
+        const id = (e.target as HTMLElement).dataset?.id;
+        if (id) window.location.href = `/tasks#task-${id}`;
+      }
+    });
   });
 
   // New task button
   document.getElementById("create-task-btn")?.addEventListener("click", () => {
     window.location.href = "/tasks";
+  });
+
+  // Quick-add with NL date parsing
+  const quickForm = document.getElementById(
+    "quick-add-form",
+  ) as HTMLFormElement;
+  const quickInput = document.getElementById(
+    "quick-add-input",
+  ) as HTMLInputElement;
+  const quickFeedback = document.getElementById(
+    "quick-add-feedback",
+  ) as HTMLElement;
+
+  quickForm?.addEventListener("submit", async (e) => {
+    e.preventDefault();
+    const text = quickInput?.value.trim();
+    if (!text) return;
+
+    try {
+      const res = await fetch("/api/tasks", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ title: text }),
+      });
+      if (res.ok) {
+        quickInput.value = "";
+        quickFeedback.style.display = "none";
+        window.location.reload();
+      }
+    } catch {
+      /* silently retry */
+    }
+  });
+
+  // Live NL date feedback as user types
+  let feedbackTimer: ReturnType<typeof setTimeout> | null = null;
+  quickInput?.addEventListener("input", () => {
+    if (feedbackTimer) clearTimeout(feedbackTimer);
+    const val = quickInput.value.trim().toLowerCase();
+    const nlPatterns = [
+      { pattern: /\btomorrow\b/i, label: "📅 Due: Tomorrow" },
+      { pattern: /\btoday\b/i, label: "📅 Due: Today" },
+      { pattern: /\bnext\s+\w+/i, label: "📅 Due: Next week" },
+      { pattern: /\bin\s+\d+\s+\w+/i, label: "📅 Due: Relative date" },
+      { pattern: /\bevery\s+\w+/i, label: "🔁 Recurring task" },
+    ];
+    const match = nlPatterns.find((p) => p.pattern.test(val));
+    if (match) {
+      quickFeedback.textContent = match.label;
+      quickFeedback.style.display = "block";
+    } else {
+      quickFeedback.style.display = "none";
+    }
   });
 </script>
