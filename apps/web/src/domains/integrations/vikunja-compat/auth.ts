@@ -41,6 +41,10 @@ function getConfiguredTokens(): string[] {
   return cachedTokens;
 }
 
+export function clearTokenCacheForTest(): void {
+  cachedTokens = null;
+}
+
 /**
  * Constant-time token comparison to prevent timing side-channel attacks.
  * Compares two strings using Node.js timingSafeEqual after normalizing lengths.

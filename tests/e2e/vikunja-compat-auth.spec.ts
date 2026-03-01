@@ -1,5 +1,9 @@
 import { expect, test } from "@playwright/test";
-import { authorizeCompatibilityRequest } from "../../apps/web/src/domains/integrations/vikunja-compat/auth";
+import { authorizeCompatibilityRequest, clearTokenCacheForTest } from "../../apps/web/src/domains/integrations/vikunja-compat/auth";
+
+test.beforeEach(() => {
+  clearTokenCacheForTest();
+});
 
 test("compat auth rejects when no tokens are configured", async () => {
   delete process.env.MEITHEAL_VIKUNJA_API_TOKEN;
