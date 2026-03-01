@@ -8,5 +8,11 @@
     "check": "pnpm -r --if-present check",
     "test": "pnpm -r --if-present test",
     "lint": "pnpm -r --if-present lint"
+  },
+  "pnpm": {
+    "overrides": {
+      "esbuild": ">=0.25.0",
+      "lodash": ">=4.17.23"
+    }
   }
 }

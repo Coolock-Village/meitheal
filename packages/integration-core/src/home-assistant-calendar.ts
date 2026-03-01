@@ -30,6 +30,32 @@ export function resolveHomeAssistantAuthFromEnv(): ResolvedHomeAssistantAuth {
   const baseUrl = readEnv("HA_BASE_URL");
   const token = readEnv("HA_TOKEN");
   if (baseUrl && token) {
+    // Defense-in-depth: validate HA_BASE_URL points to a trusted target
+    // before forwarding the bearer token. Prevents secret exfiltration
+    // if a malicious URL is injected into the environment.
+    try {
+      const parsed = new URL(baseUrl);
+      const allowedProtocols = ["http:", "https:"];
+      const trustedHosts = ["supervisor", "localhost", "127.0.0.1", "::1", "homeassistant", "homeassistant.local"];
+      const isTrustedHost =
+        trustedHosts.includes(parsed.hostname.toLowerCase()) ||
+        parsed.hostname.startsWith("192.168.") ||
+        parsed.hostname.startsWith("10.") ||
+        /^172\.(1[6-9]|2\d|3[0-1])\./.test(parsed.hostname) ||
+        parsed.hostname.endsWith(".local");
+
+      if (!allowedProtocols.includes(parsed.protocol) || !isTrustedHost) {
+        throw new Error(
+          `HA_BASE_URL "${parsed.hostname}" is not a trusted target. ` +
+          "Only supervisor, localhost, and private network hosts are allowed."
+        );
+      }
+    } catch (error) {
+      if (error instanceof TypeError) {
+        throw new Error(`HA_BASE_URL is not a valid URL: ${baseUrl}`);
+      }
+      throw error;
+    }
     return {
       baseUrl,
       token,
