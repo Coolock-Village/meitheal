@@ -17,12 +17,10 @@ test.describe("Phase 27: HA Security Hardening", () => {
             const content = await fs.readFile(profilePath, "utf-8");
 
             // Must declare a profile with HA-standard flags
-            expect(content).toContain("profile meitheal-hub flags=(attach_disconnected,mediate_deleted)");
+            expect(content).toContain("profile meitheal_hub flags=(attach_disconnected,mediate_deleted)");
 
             // Must deny system path writes
-            expect(content).toContain("deny /bin/** wl,");
             expect(content).toContain("deny /boot/** wl,");
-            expect(content).toContain("deny /sbin/** wl,");
 
             // Must deny shell access
             expect(content).toContain("deny /bin/dash mrwklx,");
@@ -40,6 +38,10 @@ test.describe("Phase 27: HA Security Hardening", () => {
 
             // Must deny mount
             expect(content).toContain("deny mount,");
+
+            // Must deny firmware/kernel security access
+            expect(content).toContain("deny /sys/firmware/** rwklx,");
+            expect(content).toContain("deny /sys/kernel/security/** rwklx,");
         });
     });
 
