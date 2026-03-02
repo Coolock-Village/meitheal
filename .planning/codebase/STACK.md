@@ -70,31 +70,41 @@
 
 ## Deployment (HA Addon)
 
-| Step | Command / Action | Notes |
-|------|-----------------|-------|
-| 1. Build & push Docker images | `./meitheal-hub/build-push-dev.sh` | Builds amd64 + aarch64, pushes to Docker Hub |
-| 2. Tagged release | `./meitheal-hub/build-push-dev.sh v0.3.0` | Also pushes `:latest` tag |
-| 3. Restart addon in HA | Settings → Add-ons → Meitheal Hub → Restart | Pulls new image on restart |
+> **⚠️ Pushing code to GitHub does NOT deploy to HA.** You must push a version tag to trigger the CI Docker image build, then restart the addon.
 
-**Docker Hub:** `coolockvillage/meitheal-hub-{arch}` (amd64, aarch64)
+### Deploy Flow
 
-**Key files:**
+| Step | Action | Details |
+|------|--------|---------|
+| 1. Bump version | Edit `meitheal-hub/config.yaml` → `version:` | Must match tag (e.g. `0.1.25` → `v0.1.25`) |
+| 2. Commit + tag | `git commit` then `git tag v0.1.25` | Tag triggers CI |
+| 3. Push | `git push origin main --tags` | Pushes code + tag to GitHub |
+| 4. CI builds | `publish-addon-images.yml` runs automatically | Builds amd64 + aarch64 Docker images |
+| 5. Restart addon | HA → Settings → Add-ons → Meitheal Hub → Restart | Pulls new image |
+
+### CI Workflow: `publish-addon-images.yml`
+
+- **Triggers**: `v*` tag push, or manual `workflow_dispatch`
+- **Builds**: amd64 + aarch64 via `docker buildx`
+- **Pushes to**: GHCR (`ghcr.io/coolock-village/meitheal-hub-{arch}`) + Docker Hub (`coolockvillage/meitheal-hub-{arch}`)
+- **Validates**: release tag matches `config.yaml` version
+
+### Local Build (alternative): `./meitheal-hub/build-push-dev.sh`
+
+- Requires `docker buildx` + `docker login -u coolockvillage`
+- Host OS has `podman` only — use distrobox or CI instead
+
+### Key Files
 
 | File | Purpose |
 |------|---------|
-| `meitheal-hub/Dockerfile` | Multi-stage build: pnpm install → Astro build → Alpine runtime |
+| `meitheal-hub/Dockerfile` | Multi-stage: pnpm install → Astro build → Alpine runtime |
 | `meitheal-hub/config.yaml` | HA addon config (version, ingress, arch, options schema) |
-| `meitheal-hub/run.sh` | Addon entrypoint (reads HA options, starts Node server) |
-| `meitheal-hub/build-push-dev.sh` | Build + push script (requires `docker buildx` + Docker Hub creds) |
+| `meitheal-hub/run.sh` | Addon entrypoint (reads HA options, starts Node) |
+| `meitheal-hub/build-push-dev.sh` | Local build + push script |
 | `repository.yaml` | HA addon repository metadata |
-
-**Prerequisites:**
-- `docker login -u coolockvillage` (PAT as password)
-- `docker buildx` for multi-arch builds
-- Host OS has `podman` only — Docker available via distrobox or remote
-
-> **⚠️ Pushing code to GitHub does NOT deploy to HA.** The addon pulls pre-built Docker images from Docker Hub. You must run the build-push script, then restart the addon.
+| `.github/workflows/publish-addon-images.yml` | CI Docker build + push |
 
 ---
 
-*Stack analysis: 2026-03-02 @ 6c3c9fd*
+*Stack analysis: 2026-03-02 @ 2a96e5d*
