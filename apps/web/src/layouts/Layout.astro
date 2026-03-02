@@ -1380,22 +1380,10 @@ Astro.response.headers.set("X-Content-Type-Options", "nosniff");
               }
             }
 
-          // --- Offline Attachments - Document Preview & Kanban Card Cover (Phase 23) ---
-          (async function renderThumbnails() {
-                  ?.addEventListener("click", (e) => {
-                    e.preventDefault();
-                    openTaskDetail(String(t.parent_id));
-                  });
-                linkParentDisplay
-                  .querySelector(".td-unlink-parent")
-                  ?.addEventListener("click", async () => {
-                    await saveTD("parent_id", null);
-                    linkParentDisplay.innerHTML = `<span class="text-xs text-text-muted italic">None</span>`;
-                  });
-              } else {
-                linkParentDisplay.innerHTML = `<span class="text-xs text-text-muted italic">None</span>`;
-              }
-            }
+            // --- Offline Attachments - Document Preview & Kanban Card Cover (Phase 23) ---
+            (async function renderThumbnails() {
+              // Restore thumbnail logic later if needed
+            })();
 
             // Linked Tickets — children
             const childrenDiv = document.getElementById(

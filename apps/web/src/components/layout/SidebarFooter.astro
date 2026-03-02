@@ -1,0 +1,66 @@
+---
+import { t } from "../../i18n/translations";
+import type { Locale } from "../../../lib/locale";
+import Icon from "../ui/Icon.astro";
+
+export interface Props {
+  locale: Locale;
+}
+const { locale } = Astro.props;
+---
+
+<div
+  class="sidebar-footer mt-auto pt-4 border-t border-border/50 flex flex-col gap-2"
+>
+  <div
+    class="status-indicator text-xs text-text-muted flex items-center gap-2 px-3 pb-2"
+    id="connection-status"
+    role="status"
+    aria-live="polite"
+  >
+    <span class="status-dot w-2 h-2 rounded-full bg-gray-400" aria-hidden="true"
+    ></span>
+    <span class="status-text">{t("status.checking", locale)}</span>
+  </div>
+
+  <a
+    href="/settings"
+    class="nav-link w-full"
+    data-page="settings"
+    aria-label={t("nav.settings", locale)}
+  >
+    <span class="nav-icon">
+      <Icon name="settings" />
+    </span>
+    {t("nav.settings", locale)}
+  </a>
+</div>
+
+<script>
+  // Connection status check
+  async function checkHealth() {
+    const indicator = document.getElementById("connection-status");
+    if (!indicator) return;
+    const dot = indicator.querySelector(".status-dot");
+    const text = indicator.querySelector(".status-text");
+    try {
+      const res = await fetch("/api/health");
+      const data = await res.json();
+      if (data.status === "ok") {
+        dot?.classList.add("bg-green-500");
+        dot?.classList.remove("bg-gray-400", "bg-red-500");
+        if (text) text.textContent = "Connected";
+      } else {
+        dot?.classList.add("bg-red-500");
+        dot?.classList.remove("bg-gray-400", "bg-green-500");
+        if (text) text.textContent = "DB Offline";
+      }
+    } catch {
+      dot?.classList.add("bg-gray-400");
+      dot?.classList.remove("bg-green-500", "bg-red-500");
+      if (text) text.textContent = "Disconnected";
+    }
+  }
+  checkHealth();
+  setInterval(checkHealth, 30000);
+</script>

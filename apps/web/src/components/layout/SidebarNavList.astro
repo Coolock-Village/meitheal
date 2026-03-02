@@ -1,0 +1,71 @@
+---
+import Icon from "../ui/Icon.astro";
+
+export interface Props {
+  navItems: {
+    key: string;
+    label: string;
+    isActive: boolean;
+    href: string;
+    icon: string;
+    showBadge?: boolean;
+  }[];
+  taskCounts: {
+    total: number;
+    active: number;
+    pending: number;
+  };
+}
+const { navItems, taskCounts } = Astro.props;
+---
+
+<ul
+  class="nav-list flex-1 flex flex-col gap-1 list-none m-0 p-0 overflow-y-auto w-full"
+>
+  {
+    navItems.map((item) => (
+      <li>
+        <a
+          href={item.href}
+          class={`nav-link ${item.isActive ? "active" : ""}`}
+          data-page={item.key}
+          aria-label={item.label}
+        >
+          <span class="nav-icon">
+            <Icon name={item.icon as any} />
+          </span>
+          {item.label}
+          {item.showBadge && (
+            <span
+              class="nav-badge"
+              id={`nav-count-${item.key}`}
+              aria-hidden="true"
+            >
+              {taskCounts.active}
+            </span>
+          )}
+        </a>
+      </li>
+    ))
+  }
+</ul>
+
+<script>
+  // Active nav link — reusable for View Transitions
+  function updateActiveNavLink() {
+    const currentPath = window.location.pathname;
+    document.querySelectorAll(".sidebar .nav-link").forEach((link) => {
+      link.classList.remove("active");
+      if (
+        link.getAttribute("href") === currentPath ||
+        (currentPath === "/" && link.getAttribute("data-page") === "dashboard")
+      ) {
+        link.classList.add("active");
+      }
+    });
+  }
+  updateActiveNavLink();
+
+  // Re-run after View Transitions swap
+  document.addEventListener("astro:after-swap", updateActiveNavLink);
+</script>

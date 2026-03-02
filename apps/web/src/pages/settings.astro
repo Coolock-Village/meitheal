@@ -1,4 +1,3 @@
-```astro
 ---
 import Layout from "../layouts/Layout.astro";
 import { t } from "../i18n/translations";
@@ -443,10 +442,10 @@ const locale: Locale = cookieLocale === "ga" ? "ga" : "en";
         // Render saved custom fields
         if (settings.custom_fields) {
           try {
-            const fields = JSON.parse(settings.custom_fields) as Array<{
+            const fields = JSON.parse(settings.custom_fields) as {
               name: string;
               type: string;
-            }>;
+            }[];
             const list = document.getElementById("custom-fields-list");
             if (list && fields.length > 0) {
               for (const field of fields) {
