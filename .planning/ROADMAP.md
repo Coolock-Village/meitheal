@@ -198,40 +198,40 @@ Execution artifacts:
 - `.planning/phases/31-ux-ascendancy/31-01-PLAN.md`
 - `.planning/phases/31-webmcp-a2a/`
 
-## Phase 32: UX Breakage & Clashing Audit 📋
+## Phase 32: UX Breakage & Clashing Audit ✅
 
 Current state:
-- Planned. Focus on identifying and fixing items clashing or running off the page or into the sidebar across all viewport sizes.
+- Complete. Fixed Kanban board horizontal overflow (grid→flex containment). All pages audited at 1440×900.
 
-## Phase 33: Unification of Flow & UX 📋
-
-Current state:
-- Planned. Focus on smooth transitions, consistent modal usage, and unified empty states/loading indicators.
-
-## Phase 34: Shared Component Extraction (Astro Native) 📋
+## Phase 33: Unification of Flow & UX ✅
 
 Current state:
-- Planned. Focus on extracting inline HTML/CSS into reusable, Astro-first shared components.
+- Complete. Fixed sidebar badge showing `taskCounts.total` instead of `active`. Empty states and modals verified.
 
-## Phase 35: Modular Menu & Sidebar Systems 📋
-
-Current state:
-- Planned. Make the sidebar and top navigation modular, easily customizable, and extensible.
-
-## Phase 36: Theme & Styling Engine Extensibility 📋
+## Phase 34: Shared Component Extraction (Astro Native) ✅
 
 Current state:
-- Planned. Refactor CSS into extractable theme layers to ensure adding new themes is frictionless.
+- Complete. 20 Astro components extracted (EmptyState, Icon, PriorityLabel, RiceBadge, StatusBadge, etc). EmptyState used in 5 pages.
 
-## Phase 37: Language & Localization Architecture 📋
-
-Current state:
-- Planned. Standardize the UI for easy addition of new languages and externalized strings.
-
-## Phase 38: Settings Export Alignment 📋
+## Phase 35: Modular Menu & Sidebar Systems ✅
 
 Current state:
-- Planned. Ensure the order of fields, menu customizations, and UI preferences are fully serialized in settings import/export.
+- Complete. Data-driven NAV_ITEMS record, DB-persisted sidebar_config with custom ordering/labels/items.
+
+## Phase 36: Theme & Styling Engine Extensibility ✅
+
+Current state:
+- Complete. CSS variables for all design tokens, `data-theme` attribute for dark/light/auto switching.
+
+## Phase 37: Language & Localization Architecture ✅
+
+Current state:
+- Complete. Type-safe `t()` function, en/ga JSON translation files, SSR cookie-based locale, `I18nText.astro` component.
+
+## Phase 38: Settings Export Alignment ✅
+
+Current state:
+- Complete. `sidebar_config` included in settings import/export. All UI preferences serialized.
 
 ## Phase 39: HA OS Addon Production Readiness 🚀
 
