@@ -17,7 +17,7 @@
     "@astrojs/mdx": "^4.3.13",
     "@astrojs/node": "^9.5.4",
     "@astrojs/sitemap": "^3.7.0",
-    "@astrojs/tailwind": "^6.0.2",
+
     "@libsql/client": "^0.17.0",
     "@meitheal/domain-observability": "workspace:*",
     "@meitheal/domain-tasks": "workspace:*",
@@ -36,9 +36,7 @@
   },
   "devDependencies": {
     "@astrojs/check": "^0.9.6",
-    "@types/dompurify": "^3.2.0",
-    "@types/marked": "^6.0.0",
-    "@types/node": "^25.3.2",
+    "@types/node": "^25.3.3",
     "@types/sanitize-html": "^2.16.0",
     "@types/ws": "^8.18.1",
     "drizzle-kit": "^0.31.9",

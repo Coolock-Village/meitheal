@@ -11,8 +11,21 @@ updates:
           - "minor"
           - "patch"
     open-pull-requests-limit: 5
+    labels:
+      - "dependencies"
 
   - package-ecosystem: "github-actions"
     directory: "/"
     schedule:
       interval: "weekly"
+    labels:
+      - "dependencies"
+      - "ci"
+
+  - package-ecosystem: "docker"
+    directory: "/meitheal-hub"
+    schedule:
+      interval: "weekly"
+    labels:
+      - "dependencies"
+      - "security"

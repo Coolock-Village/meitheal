@@ -36,7 +36,7 @@ jobs:
         with:
           node-version: 22
           cache: pnpm
-      - run: pnpm install --frozen-lockfile=false
+      - run: pnpm install --frozen-lockfile
       - run: pnpm check
       - run: pnpm --filter @meitheal/tests test
 
@@ -51,7 +51,7 @@ jobs:
         with:
           node-version: 22
           cache: pnpm
-      - run: pnpm install --frozen-lockfile=false
+      - run: pnpm install --frozen-lockfile
       - run: pnpm --filter @meitheal/tests test e2e/ha-calendar-adapter.spec.ts
 
   migration-check:
@@ -65,7 +65,7 @@ jobs:
         with:
           node-version: 22
           cache: pnpm
-      - run: pnpm install --frozen-lockfile=false
+      - run: pnpm install --frozen-lockfile
       - run: MEITHEAL_DB_URL=file:./.data/ci-migrations.db pnpm --filter @meitheal/web db:migrate
       - run: MEITHEAL_DB_URL=file:./.data/ci-migrations.db pnpm --filter @meitheal/web db:migrate:check
 
@@ -80,7 +80,7 @@ jobs:
         with:
           node-version: 22
           cache: pnpm
-      - run: pnpm install --frozen-lockfile=false
+      - run: pnpm install --frozen-lockfile
       - run: pnpm --filter @meitheal/web schema:drift
 
   perf-budgets:
@@ -94,6 +94,20 @@ jobs:
         with:
           node-version: 22
           cache: pnpm
-      - run: pnpm install --frozen-lockfile=false
+      - run: pnpm install --frozen-lockfile
       - run: pnpm --filter @meitheal/web build
       - run: pnpm --filter @meitheal/web perf:budget
+
+  security-audit:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 10.8.0
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: pnpm
+      - run: pnpm install --frozen-lockfile
+      - run: pnpm audit

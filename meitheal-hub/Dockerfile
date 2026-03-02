@@ -61,4 +61,13 @@ RUN chmod +x /run.sh /run-local.sh
 # Ensure data directory exists
 RUN mkdir -p /data
 
+# Non-root user for runtime security (matches SECURITY.md contract)
+RUN addgroup -S meitheal && adduser -S meitheal -G meitheal \
+    && chown -R meitheal:meitheal /opt/meitheal /data
+
+USER meitheal
+
+HEALTHCHECK --interval=30s --timeout=5s --start-period=15s --retries=3 \
+  CMD curl -fsS http://127.0.0.1:3000/api/health || exit 1
+
 CMD ["/run.sh"]

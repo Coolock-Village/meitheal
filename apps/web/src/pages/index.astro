@@ -339,22 +339,23 @@ function relativeTime(dueDate: string): string {
         const title = input.value.trim();
         if (!title) return;
 
-        // Optimistic: insert task card immediately
+        // Optimistic: insert bento card immediately
         const taskList = document.getElementById("task-list");
-        const emptyState = taskList?.querySelector(".empty-state");
+        const emptyState = taskList?.querySelector(".bento-empty-state");
         if (emptyState) emptyState.remove();
 
         const activeBoard = (window as any).__activeBoard ?? "default";
         const newCard = document.createElement("div");
-        newCard.className = "task-item";
+        newCard.className = "bento-card";
         newCard.dataset.board = activeBoard === "all" ? "default" : activeBoard;
         newCard.innerHTML = `
-          <input type="checkbox" class="task-checkbox" />
-          <div class="task-content">
-            <div class="task-title">${title}</div>
-            <div class="task-meta">Medium · Pending</div>
+          <div class="bento-card-stripe" style="background: #eab308"></div>
+          <div class="bento-card-body">
+            <div class="bento-card-title">${title}</div>
+            <div class="bento-card-footer">
+              <span class="task-badge badge-pending">Pending</span>
+            </div>
           </div>
-          <span class="task-badge badge-pending">Pending</span>
         `;
         newCard.style.animation = "fade-in 300ms ease";
         taskList?.prepend(newCard);
