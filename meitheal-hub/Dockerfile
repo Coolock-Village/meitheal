@@ -3,27 +3,28 @@
 ARG BUILD_FROM
 
 # ── Stage 1: Build ──
-# Clones the monorepo from GitHub and builds the Astro app.
-# HA Supervisor uses the addon directory as Docker build context,
-# so we cannot COPY from the repo root — we clone instead.
+# Uses COPY from the build context (the repo root) instead of git clone.
+# Layer order is optimised for Docker cache: deps change less often than source.
 FROM node:22-alpine AS builder
 
-ARG BUILD_VERSION=0.1.0
-
-RUN apk add --no-cache git
 RUN npm install -g pnpm@10.8.0
 
 WORKDIR /build
 
-# Cache-bust: this arg changes every build, forcing git clone to re-run.
-# Without this, Docker layer cache reuses a stale clone with old code.
-ARG CACHEBUST=1
-RUN git clone --depth=1 https://github.com/Coolock-Village/meitheal.git .
+# Layer 1: Dependency manifests only (changes rarely → cached most builds)
+COPY pnpm-workspace.yaml pnpm-lock.yaml package.json ./
+COPY apps/web/package.json apps/web/package.json
+COPY packages/ packages/
 
-# Install all deps (including devDependencies for build)
+# Layer 2: Install all deps (cached when lockfile + manifests unchanged)
 RUN pnpm install --frozen-lockfile=false --ignore-scripts
 
-# Build the Astro app
+# Layer 3: Source code (changes every build, but deps are already cached above)
+COPY apps/web/ apps/web/
+COPY integrations/ integrations/
+COPY meitheal-hub/ meitheal-hub/
+
+# Layer 4: Build the Astro app
 RUN pnpm --filter @meitheal/web build
 
 # ── Stage 2: Runtime ──

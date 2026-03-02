@@ -85,7 +85,6 @@ jobs:
           file: meitheal-hub/Dockerfile
           build-args: |
             BUILD_FROM=${{ steps.meta.outputs.build_from }}
-            CACHEBUST=${{ github.run_id }}
           push: true
           platforms: ${{ matrix.platform }}
           cache-from: type=gha,scope=${{ matrix.arch }}
@@ -102,7 +101,6 @@ jobs:
           file: meitheal-hub/Dockerfile
           build-args: |
             BUILD_FROM=${{ steps.meta.outputs.build_from }}
-            CACHEBUST=${{ github.run_id }}
           push: true
           platforms: ${{ matrix.platform }}
           cache-from: type=gha,scope=${{ matrix.arch }}
