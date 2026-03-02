@@ -23,7 +23,7 @@ jobs:
       CALENDAR_ENTITY_ID: ${{ inputs.calendar_entity_id }}
       HA_TOKEN: ${{ secrets.HA_TOKEN }}
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v6
       - name: Validate secret presence
         run: |
           if [ -z "${HA_TOKEN}" ]; then

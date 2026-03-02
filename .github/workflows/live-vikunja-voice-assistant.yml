@@ -25,7 +25,7 @@ jobs:
       VOICE_ASSISTANT_SOURCE_DIR: /tmp/vikunja-voice-assistant
       VOICE_ASSISTANT_REF: ${{ inputs.voice_assistant_ref }}
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v6
 
       - name: Validate secret presence
         run: |
