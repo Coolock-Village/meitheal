@@ -5,7 +5,8 @@
     "baseUrl": ".",
     "paths": {
       "@domains/*": ["src/domains/*"],
-      "@lib/*": ["src/lib/*"]
+      "@lib/*": ["src/lib/*"],
+      "@i18n/*": ["src/i18n/*"]
     }
   },
   "include": ["src", "astro.config.mjs"]

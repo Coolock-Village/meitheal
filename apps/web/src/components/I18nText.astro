@@ -34,7 +34,7 @@ const displayText = translated !== key ? translated : fallback || key;
 
 <script>
   import { getStoredLocale, isValidLocale, STORAGE_KEY } from "@lib/locale";
-  import { t } from "../i18n/translations";
+  import { t } from "@i18n/translations";
 
   class I18nTextElement extends HTMLElement {
     private originalText: string;

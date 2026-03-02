@@ -1468,7 +1468,7 @@ Astro.response.headers.set("X-Content-Type-Options", "nosniff");
                 navigator.clipboard.writeText(
                   t.ticket_key ? String(t.ticket_key) : String(t.id),
                 );
-                const { showToast } = await import("../lib/toast");
+                const { showToast } = await import("@lib/toast");
                 showToast("common.id_copied", "success");
               };
             }
@@ -2922,10 +2922,10 @@ Astro.response.headers.set("X-Content-Type-Options", "nosniff");
         window.addEventListener("meitheal-sync", async (e: Event) => {
           const ce = e as CustomEvent;
           if (ce.detail?.type === "conflict-resolved") {
-            const { showToast } = await import("../lib/toast");
+            const { showToast } = await import("@lib/toast");
             showToast("common.sync_conflict_merged", "success");
           } else if (ce.detail?.type === "sync-error" && ce.detail.error) {
-            const { showToast } = await import("../lib/toast");
+            const { showToast } = await import("@lib/toast");
             showToast(ce.detail.error, "error");
           }
         });

@@ -116,10 +116,15 @@ test.describe("Phase 27: HA Security Hardening", () => {
             const content = await fs.readFile(dockerPath, "utf-8");
 
             expect(content).toContain('LABEL io.hass.type="addon"');
-            // HA addons run as root — Supervisor handles isolation via
-            // Docker namespaces + AppArmor profile
             expect(content).toContain("FROM ${BUILD_FROM}");
             expect(content).toContain("mkdir -p /data");
+
+            // Non-root user for runtime security (Phase 40)
+            expect(content).toContain("adduser -S meitheal -G meitheal");
+            expect(content).toContain("USER meitheal");
+
+            // HEALTHCHECK for Supervisor watchdog integration
+            expect(content).toContain("HEALTHCHECK");
         });
     });
 });

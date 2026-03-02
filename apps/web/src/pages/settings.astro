@@ -92,8 +92,8 @@ const locale: Locale = cookieLocale === "ga" ? "ga" : "en";
       });
     });
 
-    import { exportLocalDataAsJson } from "../domains/offline/export-service";
-    import { confirmDialog } from "../lib/confirm-dialog";
+    import { exportLocalDataAsJson } from "@domains/offline/export-service";
+    import { confirmDialog } from "@lib/confirm-dialog";
 
     document
       .getElementById("export-json-btn")
@@ -140,12 +140,12 @@ const locale: Locale = cookieLocale === "ga" ? "ga" : "en";
       });
     }
 
-    import { showToast } from "../lib/toast";
+    import { showToast } from "@lib/toast";
     import {
       setTheme as importedSetTheme,
       applyCustomTheme as importedApplyCustomTheme,
-    } from "../lib/theme-watcher";
-    import type { ThemeMode } from "../lib/theme-watcher";
+    } from "@lib/theme-watcher";
+    import type { ThemeMode } from "@lib/theme-watcher";
 
     /** Max custom theme CSS file size in bytes */
     const MAX_THEME_SIZE = 51200; // 50KB
@@ -272,7 +272,7 @@ const locale: Locale = cookieLocale === "ga" ? "ga" : "en";
         if (themeEl) themeEl.value = String(savedTheme);
         // Use setTheme from theme-watcher which handles data-theme, classes, and custom CSS
         importedSetTheme(
-          String(savedTheme) as import("../lib/theme-watcher").ThemeMode,
+          String(savedTheme) as import("@lib/theme-watcher").ThemeMode,
         );
         // Restore custom theme CSS if saved
         if (savedTheme === "custom" && settings.custom_theme_css) {

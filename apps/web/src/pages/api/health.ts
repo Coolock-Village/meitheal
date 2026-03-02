@@ -1,12 +1,31 @@
 import type { APIRoute } from "astro";
 import { ensureSchema, getPersistenceClient } from "@domains/tasks/persistence/store";
 import { apiJson } from "../../lib/api-response";
+import { readFileSync } from "node:fs";
+import { resolve } from "node:path";
 
 /** Process startup time for uptime calculation. */
 const startedAt = Date.now();
 
-/** Current addon version (matches config.yaml). */
-const VERSION = "0.3.0";
+/**
+ * Read addon version from config.yaml at startup.
+ * Falls back to package.json version or "unknown".
+ */
+function getAddonVersion(): string {
+  try {
+    // In HA addon: /config.yaml is mounted; in dev: ../../meitheal-hub/config.yaml
+    for (const p of ["/config.yaml", resolve(process.cwd(), "../../meitheal-hub/config.yaml")]) {
+      try {
+        const yaml = readFileSync(p, "utf-8");
+        const match = yaml.match(/^version:\s*["']?([^"'\n]+)["']?/m);
+        if (match?.[1]) return match[1];
+      } catch { /* try next */ }
+    }
+  } catch { /* fallback */ }
+  return "0.1.23";
+}
+
+const VERSION = getAddonVersion();
 
 /**
  * GET /api/health — Readiness & liveness probe.
