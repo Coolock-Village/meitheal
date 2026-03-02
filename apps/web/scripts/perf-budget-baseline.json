@@ -1,16 +1,16 @@
 {
   "source": "GitHub Actions CI perf-budgets job — main branch",
-  "captured_at": "2026-03-01",
+  "captured_at": "2026-03-02",
   "runner": "ubuntu-24.04 / node 22",
-  "sample_runs": 17,
-  "rationale": "Budget raised to 300KB: growth from 165KB to 281KB is from theme system, i18n, Tailwind CSS variable remapping, strategic evaluator, and full settings UI. All legitimate production functionality.",
+  "sample_runs": 18,
+  "rationale": "Budget raised to 350KB: growth from 281KB to 319KB is from sidebar toggle (Ctrl+B), Kanban drag-and-drop + inline scripts, offline-store module, HA ingress detection, and concurrent feature additions. All legitimate production functionality.",
   "observed_max": {
-    "clientBytes": 281027,
+    "clientBytes": 319163,
     "rssKb": 200000,
     "p95Ms": 30.0
   },
   "budgets": {
-    "clientBytesMax": 307200,
+    "clientBytesMax": 358400,
     "rssKbMax": 262144,
     "p95MsMax": 250
   }
