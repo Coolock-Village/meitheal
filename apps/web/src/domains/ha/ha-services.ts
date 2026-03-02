@@ -87,19 +87,69 @@ export interface TodoItem {
   uid?: string;
   summary: string;
   status?: "needs_action" | "completed";
-  due?: string;
-  description?: string;
+  due?: string | undefined;
+  description?: string | undefined;
+  completed?: string;
 }
 
+/**
+ * Get items from an HA todo list entity.
+ * Uses call_service with return_response to fetch item data.
+ */
+export async function getTodoItems(
+  entityId: string, status?: ("needs_action" | "completed")[],
+): Promise<TodoItem[]> {
+  const conn = await getHAConnection();
+  if (!conn) return [];
+  try {
+    const serviceData: Record<string, unknown> = {};
+    if (status && status.length > 0) serviceData.status = status;
+
+    const result = await conn.sendMessagePromise<Record<string, unknown>>({
+      type: "call_service", domain: "todo", service: "get_items",
+      target: { entity_id: entityId },
+      service_data: serviceData,
+      return_response: true,
+    });
+    const response = result as Record<string, { items?: TodoItem[] }>;
+    const items = response?.[entityId]?.items ?? [];
+    logger.log("debug", {
+      event: "ha.todo.get_items", domain: "ha", component: "ha-services",
+      request_id: SYS_REQ, message: `Fetched ${items.length} todo items from ${entityId}`,
+    });
+    return items;
+  } catch (err) {
+    logger.log("error", {
+      event: "ha.todo.get_items.failed", domain: "ha", component: "ha-services",
+      request_id: SYS_REQ, message: `Failed to get todo items: ${err}`,
+    });
+    return [];
+  }
+}
+
+/**
+ * Add a new item to an HA todo list.
+ * Supports both due_date (date-only) and due_datetime (date+time).
+ */
 export async function addTodoItem(
   entityId: string, item: Omit<TodoItem, "uid" | "status">,
 ): Promise<boolean> {
   const conn = await getHAConnection();
   if (!conn) return false;
   try {
-    await callService(conn, "todo", "add_item", {
-      item: item.summary, due_date: item.due, description: item.description,
-    }, { entity_id: entityId });
+    const serviceData: Record<string, unknown> = {
+      item: item.summary,
+      description: item.description,
+    };
+    // Detect date-only vs datetime and use the correct field
+    if (item.due) {
+      if (/[\sT]\d{2}:\d{2}/.test(item.due)) {
+        serviceData.due_datetime = item.due;
+      } else {
+        serviceData.due_date = item.due;
+      }
+    }
+    await callService(conn, "todo", "add_item", serviceData, { entity_id: entityId });
     logger.log("info", {
       event: "ha.todo.item_added", domain: "ha", component: "ha-services",
       request_id: SYS_REQ, message: `Added todo item: ${item.summary}`,
@@ -111,6 +161,154 @@ export async function addTodoItem(
       request_id: SYS_REQ, message: `Failed to add todo item: ${err}`,
     });
     return false;
+  }
+}
+
+/**
+ * Update an existing item in an HA todo list.
+ * Identifies the item by uid or summary text.
+ */
+export async function updateTodoItem(
+  entityId: string,
+  item: string,
+  updates: { summary?: string | undefined; status?: "needs_action" | "completed" | undefined; description?: string | undefined; due_date?: string | undefined; due_datetime?: string | undefined },
+): Promise<boolean> {
+  const conn = await getHAConnection();
+  if (!conn) return false;
+  try {
+    const serviceData: Record<string, unknown> = { item };
+    if (updates.summary) serviceData.rename = updates.summary;
+    if (updates.status) serviceData.status = updates.status;
+    if (updates.description !== undefined) serviceData.description = updates.description;
+    if (updates.due_date) serviceData.due_date = updates.due_date;
+    if (updates.due_datetime) serviceData.due_datetime = updates.due_datetime;
+
+    await callService(conn, "todo", "update_item", serviceData, { entity_id: entityId });
+    logger.log("info", {
+      event: "ha.todo.item_updated", domain: "ha", component: "ha-services",
+      request_id: SYS_REQ, message: `Updated todo item: ${item}`,
+    });
+    return true;
+  } catch (err) {
+    logger.log("error", {
+      event: "ha.todo.update_item.failed", domain: "ha", component: "ha-services",
+      request_id: SYS_REQ, message: `Failed to update todo item: ${err}`,
+    });
+    return false;
+  }
+}
+
+/**
+ * Remove one or more items from an HA todo list.
+ * Items are identified by uid or summary text.
+ */
+export async function removeTodoItem(
+  entityId: string, items: string[],
+): Promise<boolean> {
+  const conn = await getHAConnection();
+  if (!conn) return false;
+  try {
+    await callService(conn, "todo", "remove_item", { item: items }, { entity_id: entityId });
+    logger.log("info", {
+      event: "ha.todo.item_removed", domain: "ha", component: "ha-services",
+      request_id: SYS_REQ, message: `Removed ${items.length} todo item(s) from ${entityId}`,
+    });
+    return true;
+  } catch (err) {
+    logger.log("error", {
+      event: "ha.todo.remove_item.failed", domain: "ha", component: "ha-services",
+      request_id: SYS_REQ, message: `Failed to remove todo item: ${err}`,
+    });
+    return false;
+  }
+}
+
+/**
+ * Remove all completed items from an HA todo list.
+ */
+export async function removeTodoCompletedItems(
+  entityId: string,
+): Promise<boolean> {
+  const conn = await getHAConnection();
+  if (!conn) return false;
+  try {
+    await callService(conn, "todo", "remove_completed_items", {}, { entity_id: entityId });
+    logger.log("info", {
+      event: "ha.todo.completed_items_removed", domain: "ha", component: "ha-services",
+      request_id: SYS_REQ, message: `Removed completed items from ${entityId}`,
+    });
+    return true;
+  } catch (err) {
+    logger.log("error", {
+      event: "ha.todo.remove_completed.failed", domain: "ha", component: "ha-services",
+      request_id: SYS_REQ, message: `Failed to remove completed items: ${err}`,
+    });
+    return false;
+  }
+}
+
+/**
+ * Move/reorder an item within an HA todo list via WebSocket command.
+ * Moves the item with `uid` to the position after `previousUid`.
+ * Pass `undefined` for previousUid to move to the first position.
+ */
+export async function moveTodoItem(
+  entityId: string, uid: string, previousUid?: string,
+): Promise<boolean> {
+  const conn = await getHAConnection();
+  if (!conn) return false;
+  try {
+    const msg = {
+      type: "todo/item/move" as const,
+      entity_id: entityId,
+      uid,
+      ...(previousUid !== undefined ? { previous_uid: previousUid } : {}),
+    };
+    await conn.sendMessagePromise(msg);
+    logger.log("info", {
+      event: "ha.todo.item_moved", domain: "ha", component: "ha-services",
+      request_id: SYS_REQ, message: `Moved todo item ${uid} in ${entityId}`,
+    });
+    return true;
+  } catch (err) {
+    logger.log("error", {
+      event: "ha.todo.move_item.failed", domain: "ha", component: "ha-services",
+      request_id: SYS_REQ, message: `Failed to move todo item: ${err}`,
+    });
+    return false;
+  }
+}
+
+/**
+ * Subscribe to real-time updates for a todo list entity via WebSocket.
+ * Uses HA's `todo/item/subscribe` command for push-based updates.
+ * Returns an unsubscribe function.
+ */
+export async function subscribeTodoItems(
+  entityId: string,
+  callback: (items: TodoItem[]) => void,
+): Promise<() => void> {
+  const conn = await getHAConnection();
+  if (!conn) return () => {};
+  try {
+    const unsub = await conn.subscribeMessage<{ items?: TodoItem[] }>(
+      (msg) => {
+        const items = msg.items ?? [];
+        callback(items);
+      },
+      { type: "todo/item/subscribe", entity_id: entityId },
+    );
+    logger.log("info", {
+      event: "ha.todo.subscribed", domain: "ha", component: "ha-services",
+      request_id: SYS_REQ, message: `Subscribed to todo updates for ${entityId}`,
+    });
+    return unsub;
+  } catch (err) {
+    logger.log("error", {
+      event: "ha.todo.subscribe.failed", domain: "ha", component: "ha-services",
+      request_id: SYS_REQ, message: `Failed to subscribe to todo updates: ${err}`,
+    });
+    return () => {};
   }
 }
 
