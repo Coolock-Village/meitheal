@@ -14,6 +14,10 @@ RUN apk add --no-cache git
 RUN npm install -g pnpm@10.8.0
 
 WORKDIR /build
+
+# Cache-bust: this arg changes every build, forcing git clone to re-run.
+# Without this, Docker layer cache reuses a stale clone with old code.
+ARG CACHEBUST=1
 RUN git clone --depth=1 https://github.com/Coolock-Village/meitheal.git .
 
 # Install all deps (including devDependencies for build)
