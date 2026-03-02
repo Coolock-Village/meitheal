@@ -33,11 +33,20 @@ export const GET: APIRoute = async () => {
  */
 export const POST: APIRoute = async ({ request }) => {
   try {
-    const body = await request.json() as {
+    let body: {
       action?: "sync" | "enable" | "disable";
       entity_id?: string;
       direction?: "inbound" | "outbound" | "bidirectional";
     };
+
+    try {
+      body = await request.json();
+    } catch (parseErr) {
+      console.error("[api/todo/sync] POST invalid JSON:", parseErr);
+      return new Response(JSON.stringify({ ok: false, error: "Invalid JSON body" }), {
+        status: 400, headers: { "Content-Type": "application/json" },
+      });
+    }
 
     const action = body.action ?? "sync";
 
