@@ -208,48 +208,8 @@ export const onRequest: MiddlewareHandler = async ({ request, locals }, next) =>
     ].join("; "),
   };
 
-  // For API routes that expect ingress context, fail fast if required headers are absent.
-  if (shouldEnforceIngressHeaders(request.url, ingressPath)) {
-    const missingHeaders = getMissingRequiredIngressHeaders(requiredIngressHeaders, request.headers);
-    if (missingHeaders.length === 0) {
-      let response = await next();
-      // Rewrite HTML paths when behind HA ingress
-      if (ingressPath) {
-        response = await rewriteIngressPaths(response, ingressPath);
-      }
-      // Inject security + observability headers
-      for (const [key, value] of Object.entries(securityHeaders)) {
-        response.headers.set(key, value);
-      }
-      response.headers.set("x-request-id", requestId);
-      response.headers.set("x-response-time", `${Date.now() - startTime}ms`);
-      if (url.pathname.startsWith("/api/")) {
-        applyRateLimitHeaders(response, rateInfo.remaining, rateInfo.resetAt);
-        const elapsed = Date.now() - startTime;
-        if (elapsed > 1000) {
-          logger.log("warn", {
-            event: "http.slow_request",
-            domain: "observability",
-            component: "middleware",
-            request_id: requestId,
-            message: `Slow API request: ${request.method} ${url.pathname} took ${elapsed}ms`,
-          });
-        }
-      }
-      return response;
-    }
-
-    return new Response(
-      JSON.stringify({
-        error: "Missing required ingress headers",
-        missingHeaders
-      }),
-      {
-        status: 401,
-        headers: { "content-type": "application/json", ...securityHeaders }
-      }
-    );
-  }
+  // HA Supervisor already validates ingress sessions before proxying requests.
+  // No additional auth enforcement needed on our side.
 
   let response = await next();
   // Rewrite HTML paths when behind HA ingress

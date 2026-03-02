@@ -70,6 +70,9 @@ Astro.response.headers.set("X-Content-Type-Options", "nosniff");
         if (ip) {
           var _f = window.fetch;
           window.fetch = function (input, init) {
+            // Ensure ingress session cookie is always sent
+            if (!init) init = {};
+            if (!init.credentials) init.credentials = "include";
             if (typeof input === "string" && input.startsWith("/")) {
               input = ip + input;
             } else if (input instanceof Request && input.url) {
