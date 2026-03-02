@@ -30,6 +30,12 @@ const { locale } = Astro.props;
           <kbd>/</kbd><span>{t("settings.shortcut_search", locale)}</span>
         </div>
         <div class="shortcut-row">
+          <kbd>Ctrl</kbd> + <kbd>B</kbd><span>Toggle sidebar</span>
+        </div>
+        <div class="shortcut-row">
+          <kbd>Ctrl</kbd> + <kbd>K</kbd><span>Command palette</span>
+        </div>
+        <div class="shortcut-row">
           <kbd>l</kbd><span>{t("settings.shortcut_list", locale)}</span>
         </div>
         <div class="shortcut-row">
@@ -79,11 +85,7 @@ const { locale } = Astro.props;
       </div>
       <div class="form-group" style="margin-top: 12px;">
         <label class="form-label" for="theme-select">🎨 Theme</label>
-        <select
-          class="form-select"
-          id="theme-select"
-          style="max-width: 240px;"
-        >
+        <select class="form-select" id="theme-select" style="max-width: 240px;">
           <option value="dark">Dark</option>
           <option value="light">Light</option>
           <option value="auto">Auto (System)</option>
@@ -156,9 +158,7 @@ const { locale } = Astro.props;
         </select>
       </div>
       <div class="form-group" style="margin-top: 12px;">
-        <label class="form-label" for="week-start-select"
-          >Week Starts On</label
-        >
+        <label class="form-label" for="week-start-select">Week Starts On</label>
         <select
           class="form-select"
           id="week-start-select"
@@ -289,8 +289,7 @@ const { locale } = Astro.props;
           party."
         </p>
         <p>
-          A Home Assistant-native, Astro-first task and life management
-          engine.
+          A Home Assistant-native, Astro-first task and life management engine.
         </p>
         <p>
           Version: <code>0.3.0</code> · Phase 32: Deep Audit

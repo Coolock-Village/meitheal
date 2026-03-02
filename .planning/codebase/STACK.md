@@ -1,7 +1,7 @@
 # Technology Stack
 
 **Analysis Date:** 2026-03-02
-**Commit:** 947ac5a
+**Commit:** dddf93c
 
 ## Languages
 
@@ -29,6 +29,7 @@
 | `@astrojs/node` | 9.5 | Node standalone adapter for HA |
 | `@astrojs/mdx` | 4.3 | MDX content support |
 | `@astrojs/tailwind` | 6.0 | Styling |
+| `astro:transitions` | built-in | ViewTransitions (prefetch + `swap` fallback) |
 | `@astrojs/sitemap` | 3.7 | SEO |
 | Drizzle ORM | 0.45 | Schema + queries |
 | `@libsql/client` | 0.15 | SQLite driver (libSQL) |
@@ -130,6 +131,25 @@ Prevents ad-blocker interference and works fully offline.
 | Backup | `cold` — addon stops during backup for data consistency |
 | Lockfile | `--frozen-lockfile` enforced in Dockerfile (both build + prod stages) |
 
+## Middleware (`src/middleware.ts`)
+
+| Feature | Details |
+|---------|---------|
+| Ingress path rewriting | Rewrites HTML `href`/`src` + CSS `url()` for HA ingress proxy |
+| CSP headers | Strict policy injected on every response |
+| Regional settings | Reads cookies → sets `Astro.locals` (timezone, weekStart, dateFormat) |
+| CSRF protection | Validates `Origin` header on non-GET requests |
+
+## Astro Lifecycle Patterns
+
+| Pattern | Usage |
+|---------|---------|
+| `<script is:inline>` | In-place execution (no ES module hoisting), used for tab switching |
+| `astro:page-load` | Fires after every navigation (initial + ViewTransition swap) |
+| Dual-init | `initFn()` + `addEventListener('astro:page-load', initFn)` for reliability |
+| `transition:persist` | Sidebar persists across navigations |
+| `<ViewTransitions fallback="swap" />` | Client-side navigation with prefetch |
+
 ---
 
-*Stack analysis: 2026-03-02 @ 947ac5a*
+*Stack analysis: 2026-03-02 @ dddf93c*

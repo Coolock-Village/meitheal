@@ -71,31 +71,56 @@ const locale: Locale = cookieLocale === "ga" ? "ga" : "en";
       if (tabs[0].getAttribute("data-tabs-initialized")) return;
       tabs[0].setAttribute("data-tabs-initialized", "true");
 
+      function activateTab(tab) {
+        tabs.forEach(function (t) {
+          t.classList.remove("active");
+          t.style.color = "var(--text-muted)";
+          t.style.borderBottomColor = "transparent";
+        });
+        panes.forEach(function (p) {
+          p.style.display = "none";
+        });
+
+        tab.classList.add("active");
+        var isDanger = tab.getAttribute("data-target") === "tab-system";
+        tab.style.color = "var(--text-primary)";
+        tab.style.borderBottomColor = isDanger
+          ? "var(--danger)"
+          : "var(--accent)";
+
+        var targetId = tab.getAttribute("data-target");
+        if (targetId) {
+          var targetPane = document.getElementById(targetId);
+          if (targetPane) targetPane.style.display = "block";
+          // Persist selected tab in localStorage (no URL pollution)
+          localStorage.setItem(
+            "meitheal-settings-tab",
+            targetId.replace("tab-", ""),
+          );
+        }
+      }
+
       tabs.forEach(function (tab) {
         tab.addEventListener("click", function () {
-          tabs.forEach(function (t) {
-            t.classList.remove("active");
-            t.style.color = "var(--text-muted)";
-            t.style.borderBottomColor = "transparent";
-          });
-          panes.forEach(function (p) {
-            p.style.display = "none";
-          });
-
-          tab.classList.add("active");
-          var isDanger = tab.getAttribute("data-target") === "tab-system";
-          tab.style.color = "var(--text-primary)";
-          tab.style.borderBottomColor = isDanger
-            ? "var(--danger)"
-            : "var(--accent)";
-
-          var targetId = tab.getAttribute("data-target");
-          if (targetId) {
-            var targetPane = document.getElementById(targetId);
-            if (targetPane) targetPane.style.display = "block";
-          }
+          activateTab(tab);
         });
       });
+
+      // Restore last-active tab from localStorage
+      var saved = localStorage.getItem("meitheal-settings-tab");
+      if (saved) {
+        var match = document.querySelector(
+          '.settings-tab[data-target="tab-' + saved + '"]',
+        );
+        if (match) activateTab(match);
+      }
+
+      // Clean up any stale ?tab= from the URL
+      if (window.location.search.indexOf("tab=") !== -1) {
+        var url = new URL(window.location);
+        url.searchParams.delete("tab");
+        history.replaceState(null, "", url);
+      }
     }
     // Run immediately (covers direct load / is:inline execution)
     initSettingsTabs();

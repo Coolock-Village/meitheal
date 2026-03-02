@@ -334,10 +334,57 @@
       margin-left: 0;
   }
 
+    .content {
+      padding: 0 24px 24px;
+    }
   .page-header {
     @apply flex items-center justify-between px-6 py-4 bg-bg-secondary/50 border-b border-border;
   }
 
+    /* --- Keyboard Shortcuts (Settings → System & Danger) --- */
+    .shortcut-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 0;
+    }
+  
+    .shortcut-row {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      padding: 8px 12px;
+      border-bottom: 1px solid var(--border);
+      font-size: 13px;
+      color: var(--text-secondary);
+    }
+  
+    .shortcut-row:nth-child(odd) {
+      background: rgba(255, 255, 255, 0.02);
+    }
+  
+    .shortcut-row:last-child,
+    .shortcut-row:nth-last-child(2):nth-child(odd) {
+      border-bottom: none;
+    }
+  
+    kbd {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      min-width: 28px;
+      height: 26px;
+      padding: 0 8px;
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 12px;
+      font-weight: 500;
+      color: var(--text-primary);
+      background: var(--bg-secondary);
+      border: 1px solid var(--border);
+      border-bottom-width: 2px;
+      border-radius: 6px;
+      box-shadow: 0 1px 0 rgba(0, 0, 0, 0.2);
+      white-space: nowrap;
+    }
     /* --- Empty State --- */
     .empty-state {
       @apply flex flex-col items-center justify-center p-12 text-center rounded-xl border border-dashed border-border/60 bg-bg-secondary/30 my-8 mx-auto w-full max-w-2xl;
