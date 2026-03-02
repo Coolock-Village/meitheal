@@ -929,12 +929,66 @@
       flex-wrap: wrap;
     }
   
-    .bento-card-sync {
+        .bento-card-header {
+          display: flex;
+          align-items: flex-start;
+          justify-content: space-between;
+          gap: 6px;
+        }
+    
+        .bento-ticket-key {
+          font-size: 10px;
+          font-family: 'JetBrains Mono', monospace;
+          color: var(--text-muted);
+          margin-right: 4px;
+          font-weight: 500;
+          background: rgba(255, 255, 255, 0.06);
+          padding: 1px 4px;
+          border-radius: 3px;
+          white-space: nowrap;
+        }
+    
+        .bento-board-badge {
+          font-size: 10px;
+          font-weight: 500;
+          padding: 1px 6px;
+          border-radius: 4px;
+          border: 1px solid;
+          white-space: nowrap;
+        }
+    
+        .bento-card-actions {
       position: absolute;
-      top: 8px;
-      right: 8px;
-      font-size: 12px;
-      opacity: 0.6;
+      top: 6px;
+        right: 6px;
+        display: flex;
+        gap: 2px;
+        opacity: 0;
+        transition: opacity 0.2s ease;
+      }
+      
+      .bento-card:hover .bento-card-actions {
+        opacity: 1;
+      }
+      
+      .bento-card-actions .card-action-btn {
+        width: 26px;
+        height: 26px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        border: none;
+        background: var(--bg-secondary);
+        border-radius: 6px;
+        cursor: pointer;
+        font-size: 13px;
+        transition: background 0.15s ease, transform 0.15s ease;
+        padding: 0;
+      }
+      
+      .bento-card-actions .card-action-btn:hover {
+        background: var(--accent);
+        transform: scale(1.1);
     }
   .stat-value {
     @apply text-2xl font-bold text-accent;

@@ -216,7 +216,18 @@ const typeConfig: Record<
   <!-- Lane management panel -->
   <div class="lane-mgmt" id="lane-mgmt" style="display: none;">
     <div class="lane-mgmt-inner">
-      <strong>{t("kanban.manage_swimlanes", locale)}</strong>
+      <div
+        style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px;"
+      >
+        <strong>{t("kanban.manage_swimlanes", locale)}</strong>
+        <button
+          type="button"
+          class="btn-icon"
+          id="lane-mgmt-close"
+          aria-label="Close"
+          style="font-size: 18px; padding: 4px 8px;">✕</button
+        >
+      </div>
       <div id="lane-list"></div>
       <div style="display: flex; gap: 8px; margin-top: 8px;">
         <input
@@ -313,7 +324,7 @@ const typeConfig: Record<
                       data-task-type={type}
                       aria-label={`Add ${type} to ${col.label}`}
                     >
-                      + Add {type}
+                      {t("kanban.add_task", locale)}
                     </button>
                   </div>
                 );
@@ -606,7 +617,7 @@ const typeConfig: Record<
               data-status={col.key}
               aria-label={`Add task to ${col.label}`}
             >
-              + {t("kanban.add_task", locale)}
+              {t("kanban.add_task", locale)}
             </button>
           </div>
         );
@@ -695,12 +706,13 @@ const typeConfig: Record<
         }
       });
 
-      // Toast feedback
-      const container = document.getElementById("toast-container");
+      // Toast feedback — positioned near the dropped card
       const toast = document.createElement("div");
-      toast.className = "toast success";
+      toast.className = "toast success kanban-contextual-toast";
       toast.textContent = `Moved to ${newStatus}`;
-      container?.appendChild(toast);
+      const cardRect = card.getBoundingClientRect();
+      toast.style.cssText = `position:fixed;top:${Math.max(cardRect.top - 40, 8)}px;left:${cardRect.left}px;z-index:100;pointer-events:none;`;
+      document.body.appendChild(toast);
       setTimeout(() => toast.remove(), 2000);
 
       // Persist to API (background, no reload)
@@ -726,11 +738,19 @@ const typeConfig: Record<
       btn.addEventListener("click", (e) => {
         e.stopPropagation();
         const id = btn.dataset.id;
-        if (id && typeof window.openTaskDetail === "function") {
-          window.openTaskDetail(id);
-        } else if (id) {
-          window.location.href = `/tasks#edit-${id}`;
+        if (!id) return;
+        // openTaskDetail may not be available immediately (Layout script loads async)
+        // Retry briefly before falling back
+        let attempts = 0;
+        function tryOpen() {
+          if (typeof window.openTaskDetail === "function") {
+            window.openTaskDetail(id);
+          } else if (attempts < 10) {
+            attempts++;
+            setTimeout(tryOpen, 50);
+          }
         }
+        tryOpen();
       });
     });
 
@@ -1008,12 +1028,34 @@ const typeConfig: Record<
       });
     }
 
+    // Helper to close lanes panel
+    function closeLaneMgmt() {
+      if (laneMgmt) laneMgmt.style.display = "none";
+    }
+
     // T-1904: Toggle lanes panel
     manageLanesBtn?.addEventListener("click", () => {
       const isOpen = laneMgmt.style.display !== "none";
       laneMgmt.style.display = isOpen ? "none" : "flex";
       if (!isOpen) renderLaneList();
     });
+
+    // Close on backdrop click (click on outer lane-mgmt, not inner content)
+    laneMgmt?.addEventListener("click", (e) => {
+      if (e.target === laneMgmt) closeLaneMgmt();
+    });
+
+    // Close on Escape key
+    document.addEventListener("keydown", (e) => {
+      if (e.key === "Escape" && laneMgmt?.style.display !== "none") {
+        closeLaneMgmt();
+      }
+    });
+
+    // Close button
+    document
+      .getElementById("lane-mgmt-close")
+      ?.addEventListener("click", closeLaneMgmt);
 
     // T-1905: Lane creation via API
     addLaneBtn?.addEventListener("click", async () => {
@@ -1387,8 +1429,8 @@ const typeConfig: Record<
   .kanban-column {
     background: var(--bg-secondary);
     border-radius: var(--radius-md);
-    min-width: 320px;
-    max-width: 320px;
+    min-width: 280px;
+    flex: 1;
     display: flex;
     flex-direction: column;
     max-height: 100%;
@@ -1396,7 +1438,7 @@ const typeConfig: Record<
       background 200ms,
       border-color 200ms;
     border: 2px solid transparent;
-    padding: 10px;
+    padding: 12px;
   }
   @media (max-width: 768px) {
     .kanban-board {
@@ -1716,8 +1758,8 @@ const typeConfig: Record<
     display: flex;
     justify-content: space-between;
     align-items: center;
-    padding: 8px 10px;
-    margin-bottom: 12px;
+    padding: 8px 0;
+    margin-bottom: 8px;
   }
   .type-filters {
     display: flex;

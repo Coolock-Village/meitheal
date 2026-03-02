@@ -15,12 +15,15 @@ const locale: Locale = cookieLocale === "ga" ? "ga" : "en";
 let tasks: Record<string, unknown>[] = [];
 let favorites: Record<string, unknown>[] = [];
 let stats = { total: 0, active: 0, completed: 0, overdue: 0 };
+const boardMap: Record<string, { name: string; color: string }> = {
+  default: { name: "Default", color: "#10b981" },
+};
 
 try {
   await ensureSchema();
   const client = getPersistenceClient();
   const result = await client.execute(
-    "SELECT id, title, description, status, priority, due_date, labels, calendar_sync_state, is_favorite, created_at, updated_at FROM tasks ORDER BY created_at DESC LIMIT 10",
+    "SELECT id, title, description, status, priority, due_date, labels, calendar_sync_state, is_favorite, board_id, color, ticket_number, task_type, created_at, updated_at FROM tasks ORDER BY created_at DESC LIMIT 10",
   );
   // Favorites
   const favResult = await client.execute(
@@ -48,6 +51,18 @@ try {
   stats.overdue = Number(
     (overdueResult.rows[0] as Record<string, unknown>)?.cnt ?? 0,
   );
+
+  // Fetch boards for card badges
+  const boardResult = await client.execute(
+    "SELECT id, name, color FROM boards",
+  );
+  for (const b of boardResult.rows) {
+    const br = b as Record<string, unknown>;
+    boardMap[String(br.id)] = {
+      name: String(br.name ?? "Default"),
+      color: String(br.color ?? "#10b981"),
+    };
+  }
 } catch (e) {
   // DB not available — show empty state
 }
@@ -256,37 +271,56 @@ function relativeTime(dueDate: string): string {
           </div>
         ) : (
           tasks.map((task) => {
+            const p = Number(task.priority ?? 3);
             const isDone =
               String(task.status) === "complete" ||
               String(task.status) === "done";
-            const priorityColor =
-              Number(task.priority) === 1
+            const taskColor = task.color
+              ? String(task.color)
+              : p === 1
                 ? "#ef4444"
-                : Number(task.priority) === 2
+                : p === 2
                   ? "#f97316"
-                  : Number(task.priority) === 4
+                  : p === 4
                     ? "#22c55e"
-                    : Number(task.priority) === 5
+                    : p === 5
                       ? "#6b7280"
                       : "#eab308";
+            const boardId = String(task.board_id ?? "default");
+            const board = boardMap[boardId] ?? {
+              name: "Default",
+              color: "#10b981",
+            };
+            const ticketNum = task.ticket_number
+              ? `MTH-${String(task.ticket_number).padStart(3, "0")}`
+              : null;
             return (
               <div
                 class={`bento-card ${isDone ? "bento-card-done" : ""}`}
                 data-id={String(task.id)}
+                data-board={boardId}
+                style={`border-left: 3px solid ${taskColor};`}
               >
-                <div
-                  class="bento-card-stripe"
-                  style={`background: ${priorityColor}`}
-                />
                 <div class="bento-card-body">
-                  <div class={`bento-card-title ${isDone ? "done" : ""}`}>
-                    {String(task.title)}
+                  <div class="bento-card-header">
+                    <div class={`bento-card-title ${isDone ? "done" : ""}`}>
+                      {ticketNum && (
+                        <span class="bento-ticket-key">{ticketNum}</span>
+                      )}
+                      {String(task.title)}
+                    </div>
                   </div>
                   <div class="bento-card-footer">
                     <span
                       class={`task-badge badge-${isDone ? "done" : String(task.status)}`}
                     >
                       {statusLabels[String(task.status)] ?? String(task.status)}
+                    </span>
+                    <span
+                      class="bento-board-badge"
+                      style={`background: ${board.color}20; color: ${board.color}; border-color: ${board.color}40;`}
+                    >
+                      {board.name}
                     </span>
                     {task.due_date && (
                       <span class="bento-card-due">
@@ -304,11 +338,25 @@ function relativeTime(dueDate: string): string {
                     </div>
                   )}
                 </div>
-                {String(task.calendar_sync_state) === "confirmed" && (
-                  <span class="bento-card-sync" title="Calendar synced">
-                    📅
-                  </span>
-                )}
+                <div class="bento-card-actions">
+                  <button
+                    class="card-action-btn card-edit-btn"
+                    data-id={String(task.id)}
+                    title="Edit task"
+                  >
+                    ✏️
+                  </button>
+                  <button
+                    class="card-action-btn card-ai-btn"
+                    data-title={String(task.title)}
+                    data-desc={task.description ? String(task.description) : ""}
+                    data-status={String(task.status ?? "pending")}
+                    data-priority={String(p)}
+                    title="Ask AI"
+                  >
+                    🤖
+                  </button>
+                </div>
               </div>
             );
           })

@@ -1130,7 +1130,7 @@ Astro.response.headers.set("X-Content-Type-Options", "nosniff");
           }
         });
 
-        // Keyboard shortcut onboarding hint (show once)
+        // Keyboard shortcut onboarding hint (show once, auto-dismiss permanently after 8s)
         if (!localStorage.getItem("meitheal_shortcut_hint_dismissed")) {
           const hint = document.createElement("div");
           hint.className = "shortcut-hint";
@@ -1141,7 +1141,10 @@ Astro.response.headers.set("X-Content-Type-Options", "nosniff");
             localStorage.setItem("meitheal_shortcut_hint_dismissed", "1");
           });
           document.body.appendChild(hint);
-          setTimeout(() => hint.remove(), 8000);
+          setTimeout(() => {
+            hint.remove();
+            localStorage.setItem("meitheal_shortcut_hint_dismissed", "1");
+          }, 8000);
         }
         // Board switcher
         (async function initBoardSwitcher() {
