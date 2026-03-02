@@ -49,6 +49,9 @@ COPY --from=builder /build/apps/web/dist apps/web/dist/
 COPY --from=builder /build/apps/web/scripts/ apps/web/scripts/
 COPY --from=builder /build/apps/web/drizzle/ apps/web/drizzle/
 
+# Copy HA custom component for auto-install
+COPY --from=builder /build/integrations/home-assistant/custom_components/ /opt/meitheal/custom_components/
+
 # Install production deps only
 RUN pnpm install --frozen-lockfile=false --ignore-scripts --prod \
     && pnpm store prune

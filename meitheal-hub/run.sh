@@ -28,6 +28,19 @@ export PORT="${PORT:-3000}"
 export NODE_OPTIONS="${NODE_OPTIONS:---max-old-space-size=128}"
 HEALTHCHECK_URL="http://127.0.0.1:${PORT}/api/health"
 
+# ── Auto-install Meitheal custom component ──
+COMPONENT_SRC="/opt/meitheal/custom_components/meitheal"
+COMPONENT_DST="/homeassistant/custom_components/meitheal"
+if [ -d "$COMPONENT_SRC" ] && [ -d "/homeassistant" ]; then
+  mkdir -p /homeassistant/custom_components
+  if [ ! -f "$COMPONENT_DST/manifest.json" ] || \
+     ! diff -q "$COMPONENT_SRC/manifest.json" "$COMPONENT_DST/manifest.json" >/dev/null 2>&1; then
+    cp -r "$COMPONENT_SRC" /homeassistant/custom_components/
+    COMP_VER=$(grep '"version"' "$COMPONENT_DST/manifest.json" 2>/dev/null | head -1 | sed 's/.*: *"\(.*\)".*/\1/')
+    echo "{\"event\":\"component.installed\",\"version\":\"${COMP_VER:-unknown}\",\"path\":\"$COMPONENT_DST\",\"time\":\"$(date -u +\"%Y-%m-%dT%H:%M:%SZ\")\"}"
+  fi
+fi
+
 if [ -f /opt/meitheal/apps/web/package.json ]; then
   (
     cd /opt/meitheal/apps/web

@@ -1,27 +1,38 @@
 create_task:
-  name: Create Meitheal task
-  description: Create a task through Meitheal native API or Vikunja compatibility API.
+  name: Create Task
+  description: Create a new task in Meitheal.
   fields:
     title:
+      name: Title
+      description: Task title
       required: true
       selector:
         text:
     description:
+      name: Description
+      description: Optional task description
       required: false
       selector:
         text:
-    mode:
+          multiline: true
+
+complete_task:
+  name: Complete Task
+  description: Mark a task as done by ID or title.
+  fields:
+    task_id:
+      name: Task ID
+      description: The task ID to complete (use either this or title)
       required: false
-      default: native
       selector:
-        select:
-          options:
-            - native
-            - vikunja_compat
-    project_id:
+        text:
+    title:
+      name: Title
+      description: Find and complete a task by title (use either this or task_id)
       required: false
-      default: 1
       selector:
-        number:
-          min: 1
-          mode: box
+        text:
+
+sync_todo:
+  name: Sync Tasks
+  description: Trigger a manual refresh of task data from Meitheal.

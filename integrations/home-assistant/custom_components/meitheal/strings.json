@@ -1,0 +1,38 @@
+{
+  "config": {
+    "step": {
+      "user": {
+        "title": "Meitheal Hub",
+        "description": "Connect to your Meitheal task engine. The addon hostname is auto-detected if running as an HA addon.",
+        "data": {
+          "host": "Addon hostname",
+          "port": "Port"
+        }
+      }
+    },
+    "abort": {
+      "already_configured": "Meitheal is already configured"
+    },
+    "error": {
+      "cannot_connect": "Cannot reach Meitheal. Check the hostname and port."
+    }
+  },
+  "entity": {
+    "todo": {
+      "task_list": {
+        "name": "Tasks"
+      }
+    },
+    "sensor": {
+      "active_tasks": {
+        "name": "Active Tasks"
+      },
+      "overdue_tasks": {
+        "name": "Overdue Tasks"
+      },
+      "total_tasks": {
+        "name": "Total Tasks"
+      }
+    }
+  }
+}

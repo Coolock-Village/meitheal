@@ -22,6 +22,8 @@ panel_icon: mdi:account-group
 panel_title: "Meitheal"
 panel_admin: true
 apparmor: true
+map:
+  - homeassistant_config:rw
 tmpfs: true
 stage: experimental
 options:
