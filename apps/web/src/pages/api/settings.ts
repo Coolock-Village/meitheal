@@ -67,7 +67,7 @@ export const GET: APIRoute = async ({ url }) => {
       domain: "tasks",
       component: "settings-api",
       request_id: crypto.randomUUID(),
-      message: err instanceof Error ? err.message : "Unknown error",
+      message: "Internal server error",
     });
     return apiError("Failed to load settings");
   }
@@ -105,7 +105,7 @@ export const PUT: APIRoute = async ({ request }) => {
       domain: "tasks",
       component: "settings-api",
       request_id: crypto.randomUUID(),
-      message: err instanceof Error ? err.message : "Unknown error",
+      message: "Internal server error",
     });
     return apiError("Failed to save setting");
   }
@@ -136,7 +136,7 @@ export const DELETE: APIRoute = async ({ url }) => {
       domain: "tasks",
       component: "settings-api",
       request_id: crypto.randomUUID(),
-      message: err instanceof Error ? err.message : "Unknown error",
+      message: "Internal server error",
     });
     return apiError("Failed to reset settings");
   }

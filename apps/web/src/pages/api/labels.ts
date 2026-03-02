@@ -34,7 +34,7 @@ export const GET: APIRoute = async () => {
       domain: "tasks",
       component: "labels-api",
       request_id: crypto.randomUUID(),
-      message: err instanceof Error ? err.message : "Unknown error",
+      message: "Internal server error",
     });
     return apiError("Failed to list labels");
   }
@@ -65,7 +65,7 @@ export const POST: APIRoute = async ({ request }) => {
       domain: "tasks",
       component: "labels-api",
       request_id: crypto.randomUUID(),
-      message: err instanceof Error ? err.message : "Unknown error",
+      message: "Internal server error",
     });
     return apiError("Failed to create label");
   }

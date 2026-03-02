@@ -66,12 +66,15 @@ test.describe("Security Headers (Standalone — no ingress)", () => {
 });
 
 test.describe("Security Headers (CSP policy correctness)", () => {
-  test("allows Google Fonts in style-src and font-src", async ({ request }) => {
+  test("self-hosted fonts: no external CDN in style-src or font-src", async ({ request }) => {
     const res = await request.get(`${BASE}/api/health`);
     const csp = res.headers()["content-security-policy"] ?? "";
 
-    expect(csp).toContain("style-src 'self' 'unsafe-inline' https://fonts.googleapis.com");
-    expect(csp).toContain("font-src 'self' https://fonts.gstatic.com");
+    // Fonts are self-hosted via @fontsource — no external CDN allowed
+    expect(csp).toContain("style-src 'self' 'unsafe-inline'");
+    expect(csp).toContain("font-src 'self'");
+    expect(csp).not.toContain("fonts.googleapis.com");
+    expect(csp).not.toContain("fonts.gstatic.com");
   });
 
   test("allows data: and blob: in img-src for attachments", async ({ request }) => {

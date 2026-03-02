@@ -42,7 +42,7 @@ export const GET: APIRoute = async ({ params, url }) => {
             domain: "tasks",
             component: "activity-api",
             request_id: crypto.randomUUID(),
-            message: err instanceof Error ? err.message : "Unknown error",
+            message: "Internal server error",
         });
         return apiError("Failed to fetch activity");
     }

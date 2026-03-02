@@ -34,7 +34,7 @@ export const GET: APIRoute = async ({ params }) => {
             domain: "tasks",
             component: "comments-api",
             request_id: crypto.randomUUID(),
-            message: err instanceof Error ? err.message : "Unknown error",
+            message: "Internal server error",
         });
         return apiError("Failed to load comments");
     }
@@ -86,7 +86,7 @@ export const POST: APIRoute = async ({ params, request }) => {
             domain: "tasks",
             component: "comments-api",
             request_id: crypto.randomUUID(),
-            message: err instanceof Error ? err.message : "Unknown error",
+            message: "Internal server error",
         });
         return apiError("Failed to create comment");
     }

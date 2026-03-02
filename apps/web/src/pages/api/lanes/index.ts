@@ -48,7 +48,7 @@ export const GET: APIRoute = async () => {
       domain: "tasks",
       component: "lanes-api",
       request_id: crypto.randomUUID(),
-      message: err instanceof Error ? err.message : "Unknown error",
+      message: "Internal server error",
     });
     return apiError("Failed to list lanes");
   }
@@ -103,7 +103,7 @@ export const POST: APIRoute = async ({ request }) => {
       domain: "tasks",
       component: "lanes-api",
       request_id: crypto.randomUUID(),
-      message: err instanceof Error ? err.message : "Unknown error",
+      message: "Internal server error",
     });
     return apiError("Failed to create lane");
   }

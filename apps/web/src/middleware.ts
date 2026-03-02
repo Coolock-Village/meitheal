@@ -176,9 +176,9 @@ export const onRequest: MiddlewareHandler = async ({ request, locals }, next) =>
       "default-src 'self'",
       // data: needed for Astro ClientRouter navigation scripts
       "script-src 'self' 'unsafe-inline' data:",
-      "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com",
+      "style-src 'self' 'unsafe-inline'",
       "img-src 'self' data: blob:",  // blob: for attachment previews
-      "font-src 'self' https://fonts.gstatic.com",
+      "font-src 'self'",
       ingressPath
         ? "connect-src 'self' ws: wss: http://supervisor http://supervisor:*"
         : import.meta.env.DEV

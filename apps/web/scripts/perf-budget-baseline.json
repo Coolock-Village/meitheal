@@ -2,15 +2,15 @@
   "source": "GitHub Actions CI perf-budgets job — main branch",
   "captured_at": "2026-03-02",
   "runner": "ubuntu-24.04 / node 22",
-  "sample_runs": 18,
-  "rationale": "Budget raised to 350KB: growth from 281KB to 319KB is from sidebar toggle (Ctrl+B), Kanban drag-and-drop + inline scripts, offline-store module, HA ingress detection, and concurrent feature additions. All legitimate production functionality.",
+  "sample_runs": 19,
+  "rationale": "Budget raised to 800KB: growth from 319KB to 752KB is from self-hosting Inter (variable, ~100KB) and JetBrains Mono (400+500 weights, ~200KB) via @fontsource. Previously loaded from Google Fonts CDN (not counted in client bytes). Self-hosting eliminates external dependency and ad-blocker interference.",
   "observed_max": {
-    "clientBytes": 319163,
+    "clientBytes": 751809,
     "rssKb": 200000,
     "p95Ms": 30.0
   },
   "budgets": {
-    "clientBytesMax": 358400,
+    "clientBytesMax": 819200,
     "rssKbMax": 262144,
     "p95MsMax": 250
   }

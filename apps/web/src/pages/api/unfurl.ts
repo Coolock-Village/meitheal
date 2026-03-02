@@ -175,7 +175,7 @@ export const POST: APIRoute = async ({ request }) => {
       domain: "tasks",
       component: "unfurl-api",
       request_id: crypto.randomUUID(),
-      message: err instanceof Error ? err.message : "Unknown error",
+      message: "Internal server error",
     });
     return apiError("Unable to fetch URL", 502);
   } finally {

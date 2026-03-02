@@ -88,7 +88,7 @@ export const POST: APIRoute = async ({ params }) => {
             domain: "tasks",
             component: "duplicate-api",
             request_id: crypto.randomUUID(),
-            message: err instanceof Error ? err.message : "Unknown error",
+            message: "Internal server error",
         });
         return apiError("Failed to duplicate task");
     }

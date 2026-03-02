@@ -101,7 +101,7 @@ export const PUT: APIRoute = async ({ params, request }) => {
       domain: "tasks",
       component: "lanes-api",
       request_id: crypto.randomUUID(),
-      message: err instanceof Error ? err.message : "Unknown error",
+      message: "Internal server error",
     });
     return apiError("Failed to update lane");
   }
@@ -141,7 +141,7 @@ export const DELETE: APIRoute = async ({ params }) => {
       domain: "tasks",
       component: "lanes-api",
       request_id: crypto.randomUUID(),
-      message: err instanceof Error ? err.message : "Unknown error",
+      message: "Internal server error",
     });
     return apiError("Failed to delete lane");
   }
