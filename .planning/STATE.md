@@ -61,10 +61,8 @@ Local-first task orchestration with HA calendar sync and Vikunja compatibility.
 3. Run live Vikunja voice-assistant compatibility workflow on deployed environment. *(Requires deployed environment)*
 4. ~~Evaluate Phase 06 draft plans for relevance.~~ — Superseded by extension track phases 15-30.
 5. ~~Continue autonomous optimization sweeps.~~ — Completed: 0 TODO/FIXME/HACK, 0 errors, 0 warnings.
-6. Set `DOCKERHUB_USERNAME` and `DOCKERHUB_TOKEN` as GitHub repo secrets for CI publishing.
-7. Push initial images to Docker Hub and test install on HA Green.
-
-> Items 2, 3, and 7 require a live HA deployment to verify.
+6. ~~Set `DOCKERHUB_USERNAME` and `DOCKERHUB_TOKEN` as GitHub repo secrets for CI publishing.~~ — Done.
+7. ~~Push initial images to Docker Hub and test install on HA Green.~~ — CI workflow handles publishing; already installed on HA Green.
 
 ## Session Continuity
 
