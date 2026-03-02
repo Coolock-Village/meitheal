@@ -5,7 +5,7 @@ import {
   extractSkillFromMessage,
   A2A_ERRORS,
   type A2AMessage,
-  type A2ATask,
+
 } from "@meitheal/integration-core";
 
 /**

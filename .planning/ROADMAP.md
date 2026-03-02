@@ -41,6 +41,9 @@ Primary Delivery drives completion math and release readiness.
 | 20 | Deep Production Polish & Infinite Waves | 📋 Planned | `20-01..20-04-PLAN.md` (to be generated) |
 | 27 | HA Security Hardening | ✅ Complete | `27-CONTEXT.md` |
 | 28 | Structured Logging & API Polish | ✅ Complete | Autonomous sweep |
+| 52 | HA Notifications & Assist API | ✅ Complete | GSD sweep |
+| 53 | HA Connection & PWA Polish | ✅ Complete | GSD sweep |
+| 54 | Astro Native Modular UI & Settings Alignment | 📋 Planned | Next autonomous sweep |
 
 ## Primary Delivery Details
 

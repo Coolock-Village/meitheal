@@ -39,7 +39,7 @@ export const GET: APIRoute = async ({ url }) => {
   });
 };
 
-export const POST: APIRoute = async ({ request }) => {
+export const POST: APIRoute = async () => {
   // Manual sync trigger — placeholder for now
   return new Response(JSON.stringify({ message: "Calendar sync triggered" }), {
     status: 200, headers: { "content-type": "application/json" },
