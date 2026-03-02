@@ -119,9 +119,10 @@ test.describe("Phase 27: HA Security Hardening", () => {
             expect(content).toContain("FROM ${BUILD_FROM}");
             expect(content).toContain("mkdir -p /data");
 
-            // Non-root user for runtime security (Phase 40)
-            expect(content).toContain("adduser -S meitheal -G meitheal");
-            expect(content).toContain("USER meitheal");
+            // HA addons run as root — Supervisor manages container lifecycle
+            // and /data volume requires root ownership on fresh installs.
+            // Verify the convention is documented in the Dockerfile.
+            expect(content).toContain("HA addons run as root");
 
             // HEALTHCHECK for Supervisor watchdog integration
             expect(content).toContain("HEALTHCHECK");
