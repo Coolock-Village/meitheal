@@ -3,9 +3,10 @@
 ARG BUILD_FROM
 
 # ── Stage 1: Build ──
-# Uses COPY from the build context (the repo root) instead of git clone.
+# Pinned to linux/amd64 to avoid QEMU crashes when cross-building for aarch64.
+# Output is pure JS — no native addons — so build artifacts are arch-independent.
 # Layer order is optimised for Docker cache: deps change less often than source.
-FROM node:22-alpine AS builder
+FROM --platform=linux/amd64 node:22-alpine AS builder
 
 RUN npm install -g pnpm@10.8.0
 
