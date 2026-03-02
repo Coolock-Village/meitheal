@@ -334,9 +334,6 @@
       margin-left: 0;
   }
 
-    .content {
-      padding: 0 24px 24px;
-    }
   .page-header {
     @apply flex items-center justify-between px-6 py-4 bg-bg-secondary/50 border-b border-border;
   }

@@ -230,7 +230,12 @@ Astro.response.headers.set("X-Content-Type-Options", "nosniff");
         <Fragment slot="page-title"><slot name="page-title" /></Fragment>
         <Fragment slot="actions"><slot name="actions" /></Fragment>
       </TopNavigation>
-      <main class="content" role="main" id="main-content">
+      <main
+        class="content"
+        role="main"
+        id="main-content"
+        style="padding: 0 24px 24px;"
+      >
         <slot />
       </main>
     </div>
