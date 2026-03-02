@@ -1,7 +1,7 @@
 #!/usr/bin/with-contenv bashio
 set -euo pipefail
 
-MEITHEAL_VERSION="0.1.12"
+MEITHEAL_VERSION="0.1.30"
 STARTUP_TS=$(date -u +"%Y-%m-%dT%H:%M:%SZ")
 echo "{\"event\":\"addon.startup\",\"version\":\"${MEITHEAL_VERSION}\",\"time\":\"${STARTUP_TS}\"}"
 
