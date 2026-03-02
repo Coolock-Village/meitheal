@@ -12,8 +12,10 @@ import { expect, test } from "@playwright/test";
  */
 
 const BASE = process.env.MEITHEAL_TEST_URL || "http://localhost:4321";
+const needsServer = !process.env.MEITHEAL_TEST_URL;
 
 test.describe("Security Headers (Standalone — no ingress)", () => {
+  test.skip(needsServer, "Set MEITHEAL_TEST_URL to run security header specs");
   test("sets core OWASP security headers", async ({ request }) => {
     const res = await request.get(`${BASE}/api/health`);
     const headers = res.headers();
@@ -66,6 +68,7 @@ test.describe("Security Headers (Standalone — no ingress)", () => {
 });
 
 test.describe("Security Headers (CSP policy correctness)", () => {
+  test.skip(needsServer, "Set MEITHEAL_TEST_URL to run security header specs");
   test("self-hosted fonts: no external CDN in style-src or font-src", async ({ request }) => {
     const res = await request.get(`${BASE}/api/health`);
     const csp = res.headers()["content-security-policy"] ?? "";
