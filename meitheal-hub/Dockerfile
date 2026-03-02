@@ -6,7 +6,7 @@ ARG BUILD_FROM
 # Clones the monorepo from GitHub and builds the Astro app.
 # HA Supervisor uses the addon directory as Docker build context,
 # so we cannot COPY from the repo root — we clone instead.
-FROM node:22-alpine AS builder
+FROM node:25-alpine AS builder
 
 ARG BUILD_VERSION=0.1.0
 
