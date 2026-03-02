@@ -54,12 +54,12 @@ try {
 
   // Fetch boards for card badges
   const boardResult = await client.execute(
-    "SELECT id, name, color FROM boards",
+    "SELECT id, title, color FROM boards",
   );
   for (const b of boardResult.rows) {
     const br = b as Record<string, unknown>;
     boardMap[String(br.id)] = {
-      name: String(br.name ?? "Default"),
+      name: String(br.title ?? "Default"),
       color: String(br.color ?? "#10b981"),
     };
   }

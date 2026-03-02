@@ -9,6 +9,12 @@ export MEITHEAL_LOG_LEVEL="$(bashio::config 'log_level')"
 export MEITHEAL_LOG_REDACTION="$(bashio::config 'log_redaction')"
 export MEITHEAL_AUDIT_ENABLED="$(bashio::config 'audit_enabled')"
 export LOKI_URL="$(bashio::config 'loki_url')"
+
+# Ensure /data is writable by meitheal user.
+# HA Supervisor mounts a fresh volume here which may have root-only permissions.
+mkdir -p /data
+chown -R meitheal:meitheal /data 2>/dev/null || true
+
 export MEITHEAL_DB_URL="${MEITHEAL_DB_URL:-file:/data/meitheal.db}"
 
 # Prefer Supervisor credentials for direct Home Assistant service calls.
