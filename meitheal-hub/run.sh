@@ -44,8 +44,9 @@ fi
 if [ -f /opt/meitheal/apps/web/package.json ]; then
   (
     cd /opt/meitheal/apps/web
-    if ! pnpm run db:migrate; then
-      exit_code=$?
+    pnpm run db:migrate
+    exit_code=$?
+    if [ "${exit_code}" -ne 0 ]; then
       echo "Database migration failed: 'pnpm run db:migrate' exited with ${exit_code}" >&2
       exit "${exit_code}"
     fi
