@@ -60,6 +60,7 @@ async function checkHealth(): Promise<boolean> {
       method: "HEAD",
       signal: controller.signal,
       cache: "no-store",
+      credentials: "include", // Required for HA ingress session cookie
     })
     clearTimeout(timeout)
     return response.ok

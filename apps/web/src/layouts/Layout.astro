@@ -74,11 +74,17 @@ Astro.response.headers.set("X-Content-Type-Options", "nosniff");
             if (!init) init = {};
             if (!init.credentials) init.credentials = "include";
             if (typeof input === "string" && input.startsWith("/")) {
-              input = ip + input;
+              // Guard: don't prefix if URL already contains the ingress path
+              if (!input.startsWith(ip + "/") && input !== ip) {
+                input = ip + input;
+              }
             } else if (input instanceof Request && input.url) {
               var u = new URL(input.url);
               if (u.pathname.startsWith("/") && u.origin === location.origin) {
-                input = new Request(ip + u.pathname + u.search, input);
+                // Guard: don't prefix if path already contains the ingress path
+                if (!u.pathname.startsWith(ip + "/") && u.pathname !== ip) {
+                  input = new Request(ip + u.pathname + u.search, input);
+                }
               }
             }
             return _f.call(this, input, init);

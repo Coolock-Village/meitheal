@@ -170,7 +170,10 @@ export const onRequest: MiddlewareHandler = async ({ request, locals }, next) =>
     if (!isDev) {
       const originHost = origin ? new URL(origin).host : null;
       const refererHost = referer ? new URL(referer).host : null;
-      const allowed = originHost === host || refererHost === host;
+      // Behind ingress, Origin is the HA frontend host (e.g., 192.168.88.250:8123)
+      // but Host is the addon container. Skip CSRF check since the Supervisor already
+      // validated the ingress session before forwarding the request.
+      const allowed = ingressPath || originHost === host || refererHost === host;
       if (!allowed && !origin && !referer) {
         // Allow requests with no origin/referer (e.g. curl, HA internal calls)
       } else if (!allowed) {
@@ -196,11 +199,14 @@ export const onRequest: MiddlewareHandler = async ({ request, locals }, next) =>
     "X-XSS-Protection": "1; mode=block",
     "Content-Security-Policy": [
       "default-src 'self'",
-      "script-src 'self' 'unsafe-inline'",  // Astro hydration requires unsafe-inline
+      // data: needed for Astro ClientRouter navigation scripts
+      "script-src 'self' 'unsafe-inline' data:",
       "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com",
       "img-src 'self' data: blob:",  // blob: for attachment previews
       "font-src 'self' https://fonts.gstatic.com",
-      "connect-src 'self'",
+      ingressPath
+        ? "connect-src 'self' ws: wss:"  // Allow WebSocket for HA integration behind ingress
+        : "connect-src 'self'",
       "object-src 'none'",
       "base-uri 'self'",
       "form-action 'self'",
