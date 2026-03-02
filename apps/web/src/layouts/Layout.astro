@@ -2636,7 +2636,7 @@ Astro.response.headers.set("X-Content-Type-Options", "nosniff");
         document.body.addEventListener("click", (e) => {
           const target = e.target as HTMLElement;
           const taskEl = target.closest(
-            ".task-item, .kanban-card, tr[data-id], [data-task-id]",
+            ".task-item, .kanban-card, .bento-card, tr[data-id], [data-task-id]",
           ) as HTMLElement | null;
           if (!taskEl) return;
           // Don't intercept action buttons

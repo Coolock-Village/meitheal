@@ -24,7 +24,8 @@ const locale: Locale = cookieLocale === "ga" ? "ga" : "en";
     <form id="new-task-form" class="space-y-4">
       <div class="form-group">
         <label for="new-task-title-input" class="form-label"
-          >{t("tasks.title", locale)} <span class="text-accent">*</span></label
+          >{t("tasks.title_label", locale)}
+          <span class="text-accent">*</span></label
         >
         <input
           type="text"
