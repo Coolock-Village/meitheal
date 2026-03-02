@@ -1407,7 +1407,7 @@ const typeConfig: Record<
     max-width: 100%;
     overflow-x: auto;
     overflow-y: hidden;
-    padding-bottom: 8px; /* space for scrollbar */
+    padding: 0 24px 8px; /* 24px horizontal = px-6 to align with title + tabs */
   }
 
   /* Mobile: stack columns vertically */
@@ -1758,7 +1758,7 @@ const typeConfig: Record<
     display: flex;
     justify-content: space-between;
     align-items: center;
-    padding: 8px 0;
+    padding: 8px 24px; /* 24px horizontal = px-6 to align with title + tabs */
     margin-bottom: 8px;
   }
   .type-filters {
@@ -1907,4 +1907,14 @@ const typeConfig: Record<
   }
 
   /* T-1915: Column collapse CSS removed — feature was removed per UX feedback */
+
+  /* Alignment: board + toolbar must match TopNavigation px-6 (24px) */
+  .kanban-board {
+    padding-left: 24px !important;
+    padding-right: 24px !important;
+  }
+  .type-toolbar {
+    padding-left: 24px !important;
+    padding-right: 24px !important;
+  }
 </style>

@@ -498,7 +498,7 @@
 
   /* --- Kanban board --- */
   .kanban-board {
-    @apply flex gap-4 overflow-x-auto pb-4 min-h-[60vh];
+    @apply flex gap-4 overflow-x-auto pb-4 px-6 min-h-[60vh];
   }
 
   .kanban-column {
