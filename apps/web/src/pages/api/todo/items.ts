@@ -41,7 +41,8 @@ export const GET: APIRoute = async ({ url }) => {
       status: 200, headers: { "Content-Type": "application/json" },
     });
   } catch (err) {
-    return new Response(JSON.stringify({ ok: false, error: String(err) }), {
+    console.error("[api/todo/items] GET failed:", err);
+    return new Response(JSON.stringify({ ok: false, error: "Internal server error" }), {
       status: 500, headers: { "Content-Type": "application/json" },
     });
   }
@@ -77,7 +78,8 @@ export const POST: APIRoute = async ({ request }) => {
       headers: { "Content-Type": "application/json" },
     });
   } catch (err) {
-    return new Response(JSON.stringify({ ok: false, error: String(err) }), {
+    console.error("[api/todo/items] POST failed:", err);
+    return new Response(JSON.stringify({ ok: false, error: "Internal server error" }), {
       status: 500, headers: { "Content-Type": "application/json" },
     });
   }
@@ -118,7 +120,8 @@ export const PUT: APIRoute = async ({ request }) => {
       headers: { "Content-Type": "application/json" },
     });
   } catch (err) {
-    return new Response(JSON.stringify({ ok: false, error: String(err) }), {
+    console.error("[api/todo/items] PUT failed:", err);
+    return new Response(JSON.stringify({ ok: false, error: "Internal server error" }), {
       status: 500, headers: { "Content-Type": "application/json" },
     });
   }
@@ -158,7 +161,8 @@ export const DELETE: APIRoute = async ({ request }) => {
       headers: { "Content-Type": "application/json" },
     });
   } catch (err) {
-    return new Response(JSON.stringify({ ok: false, error: String(err) }), {
+    console.error("[api/todo/items] DELETE failed:", err);
+    return new Response(JSON.stringify({ ok: false, error: "Internal server error" }), {
       status: 500, headers: { "Content-Type": "application/json" },
     });
   }

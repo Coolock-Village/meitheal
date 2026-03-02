@@ -20,7 +20,8 @@ export const GET: APIRoute = async () => {
       status: 200, headers: { "Content-Type": "application/json" },
     });
   } catch (err) {
-    return new Response(JSON.stringify({ ok: false, error: String(err) }), {
+    console.error("[api/todo/sync] GET failed:", err);
+    return new Response(JSON.stringify({ ok: false, error: "Internal server error" }), {
       status: 500, headers: { "Content-Type": "application/json" },
     });
   }
@@ -84,7 +85,8 @@ export const POST: APIRoute = async ({ request }) => {
         });
     }
   } catch (err) {
-    return new Response(JSON.stringify({ ok: false, error: String(err) }), {
+    console.error("[api/todo/sync] POST failed:", err);
+    return new Response(JSON.stringify({ ok: false, error: "Internal server error" }), {
       status: 500, headers: { "Content-Type": "application/json" },
     });
   }
