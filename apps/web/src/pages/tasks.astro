@@ -118,10 +118,10 @@ try {
     {
       tasks.length === 0 ? (
         <EmptyState
-          title={t("tasks.no_tasks", locale)}
-          description="Create your first task to get started."
+          title={t("tasks.no_tasks_yet", locale)}
+          description={t("tasks.create_first_task", locale)}
           actionText={t("tasks.new_task", locale)}
-          actionHref=""
+          actionEvent="meitheal:new-task"
         />
       ) : (
         tasks.map((task) => {

@@ -1027,6 +1027,12 @@ Astro.response.headers.set("X-Content-Type-Options", "nosniff");
           }
         });
 
+        // EmptyState "New Task" buttons dispatch this event to open the modal
+        document.addEventListener("meitheal:new-task", () => {
+          const btn = document.getElementById("create-task-btn");
+          if (btn) btn.click();
+        });
+
         // "/" to focus search, Escape to blur, "n" for new task
         document.addEventListener("keydown", (e) => {
           const tag = (e.target as HTMLElement)?.tagName;
