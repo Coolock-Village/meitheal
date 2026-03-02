@@ -154,7 +154,7 @@ const typeConfig: Record<
   <!-- Phase 20: Type filter + grouping toolbar -->
   <div
     class="type-toolbar"
-    style="padding: 8px 24px;"
+    style="padding: 8px 0;"
     role="toolbar"
     aria-label="Filter by work item type"
   >
@@ -250,7 +250,7 @@ const typeConfig: Record<
 
   <div
     class="kanban-board"
-    style={`padding: 0 24px 8px; grid-template-columns: repeat(${columns.length}, 1fr);`}
+    style={`padding: 0 0 8px; grid-template-columns: repeat(${columns.length}, 1fr);`}
   >
     {
       columns.map((col) => {
@@ -1416,7 +1416,7 @@ const typeConfig: Record<
     max-width: 100%;
     overflow-x: auto;
     overflow-y: hidden;
-    padding: 0 24px 8px; /* 24px horizontal = px-6 to align with title + tabs */
+    padding: 0 0 8px; /* horizontal padding handled by global .content */
   }
 
   /* Mobile: stack columns vertically */
@@ -1767,7 +1767,7 @@ const typeConfig: Record<
     display: flex;
     justify-content: space-between;
     align-items: center;
-    padding: 8px 24px; /* 24px horizontal = px-6 to align with title + tabs */
+    padding: 8px 0; /* horizontal padding handled by global .content */
     margin-bottom: 8px;
   }
   .type-filters {
