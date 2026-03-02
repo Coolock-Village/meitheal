@@ -34,6 +34,19 @@
 | DB | `todo_sync_confirmations` table (migration `0002_todo_sync.sql`) |
 | Status Mapping | `needs_action` ↔ `todo`/`in_progress`, `completed` ↔ `done` |
 
+## HA Custom Component (Python)
+
+| Property | Value |
+|----------|-------|
+| Path | `integrations/home-assistant/custom_components/meitheal/` |
+| Type | `hub` integration with config flow |
+| Entities | `todo.meitheal_tasks`, `sensor.meitheal_active_tasks`, `sensor.meitheal_overdue_tasks`, `sensor.meitheal_total_tasks` |
+| Services | `meitheal.create_task`, `meitheal.complete_task`, `meitheal.sync_todo` |
+| Communication | REST API to addon at `http://{host}:{port}/api/tasks` |
+| Polling | 30s via `DataUpdateCoordinator` |
+| Auto-install | Addon copies component to `/homeassistant/custom_components/` at boot |
+| Config | HA UI → Settings → Devices & Services → Add Integration → Meitheal |
+
 ## Vikunja Compatibility API
 
 | Property | Value |
