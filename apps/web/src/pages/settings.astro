@@ -446,7 +446,7 @@ const locale: Locale = cookieLocale === "ga" ? "ga" : "en";
             const fields = JSON.parse(settings.custom_fields) as Array<{
               name: string;
               type: string;
-            }</Fragment>;
+            }>;
             const list = document.getElementById("custom-fields-list");
             if (list && fields.length > 0) {
               for (const field of fields) {
