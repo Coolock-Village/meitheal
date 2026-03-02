@@ -247,15 +247,17 @@ Current state:
 - [ ] Push initial images to Docker Hub
 - [ ] Install and test on HA Green
 
-## Phase 40: Mobile Responsiveness Finalization 📋
+## Phase 40: Mobile Responsiveness Finalization ✅
 
 Current state:
-- Planned. Implement holistic responsive design fixes to ensure zero scrollbar bleed and perfect mobile UX.
 
-## Phase 41: Design System Deep Polish 📋
+- Complete. All pages verified at 375px and 320px — zero overflow, sidebar correctly hidden, touch targets adequate.
+
+## Phase 41: Design System Deep Polish ✅
 
 Current state:
-- Planned. Final cycle of visual alignment, typography audits, and micro-interactions.
+
+- Complete. Typography, spacing, and micro-interactions verified across all viewports.
 
 ## Open Blockers (Roadmap-Level)
 
