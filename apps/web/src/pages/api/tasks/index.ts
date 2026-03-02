@@ -5,12 +5,14 @@ import { sanitize } from "../../../lib/sanitize";
 import { formatTicketKey } from "../../../lib/ticket-key";
 import { dispatchTaskEvent } from "../../../lib/webhook-dispatcher";
 import { logApiError } from "../../../lib/api-logger";
+import { isDbUnavailable, db503Response } from "../../../lib/db-fallback";
 import { VALID_TASK_TYPES } from "@meitheal/domain-tasks";
 import type { TaskType } from "@meitheal/domain-tasks";
 
 /** GET /api/tasks — list all tasks, POST /api/tasks — create a task */
 
 export const GET: APIRoute = async ({ url }) => {
+  try {
   await ensureSchema();
   const client = getPersistenceClient();
   const status = url.searchParams.get("status");
@@ -106,6 +108,14 @@ export const GET: APIRoute = async ({ url }) => {
     status: 200,
     headers: { "content-type": "application/json" },
   });
+  } catch (err) {
+    if (isDbUnavailable(err)) return db503Response("tasks-get", err);
+    logApiError("tasks-get", "GET failed", err);
+    return new Response(JSON.stringify({ error: "Failed to list tasks" }), {
+      status: 500,
+      headers: { "content-type": "application/json" },
+    });
+  }
 };
 
 export const POST: APIRoute = async ({ request }) => {

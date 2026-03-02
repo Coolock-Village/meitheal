@@ -8,10 +8,20 @@
  * skipWaiting requires client message (FR-308).
  */
 
-const CACHE_NAME = "meitheal-v2";
+/**
+ * Cache version — bump on each release to invalidate stale precache.
+ * The activate handler (below) automatically deletes old cache keys
+ * that don't match CACHE_NAME, so incrementing this is sufficient.
+ *
+ * @kcs Keep in sync with meitheal-hub/config.yaml version.
+ */
+const CACHE_VERSION = "0.1.17";
+const CACHE_NAME = `meitheal-v${CACHE_VERSION}`;
 const SYNC_TAG = "meitheal-background-sync";
 
 // Static assets to precache (app shell + key pages)
+// Astro's Vite build adds content hashes to JS/CSS filenames automatically.
+// These page URLs are cache-busted by CACHE_VERSION above.
 const PRECACHE_URLS = [
   "/",
   "/offline",
