@@ -3,17 +3,17 @@
 ARG BUILD_FROM
 
 # ── Stage 1: Build ──
-# Pinned to linux/amd64 to avoid QEMU crashes when cross-building for aarch64.
+# Pinned to $BUILDPLATFORM (host arch) to avoid QEMU crashes on aarch64 cross-builds.
 # Output is pure JS — no native addons — so build artifacts are arch-independent.
 # Layer order is optimised for Docker cache: deps change less often than source.
-FROM --platform=linux/amd64 node:22-alpine AS builder
+FROM --platform=$BUILDPLATFORM node:22-alpine3.21 AS builder
 
 RUN npm install -g pnpm@10.8.0
 
 WORKDIR /build
 
-# Layer 1: Dependency manifests only (changes rarely → cached most builds)
-COPY pnpm-workspace.yaml pnpm-lock.yaml package.json ./
+# Layer 1: Dependency manifests + config (changes rarely → cached most builds)
+COPY pnpm-workspace.yaml pnpm-lock.yaml package.json tsconfig.base.json ./
 COPY apps/web/package.json apps/web/package.json
 COPY packages/ packages/
 
