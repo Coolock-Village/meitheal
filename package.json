@@ -1,7 +1,7 @@
 {
   "name": "meitheal-monorepo",
   "private": true,
-  "version": "0.1.0",
+  "version": "0.1.12",
   "description": "Meitheal: The cooperative task and life engine for your home.",
   "packageManager": "pnpm@10.8.0",
   "scripts": {

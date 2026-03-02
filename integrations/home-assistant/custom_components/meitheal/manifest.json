@@ -1,7 +1,7 @@
 {
   "domain": "meitheal",
   "name": "Meitheal",
-  "version": "0.2.0",
+  "version": "0.1.12",
   "documentation": "https://github.com/Coolock-Village/meitheal",
   "issue_tracker": "https://github.com/Coolock-Village/meitheal/issues",
   "codeowners": [
