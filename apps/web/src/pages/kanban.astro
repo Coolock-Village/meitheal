@@ -1410,17 +1410,20 @@ const typeConfig: Record<
 
 <style>
   .kanban-board {
-    display: grid;
+    display: flex;
     gap: 10px;
     min-height: calc(100vh - 140px);
-    max-width: 1400px;
-    margin: 0 auto;
+    max-width: 100%;
+    overflow-x: auto;
+    overflow-y: hidden;
+    padding-bottom: 8px; /* space for scrollbar */
   }
 
   /* Mobile: stack columns vertically */
   @media (max-width: 768px) {
     .kanban-board {
-      grid-template-columns: 1fr;
+      flex-direction: column;
+      overflow-x: hidden;
       min-height: auto;
       gap: 12px;
     }
@@ -1659,7 +1662,7 @@ const typeConfig: Record<
   }
   @media (max-width: 768px) {
     .kanban-board {
-      grid-template-columns: 1fr;
+      flex-direction: column;
     }
   }
 
