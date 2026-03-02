@@ -181,7 +181,9 @@ export const onRequest: MiddlewareHandler = async ({ request, locals }, next) =>
       "font-src 'self' https://fonts.gstatic.com",
       ingressPath
         ? "connect-src 'self' ws: wss: http://supervisor http://supervisor:*"
-        : "connect-src 'self'",
+        : import.meta.env.DEV
+          ? "connect-src 'self' ws: wss:"
+          : "connect-src 'self'",
       "object-src 'none'",
       "base-uri 'self'",
       "form-action 'self'",

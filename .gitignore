@@ -10,3 +10,4 @@ test-results
 apps/web/.astro
 apps/web/.data
 .dev.vars
+.data/
