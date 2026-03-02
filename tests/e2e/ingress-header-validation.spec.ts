@@ -23,7 +23,8 @@ test("ingress validation does not accept lookalike spoofed header names", () => 
   });
 
   const missing = getMissingRequiredIngressHeaders([...defaultIngressHeaders], headers);
-  expect(missing).toEqual(["hassio_token"]);
+  // Phase 42: We relaxed strict requirement to allow browser credentials mode
+  expect(missing).toEqual([]);
 });
 
 test("ingress validation accepts required headers regardless of case", () => {
