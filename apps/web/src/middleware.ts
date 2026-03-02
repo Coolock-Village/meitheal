@@ -1,14 +1,9 @@
 import type { MiddlewareHandler } from "astro";
-import { getCollection } from "astro:content";
 import {
-  defaultIngressHeaders,
   getHassUserId,
   getIngressPath,
-  getMissingRequiredIngressHeaders,
   hasHassioToken,
   isHassAdmin,
-  normalizeIngressHeaders,
-  shouldEnforceIngressHeaders
 } from "@domains/auth/ingress";
 import { createLogger, defaultRedactionPatterns } from "@meitheal/domain-observability";
 import { getPersistenceClient, ensureSchema } from "@domains/tasks/persistence/store";
@@ -22,29 +17,7 @@ const logger = createLogger({
   auditEnabled: true,
 });
 
-let cachedRequiredHeaders: string[] | null = null;
 
-async function getRequiredIngressHeaders(): Promise<string[]> {
-  if (cachedRequiredHeaders) {
-    return cachedRequiredHeaders;
-  }
-
-  try {
-    const configs = await getCollection("config");
-    const authEntry = configs.find((entry: (typeof configs)[number]) => entry.id === "auth");
-    const configured = authEntry?.data.auth?.ingress?.required_headers;
-
-    if (Array.isArray(configured) && configured.length > 0) {
-      cachedRequiredHeaders = normalizeIngressHeaders(configured);
-      return cachedRequiredHeaders;
-    }
-  } catch {
-    // Fallback to defaults for local dev or incomplete content config.
-  }
-
-  cachedRequiredHeaders = normalizeIngressHeaders([...defaultIngressHeaders]);
-  return cachedRequiredHeaders;
-}
 
 // ── In-memory rate limiter (R-107) ──
 const rateLimitMap = new Map<string, { count: number; resetAt: number }>();
@@ -112,7 +85,6 @@ async function rewriteIngressPaths(response: Response, ingressPath: string): Pro
 export const onRequest: MiddlewareHandler = async ({ request, locals }, next) => {
   const startTime = Date.now();
   const requestId = request.headers.get("x-request-id") ?? crypto.randomUUID();
-  const requiredIngressHeaders = await getRequiredIngressHeaders();
   const ingressPath = getIngressPath(request.headers);
 
   locals.ingressPath = ingressPath;

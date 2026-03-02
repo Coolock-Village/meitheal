@@ -859,7 +859,7 @@ Astro.response.headers.set("X-Content-Type-Options", "nosniff");
           }
         }
 
-        import { confirmDialog } from "../lib/confirm-dialog";
+        import { confirmDialog } from "@lib/confirm-dialog";
 
         // Expose for is:inline scripts (kanban)
         (window as any).confirmDialog = confirmDialog;
@@ -1258,7 +1258,7 @@ Astro.response.headers.set("X-Content-Type-Options", "nosniff");
           getAttachmentsByTaskId,
           deleteAttachment,
         } from "@domains/offline/offline-store";
-        import { confirmDialog } from "../lib/confirm-dialog";
+        import { confirmDialog } from "@lib/confirm-dialog";
         import { marked } from "marked";
         import DOMPurify from "dompurify";
 

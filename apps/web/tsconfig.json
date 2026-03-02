@@ -4,7 +4,8 @@
     "types": ["node"],
     "baseUrl": ".",
     "paths": {
-      "@domains/*": ["src/domains/*"]
+      "@domains/*": ["src/domains/*"],
+      "@lib/*": ["src/lib/*"]
     }
   },
   "include": ["src", "astro.config.mjs"]
