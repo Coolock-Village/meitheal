@@ -410,10 +410,12 @@ const locale: Locale = cookieLocale === "ga" ? "ga" : "en";
           ? sidebarConfig.customItems
           : [];
 
+        let dragSrcIndex: number | null = null;
+
         function renderSidebarList() {
           const list = document.getElementById("sidebar-item-list")!;
           list.innerHTML = "";
-          orderItems.forEach((key: string) => {
+          orderItems.forEach((key: string, index: number) => {
             const isVisible = sidebarConfig[key] !== false;
             const labelStr =
               (sidebarConfig.labels && sidebarConfig.labels[key]) ||
@@ -422,15 +424,62 @@ const locale: Locale = cookieLocale === "ga" ? "ga" : "en";
 
             const row = document.createElement("div");
             row.className = "sidebar-config-row";
+            row.draggable = true;
+            row.dataset.index = String(index);
             row.style.cssText =
-              "display: flex; gap: 8px; align-items: center; background: var(--bg-secondary); padding: 8px; border-radius: 4px; border: 1px solid var(--border);";
+              "display: flex; gap: 8px; align-items: center; background: var(--bg-secondary); padding: 8px; border-radius: 4px; border: 1px solid var(--border); transition: opacity 150ms, border-color 150ms, transform 150ms;";
 
             row.innerHTML = `
-            <div style="cursor: grab; color: var(--text-muted);">☰</div>
+            <div class="drag-handle" style="cursor: grab; color: var(--text-muted); padding: 2px 4px; user-select: none;">☰</div>
             <input type="checkbox" class="sidebar-visible-cb" data-key="${key}" ${isVisible ? "checked" : ""} />
             <span style="min-width: 100px; font-weight: 500;">${SIDEBAR_LABELS[key] || key}</span>
             <input type="text" class="form-input sidebar-label-input" data-key="${key}" value="${labelStr}" placeholder="Custom Label" style="flex: 1;" />
           `;
+
+            // Drag events
+            row.addEventListener("dragstart", (e) => {
+              dragSrcIndex = index;
+              row.style.opacity = "0.4";
+              e.dataTransfer!.effectAllowed = "move";
+              e.dataTransfer!.setData("text/plain", String(index));
+            });
+
+            row.addEventListener("dragend", () => {
+              row.style.opacity = "1";
+              // Clean up any lingering drag-over styles
+              list.querySelectorAll(".sidebar-config-row").forEach((r) => {
+                (r as HTMLElement).style.borderColor = "var(--border)";
+                (r as HTMLElement).style.transform = "";
+              });
+            });
+
+            row.addEventListener("dragover", (e) => {
+              e.preventDefault();
+              e.dataTransfer!.dropEffect = "move";
+            });
+
+            row.addEventListener("dragenter", (e) => {
+              e.preventDefault();
+              row.style.borderColor = "var(--accent)";
+            });
+
+            row.addEventListener("dragleave", () => {
+              row.style.borderColor = "var(--border)";
+            });
+
+            row.addEventListener("drop", (e) => {
+              e.preventDefault();
+              e.stopPropagation();
+              const targetIndex = index;
+              if (dragSrcIndex !== null && dragSrcIndex !== targetIndex) {
+                // Swap items in the order array
+                const movedItem = orderItems.splice(dragSrcIndex, 1)[0];
+                orderItems.splice(targetIndex, 0, movedItem);
+                renderSidebarList();
+              }
+              row.style.borderColor = "var(--border)";
+            });
+
             list.appendChild(row);
           });
 
