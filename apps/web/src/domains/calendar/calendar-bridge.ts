@@ -69,6 +69,8 @@ export function startCalendarSync(config: CalendarSyncConfig): void {
 
 /**
  * Sync events FROM HA calendar TO Meitheal.
+ * Merges calendar events into the tasks table with deduplication
+ * via the calendar_confirmations table (keyed by provider_event_id).
  */
 async function syncFromHA(): Promise<void> {
   if (!syncConfig) return;
@@ -79,14 +81,95 @@ async function syncFromHA(): Promise<void> {
 
   const events = await listCalendarEvents(syncConfig.entityId, start, end);
 
-  logger.log("info", {
-    event: "calendar.sync.from_ha", domain: "calendar", component: "calendar-bridge",
-    request_id: SYS_REQ, message: `Synced ${events.length} events from HA calendar`,
-    metadata: { entity_id: syncConfig.entityId, event_count: events.length },
-  });
+  if (events.length === 0) {
+    logger.log("debug", {
+      event: "calendar.sync.from_ha", domain: "calendar", component: "calendar-bridge",
+      request_id: SYS_REQ, message: "No events to sync from HA calendar",
+    });
+    return;
+  }
 
-  // TODO: merge events into SQLite task store
-  // For now, events are available via the /api/ha/calendars endpoint
+  try {
+    const { ensureSchema, getPersistenceClient } = await import("@domains/tasks/persistence/store");
+    await ensureSchema();
+    const client = getPersistenceClient();
+
+    let created = 0;
+    let updated = 0;
+    let skipped = 0;
+
+    for (const evt of events) {
+      const uid = evt.uid ?? `ha-cal-${syncConfig.entityId}-${evt.summary}-${evt.start}`;
+
+      // Check if we already have a confirmation for this event
+      const existing = await client.execute({
+        sql: "SELECT task_id FROM calendar_confirmations WHERE provider_event_id = ?",
+        args: [uid],
+      });
+
+      if (existing.rows.length > 0) {
+        // Update existing task's due_date if changed
+        const taskId = existing.rows[0]!.task_id as string;
+        await client.execute({
+          sql: "UPDATE tasks SET due_date = ?, description = COALESCE(?, description), updated_at = ? WHERE id = ?",
+          args: [evt.start, evt.description ?? null, Date.now(), taskId],
+        });
+        updated++;
+      } else {
+        // Create new task from calendar event
+        const taskId = crypto.randomUUID();
+        const reqId = crypto.randomUUID();
+        const nowMs = Date.now();
+
+        await client.execute({
+          sql: `INSERT INTO tasks (id, title, description, status, priority, due_date,
+                  labels, framework_payload, calendar_sync_state, board_id,
+                  custom_fields, task_type, idempotency_key, request_id,
+                  created_at, updated_at)
+                VALUES (?, ?, ?, 'todo', 3, ?, '[]', '{}', 'synced', 'default',
+                  '{}', 'task', ?, ?, ?, ?)`,
+          args: [
+            taskId,
+            evt.summary,
+            evt.description ?? "",
+            evt.start,
+            `cal-sync-${uid}`,
+            reqId,
+            nowMs,
+            nowMs,
+          ],
+        });
+
+        // Record confirmation for deduplication
+        await client.execute({
+          sql: `INSERT INTO calendar_confirmations (confirmation_id, task_id, request_id, provider_event_id,
+                  source, payload, created_at) VALUES (?, ?, ?, ?, 'ha.calendar_sync', ?, ?)`,
+          args: [
+            crypto.randomUUID(),
+            taskId,
+            reqId,
+            uid,
+            JSON.stringify({ summary: evt.summary, start: evt.start, end: evt.end }),
+            nowMs,
+          ],
+        });
+
+        created++;
+      }
+    }
+
+    logger.log("info", {
+      event: "calendar.sync.from_ha", domain: "calendar", component: "calendar-bridge",
+      request_id: SYS_REQ,
+      message: `Calendar sync complete: ${created} created, ${updated} updated, ${skipped} skipped from ${events.length} events`,
+      metadata: { entity_id: syncConfig.entityId, event_count: events.length, created, updated, skipped },
+    });
+  } catch (err) {
+    logger.log("error", {
+      event: "calendar.sync.merge_failed", domain: "calendar", component: "calendar-bridge",
+      request_id: SYS_REQ, message: `Failed to merge calendar events: ${err}`,
+    });
+  }
 }
 
 /**
