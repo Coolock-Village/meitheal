@@ -1358,6 +1358,37 @@ Astro.response.headers.set("X-Content-Type-Options", "nosniff");
                 linkParentDisplay
                   .querySelector(".td-unlink-parent")
                   ?.addEventListener("click", async () => {
+                    if (
+                      await confirmDialog(
+                        t.title
+                          ? `Unlink parent from "${t.title}"?`
+                          : "Unlink parent?",
+                        "Unlink",
+                      )
+                    ) {
+                      await fetch(`/api/tasks/${currentTaskId}`, {
+                        method: "PATCH",
+                        headers: { "Content-Type": "application/json" },
+                        body: JSON.stringify({ parent_id: null }),
+                      });
+                      openTaskDetail(String(currentTaskId));
+                    }
+                  });
+              } else {
+                linkParentDisplay.innerHTML =
+                  '<span class="text-xs text-text-muted italic">None</span>';
+              }
+            }
+
+          // --- Offline Attachments - Document Preview & Kanban Card Cover (Phase 23) ---
+          (async function renderThumbnails() {
+                  ?.addEventListener("click", (e) => {
+                    e.preventDefault();
+                    openTaskDetail(String(t.parent_id));
+                  });
+                linkParentDisplay
+                  .querySelector(".td-unlink-parent")
+                  ?.addEventListener("click", async () => {
                     await saveTD("parent_id", null);
                     linkParentDisplay.innerHTML = `<span class="text-xs text-text-muted italic">None</span>`;
                   });

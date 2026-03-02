@@ -1381,8 +1381,9 @@ const typeConfig: Record<
     (async function renderThumbnails() {
       if (!window.indexedDB) return;
       try {
-        const { getAttachmentsByTaskId } =
-          await import("../domains/offline/offline-store");
+        const { getAttachmentsByTaskId } = await import(
+          "/src/domains/offline/offline-store.ts" /* @vite-ignore */
+        );
         document
           .querySelectorAll("img.kanban-attachment")
           .forEach(async (img) => {

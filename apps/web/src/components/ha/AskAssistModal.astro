@@ -121,7 +121,8 @@ const locale: Locale = cookieLocale === "ga" ? "ga" : "en";
 
     // Basic focus trap within the modal overlay
     if (e.key === "Tab") {
-      const focusable = overlay?.querySelectorAll(
+      if (!overlay) return;
+      const focusable = overlay.querySelectorAll(
         'button, [href], input, select, textarea, [tabindex]:not([tabindex="-1"])',
       ) as NodeListOf<HTMLElement>;
       if (!focusable || focusable.length === 0) return;

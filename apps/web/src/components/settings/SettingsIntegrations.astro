@@ -1,0 +1,288 @@
+---
+import { t } from "../../i18n/translations";
+import type { Locale } from "../../lib/locale";
+
+interface Props {
+  locale: Locale;
+}
+const { locale } = Astro.props;
+---
+
+<div id="tab-integrations" class="tab-pane" style="display: none;">
+  <div class="settings-grid">
+    <!-- Integrations — Comprehensive Configuration -->
+    <div class="card" style="grid-column: 1 / -1;">
+      <div class="card-header">
+        <div>
+          <div class="card-title">
+            {t("settings.integrations_title", locale)}
+          </div>
+          <div class="card-subtitle">
+            {t("settings.integrations_subtitle", locale)}
+          </div>
+        </div>
+      </div>
+
+      <!-- Calendar Sync -->
+      <div class="integration-section">
+        <div class="integration-header">
+          <div>
+            <strong>📅 Calendar Sync</strong>
+            <div class="integration-desc">
+              Sync tasks with due dates to your Home Assistant or CalDAV
+              calendar. Tasks appear as events with priority color coding.
+            </div>
+          </div>
+          <span class="badge badge-active" id="cal-status">Connected</span>
+        </div>
+        <div class="integration-config">
+          <div class="form-group">
+            <label class="form-label" for="cal-entity">Calendar Entity</label>
+            <input
+              type="text"
+              class="form-input"
+              id="cal-entity"
+              placeholder="calendar.meitheal_tasks"
+            />
+            <small style="color: var(--text-muted); font-size: 11px;"
+              >The HA calendar entity to sync tasks to. Find it in HA →
+              Developer Tools → States → search "calendar."</small
+            >
+          </div>
+          <div class="form-group">
+            <label class="form-label" for="caldav-url"
+              >CalDAV URL (optional)</label
+            >
+            <input
+              type="url"
+              class="form-input"
+              id="caldav-url"
+              placeholder="https://your-server.com/dav/calendars/"
+            />
+            <small style="color: var(--text-muted); font-size: 11px;"
+              >For direct CalDAV sync (Nextcloud, Radicale, etc). Leave blank
+              to use HA calendar only.</small
+            >
+          </div>
+          <div style="display: flex; gap: 8px; align-items: center;">
+            <button
+              type="button"
+              class="btn btn-primary"
+              id="save-cal"
+              style="font-size: 13px;">Save Calendar Settings</button
+            >
+            <button
+              type="button"
+              class="btn btn-ghost"
+              id="test-cal"
+              style="font-size: 13px;">Test Sync</button
+            >
+          </div>
+        </div>
+      </div>
+
+      <!-- Grocy -->
+      <div class="integration-section">
+        <div class="integration-header">
+          <div>
+            <strong>🛒 Grocy</strong>
+            <div class="integration-desc">
+              Connect to Grocy for household inventory and chore management.
+              Meitheal can import Grocy tasks and expose its own tasks back.
+            </div>
+          </div>
+          <span class="badge badge-pending" id="grocy-status"
+            >Not configured</span
+          >
+        </div>
+        <div class="integration-config">
+          <div class="form-group">
+            <label class="form-label" for="grocy-url">Grocy URL</label>
+            <input
+              type="url"
+              class="form-input"
+              id="grocy-url"
+              placeholder="http://homeassistant.local:9192"
+            />
+            <small style="color: var(--text-muted); font-size: 11px;"
+              >The URL of your Grocy instance. Often runs as a HA add-on on
+              port 9192.</small
+            >
+          </div>
+          <div class="form-group">
+            <label class="form-label" for="grocy-key">API Key</label>
+            <input
+              type="password"
+              class="form-input"
+              id="grocy-key"
+              placeholder="••••••••"
+            />
+            <small style="color: var(--text-muted); font-size: 11px;"
+              >Generate in Grocy → Settings → API Keys → Add.</small
+            >
+          </div>
+          <div class="form-group">
+            <label class="form-label" for="grocy-sync-mode">Sync Mode</label>
+            <select class="form-select" id="grocy-sync-mode">
+              <option value="import">Import Grocy → Meitheal</option>
+              <option value="export">Export Meitheal → Grocy</option>
+              <option value="bidirectional">Bidirectional sync</option>
+            </select>
+          </div>
+          <button
+            type="button"
+            class="btn btn-primary"
+            id="save-grocy"
+            style="font-size: 13px;">Save Grocy Settings</button
+          >
+        </div>
+      </div>
+
+      <!-- n8n / Node-RED -->
+      <div class="integration-section">
+        <div class="integration-header">
+          <div>
+            <strong>⚙ n8n / Node-RED</strong>
+            <div class="integration-desc">
+              Trigger automation workflows when tasks are created, updated, or
+              completed. Create complex pipelines that react to task events.
+            </div>
+          </div>
+          <span class="badge badge-pending" id="n8n-status"
+            >Not configured</span
+          >
+        </div>
+        <div class="integration-config">
+          <div class="form-group">
+            <label class="form-label" for="n8n-webhook-url">Webhook URL</label>
+            <input
+              type="url"
+              class="form-input"
+              id="n8n-webhook-url"
+              placeholder="https://n8n.example.com/webhook/meitheal"
+            />
+            <small style="color: var(--text-muted); font-size: 11px;"
+              >The webhook URL from your n8n/Node-RED flow. Meitheal will POST
+              task events here.</small
+            >
+          </div>
+          <div class="form-group">
+            <label class="form-label">Trigger Events</label>
+            <div style="display: flex; gap: 12px; flex-wrap: wrap;">
+              <label
+                style="font-size: 13px; display: flex; gap: 4px; align-items: center;"
+              >
+                <input
+                  type="checkbox"
+                  class="n8n-event"
+                  value="task.created"
+                  checked
+                /> Created
+              </label>
+              <label
+                style="font-size: 13px; display: flex; gap: 4px; align-items: center;"
+              >
+                <input
+                  type="checkbox"
+                  class="n8n-event"
+                  value="task.updated"
+                  checked
+                /> Updated
+              </label>
+              <label
+                style="font-size: 13px; display: flex; gap: 4px; align-items: center;"
+              >
+                <input
+                  type="checkbox"
+                  class="n8n-event"
+                  value="task.completed"
+                  checked
+                /> Completed
+              </label>
+              <label
+                style="font-size: 13px; display: flex; gap: 4px; align-items: center;"
+              >
+                <input
+                  type="checkbox"
+                  class="n8n-event"
+                  value="task.deleted"
+                /> Deleted
+              </label>
+            </div>
+          </div>
+          <button
+            type="button"
+            class="btn btn-primary"
+            id="save-n8n"
+            style="font-size: 13px;">Save n8n Settings</button
+          >
+        </div>
+      </div>
+
+      <!-- Webhooks -->
+      <div class="integration-section">
+        <div class="integration-header">
+          <div>
+            <strong>🔔 Webhooks</strong>
+            <div class="integration-desc">
+              Generic outgoing webhooks for any service. Each event sends a
+              JSON payload with the full task object and event type.
+            </div>
+          </div>
+          <span class="badge badge-active" id="webhook-status">Active</span>
+        </div>
+        <div class="integration-config">
+          <div class="form-group">
+            <label class="form-label" for="webhook-endpoint"
+              >Endpoint URL</label
+            >
+            <input
+              type="url"
+              class="form-input"
+              id="webhook-endpoint"
+              placeholder="https://your-service.com/webhook"
+            />
+          </div>
+          <div class="form-group">
+            <label class="form-label" for="webhook-secret"
+              >Signing Secret (optional)</label
+            >
+            <input
+              type="password"
+              class="form-input"
+              id="webhook-secret"
+              placeholder="••••••••"
+            />
+            <small style="color: var(--text-muted); font-size: 11px;"
+              >HMAC-SHA256 secret used to sign webhook payloads. Verify with
+              the X-Webhook-Signature header.</small
+            >
+          </div>
+          <div class="form-group">
+            <label class="form-label">Payload Format</label>
+            <select class="form-select" id="webhook-format">
+              <option value="json" selected>JSON</option>
+              <option value="form">Form-encoded</option>
+            </select>
+          </div>
+          <div style="display: flex; gap: 8px;">
+            <button
+              type="button"
+              class="btn btn-primary"
+              id="save-webhook"
+              style="font-size: 13px;">Save Webhook</button
+            >
+            <button
+              type="button"
+              class="btn btn-ghost"
+              id="test-webhook"
+              style="font-size: 13px;">Send Test</button
+            >
+          </div>
+        </div>
+      </div>
+    </div>
+    <!-- /card -->
+  </div>
+  <!-- /settings-grid (integrations) -->
+</div>

@@ -396,8 +396,8 @@ const typeIcons: Record<string, string> = {
         body: JSON.stringify({ title: text }),
       });
       if (res.ok) {
-        quickInput.value = "";
-        quickFeedback.style.display = "none";
+        if (quickInput) quickInput.value = "";
+        if (quickFeedback) quickFeedback.style.display = "none";
         window.location.reload();
       }
     } catch {

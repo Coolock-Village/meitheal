@@ -1,0 +1,185 @@
+---
+import { t } from "../../i18n/translations";
+import type { Locale } from "../../lib/locale";
+
+interface Props {
+  locale: Locale;
+}
+const { locale } = Astro.props;
+---
+
+<div id="tab-agents" class="tab-pane" style="display: none;">
+  <div class="settings-grid">
+    <div class="card" style="grid-column: 1 / -1;">
+      <div class="card-header">
+        <div>
+          <div class="card-title">Agents & AI</div>
+          <div class="card-subtitle">
+            Configure AI providers and agent-to-agent protocols mapping.
+          </div>
+        </div>
+      </div>
+
+      <!-- AI Provider -->
+      <div class="integration-section">
+        <div class="integration-header">
+          <div>
+            <strong>🤖 AI Provider</strong>
+            <div class="integration-desc">
+              Configure which AI service the "Ask AI" button sends tasks to.
+              Generates a pre-filled prompt with task context for analysis.
+            </div>
+          </div>
+          <span class="badge badge-active">ChatGPT</span>
+        </div>
+        <div class="integration-config">
+          <div class="form-group">
+            <label class="form-label" for="ai-provider">Provider</label>
+            <select class="form-select" id="ai-provider">
+              <option value="chatgpt" selected>ChatGPT</option>
+              <option value="claude">Claude</option>
+              <option value="gemini">Google Gemini</option>
+              <option value="ollama">Ollama (local)</option>
+              <option value="custom">Custom URL</option>
+            </select>
+          </div>
+          <div
+            class="form-group"
+            id="ai-custom-url-group"
+            style="display: none;"
+          >
+            <label class="form-label" for="ai-custom-url"
+              >Custom API URL</label
+            >
+            <input
+              type="url"
+              class="form-input"
+              id="ai-custom-url"
+              placeholder="http://localhost:11434/api/chat"
+            />
+          </div>
+          <button
+            type="button"
+            class="btn btn-primary"
+            id="save-ai"
+            style="font-size: 13px;">Save AI Settings</button
+          >
+        </div>
+      </div>
+
+      <!-- Agent Protocols -->
+      <div class="integration-section">
+        <div class="integration-header">
+          <div>
+            <strong>🔗 Agent Protocols</strong>
+            <div class="integration-desc">
+              Expose Meitheal tools to AI agents via A2A, WebMCP, and MCP
+              protocols. Enable agent-to-agent collaboration, browser agent
+              tools, and tool discovery.
+            </div>
+          </div>
+          <span class="badge badge-active" id="agent-protocols-status"
+            >Active</span
+          >
+        </div>
+        <div class="integration-config">
+          <!-- A2A -->
+          <div
+            class="form-group"
+            style="padding-bottom: 16px; border-bottom: 1px solid var(--border);"
+          >
+            <div
+              style="display: flex; align-items: center; gap: 12px; margin-bottom: 8px;"
+            >
+              <label class="toggle-label">
+                <input type="checkbox" id="agent-a2a-enabled" checked />
+                <span class="toggle-slider"></span>
+              </label>
+              <div>
+                <strong style="font-size: 14px;">A2A (Agent-to-Agent)</strong>
+                <div
+                  style="color: var(--text-muted); font-size: 12px; margin-top: 2px;"
+                >
+                  Serve an Agent Card at <code
+                    >/.well-known/agent-card.json</code
+                  > so other AI agents can discover and delegate tasks to Meitheal.
+                  <a
+                    href="/api/a2a/agent-card"
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    style="color: var(--accent);">View Agent Card →</a
+                  >
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- WebMCP -->
+          <div
+            class="form-group"
+            style="padding-top: 16px; padding-bottom: 16px; border-bottom: 1px solid var(--border);"
+          >
+            <div
+              style="display: flex; align-items: center; gap: 12px; margin-bottom: 8px;"
+            >
+              <label class="toggle-label">
+                <input type="checkbox" id="agent-webmcp-enabled" />
+                <span class="toggle-slider"></span>
+              </label>
+              <div>
+                <strong style="font-size: 14px;"
+                  >WebMCP (Browser Agent)</strong
+                >
+                <span
+                  style="font-size: 10px; padding: 2px 6px; background: var(--accent); color: #fff; border-radius: 4px; margin-left: 6px; vertical-align: middle;"
+                  >Experimental</span
+                >
+                <div
+                  style="color: var(--text-muted); font-size: 12px; margin-top: 2px;"
+                >
+                  Register Meitheal tools with your browser's AI assistant
+                  (Chrome EPP). Allows browser agents to create tasks, search,
+                  and navigate boards.
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- MCP Discovery -->
+          <div class="form-group" style="padding-top: 16px;">
+            <div
+              style="display: flex; align-items: center; gap: 12px; margin-bottom: 8px;"
+            >
+              <label class="toggle-label">
+                <input type="checkbox" id="agent-mcp-enabled" checked />
+                <span class="toggle-slider"></span>
+              </label>
+              <div>
+                <strong style="font-size: 14px;">MCP Discovery</strong>
+                <div
+                  style="color: var(--text-muted); font-size: 12px; margin-top: 2px;"
+                >
+                  Serve tool definitions at <code>/.well-known/mcp.json</code> for
+                  MCP-compatible clients.
+                  <a
+                    href="/.well-known/mcp.json"
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    style="color: var(--accent);">View MCP manifest →</a
+                  >
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <button
+            class="btn btn-primary"
+            id="save-agent-protocols"
+            style="font-size: 13px;">Save Agent Protocol Settings</button
+          >
+        </div>
+      </div>
+    </div>
+  </div>
+  <!-- /settings-grid (agents) -->
+</div>

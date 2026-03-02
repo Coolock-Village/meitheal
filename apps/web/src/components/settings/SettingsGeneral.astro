@@ -1,0 +1,242 @@
+---
+import { t } from "../../i18n/translations";
+import type { Locale } from "../../lib/locale";
+
+interface Props {
+  locale: Locale;
+}
+const { locale } = Astro.props;
+---
+
+<div id="tab-general" class="tab-pane active" style="display: block;">
+  <div class="settings-grid">
+    <!-- HA Connection -->
+    <div class="card">
+      <div class="card-header">
+        <div>
+          <div class="card-title">{t("settings.ha_title", locale)}</div>
+          <div class="card-subtitle">{t("settings.ha_subtitle", locale)}</div>
+        </div>
+      </div>
+      <form id="ha-form">
+        <div class="form-group">
+          <label class="form-label" for="ha-url">HA URL</label>
+          <input
+            type="url"
+            class="form-input"
+            id="ha-url"
+            placeholder="http://homeassistant.local:8123"
+            pattern="https?://.*"
+            required
+          />
+        </div>
+        <div class="form-group">
+          <label class="form-label" for="ha-token"
+            >Long-Lived Access Token</label
+          >
+          <input
+            type="password"
+            class="form-input"
+            id="ha-token"
+            placeholder="••••••••"
+          />
+          <small style="color: var(--text-muted); font-size: 12px;">
+            Generate in HA → Profile → Long-Lived Access Tokens
+          </small>
+        </div>
+        <div class="form-group">
+          <label class="form-label" for="calendar-entity"
+            >Calendar Entity</label
+          >
+          <input
+            type="text"
+            class="form-input"
+            id="calendar-entity"
+            placeholder="calendar.meitheal_tasks"
+          />
+        </div>
+        <div style="display: flex; gap: 8px;">
+          <button type="button" class="btn btn-ghost" id="test-connection"
+            >Test Connection</button
+          >
+          <button type="submit" class="btn btn-primary" id="save-ha"
+            >💾 Save</button
+          >
+        </div>
+        <div id="ha-status" style="margin-top: 12px;"></div>
+      </form>
+    </div>
+
+    <!-- Sidebar Config -->
+    <div class="card">
+      <div class="card-header">
+        <div>
+          <div class="card-title">Sidebar Configuration</div>
+          <div class="card-subtitle">
+            Configure visibility, order, and custom labels for navigation
+            items.
+          </div>
+        </div>
+      </div>
+      <div style="padding: 16px;">
+        <div
+          id="sidebar-item-list"
+          style="display: flex; flex-direction: column; gap: 8px;"
+        >
+          <!-- Populated by JS -->
+        </div>
+        <div
+          style="margin-top: 16px; border-top: 1px solid var(--border); padding-top: 16px;"
+        >
+          <div style="margin-bottom: 8px; font-weight: 500;">
+            Custom Links
+          </div>
+          <div
+            id="custom-links-list"
+            style="display: flex; flex-direction: column; gap: 8px; margin-bottom: 12px;"
+          >
+          </div>
+          <button type="button" class="btn btn-ghost" id="add-custom-link-btn"
+            >+ Add Custom Link</button
+          >
+        </div>
+        <div style="display: flex; gap: 8px; margin-top: 16px;">
+          <button
+            type="button"
+            class="btn btn-primary"
+            id="save-sidebar"
+            style="font-size: 13px;">Save Sidebar Config</button
+          >
+          <button
+            type="button"
+            class="btn btn-ghost"
+            id="reset-sidebar"
+            style="font-size: 13px;">Reset to Default</button
+          >
+        </div>
+      </div>
+    </div>
+
+    <!-- Custom Fields -->
+    <div class="card">
+      <div class="card-header">
+        <div>
+          <div class="card-title">
+            {t("settings.custom_fields_title", locale)}
+          </div>
+          <div class="card-subtitle">
+            {t("settings.custom_fields_subtitle", locale)}
+          </div>
+        </div>
+        <button type="button" class="btn btn-ghost" id="add-custom-field"
+          >+ Add Field</button
+        >
+      </div>
+      <div id="custom-fields-list">
+        <div class="custom-field-row">
+          <input
+            type="text"
+            class="form-input"
+            placeholder="Field name"
+            value="sprint"
+            disabled
+          />
+          <select class="form-select" disabled>
+            <option value="text" selected>Text</option>
+            <option value="number">Number</option>
+            <option value="select">Select</option>
+            <option value="date">Date</option>
+            <option value="checkbox">Checkbox</option>
+          </select>
+          <span style="color: var(--text-muted); font-size: 12px;"
+            >Built-in</span
+          >
+        </div>
+        <div class="custom-field-row">
+          <input
+            type="text"
+            class="form-input"
+            placeholder="Field name"
+            value="story_points"
+            disabled
+          />
+          <select class="form-select" disabled>
+            <option value="number" selected>Number</option>
+          </select>
+          <span style="color: var(--text-muted); font-size: 12px;"
+            >Built-in</span
+          >
+        </div>
+      </div>
+    </div>
+
+    <!-- Strategic Lenses — Contextual Mapping -->
+    <div class="card">
+      <div class="card-header">
+        <div>
+          <div class="card-title">Strategic Lenses</div>
+          <div class="card-subtitle">
+            Map evaluation frameworks contextually by Task Type.
+          </div>
+        </div>
+      </div>
+      <div class="flex flex-col gap-3 mt-4">
+        <div class="flex items-center justify-between p-3 border border-border rounded-md bg-bg-secondary">
+          <div>
+            <strong class="block text-sm">🎯 Epic</strong>
+            <span class="text-xs text-text-muted">High-level initiatives</span>
+          </div>
+          <select class="form-select framework-mapping-select h-32" data-task-type="epic" multiple>
+            <option value="ddd">DDD (Domain-Driven Design)</option>
+            <option value="rice">RICE (Priority Math)</option>
+            <option value="drice">DRICE (Deps + RICE)</option>
+            <option value="heart">HEART (UX Matrix)</option>
+            <option value="kcs">KCS (Knowledge Workflow)</option>
+          </select>
+        </div>
+
+        <div class="flex items-center justify-between p-3 border border-border rounded-md bg-bg-secondary">
+          <div>
+            <strong class="block text-sm">📖 Story</strong>
+            <span class="text-xs text-text-muted">User-facing features</span>
+          </div>
+          <select class="form-select framework-mapping-select h-32" data-task-type="story" multiple>
+            <option value="rice">RICE (Priority Math)</option>
+            <option value="drice">DRICE (Deps + RICE)</option>
+            <option value="ddd">DDD (Domain-Driven Design)</option>
+            <option value="heart">HEART (UX Matrix)</option>
+            <option value="kcs">KCS (Knowledge Workflow)</option>
+          </select>
+        </div>
+
+        <div class="flex items-center justify-between p-3 border border-border rounded-md bg-bg-secondary">
+          <div>
+            <strong class="block text-sm">✅ Task</strong>
+            <span class="text-xs text-text-muted">Standard work items</span>
+          </div>
+          <select class="form-select framework-mapping-select h-32" data-task-type="task" multiple>
+            <option value="heart">HEART (UX Matrix)</option>
+            <option value="rice">RICE (Priority Math)</option>
+            <option value="drice">DRICE (Deps + RICE)</option>
+            <option value="ddd">DDD (Domain-Driven Design)</option>
+            <option value="kcs">KCS (Knowledge Workflow)</option>
+          </select>
+        </div>
+
+        <div class="flex items-center justify-between p-3 border border-border rounded-md bg-bg-secondary">
+          <div>
+            <strong class="block text-sm">📝 Documentation</strong>
+            <span class="text-xs text-text-muted">Knowledge articles</span>
+          </div>
+          <select class="form-select framework-mapping-select h-32" data-task-type="documentation" multiple>
+            <option value="kcs">KCS (Knowledge Workflow)</option>
+            <option value="heart">HEART (UX Matrix)</option>
+            <option value="rice">RICE (Priority Math)</option>
+            <option value="drice">DRICE (Deps + RICE)</option>
+            <option value="ddd">DDD (Domain-Driven Design)</option>
+          </select>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
