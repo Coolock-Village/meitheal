@@ -412,6 +412,21 @@ const locale: Locale = cookieLocale === "ga" ? "ga" : "en";
 
         let dragSrcIndex: number | null = null;
 
+        // Create a 1x1 transparent image for custom drag ghost
+        const dragGhost = document.createElement("canvas");
+        dragGhost.width = 1;
+        dragGhost.height = 1;
+
+        function clearDropIndicators(list: HTMLElement) {
+          list.querySelectorAll(".sidebar-config-row").forEach((r) => {
+            const el = r as HTMLElement;
+            el.style.borderTopColor = "var(--border)";
+            el.style.borderBottomColor = "var(--border)";
+            el.style.borderTopWidth = "1px";
+            el.style.borderBottomWidth = "1px";
+          });
+        }
+
         function renderSidebarList() {
           const list = document.getElementById("sidebar-item-list")!;
           list.innerHTML = "";
@@ -427,7 +442,7 @@ const locale: Locale = cookieLocale === "ga" ? "ga" : "en";
             row.draggable = true;
             row.dataset.index = String(index);
             row.style.cssText =
-              "display: flex; gap: 8px; align-items: center; background: var(--bg-secondary); padding: 8px; border-radius: 4px; border: 1px solid var(--border); transition: opacity 150ms, border-color 150ms, transform 150ms;";
+              "display: flex; gap: 8px; align-items: center; background: var(--bg-secondary); padding: 8px; border-radius: 4px; border: 1px solid var(--border); margin-bottom: 4px;";
 
             row.innerHTML = `
             <div class="drag-handle" style="cursor: grab; color: var(--text-muted); padding: 2px 4px; user-select: none;">☰</div>
@@ -439,45 +454,64 @@ const locale: Locale = cookieLocale === "ga" ? "ga" : "en";
             // Drag events
             row.addEventListener("dragstart", (e) => {
               dragSrcIndex = index;
-              row.style.opacity = "0.4";
+              row.style.opacity = "0.3";
+              row.style.background = "var(--bg-tertiary)";
               e.dataTransfer!.effectAllowed = "move";
               e.dataTransfer!.setData("text/plain", String(index));
+              // Use tiny transparent ghost — hides the browser's default clone
+              e.dataTransfer!.setDragImage(dragGhost, 0, 0);
             });
 
             row.addEventListener("dragend", () => {
               row.style.opacity = "1";
-              // Clean up any lingering drag-over styles
-              list.querySelectorAll(".sidebar-config-row").forEach((r) => {
-                (r as HTMLElement).style.borderColor = "var(--border)";
-                (r as HTMLElement).style.transform = "";
-              });
+              row.style.background = "var(--bg-secondary)";
+              clearDropIndicators(list);
             });
 
             row.addEventListener("dragover", (e) => {
               e.preventDefault();
               e.dataTransfer!.dropEffect = "move";
-            });
+              if (dragSrcIndex === null || dragSrcIndex === index) return;
 
-            row.addEventListener("dragenter", (e) => {
-              e.preventDefault();
-              row.style.borderColor = "var(--accent)";
+              // Show drop indicator: thick accent line on top or bottom edge
+              clearDropIndicators(list);
+              const rect = row.getBoundingClientRect();
+              const midY = rect.top + rect.height / 2;
+              if (e.clientY < midY) {
+                row.style.borderTopColor = "var(--accent)";
+                row.style.borderTopWidth = "3px";
+              } else {
+                row.style.borderBottomColor = "var(--accent)";
+                row.style.borderBottomWidth = "3px";
+              }
             });
 
             row.addEventListener("dragleave", () => {
-              row.style.borderColor = "var(--border)";
+              row.style.borderTopColor = "var(--border)";
+              row.style.borderBottomColor = "var(--border)";
+              row.style.borderTopWidth = "1px";
+              row.style.borderBottomWidth = "1px";
             });
 
             row.addEventListener("drop", (e) => {
               e.preventDefault();
               e.stopPropagation();
-              const targetIndex = index;
-              if (dragSrcIndex !== null && dragSrcIndex !== targetIndex) {
-                // Swap items in the order array
-                const movedItem = orderItems.splice(dragSrcIndex, 1)[0];
-                orderItems.splice(targetIndex, 0, movedItem);
-                renderSidebarList();
+              if (dragSrcIndex === null || dragSrcIndex === index) return;
+
+              // Determine if dropping above or below this item
+              const rect = row.getBoundingClientRect();
+              const midY = rect.top + rect.height / 2;
+              let targetIndex = index;
+              if (e.clientY >= midY && dragSrcIndex < index) {
+                targetIndex = index;
+              } else if (e.clientY < midY && dragSrcIndex > index) {
+                targetIndex = index;
               }
-              row.style.borderColor = "var(--border)";
+
+              const movedItem = orderItems.splice(dragSrcIndex, 1)[0];
+              orderItems.splice(targetIndex, 0, movedItem);
+              clearDropIndicators(list);
+              renderSidebarList();
             });
 
             list.appendChild(row);
