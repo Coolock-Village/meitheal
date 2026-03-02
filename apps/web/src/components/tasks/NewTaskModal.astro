@@ -84,8 +84,10 @@ const locale: Locale = cookieLocale === "ga" ? "ga" : "en";
         <button type="button" class="btn btn-ghost" id="cancel-new-task"
           >{t("tasks.cancel", locale)}</button
         >
-        <button type="submit" class="btn btn-primary shadow-lg shadow-accent/20"
-          >Create Task</button
+        <button
+          type="submit"
+          class="btn btn-primary shadow-lg shadow-accent/20"
+          id="submit-new-task-btn">Create Task</button
         >
       </div>
     </form>
@@ -93,6 +95,8 @@ const locale: Locale = cookieLocale === "ga" ? "ga" : "en";
 </div>
 
 <script>
+  import { showToast } from "../../lib/toast";
+
   // Handle smart task extraction mapping
   const nextWeekday = (day: number) => {
     const d = new Date();
@@ -149,73 +153,81 @@ const locale: Locale = cookieLocale === "ga" ? "ga" : "en";
     let title = titleInput.value.trim();
     if (!title) return;
 
-    const extractedLabels: string[] = [];
-    let extractedDue: string | null = null;
-
-    // Extract #tags
-    title = title
-      .replace(/#(\w+)/g, (_match, label) => {
-        extractedLabels.push(label);
-        return "";
-      })
-      .trim();
-
-    // Extract date semantics
-    const dateKeywords: Record<string, () => Date> = {
-      today: () => new Date(),
-      tomorrow: () => {
-        const d = new Date();
-        d.setDate(d.getDate() + 1);
-        return d;
-      },
-      "next week": () => {
-        const d = new Date();
-        d.setDate(d.getDate() + 7);
-        return d;
-      },
-      monday: () => nextWeekday(1),
-      tuesday: () => nextWeekday(2),
-      wednesday: () => nextWeekday(3),
-      thursday: () => nextWeekday(4),
-      friday: () => nextWeekday(5),
-    };
-
-    for (const [kw, getDate] of Object.entries(dateKeywords)) {
-      const regex = new RegExp(`\\b${kw}\\b`, "i");
-      if (regex.test(title)) {
-        extractedDue = getDate().toISOString().slice(0, 16);
-        title = title.replace(regex, "").trim();
-        break;
-      }
-    }
-
-    const manualLabels = (
-      document.getElementById("new-task-labels") as HTMLInputElement
-    ).value
-      .split(",")
-      .map((l) => l.trim())
-      .filter((l) => l.length > 0);
-
-    const allLabels = [...new Set([...manualLabels, ...extractedLabels])];
-    const finalTitle = title || titleInput.value.trim();
-
-    const body = {
-      title: finalTitle,
-      description: (
-        document.getElementById("new-task-desc-input") as HTMLTextAreaElement
-      ).value.trim(),
-      priority: parseInt(
-        (document.getElementById("new-task-priority") as HTMLSelectElement)
-          .value,
-        10,
-      ),
-      status: (document.getElementById("new-task-status") as HTMLSelectElement)
-        .value,
-      labels: JSON.stringify(allLabels),
-      due_date: extractedDue,
-    };
+    const submitBtn = document.getElementById(
+      "submit-new-task-btn",
+    ) as HTMLButtonElement;
+    const originalText = submitBtn.textContent || "Create Task";
+    submitBtn.disabled = true;
+    submitBtn.textContent = "Creating...";
 
     try {
+      const extractedLabels: string[] = [];
+      let extractedDue: string | null = null;
+
+      // Extract #tags
+      title = title
+        .replace(/#(\w+)/g, (_match, label) => {
+          extractedLabels.push(label);
+          return "";
+        })
+        .trim();
+
+      // Extract date semantics
+      const dateKeywords: Record<string, () => Date> = {
+        today: () => new Date(),
+        tomorrow: () => {
+          const d = new Date();
+          d.setDate(d.getDate() + 1);
+          return d;
+        },
+        "next week": () => {
+          const d = new Date();
+          d.setDate(d.getDate() + 7);
+          return d;
+        },
+        monday: () => nextWeekday(1),
+        tuesday: () => nextWeekday(2),
+        wednesday: () => nextWeekday(3),
+        thursday: () => nextWeekday(4),
+        friday: () => nextWeekday(5),
+      };
+
+      for (const [kw, getDate] of Object.entries(dateKeywords)) {
+        const regex = new RegExp(`\\b${kw}\\b`, "i");
+        if (regex.test(title)) {
+          extractedDue = getDate().toISOString().slice(0, 16);
+          title = title.replace(regex, "").trim();
+          break;
+        }
+      }
+
+      const manualLabels = (
+        document.getElementById("new-task-labels") as HTMLInputElement
+      ).value
+        .split(",")
+        .map((l) => l.trim())
+        .filter((l) => l.length > 0);
+
+      const allLabels = [...new Set([...manualLabels, ...extractedLabels])];
+      const finalTitle = title || titleInput.value.trim();
+
+      const body = {
+        title: finalTitle,
+        description: (
+          document.getElementById("new-task-desc-input") as HTMLTextAreaElement
+        ).value.trim(),
+        priority: parseInt(
+          (document.getElementById("new-task-priority") as HTMLSelectElement)
+            .value,
+          10,
+        ),
+        status: (
+          document.getElementById("new-task-status") as HTMLSelectElement
+        ).value,
+        labels: JSON.stringify(allLabels),
+        due_date: extractedDue,
+      };
+
       const res = await fetch("/api/tasks", {
         method: "POST",
         headers: { "content-type": "application/json" },
@@ -223,14 +235,18 @@ const locale: Locale = cookieLocale === "ga" ? "ga" : "en";
       });
 
       if (res.ok) {
+        showToast("Task created successfully", "success");
         closeNewTaskModal();
         window.location.reload();
       } else {
-        alert("Failed to create task");
+        showToast("Failed to create task", "error");
       }
     } catch (err) {
       console.error(err);
-      alert("Error creating task");
+      showToast("Network error creating task", "error");
+    } finally {
+      submitBtn.disabled = false;
+      submitBtn.textContent = originalText;
     }
   });
 </script>
