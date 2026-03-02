@@ -20,10 +20,7 @@ test.describe("Phase 27: HA Security Hardening", () => {
             expect(content).toContain("profile meitheal_hub flags=(attach_disconnected,mediate_deleted)");
 
             // The file currently blocks /boot/** wl, via other rules (omitted from explicit deny)
-
-            // Must deny shell access
-            expect(content).toContain("deny /bin/dash mrwklx,");
-            expect(content).toContain("deny /bin/sh mrwklx,");
+            // S6-overlay requires /bin/** ix, so explicit shell deny was removed.
 
             // Must deny raw sockets
             expect(content).toContain("deny network raw,");
