@@ -64,10 +64,10 @@ Local-first task orchestration with HA calendar sync and Vikunja compatibility.
 3. Run live Vikunja voice-assistant compatibility workflow. *(Requires deployed environment)*
 4. ~~Evaluate Phase 06 draft plans.~~ — Superseded by extension track.
 5. ~~Autonomous optimization sweeps.~~ — Complete: 0 TODO/FIXME/HACK, 0 errors, 0 warnings.
-6. Set `DOCKERHUB_USERNAME` and `DOCKERHUB_TOKEN` as GitHub repo secrets for CI publishing.
+6. ~~Set `DOCKERHUB_USERNAME` and `DOCKERHUB_TOKEN` as GitHub repo secrets for CI publishing.~~ — Done (`coolockvillage`).
 7. Push initial images to Docker Hub and test install on HA Green.
 
-> Items 2, 3, 6, and 7 require a live HA deployment to verify.
+> Item 7 requires triggering the `publish-addon-images` workflow and installing on HA Green.
 
 ## Codebase Health (as of v0.1.24)
 
