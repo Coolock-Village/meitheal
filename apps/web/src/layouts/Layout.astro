@@ -1354,12 +1354,12 @@ Astro.response.headers.set("X-Content-Type-Options", "nosniff");
                   .querySelector(".td-unlink-parent")
                   ?.addEventListener("click", async () => {
                     if (
-                      await confirmDialog(
-                        t.title
+                      await confirmDialog({
+                        message: t.title
                           ? `Unlink parent from "${t.title}"?`
                           : "Unlink parent?",
-                        "Unlink",
-                      )
+                        title: "Unlink",
+                      })
                     ) {
                       await fetch(`/api/tasks/${currentTaskId}`, {
                         method: "PATCH",
