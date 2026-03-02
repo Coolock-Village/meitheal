@@ -66,6 +66,7 @@ if [ -f /opt/meitheal/apps/web/package.json ]; then
     sleep 1
     if [ "${attempt}" -eq 15 ]; then
       echo "Meitheal startup healthcheck did not pass after ${attempt} attempts" >&2
+      exit 1
     fi
   done
 fi
