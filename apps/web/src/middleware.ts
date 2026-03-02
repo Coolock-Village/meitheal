@@ -196,7 +196,17 @@ export const onRequest: MiddlewareHandler = async ({ request, locals }, next) =>
   // Rewrite HTML paths when behind HA ingress
   if (ingressPath) {
     response = await rewriteIngressPaths(response, ingressPath);
+    // Echo ingress path as response header so client-side JS can read it
+    // without relying solely on window.__ingress_path injection.
+    response.headers.set("x-ingress-path", ingressPath);
   }
+
+  // Service-Worker-Allowed: let SW claim scope broader than its script path.
+  // Required for ingress: SW at /api/hassio_ingress/{token}/sw.js needs to
+  // control scope /api/hassio_ingress/{token}/. Without this header, browsers
+  // restrict SW scope to the script's directory.
+  response.headers.set("Service-Worker-Allowed", "/");
+
   // Inject security + observability headers on all responses
   for (const [key, value] of Object.entries(securityHeaders)) {
     response.headers.set(key, value);

@@ -150,7 +150,7 @@ Astro.response.headers.set("X-Content-Type-Options", "nosniff");
     <meta property="og:url" content={Astro.url.href} />
     <link
       rel="manifest"
-      href="/manifest.webmanifest"
+      href={`${Astro.locals.ingressPath ?? ""}/manifest.webmanifest`}
       crossorigin="use-credentials"
     />
     <link rel="apple-touch-icon" href="/icon-192.png" />
@@ -2874,13 +2874,31 @@ Astro.response.headers.set("X-Content-Type-Options", "nosniff");
 
         // ───── Service Worker Registration ─────
         if ("serviceWorker" in navigator) {
+          const ip = window.__ingress_path || "";
+          const swUrl = ip + "/sw.js";
+          const swScope = ip + "/";
           navigator.serviceWorker
-            .register("/sw.js", { scope: "/" })
+            .register(swUrl, { scope: swScope })
             .then((reg) => {
+              // Send ingress path to SW for precache URL prefixing
+              if (ip) {
+                const send = (sw: ServiceWorker | null) => {
+                  if (sw)
+                    sw.postMessage({ type: "SET_INGRESS_PATH", path: ip });
+                };
+                send(reg.active);
+                send(reg.installing);
+                send(reg.waiting);
+              }
               // Auto-update: when a new SW is waiting, tell it to activate
               reg.addEventListener("updatefound", () => {
                 const newWorker = reg.installing;
                 if (newWorker) {
+                  if (ip)
+                    newWorker.postMessage({
+                      type: "SET_INGRESS_PATH",
+                      path: ip,
+                    });
                   newWorker.addEventListener("statechange", () => {
                     if (
                       newWorker.state === "installed" &&

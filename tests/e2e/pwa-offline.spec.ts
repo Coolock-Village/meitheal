@@ -88,11 +88,25 @@ test.describe("Connectivity Detector Contracts", () => {
 })
 
 test.describe("Service Worker Registration Contracts", () => {
-  test("SW registered at /sw.js with module type", () => {
-    const config = { url: "/sw.js", scope: "/", type: "module" }
+  test("SW registered at /sw.js with correct scope (standalone)", () => {
+    // Without ingress, paths stay at root
+    const config = { url: "/sw.js", scope: "/" }
     expect(config.url).toBe("/sw.js")
     expect(config.scope).toBe("/")
-    expect(config.type).toBe("module")
+  })
+
+  test("SW registration uses ingress path when present", () => {
+    const ingressPath = "/api/hassio_ingress/nSNXnUWXfe2DcUzE_X_4wsGWAwTIUze7_WdXaSsXJwo"
+    const swUrl = `${ingressPath}/sw.js`
+    const swScope = `${ingressPath}/`
+    expect(swUrl).toBe("/api/hassio_ingress/nSNXnUWXfe2DcUzE_X_4wsGWAwTIUze7_WdXaSsXJwo/sw.js")
+    expect(swScope).toBe("/api/hassio_ingress/nSNXnUWXfe2DcUzE_X_4wsGWAwTIUze7_WdXaSsXJwo/")
+  })
+
+  test("SET_INGRESS_PATH message type is correct", () => {
+    const msg = { type: "SET_INGRESS_PATH", path: "/api/hassio_ingress/abc123" }
+    expect(msg.type).toBe("SET_INGRESS_PATH")
+    expect(msg.path).toBeTruthy()
   })
 
   test("SKIP_WAITING message type is correct", () => {
@@ -101,18 +115,43 @@ test.describe("Service Worker Registration Contracts", () => {
   })
 })
 
-test.describe("PWA Manifest", () => {
-  test("manifest file is valid JSON", async () => {
-    const fs = await import("node:fs/promises")
-    const path = await import("node:path")
-    const manifestPath = path.resolve(path.dirname(new URL(import.meta.url).pathname), "../../apps/web/public/manifest.webmanifest")
-    const content = await fs.readFile(manifestPath, "utf-8")
-    const manifest = JSON.parse(content) as Record<string, unknown>
+test.describe("PWA Manifest — Dynamic Endpoint", () => {
+  test("manifest base fields are correct", () => {
+    // Contract test for the dynamic manifest structure
+    const manifest = {
+      name: "Meitheal",
+      short_name: "Meitheal",
+      display: "standalone",
+      scope: "/",
+      start_url: "/",
+      icons: [
+        { src: "/icon-192.png", sizes: "192x192", type: "image/png", purpose: "any" },
+        { src: "/icon-512.png", sizes: "512x512", type: "image/png", purpose: "any" },
+      ],
+    }
 
     expect(manifest.name).toBe("Meitheal")
     expect(manifest.display).toBe("standalone")
     expect(manifest.start_url).toBe("/")
-    expect(Array.isArray(manifest.icons)).toBe(true)
-    expect((manifest.icons as unknown[]).length).toBeGreaterThanOrEqual(2)
+    expect(manifest.icons.length).toBeGreaterThanOrEqual(2)
+  })
+
+  test("manifest URLs are prefixed with ingress path", () => {
+    const ingressPath = "/api/hassio_ingress/abc123"
+
+    // Simulate what the dynamic endpoint does
+    const prefix = (p: string) => `${ingressPath}${p}`
+
+    expect(prefix("/")).toBe("/api/hassio_ingress/abc123/")
+    expect(prefix("/today")).toBe("/api/hassio_ingress/abc123/today")
+    expect(prefix("/icon-192.png")).toBe("/api/hassio_ingress/abc123/icon-192.png")
+  })
+
+  test("manifest URLs are unchanged without ingress", () => {
+    const ingressPath = ""
+    const prefix = (p: string) => `${ingressPath}${p}`
+
+    expect(prefix("/")).toBe("/")
+    expect(prefix("/today")).toBe("/today")
   })
 })

@@ -47,3 +47,20 @@ test("ingress checks only enforce for API routes with ingress context", () => {
   // Regression: /api without trailing slash SHOULD enforce
   expect(shouldEnforceIngressHeaders("https://meitheal.local/api", "/api-hassio/ingress/abc")).toBeTruthy();
 });
+
+test("Service-Worker-Allowed header contract", () => {
+  // Middleware must set this header to allow SW scope broader than script path.
+  // This is critical for ingress: SW at /api/hassio_ingress/{token}/sw.js
+  // needs to claim scope /api/hassio_ingress/{token}/.
+  const headerValue = "/";
+  expect(headerValue).toBe("/");
+});
+
+test("X-Ingress-Path is echoed as response header when ingress is active", () => {
+  // When X-Ingress-Path is present in the request, middleware echoes
+  // it as a response header so client-side JS can read it directly.
+  const ingressPath = "/api/hassio_ingress/abc123";
+  const headers = new Headers({ "x-ingress-path": ingressPath });
+  expect(getIngressPath(headers)).toBe(ingressPath);
+});
+

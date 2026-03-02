@@ -6,6 +6,12 @@
  * Background sync trigger for pending operations.
  * Push notification handler for task reminders.
  * skipWaiting requires client message (FR-308).
+ *
+ * Ingress-aware: When running behind HA Supervisor ingress, the
+ * registration script sends SET_INGRESS_PATH with the permanent
+ * ingress prefix. All precache and fetch routing respects this.
+ *
+ * @kcs Ingress token is permanent per-installation (HA issue #6605).
  */
 
 /**
@@ -19,10 +25,15 @@ const CACHE_VERSION = "0.1.24";
 const CACHE_NAME = `meitheal-v${CACHE_VERSION}`;
 const SYNC_TAG = "meitheal-background-sync";
 
+/**
+ * HA ingress path prefix, set via SET_INGRESS_PATH message
+ * from the registration script. Empty string when running standalone.
+ */
+let ingressPath = "";
+
 // Static assets to precache (app shell + key pages)
-// Astro's Vite build adds content hashes to JS/CSS filenames automatically.
-// These page URLs are cache-busted by CACHE_VERSION above.
-const PRECACHE_URLS = [
+// Paths are relative to root — ingressPath is prepended at install time.
+const PRECACHE_PATHS = [
   "/",
   "/offline",
   "/today",
@@ -35,11 +46,19 @@ const PRECACHE_URLS = [
   "/icon-192.png",
 ];
 
+/**
+ * Build full precache URLs by prepending ingressPath.
+ * When standalone (no ingress), ingressPath is "" so paths stay as-is.
+ */
+function getPrecacheUrls() {
+  return PRECACHE_PATHS.map((p) => `${ingressPath}${p}`);
+}
+
 // --- Install ---
 
 self.addEventListener("install", (event) => {
   event.waitUntil(
-    caches.open(CACHE_NAME).then((cache) => cache.addAll(PRECACHE_URLS))
+    caches.open(CACHE_NAME).then((cache) => cache.addAll(getPrecacheUrls()))
   );
 });
 
@@ -69,8 +88,14 @@ self.addEventListener("fetch", (event) => {
   // Ignore non-http/https requests (e.g. chrome-extension://)
   if (!url.protocol.startsWith("http")) return;
 
+  // Normalize pathname: strip ingress prefix for routing decisions.
+  // The actual fetch still uses the full URL including ingress path.
+  const routePath = ingressPath && url.pathname.startsWith(ingressPath)
+    ? url.pathname.slice(ingressPath.length) || "/"
+    : url.pathname;
+
   // API routes: network-first with cache fallback
-  if (url.pathname.startsWith("/api/")) {
+  if (routePath.startsWith("/api/")) {
     event.respondWith(networkFirst(event.request));
     return;
   }
@@ -131,7 +156,8 @@ async function navigationHandler(request) {
     const cached = await caches.match(request);
     if (cached) return cached;
 
-    const offlinePage = await caches.match("/offline");
+    // Offline fallback — try the ingress-prefixed offline page first
+    const offlinePage = await caches.match(`${ingressPath}/offline`);
     if (offlinePage) return offlinePage;
 
     return new Response("Offline", { status: 503 });
@@ -164,10 +190,10 @@ self.addEventListener("push", (event) => {
   event.waitUntil(
     self.registration.showNotification(data.title || "Meitheal", {
       body: data.body || "",
-      icon: "/icon-192.png",
-      badge: "/icon-192.png",
+      icon: `${ingressPath}/icon-192.png`,
+      badge: `${ingressPath}/icon-192.png`,
       tag: data.tag || "meitheal-push",
-      data: { url: data.url || "/" },
+      data: { url: `${ingressPath}${data.url || "/"}` },
       requireInteraction: data.requireInteraction || false,
     })
   );
@@ -177,7 +203,7 @@ self.addEventListener("push", (event) => {
 
 self.addEventListener("notificationclick", (event) => {
   event.notification.close();
-  const url = (event.notification.data && event.notification.data.url) || "/";
+  const url = (event.notification.data && event.notification.data.url) || `${ingressPath}/`;
 
   event.waitUntil(
     self.clients.matchAll({ type: "window" }).then((clients) => {
@@ -191,10 +217,17 @@ self.addEventListener("notificationclick", (event) => {
   );
 });
 
-// --- Message Handler (skipWaiting from client) ---
+// --- Message Handler ---
 
 self.addEventListener("message", (event) => {
   if (event.data && event.data.type === "SKIP_WAITING") {
     self.skipWaiting();
+  }
+
+  // Ingress path configuration — sent by sw-register.ts after registration.
+  // The path is permanent per-installation, so this only needs to happen once
+  // per SW lifecycle. Subsequent restarts reuse the value from the client.
+  if (event.data && event.data.type === "SET_INGRESS_PATH") {
+    ingressPath = event.data.path || "";
   }
 });

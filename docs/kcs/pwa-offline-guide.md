@@ -92,7 +92,28 @@ When the same task is edited on multiple devices:
 | Notification not showing | Check notification permissions in browser settings |
 | Theme not matching OS | Clear `meitheal-theme` from localStorage |
 
+## Home Assistant Ingress Compatibility
+
+When Meitheal runs as an HA add-on, all URLs are proxied through `/api/hassio_ingress/{token}/`. PWA scope validation, service worker registration, and manifest resolution all depend on stable URLs — and this works because:
+
+1. **Ingress token is permanent** — per-installation, survives restarts and addon updates (confirmed HA issue #6605)
+2. **`Service-Worker-Allowed: /`** — set by middleware, allows SW to claim scope broader than its script path
+3. **`X-Ingress-Path`** — available server-side as request header from Supervisor, echoed as response header by middleware
+4. **Dynamic manifest** — `/manifest.webmanifest` is an API route that prefixes `scope`, `start_url`, and icon/shortcut URLs with the ingress path
+5. **SW registration** — uses `window.__ingress_path` to construct `{ingressPath}/sw.js` URL and `{ingressPath}/` scope
+6. **SW precache** — receives `SET_INGRESS_PATH` message and prefixes all precache URLs accordingly
+
+**No ingress = standalone mode**: all paths stay at `/` (backward compatible).
+
+| Feature | Standalone | HA Ingress |
+|---------|-----------|------------|
+| SW URL | `/sw.js` | `/api/hassio_ingress/{token}/sw.js` |
+| SW Scope | `/` | `/api/hassio_ingress/{token}/` |
+| Manifest scope | `/` | `/api/hassio_ingress/{token}/` |
+| Install prompt | ✅ | ✅ |
+| Offline caching | ✅ | ✅ |
+
 ---
 
-*Last updated: 2026-03-01 — Phase 30 Web API Integration*
+*Last updated: 2026-03-02 — PWA Ingress-Aware Implementation*
 
