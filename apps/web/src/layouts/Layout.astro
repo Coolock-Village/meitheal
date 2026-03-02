@@ -115,14 +115,7 @@ Astro.response.headers.set("X-Content-Type-Options", "nosniff");
         };
       })();
     </script>
-    <!-- HA compact ingress mode: hide sidebar when inside HA panel (Phase 50) -->
-    <script is:inline>
-      (function () {
-        if (window.__ingress_path) {
-          document.body.classList.add("ha-ingress");
-        }
-      })();
-    </script>
+
     <!-- Theme init — runs before paint to prevent flash -->
     <script is:inline>
       (function () {
@@ -196,6 +189,14 @@ Astro.response.headers.set("X-Content-Type-Options", "nosniff");
     </script>
   </head>
   <body>
+    <!-- HA compact ingress mode: hide sidebar when inside HA panel (Phase 50) -->
+    <script is:inline>
+      (function () {
+        if (window.__ingress_path && document.body) {
+          document.body.classList.add("ha-ingress");
+        }
+      })();
+    </script>
     <a href="#main-content" class="skip-to-content"
       >{t("nav.skip_to_content", locale)}</a
     >

@@ -16,13 +16,23 @@ const logger = createLogger({
 
 const blockedHosts = new Set(["localhost", "127.0.0.1", "::1", "0.0.0.0"]);
 
+/**
+ * HA-aware private host detection.
+ * `.local` (mDNS) and `.home.arpa` (HA default domain) are ALLOWED
+ * because they are legitimate HA network targets.
+ * Only block actual dangerous loopback/metadata/link-local addresses.
+ */
 function isPrivateHost(hostname: string): boolean {
   if (blockedHosts.has(hostname)) {
     return true;
   }
 
+  // Allow .local (mDNS) and .home.arpa (HA default) — these are valid HA network targets
+  if (hostname.endsWith(".local") || hostname.endsWith(".home.arpa")) {
+    return false;
+  }
+
   return (
-    hostname.endsWith(".local") ||
     hostname.startsWith("10.") ||
     hostname.startsWith("192.168.") ||
     /^172\.(1[6-9]|2\d|3[0-1])\./.test(hostname)
