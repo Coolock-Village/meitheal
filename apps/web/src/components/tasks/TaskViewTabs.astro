@@ -29,15 +29,13 @@ const queryString = currentParams.toString()
     href={`/kanban${queryString}`}
     class={`view-tab ${activeView === "board" ? "active" : ""}`}
   >
-    <span class="mr-2">▦</span>
-    {t("tasks.kanban_board", locale)}
+    <span class="mr-2">▦</span> Kanban Board
   </a>
   <a
     href={`/table${queryString}`}
     class={`view-tab ${activeView === "table" ? "active" : ""}`}
   >
-    <span class="mr-2">⊞</span>
-    {t("tasks.table_view", locale)}
+    <span class="mr-2">⊞</span> Table View
   </a>
   <a
     href={`/calendar${queryString}`}
@@ -60,6 +58,13 @@ const queryString = currentParams.toString()
     border-bottom: 1px solid var(--border);
     margin-bottom: 24px;
     background: var(--bg-primary);
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+    white-space: nowrap;
+    scrollbar-width: none;
+  }
+  .task-view-tabs::-webkit-scrollbar {
+    display: none;
   }
   .view-tab {
     padding: 12px 4px;

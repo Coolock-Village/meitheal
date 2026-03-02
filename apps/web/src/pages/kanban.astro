@@ -1434,12 +1434,25 @@ const typeConfig: Record<
   }
   .kanban-column {
     background: var(--bg-secondary);
-    border: 1px solid var(--border);
-    border-radius: var(--radius-lg);
-    padding: 10px;
+    border-radius: var(--radius-md);
+    min-width: 320px;
+    max-width: 320px;
     display: flex;
     flex-direction: column;
-    transition: border-color 200ms;
+    max-height: 100%;
+    transition: background 200ms;
+  }
+  @media (max-width: 768px) {
+    .kanban-board {
+      flex-direction: column;
+      overflow-x: hidden;
+      overflow-y: auto;
+      height: auto;
+    }
+    .kanban-column {
+      min-width: 100%;
+      max-width: 100%;
+    }
   }
   .kanban-column.drag-over {
     border-color: var(--accent);

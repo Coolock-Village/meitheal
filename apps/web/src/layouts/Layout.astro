@@ -897,12 +897,7 @@ Astro.response.headers.set("X-Content-Type-Options", "nosniff");
           console.error("[Meitheal] Unhandled promise rejection:", e.reason);
         });
 
-        // Mobile menu toggle
-        document
-          .getElementById("menu-toggle")
-          ?.addEventListener("click", () => {
-            document.getElementById("sidebar")?.classList.toggle("open");
-          });
+        // Mobile menu toggle managed in TopNavigation.astro
 
         // Active nav link
         const currentPath = window.location.pathname;
