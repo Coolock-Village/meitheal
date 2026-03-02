@@ -33,11 +33,19 @@ export const GET: APIRoute = async () => {
  */
 export const POST: APIRoute = async ({ request }) => {
   try {
-    const body = await request.json() as {
+    let body: {
       action?: "sync" | "enable" | "disable";
       entity_id?: string;
       direction?: "inbound" | "outbound" | "bidirectional";
     };
+
+    try {
+      body = await request.json();
+    } catch {
+      return new Response(JSON.stringify({ ok: false, error: "Invalid JSON body" }), {
+        status: 400, headers: { "Content-Type": "application/json" },
+      });
+    }
 
     const action = body.action ?? "sync";
 
@@ -80,7 +88,7 @@ export const POST: APIRoute = async ({ request }) => {
       }
 
       default:
-        return new Response(JSON.stringify({ ok: false, error: `Unknown action: ${action}` }), {
+        return new Response(JSON.stringify({ ok: false, error: "Unknown action" }), {
           status: 400, headers: { "Content-Type": "application/json" },
         });
     }

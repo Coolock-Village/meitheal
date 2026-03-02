@@ -1,4 +1,4 @@
-import { formatDistanceToNow, formatDistanceToNowStrict } from "date-fns";
+import { formatDistanceToNow } from "date-fns";
 import { format as tzFormat, toZonedTime } from "date-fns-tz";
 
 export type DateFormat = "relative" | "absolute-iso" | "absolute-eu" | "absolute-us";

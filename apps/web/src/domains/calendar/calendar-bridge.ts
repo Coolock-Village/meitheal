@@ -8,7 +8,7 @@
  * @domain calendar
  * @bounded-context integration
  */
-import { onEntityChange, listCalendarEvents, createCalendarEvent, getCalendarEntities } from "../ha";
+import { onEntityChange, listCalendarEvents, createCalendarEvent } from "../ha";
 import { createLogger, defaultRedactionPatterns } from "@meitheal/domain-observability";
 
 const logger = createLogger({

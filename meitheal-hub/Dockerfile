@@ -18,7 +18,7 @@ COPY apps/web/package.json apps/web/package.json
 COPY packages/ packages/
 
 # Layer 2: Install all deps (cached when lockfile + manifests unchanged)
-RUN pnpm install --frozen-lockfile=false --ignore-scripts
+RUN pnpm install --frozen-lockfile --ignore-scripts
 
 # Layer 3: Source code (changes every build, but deps are already cached above)
 COPY apps/web/ apps/web/
@@ -55,7 +55,7 @@ COPY --from=builder /build/apps/web/drizzle/ apps/web/drizzle/
 COPY --from=builder /build/integrations/home-assistant/custom_components/ /opt/meitheal/custom_components/
 
 # Install production deps only
-RUN pnpm install --frozen-lockfile=false --ignore-scripts --prod \
+RUN pnpm install --frozen-lockfile --ignore-scripts --prod \
     && pnpm store prune
 
 # Copy entrypoints from builder (not from build context)

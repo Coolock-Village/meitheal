@@ -4,7 +4,7 @@ import { createServer, type IncomingMessage, type ServerResponse } from "node:ht
 import { type AddressInfo } from "node:net";
 import { expect, test } from "@playwright/test";
 import { eq } from "drizzle-orm";
-import { integrationAttempts, tasks } from "../../apps/web/drizzle/schema";
+import { tasks } from "../../apps/web/drizzle/schema";
 import { createVikunjaTask, resetVikunjaCompatForTests } from "../../apps/web/src/domains/integrations/vikunja-compat/store";
 import { ensureSchema, getDb, resetPersistenceForTests } from "../../apps/web/src/domains/tasks/persistence/store";
 

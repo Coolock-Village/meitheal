@@ -17,7 +17,6 @@ import {
   updateTodoItem,
   removeTodoItem,
   subscribeTodoItems,
-  getTodoEntities,
   type TodoItem,
 } from "../ha";
 import { createLogger, defaultRedactionPatterns } from "@meitheal/domain-observability";
