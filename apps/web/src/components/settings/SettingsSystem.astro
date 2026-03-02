@@ -363,3 +363,46 @@ const { locale } = Astro.props;
     </div>
   </div>
 </div>
+
+<style is:inline>
+  /* Keyboard Shortcuts — is:inline survives ViewTransitions DOM swaps */
+  .shortcut-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 0;
+  }
+  .shortcut-row {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 8px 12px;
+    border-bottom: 1px solid var(--border);
+    font-size: 13px;
+    color: var(--text-secondary);
+  }
+  .shortcut-row:nth-child(odd) {
+    background: rgba(255, 255, 255, 0.02);
+  }
+  .shortcut-row:last-child,
+  .shortcut-row:nth-last-child(2):nth-child(odd) {
+    border-bottom: none;
+  }
+  kbd {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    min-width: 28px;
+    height: 26px;
+    padding: 0 8px;
+    font-family: "JetBrains Mono", monospace;
+    font-size: 12px;
+    font-weight: 500;
+    color: var(--text-primary);
+    background: var(--bg-secondary);
+    border: 1px solid var(--border);
+    border-bottom-width: 2px;
+    border-radius: 6px;
+    box-shadow: 0 1px 0 rgba(0, 0, 0, 0.2);
+    white-space: nowrap;
+  }
+</style>
