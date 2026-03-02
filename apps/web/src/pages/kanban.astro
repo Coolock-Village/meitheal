@@ -255,8 +255,8 @@ const typeConfig: Record<
             role="region"
             aria-label={`${col.label} Swimlane`}
             ondrop="handleDrop(arguments[0])"
-            ondragover="arguments[0].preventDefault(); if(!this.classList.contains('drag-over')) { this.classList.add('drag-over'); const cards = this.querySelector('.kanban-cards') || this.querySelector('.swimlane-cards'); if(cards && !cards.querySelector('.drag-ghost') && !cards.querySelector('.kanban-empty')) { const ghost = document.createElement('div'); ghost.className = 'drag-ghost'; ghost.style.cssText = 'height:80px;border:2px dashed var(--accent);border-radius:6px;background:rgba(16,185,129,0.05);margin-bottom:8px;transition:all 0.2s'; cards.appendChild(ghost); } }"
-            ondragleave="this.classList.remove('drag-over'); const ghost = this.querySelector('.drag-ghost'); if(ghost) ghost.remove();"
+            ondragover="arguments[0].preventDefault(); this.classList.add('drag-over');"
+            ondragleave="this.classList.remove('drag-over');"
           >
             <div class="kanban-column-header">
               <span>
@@ -851,32 +851,12 @@ const typeConfig: Record<
       });
     });
 
-    // Header "+ New Task" button → trigger first visible column's add button
+    // Header "+ New Task" button → open the full New Task modal dialog
     document
       .getElementById("kanban-new-task-btn")
       ?.addEventListener("click", () => {
-        // Find the first visible add button (skip hidden ones in collapsed swimlanes)
-        const allAddBtns = document.querySelectorAll(
-          ".kanban-column .kanban-add-btn",
-        );
-        let firstAddBtn = null;
-        for (const btn of allAddBtns) {
-          if (btn instanceof HTMLElement && btn.offsetParent !== null) {
-            firstAddBtn = btn;
-            break;
-          }
-        }
-        if (firstAddBtn) {
-          firstAddBtn.click();
-          setTimeout(() => {
-            const input = firstAddBtn.parentElement?.querySelector(
-              ".kanban-inline-add input",
-            );
-            if (input instanceof HTMLInputElement) {
-              input.scrollIntoView({ behavior: "smooth", block: "nearest" });
-              input.focus();
-            }
-          }, 50);
+        if (typeof window.openNewTaskModal === "function") {
+          window.openNewTaskModal();
         }
       });
 
@@ -1343,39 +1323,8 @@ const typeConfig: Record<
       });
     })();
 
-    // T-1915: Column collapse toggle
-    (() => {
-      document.querySelectorAll(".kanban-column-header").forEach((header) => {
-        header.style.cursor = "pointer";
-        header.title = "Click to collapse/expand";
-
-        header.addEventListener("click", (e) => {
-          // Don't collapse if clicking the count badge
-          if (e.target.classList.contains("kanban-count")) return;
-
-          const col = header.closest(".kanban-column");
-          const cards = col.querySelector(".kanban-cards");
-          const addBtn = col.querySelector(".kanban-add-btn");
-
-          col.classList.toggle("collapsed");
-
-          if (col.classList.contains("collapsed")) {
-            cards.style.display = "none";
-            if (addBtn) addBtn.style.display = "none";
-            col.style.minWidth = "48px";
-            col.style.maxWidth = "48px";
-            header.querySelector("span:first-child").style.writingMode =
-              "vertical-rl";
-          } else {
-            cards.style.display = "";
-            if (addBtn) addBtn.style.display = "";
-            col.style.minWidth = "";
-            col.style.maxWidth = "";
-            header.querySelector("span:first-child").style.writingMode = "";
-          }
-        });
-      });
-    })();
+    // T-1915: Column collapse toggle (REMOVED — clicking lane headers to collapse
+    // was unintuitive UX and caused visual breakage, per user feedback).
 
     // --- Offline Attachments Feature (Phase 23) ---
     (async function renderThumbnails() {
@@ -1443,7 +1392,11 @@ const typeConfig: Record<
     display: flex;
     flex-direction: column;
     max-height: 100%;
-    transition: background 200ms;
+    transition:
+      background 200ms,
+      border-color 200ms;
+    border: 2px solid transparent;
+    padding: 10px;
   }
   @media (max-width: 768px) {
     .kanban-board {
@@ -1460,6 +1413,16 @@ const typeConfig: Record<
   .kanban-column.drag-over {
     border-color: var(--accent);
     background: rgba(16, 185, 129, 0.05);
+  }
+  .kanban-column.drag-over .kanban-cards::after {
+    content: "";
+    display: block;
+    height: 80px;
+    border: 2px dashed var(--accent);
+    border-radius: 6px;
+    background: rgba(16, 185, 129, 0.05);
+    margin-top: 8px;
+    transition: all 0.2s;
   }
   .kanban-column-header {
     display: flex;
@@ -1753,9 +1716,8 @@ const typeConfig: Record<
     display: flex;
     justify-content: space-between;
     align-items: center;
-    padding: 8px 0;
+    padding: 8px 10px;
     margin-bottom: 12px;
-    border-bottom: 1px solid var(--border);
   }
   .type-filters {
     display: flex;
@@ -1902,16 +1864,5 @@ const typeConfig: Record<
     color: var(--accent);
   }
 
-  /* T-1915: Collapsed column state */
-  .kanban-column.collapsed {
-    min-width: 48px !important;
-    max-width: 48px !important;
-    padding: 8px 4px;
-    transition: all 200ms ease;
-  }
-  .kanban-column.collapsed .kanban-column-header {
-    border-bottom: none;
-    margin-bottom: 0;
-    padding-bottom: 0;
-  }
+  /* T-1915: Column collapse CSS removed — feature was removed per UX feedback */
 </style>
