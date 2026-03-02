@@ -18,7 +18,7 @@ COPY apps/web/package.json apps/web/package.json
 COPY packages/ packages/
 
 # Layer 2: Install all deps (cached when lockfile + manifests unchanged)
-RUN pnpm install --frozen-lockfile=false --ignore-scripts
+RUN pnpm install --frozen-lockfile --ignore-scripts
 
 # Layer 3: Source code (changes every build, but deps are already cached above)
 COPY apps/web/ apps/web/
