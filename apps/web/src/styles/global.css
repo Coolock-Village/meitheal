@@ -743,6 +743,36 @@
     @apply bg-danger/90 text-white;
   }
 
+    .toast.warning {
+      @apply bg-warning/90 text-white;
+    }
+  
+    /* --- HA Ingress Compact Mode (Phase 50) --- */
+    /* When inside HA panel, hide Meitheal sidebar and expand main content */
+    body.ha-ingress .sidebar {
+      display: none !important;
+    }
+  
+    body.ha-ingress .main-content {
+      margin-left: 0 !important;
+    }
+  
+    body.ha-ingress .top-navigation .hamburger-btn {
+      display: none !important;
+    }
+  
+    /* --- Screen Reader Only Utility --- */
+    .sr-only {
+      position: absolute;
+      width: 1px;
+      height: 1px;
+      padding: 0;
+      margin: -1px;
+      overflow: hidden;
+      clip: rect(0, 0, 0, 0);
+      white-space: nowrap;
+      border-width: 0;
+    }
   /* --- Drag-and-drop --- */
   .drag-over {
     @apply border-dashed;
