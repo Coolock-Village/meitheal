@@ -25,15 +25,15 @@ const { key, fallback } = Astro.props;
 
 // Resolve locale from cookie for SSR
 const cookieValue = Astro.cookies.get("meitheal-locale")?.value;
-const locale: Locale = (cookieValue === "ga" ? "ga" : "en");
+const locale: Locale = cookieValue === "ga" ? "ga" : "en";
 const translated = t(key, locale);
-const displayText = translated !== key ? translated : (fallback || key);
+const displayText = translated !== key ? translated : fallback || key;
 ---
 
 <i18n-text data-key={key}>{displayText}</i18n-text>
 
 <script>
-  import { getStoredLocale, isValidLocale, STORAGE_KEY } from "../lib/locale";
+  import { getStoredLocale, isValidLocale, STORAGE_KEY } from "@lib/locale";
   import { t } from "../i18n/translations";
 
   class I18nTextElement extends HTMLElement {
