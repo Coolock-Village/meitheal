@@ -59,13 +59,17 @@ const locale: Locale = cookieLocale === "ga" ? "ga" : "en";
   >
   </div>
 
-  <!-- Tab switching: is:inline ensures this runs in-place AFTER the tab
-       elements above have been parsed. Astro-bundled scripts get hoisted to
-       <head> as ES modules and execute before body DOM exists. -->
+  <!-- Tab switching: dual-init pattern covers all timing scenarios.
+       1. initSettingsTabs() runs immediately for direct page loads
+       2. astro:page-load catches client-side navigations
+       data-tabs-initialized guard prevents duplicate listener attachment -->
   <script is:inline>
-    (function () {
+    function initSettingsTabs() {
       var tabs = document.querySelectorAll(".settings-tab");
       var panes = document.querySelectorAll(".tab-pane");
+      if (!tabs.length) return;
+      if (tabs[0].getAttribute("data-tabs-initialized")) return;
+      tabs[0].setAttribute("data-tabs-initialized", "true");
 
       tabs.forEach(function (tab) {
         tab.addEventListener("click", function () {
@@ -92,7 +96,11 @@ const locale: Locale = cookieLocale === "ga" ? "ga" : "en";
           }
         });
       });
-    })();
+    }
+    // Run immediately (covers direct load / is:inline execution)
+    initSettingsTabs();
+    // Also run on client-side navigation (covers prefetch swaps)
+    document.addEventListener("astro:page-load", initSettingsTabs);
   </script>
 
   <script>
@@ -359,9 +367,7 @@ const locale: Locale = cookieLocale === "ga" ? "ga" : "en";
 
         let orderItems =
           Array.isArray(sidebarConfig.order) && sidebarConfig.order.length > 0
-            ? sidebarConfig.order.filter((k: string) =>
-                DEFAULT_SIDEBAR.includes(k),
-              )
+            ? [...sidebarConfig.order]
             : [...DEFAULT_SIDEBAR];
         // Make sure missing default items are appended
         DEFAULT_SIDEBAR.forEach((k) => {

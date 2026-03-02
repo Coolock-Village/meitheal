@@ -145,6 +145,10 @@ const order: NavKey[] = rawOrder.length > 0 ? rawOrder : [...DEFAULT_ORDER];
 DEFAULT_ORDER.forEach((k) => {
   if (!order.includes(k)) order.push(k);
 });
+// Append custom items that were injected into NAV_ITEMS but aren't in the order yet
+Object.keys(NAV_ITEMS).forEach((k) => {
+  if (!order.includes(k)) order.push(k);
+});
 
 const labels: Record<string, string> =
   (sidebarConfig.labels as Record<string, string>) ?? {};
