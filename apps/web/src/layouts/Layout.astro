@@ -150,7 +150,7 @@ Astro.response.headers.set("X-Content-Type-Options", "nosniff");
     <meta property="og:url" content={Astro.url.href} />
     <link
       rel="manifest"
-      href={`${Astro.locals.ingressPath ?? ""}/manifest.webmanifest`}
+      href="/manifest.webmanifest"
       crossorigin="use-credentials"
     />
     <link rel="apple-touch-icon" href="/icon-192.png" />
