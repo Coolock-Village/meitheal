@@ -119,8 +119,8 @@ importers:
   packages/domain-observability:
     devDependencies:
       '@types/node':
-        specifier: ^25.3.2
-        version: 25.3.2
+        specifier: ^25.3.3
+        version: 25.3.3
       typescript:
         specifier: ^5.9.3
         version: 5.9.3
@@ -140,8 +140,8 @@ importers:
   packages/integration-core:
     devDependencies:
       '@types/node':
-        specifier: ^25.3.2
-        version: 25.3.2
+        specifier: ^25.3.3
+        version: 25.3.3
       typescript:
         specifier: ^5.9.3
         version: 5.9.3
@@ -155,8 +155,8 @@ importers:
         specifier: ^1.58.2
         version: 1.58.2
       '@types/node':
-        specifier: ^25.3.2
-        version: 25.3.2
+        specifier: ^25.3.3
+        version: 25.3.3
       drizzle-orm:
         specifier: ^0.45.1
         version: 0.45.1(@cloudflare/workers-types@4.20260305.0)(@libsql/client@0.17.0)
@@ -1087,9 +1087,6 @@ packages:
 
   '@types/node@17.0.45':
     resolution: {integrity: sha512-w+tIMs3rq2afQdsPJlODhoUEKzFP1ayaoyl1CcnwtIlsVe7K7bA1NGm4s3PraqTLlXnbIN84zuBlxBWo1u9BLw==}
-
-  '@types/node@25.3.2':
-    resolution: {integrity: sha512-RpV6r/ij22zRRdyBPcxDeKAzH43phWVKEjL2iksqo1Vz3CuBUrgmPpPhALKiRfU7OMCmeeO9vECBMsV0hMTG8Q==}
 
   '@types/node@25.3.3':
     resolution: {integrity: sha512-DpzbrH7wIcBaJibpKo9nnSQL0MTRdnWttGyE5haGwK86xgMOkFLp7vEyfQPGLOJh5wNYiJ3V9PmUMDhV9u8kkQ==}
@@ -3857,10 +3854,6 @@ snapshots:
       '@types/unist': 3.0.3
 
   '@types/node@17.0.45': {}
-
-  '@types/node@25.3.2':
-    dependencies:
-      undici-types: 7.18.2
 
   '@types/node@25.3.3':
     dependencies:
