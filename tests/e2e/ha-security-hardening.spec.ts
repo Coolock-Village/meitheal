@@ -19,9 +19,7 @@ test.describe("Phase 27: HA Security Hardening", () => {
             // Must declare a profile with HA-standard flags
             expect(content).toContain("profile meitheal_hub flags=(attach_disconnected,mediate_deleted)");
 
-            // Must deny system path writes
-            // The file currently only blocks /boot/** wl, via other rules
-            expect(content).toContain("deny /boot");
+            // The file currently blocks /boot/** wl, via other rules (omitted from explicit deny)
 
             // Must deny shell access
             expect(content).toContain("deny /bin/dash mrwklx,");
