@@ -78,10 +78,13 @@ function applyRateLimitHeaders(response: Response, remaining: number, resetAt: n
 }
 
 /**
- * Rewrite absolute asset paths in HTML responses when behind HA ingress.
+ * Rewrite absolute paths in HTML responses when behind HA ingress.
  * The ingress proxy maps /{ingressPath}/* → http://addon:port/*
- * but if the HTML contains absolute paths like /_astro/page.js,
+ * but if the HTML contains absolute paths like href="/tasks" or src="/_astro/page.js",
  * the browser resolves them against the HA root, bypassing ingress → 404.
+ *
+ * This rewrites ALL href="/...", src="/...", and action="/..." attributes
+ * to include the ingress path prefix.
  */
 async function rewriteIngressPaths(response: Response, ingressPath: string): Promise<Response> {
   const contentType = response.headers.get("content-type") ?? "";
@@ -92,13 +95,12 @@ async function rewriteIngressPaths(response: Response, ingressPath: string): Pro
   // Inject runtime ingress path for client-side JS (must come before any scripts)
   const ingressScript = `<script>window.__ingress_path="${ingressPath}";</script>`;
 
-  // Prefix absolute paths with the ingress path
+  // Rewrite absolute paths in HTML attributes: href="/...", src="/...", action="/..."
+  // Matches: href="/path", src="/path", action="/path" (with double or single quotes)
+  // Does NOT match: href="//cdn.example.com" (protocol-relative), href="http://..." (absolute URL)
   const rewritten = html
     .replace("<head>", `<head>${ingressScript}`)
-    .replace(/"\/_astro\//g, `"${ingressPath}/_astro/`)
-    .replace(/'\/_astro\//g, `'${ingressPath}/_astro/`)
-    .replace(/"\/manifest\.webmanifest"/g, `"${ingressPath}/manifest.webmanifest"`)
-    .replace(/"\/icon-192\.png"/g, `"${ingressPath}/icon-192.png"`);
+    .replace(/((?:href|src|action)=["'])\/(?!\/)/g, `$1${ingressPath}/`);
 
   return new Response(rewritten, {
     status: response.status,
