@@ -59,38 +59,43 @@ const locale: Locale = cookieLocale === "ga" ? "ga" : "en";
   >
   </div>
 
-  <script>
-    // Tab switching logic — runs immediately (no DOMContentLoaded wrapper,
-    // which doesn't re-fire during Astro client-side navigation)
-    {
-      const tabs = document.querySelectorAll(".settings-tab");
-      const panes = document.querySelectorAll(".tab-pane");
+  <!-- Tab switching: is:inline ensures this runs in-place AFTER the tab
+       elements above have been parsed. Astro-bundled scripts get hoisted to
+       <head> as ES modules and execute before body DOM exists. -->
+  <script is:inline>
+    (function () {
+      var tabs = document.querySelectorAll(".settings-tab");
+      var panes = document.querySelectorAll(".tab-pane");
 
-      tabs.forEach((tab) => {
-        tab.addEventListener("click", () => {
-          tabs.forEach((t) => {
+      tabs.forEach(function (tab) {
+        tab.addEventListener("click", function () {
+          tabs.forEach(function (t) {
             t.classList.remove("active");
-            (t as HTMLElement).style.color = "var(--text-muted)";
-            (t as HTMLElement).style.borderBottomColor = "transparent";
+            t.style.color = "var(--text-muted)";
+            t.style.borderBottomColor = "transparent";
           });
-          panes.forEach((p) => ((p as HTMLElement).style.display = "none"));
+          panes.forEach(function (p) {
+            p.style.display = "none";
+          });
 
           tab.classList.add("active");
-          const isDanger = tab.getAttribute("data-target") === "tab-system";
-          (tab as HTMLElement).style.color = "var(--text-primary)";
-          (tab as HTMLElement).style.borderBottomColor = isDanger
+          var isDanger = tab.getAttribute("data-target") === "tab-system";
+          tab.style.color = "var(--text-primary)";
+          tab.style.borderBottomColor = isDanger
             ? "var(--danger)"
             : "var(--accent)";
 
-          const targetId = tab.getAttribute("data-target");
+          var targetId = tab.getAttribute("data-target");
           if (targetId) {
-            const targetPane = document.getElementById(targetId);
+            var targetPane = document.getElementById(targetId);
             if (targetPane) targetPane.style.display = "block";
           }
         });
       });
-    }
+    })();
+  </script>
 
+  <script>
     import { exportLocalDataAsJson } from "@domains/offline/export-service";
     import { confirmDialog } from "@lib/confirm-dialog";
 
