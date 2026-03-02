@@ -1,4 +1,4 @@
-export const defaultIngressHeaders = ["x-ingress-path", "hassio_token"] as const;
+export const defaultIngressHeaders = ["x-ingress-path"] as const;
 
 export function normalizeIngressHeaders(headers: string[]): string[] {
   return [...new Set(headers.map((header) => header.trim().toLowerCase()).filter((header) => header.length > 0))];
