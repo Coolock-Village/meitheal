@@ -75,7 +75,7 @@ test.describe("Security Headers (CSP policy correctness)", () => {
 
     // Fonts are self-hosted via @fontsource — no external CDN allowed
     expect(csp).toContain("style-src 'self' 'unsafe-inline'");
-    expect(csp).toContain("font-src 'self'");
+    expect(csp).toContain("font-src 'self' data:");
     expect(csp).not.toContain("fonts.googleapis.com");
     expect(csp).not.toContain("fonts.gstatic.com");
   });

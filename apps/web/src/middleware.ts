@@ -178,7 +178,7 @@ export const onRequest: MiddlewareHandler = async ({ request, locals }, next) =>
       "script-src 'self' 'unsafe-inline' data:",
       "style-src 'self' 'unsafe-inline'",
       "img-src 'self' data: blob:",  // blob: for attachment previews
-      "font-src 'self'",
+      "font-src 'self' data:",
       ingressPath
         ? "connect-src 'self' ws: wss: http://supervisor http://supervisor:*"
         : import.meta.env.DEV
