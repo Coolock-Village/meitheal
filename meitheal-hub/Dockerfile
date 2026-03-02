@@ -61,11 +61,8 @@ RUN chmod +x /run.sh /run-local.sh
 # Ensure data directory exists
 RUN mkdir -p /data
 
-# Non-root user for runtime security (matches SECURITY.md contract)
-RUN addgroup -S meitheal && adduser -S meitheal -G meitheal \
-    && chown -R meitheal:meitheal /opt/meitheal /data
-
-USER meitheal
+# NOTE: HA addons run as root — Supervisor-managed /data volume requires root
+# access on fresh installs. This follows the hassio-addons convention.
 
 HEALTHCHECK --interval=30s --timeout=5s --start-period=15s --retries=3 \
   CMD curl -fsS http://127.0.0.1:3000/api/health || exit 1
