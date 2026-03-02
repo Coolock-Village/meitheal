@@ -15,7 +15,7 @@
  *
  * @kcs Keep in sync with meitheal-hub/config.yaml version.
  */
-const CACHE_VERSION = "0.1.17";
+const CACHE_VERSION = "0.1.21";
 const CACHE_NAME = `meitheal-v${CACHE_VERSION}`;
 const SYNC_TAG = "meitheal-background-sync";
 

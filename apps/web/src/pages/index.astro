@@ -241,53 +241,77 @@ function relativeTime(dueDate: string): string {
         >{t("dashboard.view_all", locale)}</a
       >
     </div>
-    <div class="task-list" id="task-list">
+    <div class="bento-grid" id="task-list">
       {
         tasks.length === 0 ? (
-          <EmptyState
-            title={t("dashboard.no_tasks_yet", locale)}
-            description={t("dashboard.create_first_task", locale)}
-          >
-            <span slot="icon" style="font-size: 48px; line-height: 1;">
-              ☘
-            </span>
-          </EmptyState>
-        ) : (
-          tasks.map((task) => (
-            <div class="task-item" data-id={String(task.id)}>
-              <input
-                type="checkbox"
-                class="task-checkbox"
-                checked={
-                  String(task.status) === "complete" ||
-                  String(task.status) === "done"
-                }
-                data-id={String(task.id)}
-              />
-              <div class="task-content">
-                <div
-                  class={`task-title ${String(task.status) === "complete" || String(task.status) === "done" ? "done" : ""}`}
-                >
-                  {String(task.title)}
-                </div>
-                <div class="task-meta">
-                  {priorityLabels[Number(task.priority ?? 3)] ?? "Medium"} ·
-                  {statusLabels[String(task.status)] ?? String(task.status)}
-                  {task.due_date
-                    ? ` · ${relativeTime(String(task.due_date))}`
-                    : ""}
-                  {String(task.calendar_sync_state) === "confirmed"
-                    ? " · 📅 Synced"
-                    : ""}
-                </div>
-              </div>
-              <span
-                class={`task-badge badge-${String(task.status) === "complete" || String(task.status) === "done" ? "done" : String(task.status)}`}
-              >
-                {statusLabels[String(task.status)] ?? String(task.status)}
+          <div class="bento-empty-state">
+            <EmptyState
+              title={t("dashboard.no_tasks_yet", locale)}
+              description={t("dashboard.create_first_task", locale)}
+            >
+              <span slot="icon" style="font-size: 48px; line-height: 1;">
+                ☘
               </span>
-            </div>
-          ))
+            </EmptyState>
+          </div>
+        ) : (
+          tasks.map((task) => {
+            const isDone =
+              String(task.status) === "complete" ||
+              String(task.status) === "done";
+            const priorityColor =
+              Number(task.priority) === 1
+                ? "#ef4444"
+                : Number(task.priority) === 2
+                  ? "#f97316"
+                  : Number(task.priority) === 4
+                    ? "#22c55e"
+                    : Number(task.priority) === 5
+                      ? "#6b7280"
+                      : "#eab308";
+            return (
+              <div
+                class={`bento-card ${isDone ? "bento-card-done" : ""}`}
+                data-id={String(task.id)}
+              >
+                <div
+                  class="bento-card-stripe"
+                  style={`background: ${priorityColor}`}
+                />
+                <div class="bento-card-body">
+                  <div class={`bento-card-title ${isDone ? "done" : ""}`}>
+                    {String(task.title)}
+                  </div>
+                  <div class="bento-card-footer">
+                    <span
+                      class={`task-badge badge-${isDone ? "done" : String(task.status)}`}
+                    >
+                      {statusLabels[String(task.status)] ?? String(task.status)}
+                    </span>
+                    {task.due_date && (
+                      <span class="bento-card-due">
+                        {relativeTime(String(task.due_date))}
+                      </span>
+                    )}
+                  </div>
+                  {task.labels && String(task.labels) !== "[]" && (
+                    <div class="bento-card-labels">
+                      {JSON.parse(String(task.labels))
+                        .slice(0, 2)
+                        .map((label: string) => (
+                          <span class="label-chip">{label}</span>
+                        ))}
+                    </div>
+                  )}
+                </div>
+                {String(task.calendar_sync_state) === "confirmed" && (
+                  <span class="bento-card-sync" title="Calendar synced">
+                    📅
+                  </span>
+                )}
+              </div>
+            );
+          })
         )
       }
     </div>
@@ -419,8 +443,30 @@ function relativeTime(dueDate: string): string {
       if (typeof (window as any).openNewTaskModal === "function") {
         (window as any).openNewTaskModal();
       } else {
-        (document.getElementById("quick-title") as HTMLInputElement)?.focus();
+        // Retry after a tick — NewTaskModal script may still be loading
+        requestAnimationFrame(() => {
+          if (typeof (window as any).openNewTaskModal === "function") {
+            (window as any).openNewTaskModal();
+          } else {
+            (
+              document.getElementById("quick-title") as HTMLInputElement
+            )?.focus();
+          }
+        });
       }
+    });
+
+    // Dashboard task items → open detail panel on click
+    document.querySelectorAll(".task-item[data-id]").forEach((el) => {
+      el.addEventListener("click", (e) => {
+        const target = e.target as HTMLElement;
+        // Don't intercept checkbox or button clicks
+        if (target.closest("input, button, a")) return;
+        const id = (el as HTMLElement).dataset.id;
+        if (id && typeof (window as any).openTaskDetail === "function") {
+          (window as any).openTaskDetail(id);
+        }
+      });
     });
 
     // Keyboard shortcut: n -> focus quick add
