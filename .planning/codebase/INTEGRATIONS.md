@@ -13,6 +13,21 @@
 | Timeout | 8s, retryable on 429/5xx |
 | Idempotency | `x-meitheal-idempotency-key` header |
 
+## Home Assistant Todo Sync
+
+| Property | Value |
+|----------|-------|
+| Domain | `domains/todo/` bounded context |
+| Bridge | `todo-bridge.ts` — bidirectional sync via WebSocket |
+| Status Mapper | `todo-status-mapper.ts` — HA ↔ Meitheal status/field mapping |
+| Auth | `SUPERVISOR_TOKEN` (auto) |
+| Real-time | `todo/item/subscribe` WebSocket subscription |
+| Services | `getTodoItems`, `addTodoItem`, `updateTodoItem`, `removeTodoItem`, `removeTodoCompletedItems`, `moveTodoItem`, `subscribeTodoItems` |
+| API Routes | `GET/POST/PUT/DELETE /api/todo/items`, `GET/POST /api/todo/sync`, `GET /api/todo` |
+| Sync Control | Opt-in via Settings → Integrations → Todo Sync toggle |
+| DB | `todo_sync_confirmations` table (migration `0002_todo_sync.sql`) |
+| Status Mapping | `needs_action` ↔ `todo`/`in_progress`, `completed` ↔ `done` |
+
 ## Vikunja Compatibility API
 
 | Property | Value |

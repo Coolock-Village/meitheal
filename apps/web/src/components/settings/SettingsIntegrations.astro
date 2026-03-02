@@ -117,6 +117,121 @@ const { locale } = Astro.props;
         </div>
       </div>
 
+      <!-- Todo Sync -->
+      <div class="integration-section">
+        <div class="integration-header">
+          <div>
+            <strong>✅ Todo Sync</strong>
+            <div class="integration-desc">
+              Sync between Meitheal tasks and HA todo lists. Real-time updates
+              via WebSocket. Disabled by default to save power — enable only for
+              lists you actively use.
+            </div>
+          </div>
+          <span class="badge badge-pending" id="todo-status">Disabled</span>
+        </div>
+
+        <!-- HA auto-detect callout -->
+        <div
+          id="todo-auto-info"
+          style="display: none; background: rgba(16,185,129,0.08); border: 1px solid rgba(16,185,129,0.2); border-radius: 8px; padding: 12px 16px; margin-bottom: 12px; font-size: 13px; color: var(--text-secondary);"
+        >
+          <strong style="color: var(--accent);">✓ Todo list(s) detected</strong>
+          <div
+            id="todo-auto-entities"
+            style="margin-top: 4px; font-size: 12px; color: var(--text-muted);"
+          >
+          </div>
+        </div>
+
+        <!-- Detected HA todo entities -->
+        <div
+          id="todo-entities-list"
+          style="display: none; margin-bottom: 12px;"
+        >
+          <label class="form-label" style="font-size: 12px; margin-bottom: 6px;"
+            >Detected Todo Entities</label
+          >
+          <div
+            id="todo-entities-container"
+            style="display: flex; flex-direction: column; gap: 4px;"
+          >
+          </div>
+        </div>
+
+        <div class="integration-config">
+          <div class="form-group">
+            <label class="form-label" for="todo-enabled">Enable Todo Sync</label
+            >
+            <div style="display: flex; align-items: center; gap: 10px;">
+              <label
+                class="toggle-switch"
+                style="display: inline-flex; align-items: center; cursor: pointer; gap: 8px;"
+              >
+                <input
+                  type="checkbox"
+                  id="todo-enabled"
+                  aria-label="Enable or disable todo list sync"
+                  style="width: 18px; height: 18px; accent-color: var(--accent);"
+                />
+                <span
+                  id="todo-enabled-label"
+                  style="font-size: 13px; color: var(--text-secondary);"
+                  >Off — sync disabled to save power</span
+                >
+              </label>
+            </div>
+          </div>
+
+          <div class="form-group">
+            <label class="form-label" for="todo-entity">Todo Entity</label>
+            <input
+              type="text"
+              class="form-input"
+              id="todo-entity"
+              placeholder="todo.shopping_list"
+            />
+            <small style="color: var(--text-muted); font-size: 11px;"
+              >The HA todo entity to sync with. Find it in HA → Developer Tools
+              → States → search "todo."</small
+            >
+          </div>
+
+          <div class="form-group">
+            <label class="form-label" for="todo-sync-direction"
+              >Sync Direction</label
+            >
+            <select class="form-select" id="todo-sync-direction">
+              <option value="inbound">Import HA → Meitheal</option>
+              <option value="outbound">Export Meitheal → HA</option>
+              <option value="bidirectional" selected>Bidirectional sync</option>
+            </select>
+            <small style="color: var(--text-muted); font-size: 11px;"
+              >Bidirectional keeps both in sync. Inbound-only saves power if you
+              only need to read from HA.</small
+            >
+          </div>
+
+          <div style="display: flex; gap: 8px; align-items: center;">
+            <button
+              type="button"
+              class="btn btn-primary"
+              id="save-todo"
+              style="font-size: 13px;">Save Todo Settings</button
+            >
+            <button
+              type="button"
+              class="btn btn-ghost"
+              id="sync-todo"
+              style="font-size: 13px;">Sync Now</button
+            >
+            <span
+              id="todo-sync-result"
+              style="font-size: 12px; color: var(--text-muted);"></span>
+          </div>
+        </div>
+      </div>
+
       <!-- Grocy -->
       <div class="integration-section">
         <div class="integration-header">

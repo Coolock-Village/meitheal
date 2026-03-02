@@ -1104,6 +1104,217 @@ const locale: Locale = cookieLocale === "ga" ? "ga" : "en";
       }, 5000);
     });
 
+    // ───── Todo Sync Save + Hydrate + Sync ─────
+    async function hydrateTodoStatus() {
+      const statusEl = document.getElementById("todo-status");
+      const autoInfo = document.getElementById("todo-auto-info");
+      const autoEntities = document.getElementById("todo-auto-entities");
+      const entitiesList = document.getElementById("todo-entities-list");
+      const entitiesContainer = document.getElementById(
+        "todo-entities-container",
+      );
+      const entityInput = document.getElementById(
+        "todo-entity",
+      ) as HTMLInputElement | null;
+      const enabledCb = document.getElementById(
+        "todo-enabled",
+      ) as HTMLInputElement | null;
+      const enabledLabel = document.getElementById("todo-enabled-label");
+
+      try {
+        const res = await fetch("/api/todo");
+        if (!res.ok) throw new Error("API error");
+        const data = (await res.json()) as {
+          ok: boolean;
+          entities?: {
+            entity_id: string;
+            friendly_name: string;
+            state: string;
+            sync: {
+              active: boolean;
+              direction: string;
+              lastSyncAt: number | null;
+              itemCount: number;
+            } | null;
+          }[];
+        };
+
+        const entities = data.entities ?? [];
+
+        // Show detected entities callout
+        if (entities.length > 0 && autoInfo && autoEntities) {
+          autoInfo.style.display = "block";
+          autoEntities.innerHTML = entities
+            .map(
+              (e) =>
+                `• <code style="font-family: 'JetBrains Mono', monospace; font-size: 11px;">${e.entity_id}</code> (${e.friendly_name})`,
+            )
+            .join("<br>");
+        }
+
+        // Show entity list
+        if (entities.length > 0 && entitiesList && entitiesContainer) {
+          entitiesList.style.display = "block";
+          entitiesContainer.innerHTML = entities
+            .map(
+              (e) =>
+                `<div style="display: flex; justify-content: space-between; align-items: center; padding: 6px 10px; background: var(--bg-secondary); border-radius: 6px; font-size: 12px;">
+              <span style="font-family: 'JetBrains Mono', monospace;">${e.entity_id}</span>
+              <span style="color: var(--text-muted);">${e.friendly_name} · ${e.state}${e.sync?.active ? " · syncing" : ""}</span>
+            </div>`,
+            )
+            .join("");
+
+          // Auto-fill entity input if empty and exactly one entity
+          if (entityInput && !entityInput.value && entities.length === 1) {
+            entityInput.value = entities[0]!.entity_id;
+          }
+        }
+
+        // Update badge based on sync status
+        const anyActive = entities.some((e) => e.sync?.active);
+        if (statusEl) {
+          if (anyActive) {
+            statusEl.textContent = "Active";
+            statusEl.className = "badge badge-active";
+          } else if (entities.length > 0) {
+            statusEl.textContent = `${entities.length} found`;
+            statusEl.className = "badge badge-active";
+          } else {
+            statusEl.textContent = "No lists";
+            statusEl.className = "badge badge-pending";
+          }
+        }
+      } catch {
+        if (statusEl) {
+          statusEl.textContent = "Unavailable";
+          statusEl.className = "badge badge-pending";
+        }
+      }
+    }
+    hydrateTodoStatus();
+
+    // Enable/disable toggle label update
+    document
+      .getElementById("todo-enabled")
+      ?.addEventListener("change", function () {
+        const cb = this as HTMLInputElement;
+        const label = document.getElementById("todo-enabled-label");
+        if (label) {
+          label.textContent = cb.checked
+            ? "On — syncing with HA"
+            : "Off — sync disabled to save power";
+        }
+      });
+
+    // Save todo settings
+    document
+      .getElementById("save-todo")
+      ?.addEventListener("click", async () => {
+        const enabled = (
+          document.getElementById("todo-enabled") as HTMLInputElement
+        ).checked;
+        const entity = (
+          document.getElementById("todo-entity") as HTMLInputElement
+        ).value;
+        const direction = (
+          document.getElementById("todo-sync-direction") as HTMLSelectElement
+        ).value;
+
+        if (enabled && !entity) {
+          showToast("Please enter a todo entity ID", "error");
+          return;
+        }
+
+        const btn = document.getElementById("save-todo") as HTMLButtonElement;
+        btn.textContent = "Saving...";
+        btn.disabled = true;
+
+        await saveSetting("todo_sync_enabled", enabled);
+        await saveSetting("todo_entity", entity);
+        await saveSetting("todo_sync_direction", direction);
+
+        // Enable/disable sync via API
+        if (enabled && entity) {
+          try {
+            await fetch("/api/todo/sync", {
+              method: "POST",
+              headers: { "content-type": "application/json" },
+              body: JSON.stringify({
+                action: "enable",
+                entity_id: entity,
+                direction,
+              }),
+            });
+          } catch {
+            /* logged server-side */
+          }
+        } else {
+          try {
+            await fetch("/api/todo/sync", {
+              method: "POST",
+              headers: { "content-type": "application/json" },
+              body: JSON.stringify({ action: "disable", entity_id: entity }),
+            });
+          } catch {
+            /* logged server-side */
+          }
+        }
+
+        // Update status badge
+        const statusEl = document.getElementById("todo-status");
+        if (statusEl) {
+          statusEl.textContent = enabled ? "Active" : "Disabled";
+          statusEl.className = enabled
+            ? "badge badge-active"
+            : "badge badge-pending";
+        }
+
+        btn.textContent = "Save Todo Settings";
+        btn.disabled = false;
+        showToast("settings.todo_saved");
+      });
+
+    // Sync Now button
+    document
+      .getElementById("sync-todo")
+      ?.addEventListener("click", async () => {
+        const btn = document.getElementById("sync-todo") as HTMLButtonElement;
+        const resultEl = document.getElementById("todo-sync-result");
+        btn.textContent = "Syncing...";
+        btn.disabled = true;
+
+        try {
+          const entity = (
+            document.getElementById("todo-entity") as HTMLInputElement
+          ).value;
+          const res = await fetch("/api/todo/sync", {
+            method: "POST",
+            headers: { "content-type": "application/json" },
+            body: JSON.stringify({
+              action: "sync",
+              entity_id: entity || undefined,
+            }),
+          });
+          const data = (await res.json()) as { ok: boolean; status?: unknown };
+          if (resultEl)
+            resultEl.textContent = data.ok ? "Sync triggered" : "Sync failed";
+          showToast(
+            data.ok ? "✅ Todo sync triggered" : "❌ Todo sync failed",
+            data.ok ? "success" : "error",
+          );
+        } catch {
+          if (resultEl) resultEl.textContent = "Sync failed";
+          showToast("❌ Todo sync failed", "error");
+        }
+
+        btn.textContent = "Sync Now";
+        btn.disabled = false;
+        setTimeout(() => {
+          if (resultEl) resultEl.textContent = "";
+        }, 5000);
+      });
+
     // ───── Restore Integration Settings ─────
     (async function restoreIntegrationSettings() {
       try {
@@ -1134,6 +1345,27 @@ const locale: Locale = cookieLocale === "ga" ? "ga" : "en";
         if (s.caldav_url)
           (document.getElementById("caldav-url") as HTMLInputElement).value =
             String(s.caldav_url);
+
+        // Todo Sync
+        if (s.todo_entity)
+          (document.getElementById("todo-entity") as HTMLInputElement).value =
+            String(s.todo_entity);
+        if (s.todo_sync_direction)
+          (
+            document.getElementById("todo-sync-direction") as HTMLSelectElement
+          ).value = String(s.todo_sync_direction);
+        if (s.todo_sync_enabled) {
+          (
+            document.getElementById("todo-enabled") as HTMLInputElement
+          ).checked = true;
+          const label = document.getElementById("todo-enabled-label");
+          if (label) label.textContent = "On — syncing with HA";
+          const el = document.getElementById("todo-status");
+          if (el) {
+            el.textContent = "Active";
+            el.className = "badge badge-active";
+          }
+        }
 
         // n8n
         if (s.n8n_webhook_url) {
