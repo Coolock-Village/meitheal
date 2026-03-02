@@ -2,6 +2,7 @@ import type { APIRoute } from "astro";
 import { readFileSync, existsSync } from "fs";
 import path from "path";
 import { exportFilename } from "../../../lib/export-filename";
+import { logApiError } from "../../../lib/api-logger";
 
 export const GET: APIRoute = async () => {
     try {
@@ -31,7 +32,7 @@ export const GET: APIRoute = async () => {
         });
 
     } catch (error) {
-        console.error("Failed to export database:", error);
+        logApiError("export-database", "Failed to export database", error);
         return new Response(JSON.stringify({ error: "Export failed" }), { status: 500, headers: { "content-type": "application/json" } });
     }
 };

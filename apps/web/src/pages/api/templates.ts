@@ -10,6 +10,7 @@
  */
 import type { APIRoute } from "astro";
 import { ensureSchema, getPersistenceClient } from "@domains/tasks/persistence/store";
+import { logApiError } from "../../lib/api-logger";
 
 export const GET: APIRoute = async () => {
   try {
@@ -143,7 +144,7 @@ export const POST: APIRoute = async ({ request }) => {
       { status: 201, headers: { "Content-Type": "application/json" } },
     );
   } catch (error) {
-    console.error("[templates] POST error:", error);
+    logApiError("templates", "POST error", error);
     return new Response(
       JSON.stringify({ error: "Failed to process template request" }),
       { status: 500, headers: { "Content-Type": "application/json" } },

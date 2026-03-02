@@ -1,6 +1,7 @@
 import type { APIRoute } from "astro";
 import type { InValue } from "@libsql/client";
 import { ensureSchema, getPersistenceClient } from "@domains/tasks/persistence/store";
+import { logApiError } from "../../../lib/api-logger";
 
 /**
  * Vikunja-compatible /api/v1/tasks endpoint.
@@ -84,7 +85,7 @@ export const GET: APIRoute = async ({ url }) => {
       },
     });
   } catch (err) {
-    console.error("[v1/tasks] GET failed:", err);
+    logApiError("v1-tasks", "GET failed", err);
     return new Response(JSON.stringify({ error: "Failed to list tasks" }), {
       status: 500,
       headers: { "content-type": "application/json" },

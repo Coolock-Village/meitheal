@@ -1,6 +1,7 @@
 import type { APIRoute } from "astro";
 import { ensureSchema, getPersistenceClient } from "@domains/tasks/persistence/store";
 import { exportFilename } from "../../../lib/export-filename";
+import { logApiError } from "../../../lib/api-logger";
 
 export const GET: APIRoute = async () => {
     try {
@@ -31,7 +32,7 @@ export const GET: APIRoute = async () => {
         });
 
     } catch (error) {
-        console.error("Failed to export settings as JSON:", error);
+        logApiError("export-settings", "Failed to export settings as JSON", error);
         return new Response(JSON.stringify({ error: "Settings Export failed" }), {
             status: 500,
             headers: { "Content-Type": "application/json" }

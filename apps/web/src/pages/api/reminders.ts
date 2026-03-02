@@ -8,6 +8,7 @@
  */
 import type { APIRoute } from "astro";
 import { ensureSchema, getPersistenceClient } from "@domains/tasks/persistence/store";
+import { logApiError } from "../../lib/api-logger";
 
 export const GET: APIRoute = async () => {
   try {
@@ -103,7 +104,7 @@ export const POST: APIRoute = async ({ request }) => {
       headers: { "Content-Type": "application/json" },
     });
   } catch (error) {
-    console.error("[reminders] POST error:", error);
+    logApiError("reminders", "POST error", error);
     return new Response(
       JSON.stringify({ error: "Failed to process reminder action" }),
       { status: 500, headers: { "Content-Type": "application/json" } },

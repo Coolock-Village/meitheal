@@ -2,6 +2,7 @@ import type { APIRoute } from "astro";
 import { ensureSchema, getPersistenceClient } from "@domains/tasks/persistence/store";
 import { formatTicketKey } from "../../../lib/ticket-key";
 import { exportFilename } from "../../../lib/export-filename";
+import { logApiError } from "../../../lib/api-logger";
 
 /**
  * Export Tasks as JSON
@@ -42,7 +43,7 @@ export const GET: APIRoute = async () => {
             }
         });
     } catch (error) {
-        console.error("Failed to export tasks as JSON:", error);
+        logApiError("export-tasks-json", "Failed to export tasks as JSON", error);
         return new Response(JSON.stringify({ error: "Export failed" }), {
             status: 500,
             headers: { "Content-Type": "application/json" }

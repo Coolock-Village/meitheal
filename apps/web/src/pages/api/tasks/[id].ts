@@ -4,6 +4,7 @@ import { ensureSchema, getPersistenceClient } from "@domains/tasks/persistence/s
 import { sanitize } from "../../../lib/sanitize";
 import { formatTicketKey } from "../../../lib/ticket-key";
 import { dispatchTaskEvent } from "../../../lib/webhook-dispatcher";
+import { logApiError } from "../../../lib/api-logger";
 import { VALID_TASK_TYPES } from "@meitheal/domain-tasks";
 import type { TaskType } from "@meitheal/domain-tasks";
 
@@ -280,7 +281,7 @@ export const PUT: APIRoute = async ({ params, request }) => {
           { action: `MEITHEAL_TASK_DONE_${resolvedId}`, title: "Mark Done" },
           { action: `MEITHEAL_TASK_VIEW_${resolvedId}`, title: "View details", uri: `/meitheal_hub/task/${taskPayload.ticket_key}` }
         ]
-      }).catch(err => console.error("[ha-notify] Failed to send urgent update push:", err));
+      }).catch(err => logApiError("ha-notify", "Failed to send urgent update push", err));
     }).catch(() => {});
   }
 

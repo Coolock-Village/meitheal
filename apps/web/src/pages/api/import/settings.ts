@@ -1,5 +1,6 @@
 import type { APIRoute } from "astro";
 import { ensureSchema, getPersistenceClient } from "@domains/tasks/persistence/store";
+import { logApiError } from "../../../lib/api-logger";
 
 /** Known safe setting keys — only these will be imported.
  * IMPORTANT: Update this set when adding new saveSetting() calls.
@@ -85,7 +86,7 @@ export const POST: APIRoute = async ({ request }) => {
         });
 
     } catch (error) {
-        console.error("Failed to import settings:", error);
+        logApiError("import-settings", "Failed to import settings", error);
         return new Response(JSON.stringify({ error: "Import failed: payload could not be processed." }), { status: 500, headers: { "Content-Type": "application/json" } });
     }
 };

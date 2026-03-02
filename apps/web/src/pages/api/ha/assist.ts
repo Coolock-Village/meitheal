@@ -1,6 +1,7 @@
 import type { APIRoute } from "astro";
 import { askAssist } from "../../../domains/ha/ha-services";
 import { getHAConnectionStatus } from "../../../domains/ha/ha-connection";
+import { logApiError } from "../../../lib/api-logger";
 
 export const POST: APIRoute = async ({ request }) => {
   const status = getHAConnectionStatus();
@@ -27,7 +28,7 @@ export const POST: APIRoute = async ({ request }) => {
       { status: 200, headers: { "Content-Type": "application/json" } }
     );
   } catch (err) {
-    console.error("[ha-assist] Failed to proxy assist request:", err);
+    logApiError("ha-assist", "Failed to proxy assist request", err);
     return new Response(
       JSON.stringify({ error: "Internal server error" }),
       { status: 500, headers: { "Content-Type": "application/json" } }
