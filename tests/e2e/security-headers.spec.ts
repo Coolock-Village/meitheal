@@ -42,8 +42,8 @@ test.describe("Security Headers (Standalone — no ingress)", () => {
     const csp = res.headers()["content-security-policy"] ?? "";
 
     expect(csp).toContain("connect-src 'self'");
-    // Should NOT contain ws: or supervisor in standalone
-    expect(csp).not.toContain("ws:");
+    // Standalone CSP must NOT include HA Supervisor origins.
+    // Note: ws:/wss: may be present in dev mode for Vite HMR.
     expect(csp).not.toContain("http://supervisor");
   });
 

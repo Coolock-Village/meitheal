@@ -29,12 +29,45 @@ const { locale } = Astro.props;
           <div>
             <strong>📅 Calendar Sync</strong>
             <div class="integration-desc">
-              Sync tasks with due dates to your Home Assistant or CalDAV
-              calendar. Tasks appear as events with priority color coding.
+              Bidirectional sync between Meitheal tasks and your calendars. HA
+              calendar events become tasks; tasks with due dates appear as
+              calendar events.
             </div>
           </div>
-          <span class="badge badge-active" id="cal-status">Connected</span>
+          <span class="badge badge-pending" id="cal-status">Checking…</span>
         </div>
+
+        <!-- HA auto-sync info callout -->
+        <div
+          id="cal-auto-info"
+          style="display: none; background: rgba(16,185,129,0.08); border: 1px solid rgba(16,185,129,0.2); border-radius: 8px; padding: 12px 16px; margin-bottom: 12px; font-size: 13px; color: var(--text-secondary);"
+        >
+          <strong style="color: var(--accent);">✓ Automatic sync active</strong>
+          <span
+            id="cal-auto-entity"
+            style="font-family: 'JetBrains Mono', monospace; font-size: 11px; color: var(--text-muted); margin-left: 6px;"
+          ></span>
+          <div
+            style="margin-top: 4px; font-size: 12px; color: var(--text-muted);"
+          >
+            Running as an HA addon — Meitheal automatically detects your
+            calendar entities and syncs events bidirectionally (past 7 days →
+            next 30 days). Deduplication prevents duplicate tasks.
+          </div>
+        </div>
+
+        <!-- Detected HA calendar entities -->
+        <div id="cal-entities-list" style="display: none; margin-bottom: 12px;">
+          <label class="form-label" style="font-size: 12px; margin-bottom: 6px;"
+            >Detected Calendar Entities</label
+          >
+          <div
+            id="cal-entities-container"
+            style="display: flex; flex-direction: column; gap: 4px;"
+          >
+          </div>
+        </div>
+
         <div class="integration-config">
           <div class="form-group">
             <label class="form-label" for="cal-entity">Calendar Entity</label>
@@ -60,8 +93,8 @@ const { locale } = Astro.props;
               placeholder="https://your-server.com/dav/calendars/"
             />
             <small style="color: var(--text-muted); font-size: 11px;"
-              >For direct CalDAV sync (Nextcloud, Radicale, etc). Leave blank
-              to use HA calendar only.</small
+              >For direct CalDAV sync (Nextcloud, Radicale, etc). Leave blank to
+              use HA calendar only.</small
             >
           </div>
           <div style="display: flex; gap: 8px; align-items: center;">
@@ -75,8 +108,11 @@ const { locale } = Astro.props;
               type="button"
               class="btn btn-ghost"
               id="test-cal"
-              style="font-size: 13px;">Test Sync</button
+              style="font-size: 13px;">Sync Now</button
             >
+            <span
+              id="cal-sync-result"
+              style="font-size: 12px; color: var(--text-muted);"></span>
           </div>
         </div>
       </div>
@@ -105,8 +141,8 @@ const { locale } = Astro.props;
               placeholder="http://homeassistant.local:9192"
             />
             <small style="color: var(--text-muted); font-size: 11px;"
-              >The URL of your Grocy instance. Often runs as a HA add-on on
-              port 9192.</small
+              >The URL of your Grocy instance. Often runs as a HA add-on on port
+              9192.</small
             >
           </div>
           <div class="form-group">
@@ -148,8 +184,7 @@ const { locale } = Astro.props;
               completed. Create complex pipelines that react to task events.
             </div>
           </div>
-          <span class="badge badge-pending" id="n8n-status"
-            >Not configured</span
+          <span class="badge badge-pending" id="n8n-status">Not configured</span
           >
         </div>
         <div class="integration-config">
@@ -202,11 +237,7 @@ const { locale } = Astro.props;
               <label
                 style="font-size: 13px; display: flex; gap: 4px; align-items: center;"
               >
-                <input
-                  type="checkbox"
-                  class="n8n-event"
-                  value="task.deleted"
-                /> Deleted
+                <input type="checkbox" class="n8n-event" value="task.deleted" /> Deleted
               </label>
             </div>
           </div>
@@ -225,16 +256,15 @@ const { locale } = Astro.props;
           <div>
             <strong>🔔 Webhooks</strong>
             <div class="integration-desc">
-              Generic outgoing webhooks for any service. Each event sends a
-              JSON payload with the full task object and event type.
+              Generic outgoing webhooks for any service. Each event sends a JSON
+              payload with the full task object and event type.
             </div>
           </div>
           <span class="badge badge-active" id="webhook-status">Active</span>
         </div>
         <div class="integration-config">
           <div class="form-group">
-            <label class="form-label" for="webhook-endpoint"
-              >Endpoint URL</label
+            <label class="form-label" for="webhook-endpoint">Endpoint URL</label
             >
             <input
               type="url"
@@ -254,8 +284,8 @@ const { locale } = Astro.props;
               placeholder="••••••••"
             />
             <small style="color: var(--text-muted); font-size: 11px;"
-              >HMAC-SHA256 secret used to sign webhook payloads. Verify with
-              the X-Webhook-Signature header.</small
+              >HMAC-SHA256 secret used to sign webhook payloads. Verify with the
+              X-Webhook-Signature header.</small
             >
           </div>
           <div class="form-group">

@@ -189,11 +189,16 @@ Astro.response.headers.set("X-Content-Type-Options", "nosniff");
     </script>
   </head>
   <body>
-    <!-- HA compact ingress mode: hide sidebar when inside HA panel (Phase 50) -->
+    <!-- Sidebar collapse: restore state immediately to avoid FOUC -->
     <script is:inline>
       (function () {
+        // HA ingress detection
         if (window.__ingress_path && document.body) {
           document.body.classList.add("ha-ingress");
+        }
+        // Restore sidebar collapsed state from localStorage
+        if (localStorage.getItem("meitheal_sidebar_collapsed") === "true") {
+          document.body.classList.add("sidebar-collapsed");
         }
       })();
     </script>
@@ -203,6 +208,31 @@ Astro.response.headers.set("X-Content-Type-Options", "nosniff");
     <div transition:persist="sidebar">
       <Sidebar locale={locale} taskCounts={taskCounts} />
     </div>
+
+    <!-- Sidebar toggle pill (appears on hover, always visible when collapsed) -->
+    <button
+      type="button"
+      class="sidebar-toggle"
+      id="sidebar-toggle-btn"
+      aria-label="Toggle sidebar (Ctrl+B)"
+      title="Toggle sidebar (Ctrl+B)"
+    >
+      <svg
+        width="10"
+        height="14"
+        viewBox="0 0 10 14"
+        fill="none"
+        aria-hidden="true"
+      >
+        <path
+          d="M8 1L2 7L8 13"
+          stroke="currentColor"
+          stroke-width="2"
+          stroke-linecap="round"
+          stroke-linejoin="round"></path>
+      </svg>
+    </button>
+
     <div class="main-content">
       <TopNavigation locale={locale}>
         <Fragment slot="page-title"><slot name="page-title" /></Fragment>
@@ -212,6 +242,36 @@ Astro.response.headers.set("X-Content-Type-Options", "nosniff");
         <slot />
       </main>
     </div>
+
+    <!-- Sidebar toggle logic: click + keyboard shortcut -->
+    <script is:inline>
+      (function () {
+        var btn = document.getElementById("sidebar-toggle-btn");
+        function toggleSidebar() {
+          var collapsed = document.body.classList.toggle("sidebar-collapsed");
+          localStorage.setItem("meitheal_sidebar_collapsed", String(collapsed));
+          // Rotate chevron: points left when expanded (to collapse), right when collapsed (to expand)
+          if (btn) {
+            btn.querySelector("svg").style.transform = collapsed
+              ? "rotate(180deg)"
+              : "";
+          }
+        }
+        // Initialise chevron rotation on load
+        if (btn && document.body.classList.contains("sidebar-collapsed")) {
+          btn.querySelector("svg").style.transform = "rotate(180deg)";
+        }
+        // Click handler
+        if (btn) btn.addEventListener("click", toggleSidebar);
+        // Keyboard shortcut: Ctrl+B / Cmd+B
+        document.addEventListener("keydown", function (e) {
+          if ((e.ctrlKey || e.metaKey) && e.key === "b") {
+            e.preventDefault();
+            toggleSidebar();
+          }
+        });
+      })();
+    </script>
 
     <!-- Global New Task Modal -->
     <NewTaskModal />

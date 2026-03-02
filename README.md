@@ -1,6 +1,6 @@
 # Meitheal
 
-The cooperative task and life engine for your home.
+The cooperative task and life engine for your home — with automatic HA calendar sync.
 
 Repository target: `Coolock-Village/meitheal`.
 
@@ -79,6 +79,8 @@ Meitheal ships both:
 - an HA OS add-on runtime (`meitheal-hub`), and
 - a Home Assistant custom component skeleton (`integrations/home-assistant`).
 
+Calendar sync is automatic when running as an HA addon — Meitheal detects your calendar entities and syncs events bidirectionally (HA events → tasks, task due dates → calendar events). See `meitheal-hub/DOCS.md` for configuration.
+
 Interop design is informed by existing HA/Vikunja integration patterns, including:
 
 - <https://github.com/joeShuff/vikunja-homeassistant>
@@ -115,7 +117,7 @@ Interop design is informed by existing HA/Vikunja integration patterns, includin
 | Configurable settings | ✅ | Vikunja ✅ Trello ✅ |
 | Dark mode | ✅ | Vikunja ✅ Trello ✅ |
 | Home Assistant integration | ✅ | Vikunja ❌ Trello ❌ |
-| Calendar sync (HA) | ✅ | Vikunja ✅ Trello ❌ |
+| Calendar sync (HA, bidirectional) | ✅ | Vikunja ✅ Trello ❌ |
 | Vikunja compatibility layer | ✅ | N/A |
 | OpenAPI spec | ✅ | Vikunja ✅ Trello ✅ |
 | LLMs.txt | ✅ | Vikunja ❌ Trello ❌ |

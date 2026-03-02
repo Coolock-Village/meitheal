@@ -970,7 +970,96 @@ const locale: Locale = cookieLocale === "ga" ? "ga" : "en";
         showToast("settings.grocy_saved");
       });
 
-    // ───── Calendar Save + Test ─────
+    // ───── Calendar Save + Sync ─────
+    // Hydrate calendar status on tab open
+    async function hydrateCalendarStatus() {
+      const statusEl = document.getElementById("cal-status");
+      const autoInfo = document.getElementById("cal-auto-info");
+      const autoEntity = document.getElementById("cal-auto-entity");
+      const entitiesList = document.getElementById("cal-entities-list");
+      const entitiesContainer = document.getElementById(
+        "cal-entities-container",
+      );
+      const entityInput = document.getElementById(
+        "cal-entity",
+      ) as HTMLInputElement | null;
+
+      try {
+        const res = await fetch("/api/ha/calendars");
+        if (!res.ok) throw new Error("API error");
+        const data = (await res.json()) as {
+          calendars?: {
+            entity_id: string;
+            friendly_name: string;
+            state: string;
+          }[];
+          sync?: {
+            active: boolean;
+            entityId: string | null;
+            writeBack: boolean;
+          };
+        };
+
+        const calendars = data.calendars ?? [];
+        const sync = data.sync ?? {
+          active: false,
+          entityId: null,
+          writeBack: false,
+        };
+
+        // Update badge
+        if (statusEl) {
+          if (sync.active) {
+            statusEl.textContent = "Syncing";
+            statusEl.className = "badge badge-active";
+          } else if (calendars.length > 0) {
+            statusEl.textContent = `${calendars.length} found`;
+            statusEl.className = "badge badge-active";
+          } else {
+            statusEl.textContent = "No calendars";
+            statusEl.className = "badge badge-pending";
+          }
+        }
+
+        // Show auto-sync callout if sync is active
+        if (sync.active && autoInfo) {
+          autoInfo.style.display = "block";
+          if (autoEntity && sync.entityId) {
+            autoEntity.textContent = sync.entityId;
+          }
+        }
+
+        // Show detected entities
+        if (calendars.length > 0 && entitiesList && entitiesContainer) {
+          entitiesList.style.display = "block";
+          entitiesContainer.innerHTML = calendars
+            .map(
+              (c: {
+                entity_id: string;
+                friendly_name: string;
+                state: string;
+              }) =>
+                `<div style="display: flex; justify-content: space-between; align-items: center; padding: 6px 10px; background: var(--bg-secondary); border-radius: 6px; font-size: 12px;">
+              <span style="font-family: 'JetBrains Mono', monospace;">${c.entity_id}</span>
+              <span style="color: var(--text-muted);">${c.friendly_name} · ${c.state}</span>
+            </div>`,
+            )
+            .join("");
+
+          // Auto-fill entity input if empty and there's exactly one calendar
+          if (entityInput && !entityInput.value && calendars.length === 1) {
+            entityInput.value = calendars[0]!.entity_id;
+          }
+        }
+      } catch {
+        if (statusEl) {
+          statusEl.textContent = "Unavailable";
+          statusEl.className = "badge badge-pending";
+        }
+      }
+    }
+    hydrateCalendarStatus();
+
     document.getElementById("save-cal")?.addEventListener("click", async () => {
       const entity = (document.getElementById("cal-entity") as HTMLInputElement)
         .value;
@@ -984,43 +1073,35 @@ const locale: Locale = cookieLocale === "ga" ? "ga" : "en";
       await saveSetting("cal_entity", entity);
       if (caldav) await saveSetting("caldav_url", caldav);
 
-      const statusEl = document.getElementById("cal-status");
-      if (statusEl && entity) {
-        statusEl.textContent = "Configured";
-        statusEl.className = "badge badge-active";
-      }
-
       btn.textContent = "Save Calendar Settings";
       btn.disabled = false;
       showToast("settings.calendar_saved");
+      // Re-hydrate status after save
+      hydrateCalendarStatus();
     });
 
     document.getElementById("test-cal")?.addEventListener("click", async () => {
       const btn = document.getElementById("test-cal") as HTMLButtonElement;
-      btn.textContent = "Testing...";
+      const resultEl = document.getElementById("cal-sync-result");
+      btn.textContent = "Syncing...";
       btn.disabled = true;
 
       try {
-        const res = await fetch("/api/ha/connection");
-        const data = (await res.json()) as Record<string, unknown>;
-        const components = Array.isArray(data.components)
-          ? (data.components as string[])
-          : [];
-        const hasCalendar = components.includes("calendar");
-        showToast(
-          data.connected
-            ? hasCalendar
-              ? "✅ Calendar integration available"
-              : "⚠ HA connected but no calendar component found"
-            : `❌ ${data.message ?? "HA not reachable"}`,
-          data.connected && hasCalendar ? "success" : "error",
-        );
+        const res = await fetch("/api/ha/calendars", { method: "POST" });
+        const data = (await res.json()) as { message?: string };
+        if (resultEl) resultEl.textContent = data.message ?? "Sync triggered";
+        showToast("✅ Calendar sync triggered", "success");
       } catch {
-        showToast("❌ Calendar sync test failed", "error");
+        if (resultEl) resultEl.textContent = "Sync failed";
+        showToast("❌ Calendar sync failed", "error");
       }
 
-      btn.textContent = "Test Sync";
+      btn.textContent = "Sync Now";
       btn.disabled = false;
+      // Clear result after 5s
+      setTimeout(() => {
+        if (resultEl) resultEl.textContent = "";
+      }, 5000);
     });
 
     // ───── Restore Integration Settings ─────

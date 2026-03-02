@@ -154,6 +154,7 @@ const typeConfig: Record<
   <!-- Phase 20: Type filter + grouping toolbar -->
   <div
     class="type-toolbar"
+    style="padding: 8px 24px;"
     role="toolbar"
     aria-label="Filter by work item type"
   >
@@ -249,7 +250,7 @@ const typeConfig: Record<
 
   <div
     class="kanban-board"
-    style={`grid-template-columns: repeat(${columns.length}, 1fr);`}
+    style={`padding: 0 24px 8px; grid-template-columns: repeat(${columns.length}, 1fr);`}
   >
     {
       columns.map((col) => {
@@ -1371,29 +1372,37 @@ const typeConfig: Record<
     // --- Offline Attachments Feature (Phase 23) ---
     (async function renderThumbnails() {
       if (!window.indexedDB) return;
+      // Only attempt module load if there are attachment slots in the DOM
+      var slots = document.querySelectorAll("img.kanban-attachment");
+      if (!slots.length) return;
       try {
-        const { getAttachmentsByTaskId } = await import(
-          "/src/domains/offline/offline-store.ts" /* @vite-ignore */
-        );
-        document
-          .querySelectorAll("img.kanban-attachment")
-          .forEach(async (img) => {
-            const taskId = img.getAttribute("data-task-id");
-            if (!taskId) return;
-            const attachments = await getAttachmentsByTaskId(taskId);
-            if (attachments.length > 0) {
-              // Get the first image
-              const cover = attachments.find((a) =>
-                a.mimeType.startsWith("image/"),
-              );
-              if (cover) {
-                img.setAttribute("src", cover.base64Data);
-                img.classList.remove("hidden");
-              }
+        // Dynamic import — works in Vite dev via source path.
+        // In SSR/production builds, the module is pre-bundled by Layout.astro's
+        // static import and available through the bundled chunk.
+        var mod = await import(
+          /* @vite-ignore */ "/src/domains/offline/offline-store.ts"
+        ).catch(function () {
+          return null; // Silently skip if module not available (production SSR)
+        });
+        if (!mod || !mod.getAttachmentsByTaskId) return;
+        var getAttachmentsByTaskId = mod.getAttachmentsByTaskId;
+        slots.forEach(async (img) => {
+          const taskId = img.getAttribute("data-task-id");
+          if (!taskId) return;
+          const attachments = await getAttachmentsByTaskId(taskId);
+          if (attachments.length > 0) {
+            // Get the first image
+            const cover = attachments.find((a) =>
+              a.mimeType.startsWith("image/"),
+            );
+            if (cover) {
+              img.setAttribute("src", cover.base64Data);
+              img.classList.remove("hidden");
             }
-          });
-      } catch (e) {
-        console.warn("Failed to load attachments on Kanban:", e);
+          }
+        });
+      } catch (_) {
+        /* Offline attachments unavailable — non-critical */
       }
     })();
   </script>
@@ -1907,14 +1916,4 @@ const typeConfig: Record<
   }
 
   /* T-1915: Column collapse CSS removed — feature was removed per UX feedback */
-
-  /* Alignment: board + toolbar must match TopNavigation px-6 (24px) */
-  .kanban-board {
-    padding-left: 24px !important;
-    padding-right: 24px !important;
-  }
-  .type-toolbar {
-    padding-left: 24px !important;
-    padding-right: 24px !important;
-  }
 </style>

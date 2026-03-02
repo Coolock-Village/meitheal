@@ -49,6 +49,39 @@ curl http://localhost:3333/api/health
 - Uses `SUPERVISOR_TOKEN` for Home Assistant API service calls when available.
 - Health endpoint: `GET /api/health`.
 
+## Calendar Sync
+
+Meitheal includes bidirectional calendar sync with Home Assistant calendar entities.
+
+### How It Works
+
+When running as an HA addon with `homeassistant_api: true`, Meitheal:
+
+1. **Detects** your HA calendar entities automatically via WebSocket subscription
+2. **Imports** calendar events (past 7 days → next 30 days) as Meitheal tasks
+3. **Deduplicates** via a `calendar_confirmations` table — re-syncing never creates duplicate tasks
+4. **Pushes back** task due dates as HA calendar events (when write-back is enabled)
+
+### Calendar Settings
+
+Configure in **Settings → Integrations → Calendar Sync**:
+
+| Setting         | Description                                                          |
+| --------------- | -------------------------------------------------------------------- |
+| Calendar Entity | The HA calendar entity to sync with (e.g. `calendar.family`)        |
+| CalDAV URL      | Optional direct CalDAV sync for non-HA calendars (Nextcloud, etc.)   |
+| Write-back      | Push task due dates to HA calendar as events                         |
+
+### API Endpoints
+
+- `GET /api/ha/calendars` — List detected calendar entities and sync status
+- `GET /api/ha/calendars?entity_id=X&start=Y&end=Z` — Get events for a specific calendar
+- `POST /api/ha/calendars` — Trigger manual sync
+
+### Calendar Page
+
+The `/calendar` page renders a monthly grid showing tasks by due date. Click any day to filter tasks for that date. The calendar respects your configured week start day (Monday, Sunday, or Saturday).
+
 ## Security
 
 ### AppArmor
