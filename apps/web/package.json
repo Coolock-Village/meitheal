@@ -17,6 +17,7 @@
     "@astrojs/mdx": "^4.3.13",
     "@astrojs/node": "^9.5.4",
     "@astrojs/sitemap": "^3.7.0",
+    "@fontsource-variable/inter": "^5.2.8",
     "@libsql/client": "^0.17.0",
     "@meitheal/domain-observability": "workspace:*",
     "@meitheal/domain-tasks": "workspace:*",

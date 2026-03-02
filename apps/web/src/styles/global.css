@@ -1,3 +1,5 @@
+/* Self-hosted Inter font — no Google Fonts CDN dependency */
+@import "@fontsource-variable/inter";
 /* Meitheal Design System — Tailwind Base */
 @tailwind base;
 @tailwind components;

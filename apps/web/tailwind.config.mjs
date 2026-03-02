@@ -45,7 +45,7 @@ export default {
                 lg: 'var(--shadow-lg)',
             },
             fontFamily: {
-                sans: ['Inter', '-apple-system', 'BlinkMacSystemFont', 'sans-serif'],
+                sans: ['Inter Variable', 'Inter', '-apple-system', 'BlinkMacSystemFont', 'sans-serif'],
             },
             transitionDuration: {
                 DEFAULT: '200ms',
