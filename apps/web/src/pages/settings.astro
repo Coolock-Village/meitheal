@@ -60,8 +60,9 @@ const locale: Locale = cookieLocale === "ga" ? "ga" : "en";
   </div>
 
   <script>
-    // Tab switching logic
-    document.addEventListener("DOMContentLoaded", () => {
+    // Tab switching logic — runs immediately (no DOMContentLoaded wrapper,
+    // which doesn't re-fire during Astro client-side navigation)
+    {
       const tabs = document.querySelectorAll(".settings-tab");
       const panes = document.querySelectorAll(".tab-pane");
 
@@ -76,9 +77,7 @@ const locale: Locale = cookieLocale === "ga" ? "ga" : "en";
 
           tab.classList.add("active");
           const isDanger = tab.getAttribute("data-target") === "tab-system";
-          (tab as HTMLElement).style.color = isDanger
-            ? "var(--text-primary)"
-            : "var(--text-primary)"; // System tab gets primary color, danger is handled within card
+          (tab as HTMLElement).style.color = "var(--text-primary)";
           (tab as HTMLElement).style.borderBottomColor = isDanger
             ? "var(--danger)"
             : "var(--accent)";
@@ -90,7 +89,7 @@ const locale: Locale = cookieLocale === "ga" ? "ga" : "en";
           }
         });
       });
-    });
+    }
 
     import { exportLocalDataAsJson } from "@domains/offline/export-service";
     import { confirmDialog } from "@lib/confirm-dialog";
