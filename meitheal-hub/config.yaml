@@ -25,6 +25,8 @@ apparmor: true
 map:
   - homeassistant_config:rw
 tmpfs: true
+watchdog: http://[HOST]:[PORT:3000]/api/health
+backup: cold
 stage: experimental
 options:
   log_level: info
