@@ -1,7 +1,7 @@
 # Technology Stack
 
-**Analysis Date:** 2026-02-28
-**Commit:** 9b9f2ab
+**Analysis Date:** 2026-03-02
+**Commit:** 947ac5a
 
 ## Languages
 
@@ -38,6 +38,16 @@
 | Zod | 3.24 | Runtime validation |
 | undici | 7.16 | HTTP client |
 
+## Fonts (Self-Hosted)
+
+| Package | Purpose |
+|---------|---------|
+| `@fontsource-variable/inter` | Primary UI font (variable weight) |
+| `@fontsource/jetbrains-mono` | Monospace for task IDs, code blocks (400 + 500) |
+
+Fonts are bundled in the build — no external CDN requests to Google Fonts.
+Prevents ad-blocker interference and works fully offline.
+
 ## Configuration
 
 **Environment Variables:**
@@ -65,7 +75,7 @@
 | Environment | Requirements |
 |-------------|-------------|
 | Development | Node.js 22+, pnpm 10.8+, SQLite-compatible FS |
-| Production (HA) | HA OS, amd64/aarch64/armv7, 128MB Node heap, `/data/` write access |
+| Production (HA) | HA OS, amd64/aarch64, Alpine 3.23 base, 128MB Node heap, `/data/` write access |
 | Cloud (future) | Cloudflare Workers + D1 |
 
 ## Deployment (HA Addon)
@@ -88,6 +98,7 @@
 - **Builds**: amd64 + aarch64 via `docker buildx`
 - **Pushes to**: GHCR (`ghcr.io/coolock-village/meitheal-hub-{arch}`) + Docker Hub (`coolockvillage/meitheal-hub-{arch}`)
 - **Validates**: release tag matches `config.yaml` version
+- **Lockfile**: `--frozen-lockfile` enforced for deterministic builds
 
 ### Local Build (alternative): `./meitheal-hub/build-push-dev.sh`
 
@@ -98,13 +109,27 @@
 
 | File | Purpose |
 |------|---------|
-| `meitheal-hub/Dockerfile` | Multi-stage: pnpm install → Astro build → Alpine runtime |
-| `meitheal-hub/config.yaml` | HA addon config (version, ingress, arch, options schema) |
+| `meitheal-hub/Dockerfile` | Multi-stage: node:22-alpine3.23 builder → HA base runtime |
+| `meitheal-hub/config.yaml` | HA addon config (version, ingress, arch, watchdog, backup) |
+| `meitheal-hub/build.json` | Extended build config (base images, OCI labels, codenotary) |
 | `meitheal-hub/run.sh` | Addon entrypoint (reads HA options, starts Node) |
+| `meitheal-hub/translations/en.yaml` | UI translations for config options |
 | `meitheal-hub/build-push-dev.sh` | Local build + push script |
 | `repository.yaml` | HA addon repository metadata |
 | `.github/workflows/publish-addon-images.yml` | CI Docker build + push |
 
+## Security & Hardening
+
+| Area | Implementation |
+|------|----------------|
+| CSP | Strict policy — no external CDN allowed (`font-src 'self'`, `style-src 'self' 'unsafe-inline'`) |
+| Error responses | All API catch blocks return generic `"Internal server error"` (CWE-209) |
+| Viewport | WCAG 2.1 SC 1.4.4 compliant (no `user-scalable=0`) |
+| Image signing | Codenotary via `build.json` (`notary@coolock.village`) |
+| Watchdog | Supervisor health monitoring via `/api/health` |
+| Backup | `cold` — addon stops during backup for data consistency |
+| Lockfile | `--frozen-lockfile` enforced in Dockerfile (both build + prod stages) |
+
 ---
 
-*Stack analysis: 2026-03-02 @ 2a96e5d*
+*Stack analysis: 2026-03-02 @ 947ac5a*
