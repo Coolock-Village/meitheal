@@ -1252,12 +1252,12 @@ Astro.response.headers.set("X-Content-Type-Options", "nosniff");
       </script>
 
       <script>
-        import { askAIForTask } from "../domains/ai/ai-context-service";
+        import { askAIForTask } from "@domains/ai/ai-context-service";
         import {
           saveAttachment,
           getAttachmentsByTaskId,
           deleteAttachment,
-        } from "../domains/offline/offline-store";
+        } from "@domains/offline/offline-store";
         import { confirmDialog } from "../lib/confirm-dialog";
         import { marked } from "marked";
         import DOMPurify from "dompurify";
@@ -2894,6 +2894,29 @@ Astro.response.headers.set("X-Content-Type-Options", "nosniff");
             })
             .catch((err) => console.warn("SW registration failed:", err));
         }
+
+        // ───── Sidebar Badge Hydration ─────
+        // SSR renders the badge with server-side count, but it can be stale or 0
+        // if the DB wasn't ready during SSR. This hydrates it client-side.
+        async function refreshSidebarBadge() {
+          try {
+            const res = await fetch("/api/tasks?limit=1&offset=0");
+            if (!res.ok) return;
+            const data = await res.json();
+            const badge = document.getElementById("nav-count-tasks");
+            if (badge && typeof data.total === "number") {
+              badge.textContent = String(data.total);
+            }
+          } catch {
+            /* best-effort */
+          }
+        }
+        refreshSidebarBadge();
+
+        // Re-hydrate badge when tasks change (listen for custom events from task operations)
+        window.addEventListener("meitheal-tasks-changed", () =>
+          refreshSidebarBadge(),
+        );
 
         // ───── Sync Notifications ─────
         window.addEventListener("meitheal-sync", async (e: Event) => {

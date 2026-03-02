@@ -103,18 +103,17 @@ export async function getHAConnection(): Promise<Connection | null> {
         });
         
         // Dispatch to internal API
-        import("node-fetch").then(({ default: fetch }) => {
-          fetch(`http://127.0.0.1:${process.env.PORT || 3000}/api/tasks/${taskId}`, {
-            method: "PUT",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({ status: "done" })
-          }).catch((err: unknown) => {
-            logger.log("error", {
-              event: "ha.notification.action_failed", domain: "ha", component: "ha-connection",
-              request_id: SYS_REQ, message: `Failed to execute task done action from HA event: ${String(err)}`,
-            });
+        // Use native fetch (Node 22+) — node-fetch is no longer needed
+        fetch(`http://127.0.0.1:${process.env.PORT || 3000}/api/tasks/${taskId}`, {
+          method: "PUT",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ status: "done" })
+        }).catch((err: unknown) => {
+          logger.log("error", {
+            event: "ha.notification.action_failed", domain: "ha", component: "ha-connection",
+            request_id: SYS_REQ, message: `Failed to execute task done action from HA event: ${String(err)}`,
           });
-        }).catch(() => {});
+        });
       }
     }, "mobile_app_notification_action");
 
