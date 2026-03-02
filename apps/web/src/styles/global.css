@@ -807,10 +807,8 @@
     }
   
     /* --- HA Ingress Compact Mode (Phase 50) --- */
-                /* When inside HA panel, adjust layout but keep sidebar for app navigation */
-    body.ha-ingress .main-content {
-      margin-left: 0 !important;
-    }
+        /* Sidebar is shown in HA ingress — main-content margin is handled
+           by the sidebar-collapsed class and ml-sidebar utility normally. */
   
     body.ha-ingress .top-navigation .hamburger-btn {
       display: none !important;
