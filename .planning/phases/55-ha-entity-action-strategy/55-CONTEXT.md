@@ -15,16 +15,16 @@ Phase 55 delivers Meitheal as a **first-class HA integration** — registering i
 
 Rationale:
 
-| Factor | Option B (MQTT Discovery) | Option C (Python Custom Component) |
-|--------|--------------------------|-------------------------------------|
-| **Can register `todo.*` entity** | ❌ MQTT discovery only supports sensor, binary_sensor, switch, light, cover, fan, climate, lock, alarm — **NOT todo** | ✅ Full platform support including `todo` |
-| **Custom HA services/actions** | ❌ Cannot register services via MQTT | ✅ `async_setup_platform` + `hass.services.async_register()` |
-| **HA config flow UI** | ❌ Not possible | ✅ Full config flow with settings toggle |
-| **Entity attributes** | Limited to MQTT payload | ✅ Arbitrary attributes, device_info, unique_id |
-| **Sensor entities** (`sensor.meitheal_*`) | ✅ Works | ✅ Works |
-| **Requires MQTT broker** | ✅ Yes (Mosquitto) | ❌ No — talks directly to addon |
-| **Install barrier** | Medium (needs MQTT) | **None if bundled in addon** |
-| **R-011 alignment** | ❌ Doesn't satisfy | ✅ Directly satisfies R-011 |
+| Factor                                     | Option B (MQTT Discovery)   | Option C (Python Custom Component)                     |
+| ------------------------------------------ | --------------------------- | ------------------------------------------------------ |
+| **Can register `todo.*` entity**            | ❌ MQTT discovery only supports sensor, binary_sensor, switch, light, cover, fan, climate, lock, alarm — **NOT todo** | ✅ Full platform support including `todo` |
+| **Custom HA services/actions**              | ❌ Cannot register services via MQTT | ✅ `async_setup_platform` + `hass.services.async_register()` |
+| **HA config flow UI**                       | ❌ Not possible              | ✅ Full config flow with settings toggle                |
+| **Entity attributes**                       | Limited to MQTT payload      | ✅ Arbitrary attributes, device_info, unique_id         |
+| **Sensor entities** (`sensor.meitheal_*`)   | ✅ Works                     | ✅ Works                                                |
+| **Requires MQTT broker**                    | ✅ Yes (Mosquitto)           | ❌ No — talks directly to addon                         |
+| **Install barrier**                         | Medium (needs MQTT)          | **None if bundled in addon**                            |
+| **R-011 alignment**                         | ❌ Doesn't satisfy           | ✅ Directly satisfies R-011                             |
 
 **MQTT Discovery was eliminated** because it literally cannot create `todo` entities — the HA MQTT integration only supports a fixed set of entity platforms, and `todo` is not one of them.
 
@@ -41,6 +41,7 @@ If performance is a concern: the Python component is lightweight — it's a thin
 **Decision: The addon will auto-install the custom component — no separate step needed.**
 
 Strategy:
+
 1. Addon bundles `custom_components/meitheal/` in its Docker image
 2. On startup, addon checks if `/homeassistant/custom_components/meitheal/` exists
 3. If not: copies files, calls `homeassistant.reload_custom_components` via WS
@@ -51,22 +52,22 @@ This mirrors how addons like Z-Wave JS and Node-RED handle their companion integ
 
 ### Entity Strategy
 
-| Entity | Type | Purpose |
-|--------|------|---------|
-| `todo.meitheal_tasks` | TodoListEntity | Meitheal tasks visible in HA todo dashboard |
-| `sensor.meitheal_active_tasks` | SensorEntity | Count of active tasks (for dashboards, automations) |
-| `sensor.meitheal_overdue_tasks` | SensorEntity | Count of overdue tasks |
-| `sensor.meitheal_total_tasks` | SensorEntity | Total task count |
-| `binary_sensor.meitheal_sync_active` | BinarySensorEntity | Whether todo sync is running |
+| Entity                                | Type               | Purpose                                              |
+| ------------------------------------- | ------------------ | ---------------------------------------------------- |
+| `todo.meitheal_tasks`                 | TodoListEntity     | Meitheal tasks visible in HA todo dashboard          |
+| `sensor.meitheal_active_tasks`        | SensorEntity       | Count of active tasks (for dashboards, automations)  |
+| `sensor.meitheal_overdue_tasks`       | SensorEntity       | Count of overdue tasks                               |
+| `sensor.meitheal_total_tasks`         | SensorEntity       | Total task count                                     |
+| `binary_sensor.meitheal_sync_active`  | BinarySensorEntity | Whether todo sync is running                         |
 
 ### Action Strategy
 
-| Service | Purpose |
-|---------|---------|
-| `meitheal.add_task` | Create a task (title, priority, due_date, board_id) |
-| `meitheal.complete_task` | Mark a task as done (by ID or title) |
-| `meitheal.get_tasks` | Retrieve task list (for scripts/automations) |
-| `meitheal.sync_todo` | Trigger manual sync |
+| Service                  | Purpose                                            |
+| ------------------------ | -------------------------------------------------- |
+| `meitheal.add_task`      | Create a task (title, priority, due_date, board_id) |
+| `meitheal.complete_task` | Mark a task as done (by ID or title)               |
+| `meitheal.get_tasks`     | Retrieve task list (for scripts/automations)       |
+| `meitheal.sync_todo`     | Trigger manual sync                                |
 
 ### Claude's Discretion
 

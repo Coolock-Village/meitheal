@@ -1,3 +1,5 @@
+# Design and UX Rules
+
 ---
 trigger: always_on
 ---
@@ -21,31 +23,20 @@ We will go Page by page, auditing with @beautifulMentionand @beautifulMention to
 -- with /gsd use /clear to help with context drift as much as possibel and where relevant
 
 We will cover the following (in order)
-Dashboard/Home -- http://ha.home.arpa:8123/868b2fee_meitheal_hub
-KanBan -- http://ha.home.arpa:8123/api/hassio_ingress/nSNXnUWXfe2DcUzE_X_4wsGWAwTIUze7_WdXaSsXJwo/kanban
 
-table -- http://ha.home.arpa:8123/api/hassio_ingress/nSNXnUWXfe2DcUzE_X_4wsGWAwTIUze7_WdXaSsXJwo/table
-
-Today -- http://ha.home.arpa:8123/api/hassio_ingress/nSNXnUWXfe2DcUzE_X_4wsGWAwTIUze7_WdXaSsXJwo/today
-
-Upcoming -- http://ha.home.arpa:8123/api/hassio_ingress/nSNXnUWXfe2DcUzE_X_4wsGWAwTIUze7_WdXaSsXJwo/upcoming
-
-Calendar
-http://ha.home.arpa:8123/api/hassio_ingress/nSNXnUWXfe2DcUzE_X_4wsGWAwTIUze7_WdXaSsXJwo/calendar
-
-New Task Modal
-
-Settings
-http://ha.home.arpa:8123/api/hassio_ingress/nSNXnUWXfe2DcUzE_X_4wsGWAwTIUze7_WdXaSsXJwo/settings
-
-Edit Card/Ticket Modal
-
-Search/ Search Modal
-
-Board selection and settings
+- Dashboard/Home — <http://ha.home.arpa:8123/868b2fee_meitheal_hub>
+- KanBan — <http://ha.home.arpa:8123/api/hassio_ingress/nSNXnUWXfe2DcUzE_X_4wsGWAwTIUze7_WdXaSsXJwo/kanban>
+- Table — <http://ha.home.arpa:8123/api/hassio_ingress/nSNXnUWXfe2DcUzE_X_4wsGWAwTIUze7_WdXaSsXJwo/table>
+- Today — <http://ha.home.arpa:8123/api/hassio_ingress/nSNXnUWXfe2DcUzE_X_4wsGWAwTIUze7_WdXaSsXJwo/today>
+- Upcoming — <http://ha.home.arpa:8123/api/hassio_ingress/nSNXnUWXfe2DcUzE_X_4wsGWAwTIUze7_WdXaSsXJwo/upcoming>
+- Calendar — <http://ha.home.arpa:8123/api/hassio_ingress/nSNXnUWXfe2DcUzE_X_4wsGWAwTIUze7_WdXaSsXJwo/calendar>
+- New Task Modal
+- Settings — <http://ha.home.arpa:8123/api/hassio_ingress/nSNXnUWXfe2DcUzE_X_4wsGWAwTIUze7_WdXaSsXJwo/settings>
+- Edit Card/Ticket Modal
+- Search/ Search Modal
+- Board selection and settings
 
 There may be other Areas, but these are definitely most, so pay attenton to them, and ensure we are accurate and all inclusive
-
 
 ---
 

@@ -4,15 +4,15 @@ Python custom component that registers Meitheal as a first-class HA integration.
 
 ## What It Does
 
-| Entity / Service | Type | Purpose |
-|------------------|------|---------|
-| `todo.meitheal_tasks` | TodoListEntity | Meitheal tasks in HA todo dashboard |
-| `sensor.meitheal_active_tasks` | Sensor | Active task count |
-| `sensor.meitheal_overdue_tasks` | Sensor | Overdue task count |
-| `sensor.meitheal_total_tasks` | Sensor | Total task count |
-| `meitheal.create_task` | Service | Create a task |
-| `meitheal.complete_task` | Service | Mark a task done |
-| `meitheal.sync_todo` | Service | Manual data refresh |
+| Entity / Service                | Type           | Purpose                            |
+| ------------------------------- | -------------- | ---------------------------------- |
+| `todo.meitheal_tasks`           | TodoListEntity | Meitheal tasks in HA todo dashboard |
+| `sensor.meitheal_active_tasks`  | Sensor         | Active task count                  |
+| `sensor.meitheal_overdue_tasks` | Sensor         | Overdue task count                 |
+| `sensor.meitheal_total_tasks`   | Sensor         | Total task count                   |
+| `meitheal.create_task`          | Service        | Create a task                      |
+| `meitheal.complete_task`        | Service        | Mark a task done                   |
+| `meitheal.sync_todo`            | Service        | Manual data refresh                |
 
 ## Installation
 
@@ -31,7 +31,7 @@ The addon hostname (`local_meitheal_hub`) and port (`3000`) are pre-filled.
 
 ## Architecture
 
-```
+```text
 HA Core ←→ custom_components/meitheal ←→ Meitheal addon REST API ←→ SQLite
 ```
 
