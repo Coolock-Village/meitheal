@@ -67,11 +67,11 @@ Astro.response.headers.set("X-Content-Type-Options", "nosniff");
     <script is:inline>
       (function () {
         var ip = window.__ingress_path;
-        if (ip) {
-          var _f = window.fetch;
-          window.fetch = function (input, init) {
-            // Ensure ingress session cookie is always sent
-            if (!init) init = {};
+        var _f = window.fetch;
+        window.fetch = function (input, init) {
+          // Ensure ingress session cookie is always sent
+          if (!init) init = {};
+          if (ip) {
             if (!init.credentials) init.credentials = "include";
             if (typeof input === "string" && input.startsWith("/")) {
               // Guard: don't prefix if URL already contains the ingress path
@@ -87,9 +87,31 @@ Astro.response.headers.set("X-Content-Type-Options", "nosniff");
                 }
               }
             }
-            return _f.call(this, input, init);
-          };
-        }
+          }
+          return _f.call(this, input, init).then(function (response) {
+            // Conflict detection (Persona #14): show toast on 409
+            if (response.status === 409) {
+              var tc = document.querySelector(".toast-container");
+              if (tc) {
+                var toast = document.createElement("div");
+                toast.className = "toast warning";
+                toast.textContent =
+                  "⚠ Task was modified by another session. Refresh to see latest.";
+                toast.setAttribute("role", "alert");
+                tc.appendChild(toast);
+                setTimeout(function () {
+                  toast.remove();
+                }, 6000);
+              }
+              // Announce for screen readers via aria-live
+              var live = document.getElementById("sync-announcer");
+              if (live)
+                live.textContent =
+                  "Conflict detected: task was modified elsewhere.";
+            }
+            return response;
+          });
+        };
       })();
     </script>
     <!-- Theme init — runs before paint to prevent flash -->
@@ -2868,5 +2890,14 @@ Astro.response.headers.set("X-Content-Type-Options", "nosniff");
       </script>
     </div>
     <StrategicEvaluator />
+    <!-- Sync status announcer for screen readers (Persona #25) -->
+    <div
+      id="sync-announcer"
+      aria-live="polite"
+      aria-atomic="true"
+      class="sr-only"
+      role="status"
+    >
+    </div>
   </body>
 </html>
