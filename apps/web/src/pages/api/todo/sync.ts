@@ -80,7 +80,8 @@ export const POST: APIRoute = async ({ request }) => {
       }
 
       default:
-        return new Response(JSON.stringify({ ok: false, error: `Unknown action: ${action}` }), {
+        console.warn("[api/todo/sync] Unknown action received:", action);
+        return new Response(JSON.stringify({ ok: false, error: "Unknown action" }), {
           status: 400, headers: { "Content-Type": "application/json" },
         });
     }
