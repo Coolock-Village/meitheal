@@ -268,6 +268,22 @@ export const PUT: APIRoute = async ({ params, request }) => {
 
   dispatchTaskEvent("task.updated", taskPayload, typeof body.request_id === "string" ? body.request_id : undefined).catch(() => {});
 
+  // Phase 52: Native Push Notification if bumped to Urgent (P1)
+  if (sanitized.priority === 1 && oldTask?.priority !== 1) {
+    import("../../../domains/ha/ha-services").then(({ sendNotification }) => {
+      const titleStr = typeof sanitized.title === "string" ? sanitized.title : String(oldTask?.title ?? "Task");
+      const descStr = typeof sanitized.description === "string" ? sanitized.description : String(oldTask?.description ?? "");
+      sendNotification("notify", `🚨 Escalated to Urgent: ${titleStr}`, descStr.slice(0, 100) || "Action required.", {
+        push: { category: "URGENT_TASK_UPDATE" },
+        action_data: { task_id: resolvedId, ticket_key: taskPayload.ticket_key },
+        actions: [
+          { action: `MEITHEAL_TASK_DONE_${resolvedId}`, title: "Mark Done" },
+          { action: `MEITHEAL_TASK_VIEW_${resolvedId}`, title: "View details", uri: `/meitheal_hub/task/${taskPayload.ticket_key}` }
+        ]
+      }).catch(err => console.error("[ha-notify] Failed to send urgent update push:", err));
+    }).catch(() => {});
+  }
+
   return new Response(JSON.stringify(taskPayload), {
     status: 200,
     headers: { "content-type": "application/json" },

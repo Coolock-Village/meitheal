@@ -7,6 +7,7 @@ import Sidebar from "../components/layout/Sidebar.astro";
 import TopNavigation from "../components/layout/TopNavigation.astro";
 import StrategicEvaluator from "../components/tasks/StrategicEvaluator.astro";
 import NewTaskModal from "../components/tasks/NewTaskModal.astro";
+import AskAssistModal from "../components/ha/AskAssistModal.astro";
 
 import dtEn from "../i18n/en.json";
 import dtGa from "../i18n/ga.json";
@@ -2902,6 +2903,8 @@ Astro.response.headers.set("X-Content-Type-Options", "nosniff");
       </script>
     </div>
     <StrategicEvaluator />
+    <NewTaskModal />
+    <AskAssistModal />
     <!-- Sync status announcer for screen readers (Persona #25) -->
     <div
       id="sync-announcer"

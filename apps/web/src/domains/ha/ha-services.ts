@@ -137,6 +137,41 @@ export async function sendNotification(
   }
 }
 
+// ── Conversation / Assist Services (Phase 52) ──
+export async function askAssist(
+  text: string, agentId?: string,
+): Promise<string | null> {
+  const conn = await getHAConnection();
+  if (!conn) return null;
+  try {
+    const serviceData: Record<string, unknown> = { text };
+    if (agentId) serviceData.agent_id = agentId;
+
+    const result = await conn.sendMessagePromise<Record<string, unknown>>({
+      type: "call_service", domain: "conversation", service: "process",
+      service_data: serviceData,
+      return_response: true,
+    });
+    
+    // Check if the response matches typical conversation.process shape
+    // Response path: result.response.speech.plain.speech
+    const payload = result as { response?: { speech?: { plain?: { speech?: string } } } };
+    const speechText = payload?.response?.speech?.plain?.speech;
+    
+    logger.log("info", {
+      event: "ha.conversation.success", domain: "ha", component: "ha-services",
+      request_id: SYS_REQ, message: `Asked Assist: "${text}"`,
+    });
+    return speechText ?? null;
+  } catch (err) {
+    logger.log("error", {
+      event: "ha.conversation.failed", domain: "ha", component: "ha-services",
+      request_id: SYS_REQ, message: `Failed to ask assist: ${err}`,
+    });
+    return null;
+  }
+}
+
 // ── Generic Service Call ──
 
 export async function callHAService(

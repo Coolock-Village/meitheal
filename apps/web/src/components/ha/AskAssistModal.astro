@@ -1,0 +1,143 @@
+---
+import { t } from "../../i18n/translations";
+import type { Locale } from "../../lib/locale";
+import Icon from "../ui/Icon.astro";
+
+const cookieLocale = Astro.cookies.get("meitheal-locale")?.value;
+const locale: Locale = cookieLocale === "ga" ? "ga" : "en";
+---
+
+<div id="ask-ha-overlay" class="modal-overlay relative z-[200]">
+  <div class="modal-content max-w-lg w-full p-6 animate-slide-in">
+    <div
+      class="modal-header flex items-center justify-between mb-4 border-b border-border pb-3"
+    >
+      <h2 class="text-xl font-bold flex items-center gap-2 text-text-primary" id="ask-ha-title">
+        <Icon name="sparkles" size={24} class="text-accent" />
+        Ask Home Assistant
+      </h2>
+      <button
+        type="button"
+        class="btn-icon text-xl text-text-muted hover:text-text-primary"
+        id="close-ask-ha-modal">✕</button
+      >
+    </div>
+
+    <form id="ask-ha-form" class="space-y-4">
+      <div id="ask-ha-chat" class="hidden flex-col gap-3 max-h-60 overflow-y-auto mb-4 bg-bg-secondary/30 p-4 rounded-lg border border-border/50">
+        <!-- Chat history appears here -->
+      </div>
+
+      <div class="form-group relative">
+        <label for="ask-ha-input" class="sr-only">Your command</label>
+        <div class="relative flex items-center">
+          <input
+            type="text"
+            class="form-input bg-bg-input pr-12 w-full"
+            id="ask-ha-input"
+            placeholder="Turn off the living room lights..."
+            autocomplete="off"
+            required
+          />
+          <button 
+            type="submit" 
+            class="absolute right-2 p-1.5 text-text-muted hover:text-accent disabled:opacity-50 transition-colors"
+            id="submit-ask-ha-btn"
+            aria-label="Send"
+          >
+            <Icon name="plus" size={18} />
+          </button>
+        </div>
+      </div>
+    </form>
+  </div>
+</div>
+
+<script>
+  const overlay = document.getElementById("ask-ha-overlay");
+  const closeBtn = document.getElementById("close-ask-ha-modal");
+  const form = document.getElementById("ask-ha-form") as HTMLFormElement;
+  const input = document.getElementById("ask-ha-input") as HTMLInputElement;
+  const submitBtn = document.getElementById("submit-ask-ha-btn") as HTMLButtonElement;
+  const chatContainer = document.getElementById("ask-ha-chat");
+
+  function closeAskHaModal() {
+    overlay?.classList.remove("open");
+    form?.reset();
+    if (chatContainer) {
+      chatContainer.innerHTML = "";
+      chatContainer.classList.add("hidden");
+      chatContainer.classList.remove("flex");
+    }
+  }
+
+  function appendChat(message: string, isUser: boolean) {
+    if (!chatContainer) return;
+    chatContainer.classList.remove("hidden");
+    chatContainer.classList.add("flex");
+    
+    const bubble = document.createElement("div");
+    bubble.className = `max-w-[85%] rounded-lg px-3 py-2 text-sm ${
+      isUser 
+        ? "bg-accent text-white self-end rounded-br-none" 
+        : "bg-bg-primary text-text-primary border border-border self-start rounded-bl-none"
+    }`;
+    bubble.textContent = message;
+    chatContainer.appendChild(bubble);
+    chatContainer.scrollTop = chatContainer.scrollHeight;
+  }
+
+  closeBtn?.addEventListener("click", closeAskHaModal);
+  overlay?.addEventListener("click", (e) => {
+    if (e.target === overlay) closeAskHaModal();
+  });
+
+  // Export globally for the TopNavigation button to trigger
+  (window as any).openAskHaModal = () => {
+    overlay?.classList.add("open");
+    setTimeout(() => input?.focus(), 50);
+  };
+
+  document.body.addEventListener("click", (e) => {
+    const target = (e.target as HTMLElement).closest("#ask-ha-btn");
+    if (target) {
+      e.preventDefault();
+      (window as any).openAskHaModal();
+    }
+  });
+
+  form?.addEventListener("submit", async (e) => {
+    e.preventDefault();
+    const text = input.value.trim();
+    if (!text) return;
+
+    appendChat(text, true);
+    input.value = "";
+    submitBtn.disabled = true;
+
+    try {
+      const res = await fetch("/api/ha/assist", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ text })
+      });
+      
+      if (res.ok) {
+        const data = await res.json();
+        if (data.speech) {
+          appendChat(data.speech, false);
+        } else {
+          appendChat("Done.", false);
+        }
+      } else {
+        appendChat("Sorry, I couldn't reach Home Assistant.", false);
+      }
+    } catch (err) {
+      console.error(err);
+      appendChat("Communication error.", false);
+    } finally {
+      submitBtn.disabled = false;
+      input.focus();
+    }
+  });
+</script>

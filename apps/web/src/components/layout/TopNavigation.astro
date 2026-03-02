@@ -63,6 +63,15 @@ const { locale } = Astro.props;
   </div>
 
   <div class="topbar-actions flex items-center gap-2">
+    <button
+      type="button"
+      class="btn-icon text-text-muted hover:text-accent transition-colors"
+      id="ask-ha-btn"
+      title="Ask Home Assistant"
+      aria-label="Ask Home Assistant"
+    >
+      <Icon name="sparkles" size={20} />
+    </button>
     <slot name="actions" />
   </div>
 </header>
