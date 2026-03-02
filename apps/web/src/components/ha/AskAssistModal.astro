@@ -12,7 +12,10 @@ const locale: Locale = cookieLocale === "ga" ? "ga" : "en";
     <div
       class="modal-header flex items-center justify-between mb-4 border-b border-border pb-3"
     >
-      <h2 class="text-xl font-bold flex items-center gap-2 text-text-primary" id="ask-ha-title">
+      <h2
+        class="text-xl font-bold flex items-center gap-2 text-text-primary"
+        id="ask-ha-title"
+      >
         <Icon name="sparkles" size={24} class="text-accent" />
         Ask Home Assistant
       </h2>
@@ -24,7 +27,10 @@ const locale: Locale = cookieLocale === "ga" ? "ga" : "en";
     </div>
 
     <form id="ask-ha-form" class="space-y-4">
-      <div id="ask-ha-chat" class="hidden flex-col gap-3 max-h-60 overflow-y-auto mb-4 bg-bg-secondary/30 p-4 rounded-lg border border-border/50">
+      <div
+        id="ask-ha-chat"
+        class="hidden flex-col gap-3 max-h-60 overflow-y-auto mb-4 bg-bg-secondary/30 p-4 rounded-lg border border-border/50"
+      >
         <!-- Chat history appears here -->
       </div>
 
@@ -39,8 +45,8 @@ const locale: Locale = cookieLocale === "ga" ? "ga" : "en";
             autocomplete="off"
             required
           />
-          <button 
-            type="submit" 
+          <button
+            type="submit"
             class="absolute right-2 p-1.5 text-text-muted hover:text-accent disabled:opacity-50 transition-colors"
             id="submit-ask-ha-btn"
             aria-label="Send"
@@ -54,32 +60,42 @@ const locale: Locale = cookieLocale === "ga" ? "ga" : "en";
 </div>
 
 <script>
+  import { showToast } from "../../lib/toast";
+
   const overlay = document.getElementById("ask-ha-overlay");
   const closeBtn = document.getElementById("close-ask-ha-modal");
   const form = document.getElementById("ask-ha-form") as HTMLFormElement;
   const input = document.getElementById("ask-ha-input") as HTMLInputElement;
-  const submitBtn = document.getElementById("submit-ask-ha-btn") as HTMLButtonElement;
+  const submitBtn = document.getElementById(
+    "submit-ask-ha-btn",
+  ) as HTMLButtonElement;
   const chatContainer = document.getElementById("ask-ha-chat");
 
+  let isModalOpen = false;
+
   function closeAskHaModal() {
+    isModalOpen = false;
     overlay?.classList.remove("open");
     form?.reset();
+    input.value = ""; // Ensure explicit clear
     if (chatContainer) {
       chatContainer.innerHTML = "";
       chatContainer.classList.add("hidden");
       chatContainer.classList.remove("flex");
     }
+    // Return focus to trigger button if it exists
+    document.getElementById("ask-ha-btn")?.focus();
   }
 
   function appendChat(message: string, isUser: boolean) {
     if (!chatContainer) return;
     chatContainer.classList.remove("hidden");
     chatContainer.classList.add("flex");
-    
+
     const bubble = document.createElement("div");
-    bubble.className = `max-w-[85%] rounded-lg px-3 py-2 text-sm ${
-      isUser 
-        ? "bg-accent text-white self-end rounded-br-none" 
+    bubble.className = `max-w-[85%] rounded-lg px-3 py-2 text-sm text-left ${
+      isUser
+        ? "bg-accent text-white self-end rounded-br-none"
         : "bg-bg-primary text-text-primary border border-border self-start rounded-bl-none"
     }`;
     bubble.textContent = message;
@@ -88,12 +104,44 @@ const locale: Locale = cookieLocale === "ga" ? "ga" : "en";
   }
 
   closeBtn?.addEventListener("click", closeAskHaModal);
+
   overlay?.addEventListener("click", (e) => {
     if (e.target === overlay) closeAskHaModal();
   });
 
+  document.addEventListener("keydown", (e) => {
+    if (!isModalOpen) return;
+
+    // Close on Escape
+    if (e.key === "Escape") {
+      e.stopPropagation();
+      closeAskHaModal();
+      return;
+    }
+
+    // Basic focus trap within the modal overlay
+    if (e.key === "Tab") {
+      const focusable = overlay?.querySelectorAll(
+        'button, [href], input, select, textarea, [tabindex]:not([tabindex="-1"])',
+      ) as NodeListOf<HTMLElement>;
+      if (!focusable || focusable.length === 0) return;
+
+      const first = focusable[0];
+      const last = focusable[focusable.length - 1];
+
+      if (e.shiftKey && document.activeElement === first) {
+        e.preventDefault();
+        last?.focus();
+      } else if (!e.shiftKey && document.activeElement === last) {
+        e.preventDefault();
+        first?.focus();
+      }
+    }
+  });
+
   // Export globally for the TopNavigation button to trigger
   (window as any).openAskHaModal = () => {
+    isModalOpen = true;
     overlay?.classList.add("open");
     setTimeout(() => input?.focus(), 50);
   };
@@ -119,9 +167,9 @@ const locale: Locale = cookieLocale === "ga" ? "ga" : "en";
       const res = await fetch("/api/ha/assist", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ text })
+        body: JSON.stringify({ text }),
       });
-      
+
       if (res.ok) {
         const data = await res.json();
         if (data.speech) {
@@ -130,11 +178,11 @@ const locale: Locale = cookieLocale === "ga" ? "ga" : "en";
           appendChat("Done.", false);
         }
       } else {
-        appendChat("Sorry, I couldn't reach Home Assistant.", false);
+        showToast("Home Assistant is unreachable.", "warning");
       }
     } catch (err) {
       console.error(err);
-      appendChat("Communication error.", false);
+      showToast("Network error communicating with HA.", "error");
     } finally {
       submitBtn.disabled = false;
       input.focus();

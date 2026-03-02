@@ -69,6 +69,77 @@ async function checkHealth(): Promise<boolean> {
   }
 }
 
+// --- SSE Connection Manager (Phase 53) ---
+
+let sseConnection: EventSource | null = null;
+let sseReconnectTimer: ReturnType<typeof setTimeout> | null = null;
+let sseReconnectAttempts = 0;
+const MAX_SSE_RETRY_MS = 60_000;
+
+function connectSSE(): void {
+  if (typeof window === "undefined") return;
+  if (sseConnection) {
+    sseConnection.close();
+    sseConnection = null;
+  }
+  
+  // Clear any pending reconnects
+  if (sseReconnectTimer) {
+    clearTimeout(sseReconnectTimer);
+    sseReconnectTimer = null;
+  }
+
+  // Only connect if we believe we are online
+  if (currentState !== "online") return;
+
+  try {
+    const sseUrl = apiUrl("/api/sse");
+    sseConnection = new EventSource(sseUrl, { withCredentials: true });
+
+    sseConnection.onopen = () => {
+      sseReconnectAttempts = 0; // Reset backoff on success
+      // console.log("[sse] Connected");
+    };
+
+    sseConnection.onerror = () => {
+      // console.warn("[sse] Connection lost. Backing off...");
+      if (sseConnection) {
+        sseConnection.close();
+        sseConnection = null;
+      }
+      
+      sseReconnectAttempts++;
+      const delay = Math.min(1000 * Math.pow(2, sseReconnectAttempts), MAX_SSE_RETRY_MS);
+      
+      sseReconnectTimer = setTimeout(() => {
+        if (currentState === "online") connectSSE();
+      }, delay);
+    };
+
+    // Forward SSE events as custom document events for UI components to listen to
+    sseConnection.addEventListener("ha:entity_changed", (e: MessageEvent) => {
+      try {
+        const data = JSON.parse(e.data);
+        window.dispatchEvent(new CustomEvent("ha-entity-update", { detail: data }));
+      } catch {}
+    });
+
+  } catch (err) {
+    console.warn("[sse] Failed to initialize EventSource:", err);
+  }
+}
+
+function disconnectSSE(): void {
+  if (sseReconnectTimer) {
+    clearTimeout(sseReconnectTimer);
+    sseReconnectTimer = null;
+  }
+  if (sseConnection) {
+    sseConnection.close();
+    sseConnection = null;
+  }
+}
+
 // --- Public API ---
 
 export function getConnectivityState(): ConnectivityState {
@@ -81,11 +152,15 @@ export function startConnectivityMonitor(): void {
   // Listen to browser online/offline events
   window.addEventListener("online", () => {
     transitionTo("checking")
-    checkHealth().then((ok) => transitionTo(ok ? "online" : "offline"))
+    checkHealth().then((ok) => {
+      transitionTo(ok ? "online" : "offline");
+      if (ok) connectSSE();
+    })
   })
 
   window.addEventListener("offline", () => {
-    transitionTo("offline")
+    transitionTo("offline");
+    disconnectSSE();
   })
 
   // Periodic health check (skip when tab is backgrounded to save bandwidth)
@@ -94,12 +169,19 @@ export function startConnectivityMonitor(): void {
     if (navigator.onLine) {
       const ok = await checkHealth()
       if (!ok && currentState === "online") {
-        transitionTo("offline")
+        transitionTo("offline");
+        disconnectSSE();
       } else if (ok && currentState === "offline") {
-        transitionTo("online")
+        transitionTo("online");
+        connectSSE();
       }
     }
   }, HEALTH_CHECK_INTERVAL_MS)
+
+  // Initial SSE Connection if online
+  if (currentState === "online") {
+    connectSSE();
+  }
 }
 
 export function stopConnectivityMonitor(): void {
@@ -111,4 +193,5 @@ export function stopConnectivityMonitor(): void {
     clearTimeout(debounceTimer)
     debounceTimer = null
   }
+  disconnectSSE();
 }
