@@ -91,6 +91,29 @@ Astro.response.headers.set("X-Content-Type-Options", "nosniff");
             }
           }
           return _f.call(this, input, init).then(function (response) {
+            // Stale ingress token: HA Supervisor returns 403 when the
+            // addon restarted and got a new ingress token. Auto-reload
+            // to fetch the new token from the server-rendered HTML.
+            if (response.status === 403 && ip) {
+              var reloadKey = "meitheal-ingress-reload";
+              var lastReload = sessionStorage.getItem(reloadKey);
+              var now = Date.now();
+              // Guard: don't reload more than once per 10 seconds
+              if (!lastReload || now - Number(lastReload) > 10000) {
+                sessionStorage.setItem(reloadKey, String(now));
+                var tc = document.querySelector(".toast-container");
+                if (tc) {
+                  var t = document.createElement("div");
+                  t.className = "toast warning";
+                  t.textContent = "🔄 Session expired. Reloading...";
+                  t.setAttribute("role", "alert");
+                  tc.appendChild(t);
+                }
+                setTimeout(function () {
+                  window.location.reload();
+                }, 800);
+              }
+            }
             // Conflict detection (Persona #14): show toast on 409
             if (response.status === 409) {
               var tc = document.querySelector(".toast-container");
