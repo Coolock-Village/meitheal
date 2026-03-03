@@ -22,6 +22,22 @@ export MEITHEAL_DB_URL="${MEITHEAL_DB_URL:-file:/data/meitheal.db}"
 if [ -n "${SUPERVISOR_TOKEN:-}" ]; then
   export HA_BASE_URL="${HA_BASE_URL:-http://supervisor/core}"
   export HA_TOKEN="${HA_TOKEN:-$SUPERVISOR_TOKEN}"
+
+  # ── Discover ingress path from Supervisor API ──
+  # HA Supervisor is supposed to inject X-Ingress-Path on proxied requests,
+  # but some versions/configurations don't. Query the API to get the definitive
+  # ingress URL and export it so serve.mjs can inject the header on every request.
+  INGRESS_URL=$(curl -fsS -H "Authorization: Bearer ${SUPERVISOR_TOKEN}" \
+    http://supervisor/addons/self/info 2>/dev/null \
+    | grep -o '"ingress_url":"[^"]*"' \
+    | head -1 \
+    | sed 's/"ingress_url":"\(.*\)"/\1/' || true)
+  if [ -n "${INGRESS_URL:-}" ]; then
+    export INGRESS_PATH="${INGRESS_URL}"
+    echo "{\"event\":\"ingress.path.discovered\",\"path\":\"${INGRESS_PATH}\",\"time\":\"$(date -u +\"%Y-%m-%dT%H:%M:%SZ\")\"}"
+  else
+    echo "{\"event\":\"ingress.path.discovery.failed\",\"time\":\"$(date -u +\"%Y-%m-%dT%H:%M:%SZ\")}" >&2
+  fi
 fi
 
 export HOST="${HOST:-0.0.0.0}"
