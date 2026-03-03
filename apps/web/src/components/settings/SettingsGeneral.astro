@@ -111,13 +111,204 @@ const { locale } = Astro.props;
     </div>
 
     <!-- Strategic Lenses — Contextual Mapping -->
-    <div class="card">
+    <div class="card" style="position: relative;">
       <div class="card-header">
         <div>
-          <div class="card-title">Strategic Lenses</div>
+          <div
+            class="card-title"
+            style="display: flex; align-items: center; gap: 8px;"
+          >
+            Strategic Lenses
+            <button
+              type="button"
+              id="strategic-lenses-help-btn"
+              style="display: inline-flex; align-items: center; justify-content: center; width: 22px; height: 22px; border-radius: 50%; border: 1px solid var(--border); background: var(--bg-secondary); color: var(--text-muted); font-size: 12px; cursor: pointer; transition: all 150ms ease; flex-shrink: 0;"
+              title="What are Strategic Lenses?">?</button
+            >
+          </div>
           <div class="card-subtitle">
             Map evaluation frameworks contextually by Task Type.
           </div>
+        </div>
+      </div>
+
+      <!-- Helper Popup -->
+      <div
+        id="strategic-lenses-help-popup"
+        style="display: none; position: absolute; top: 64px; left: 0; right: 0; z-index: 20; padding: 16px; background: var(--bg-card); border: 1px solid var(--border); border-radius: 12px; box-shadow: 0 8px 32px rgba(0,0,0,0.4); max-height: 70vh; overflow-y: auto;"
+      >
+        <div
+          style="display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 12px;"
+        >
+          <div>
+            <strong style="font-size: 15px; color: var(--text-primary);"
+              >What are Strategic Lenses?</strong
+            >
+            <p
+              style="font-size: 13px; color: var(--text-secondary); margin: 4px 0 0; line-height: 1.5;"
+            >
+              Strategic Lenses let you evaluate tasks through proven frameworks.
+              Assign different lenses to task types (Epic, Story, Task, Doc) to
+              automatically score priority, impact, and domain fit when creating
+              or reviewing work.
+            </p>
+          </div>
+          <button
+            type="button"
+            id="strategic-lenses-help-close"
+            style="color: var(--text-muted); background: none; border: none; font-size: 18px; cursor: pointer; padding: 0 4px; line-height: 1;"
+            >×</button
+          >
+        </div>
+
+        <div style="display: flex; flex-direction: column; gap: 10px;">
+          <!-- RICE -->
+          <div
+            style="padding: 10px 12px; background: var(--bg-secondary); border: 1px solid var(--border); border-radius: 8px;"
+          >
+            <div
+              style="display: flex; justify-content: space-between; align-items: center;"
+            >
+              <strong style="font-size: 13px;">🎯 RICE</strong>
+              <a
+                href="https://www.intercom.com/blog/rice-simple-prioritization-for-product-managers/"
+                target="_blank"
+                rel="noopener noreferrer"
+                style="font-size: 11px; color: var(--accent); text-decoration: none;"
+                >Intercom Blog →</a
+              >
+            </div>
+            <p
+              style="font-size: 12px; color: var(--text-muted); margin: 4px 0 0; line-height: 1.5;"
+            >
+              <strong>Reach × Impact × Confidence ÷ Effort</strong>.
+              Prioritization framework from Intercom. Scores tasks by how many
+              people they affect, how much they move the needle, how confident
+              you are, and how much work they take.
+            </p>
+          </div>
+
+          <!-- DRICE -->
+          <div
+            style="padding: 10px 12px; background: var(--bg-secondary); border: 1px solid var(--border); border-radius: 8px;"
+          >
+            <div
+              style="display: flex; justify-content: space-between; align-items: center;"
+            >
+              <strong style="font-size: 13px;">🔗 DRICE</strong>
+              <a
+                href="https://www.lennysnewsletter.com/p/introducing-drice-a-modern-prioritization"
+                target="_blank"
+                rel="noopener noreferrer"
+                style="font-size: 11px; color: var(--accent); text-decoration: none;"
+                >Lenny's Newsletter →</a
+              >
+            </div>
+            <p
+              style="font-size: 12px; color: var(--text-muted); margin: 4px 0 0; line-height: 1.5;"
+            >
+              Extended RICE that factors in <strong>dependency weight</strong> — how
+              many other tasks are blocked by this one. Higher dependency = higher
+              urgency multiplier.
+            </p>
+          </div>
+
+          <!-- DDD -->
+          <div
+            style="padding: 10px 12px; background: var(--bg-secondary); border: 1px solid var(--border); border-radius: 8px;"
+          >
+            <div
+              style="display: flex; justify-content: space-between; align-items: center;"
+            >
+              <strong style="font-size: 13px;">🏗️ DDD</strong>
+              <span style="display: flex; gap: 8px;">
+                <a
+                  href="https://martinfowler.com/bliki/DomainDrivenDesign.html"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  style="font-size: 11px; color: var(--accent); text-decoration: none;"
+                  >Fowler →</a
+                >
+                <a
+                  href="https://www.geeksforgeeks.org/system-design/domain-driven-design-ddd/"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  style="font-size: 11px; color: var(--accent); text-decoration: none;"
+                  >Guide →</a
+                >
+              </span>
+            </div>
+            <p
+              style="font-size: 12px; color: var(--text-muted); margin: 4px 0 0; line-height: 1.5;"
+            >
+              <strong>Domain-Driven Design</strong>. Evaluates tasks through
+              bounded context alignment, ubiquitous language adherence, and
+              strategic/tactical pattern fit. Best for architectural decisions
+              and Epics.
+            </p>
+          </div>
+
+          <!-- HEART -->
+          <div
+            style="padding: 10px 12px; background: var(--bg-secondary); border: 1px solid var(--border); border-radius: 8px;"
+          >
+            <div
+              style="display: flex; justify-content: space-between; align-items: center;"
+            >
+              <strong style="font-size: 13px;">💚 HEART</strong>
+              <a
+                href="https://www.heartframework.com/"
+                target="_blank"
+                rel="noopener noreferrer"
+                style="font-size: 11px; color: var(--accent); text-decoration: none;"
+                >heartframework.com →</a
+              >
+            </div>
+            <p
+              style="font-size: 12px; color: var(--text-muted); margin: 4px 0 0; line-height: 1.5;"
+            >
+              <strong
+                >Happiness, Engagement, Adoption, Retention, Task success</strong
+              >. Google's UX metrics framework. Evaluates features against 5
+              user-centered dimensions for holistic UX impact scoring.
+            </p>
+          </div>
+
+          <!-- KCS -->
+          <div
+            style="padding: 10px 12px; background: var(--bg-secondary); border: 1px solid var(--border); border-radius: 8px;"
+          >
+            <div
+              style="display: flex; justify-content: space-between; align-items: center;"
+            >
+              <strong style="font-size: 13px;">📚 KCS</strong>
+              <a
+                href="https://library.serviceinnovation.org/KCS"
+                target="_blank"
+                rel="noopener noreferrer"
+                style="font-size: 11px; color: var(--accent); text-decoration: none;"
+                >Service Innovation →</a
+              >
+            </div>
+            <p
+              style="font-size: 12px; color: var(--text-muted); margin: 4px 0 0; line-height: 1.5;"
+            >
+              <strong>Knowledge-Centered Service</strong>. Consortium for
+              Service Innovation methodology. Evaluates documentation tasks: is
+              knowledge captured at creation, reusable, and continuously
+              improved?
+            </p>
+          </div>
+        </div>
+
+        <div
+          style="margin-top: 12px; padding-top: 10px; border-top: 1px solid var(--border); font-size: 12px; color: var(--text-muted); line-height: 1.6;"
+        >
+          <strong style="color: var(--text-secondary);">How it works:</strong> Select
+          which frameworks apply to each task type below. When you open a task, click
+          <strong>⚖️ Add Strategic Lens</strong> in the detail sidebar to evaluate
+          it. Sliders and inputs are generated from the framework's YAML schema. Use
+          🤖 <strong>Auto-Score</strong> to generate an AI prompt.
         </div>
       </div>
       <div
@@ -220,3 +411,41 @@ const { locale } = Astro.props;
     </div>
   </div>
 </div>
+
+<script is:inline>
+  (function () {
+    const btn = document.getElementById("strategic-lenses-help-btn");
+    const popup = document.getElementById("strategic-lenses-help-popup");
+    const closeBtn = document.getElementById("strategic-lenses-help-close");
+    if (!btn || !popup) return;
+
+    function toggle() {
+      const isOpen = popup.style.display !== "none";
+      popup.style.display = isOpen ? "none" : "block";
+      btn.style.background = isOpen ? "var(--bg-secondary)" : "var(--accent)";
+      btn.style.color = isOpen ? "var(--text-muted)" : "#fff";
+      btn.style.borderColor = isOpen ? "var(--border)" : "var(--accent)";
+    }
+
+    btn.addEventListener("click", toggle);
+    closeBtn?.addEventListener("click", () => {
+      popup.style.display = "none";
+      btn.style.background = "var(--bg-secondary)";
+      btn.style.color = "var(--text-muted)";
+      btn.style.borderColor = "var(--border)";
+    });
+
+    document.addEventListener("click", (e) => {
+      if (
+        popup.style.display !== "none" &&
+        !popup.contains(e.target) &&
+        e.target !== btn
+      ) {
+        popup.style.display = "none";
+        btn.style.background = "var(--bg-secondary)";
+        btn.style.color = "var(--text-muted)";
+        btn.style.borderColor = "var(--border)";
+      }
+    });
+  })();
+</script>
