@@ -8,42 +8,28 @@ import { t } from "../i18n/translations";
 import type { Locale } from "../lib/locale";
 import { formatRegionalDate } from "../lib/date";
 import { formatTicketKey } from "../lib/ticket-key";
-import {
-  ensureSchema,
-  getPersistenceClient,
-} from "@domains/tasks/persistence/store";
+import { getTasksForView } from "../lib/task-queries";
 
 // i18n: resolve locale from cookie
 const cookieLocale = Astro.cookies.get("meitheal-locale")?.value;
 const locale: Locale = cookieLocale === "ga" ? "ga" : "en";
 
-const { ingressPath, hassioTokenPresent, hassUserId, timezone, dateFormat } =
-  Astro.locals;
+const { timezone, dateFormat } = Astro.locals;
 
-let tasks: Record<string, unknown>[] = [];
-try {
-  await ensureSchema();
-  const client = getPersistenceClient();
-  const result = await client.execute(
-    "SELECT id, title, description, status, priority, due_date, labels, framework_payload, calendar_sync_state, board_id, custom_fields, start_date, end_date, progress, color, is_favorite, task_type, parent_id, ticket_number, created_at, updated_at FROM tasks ORDER BY created_at DESC",
-  );
-  tasks = result.rows as Record<string, unknown>[];
-} catch (e) {
-  /* DB not available */
-}
+const { tasks, counts } = await getTasksForView();
 
-const priorityColors: Record<number, string> = {
-  1: "#ef4444",
-  2: "#f59e0b",
-  3: "#3b82f6",
-  4: "#10b981",
-  5: "#6b7280",
+const priorityClasses: Record<number, string> = {
+  1: "priority-critical",
+  2: "priority-high",
+  3: "priority-medium",
+  4: "priority-low",
+  5: "priority-minimal",
 };
 ---
 
 <Layout title={`Meitheal — ${t("table.title", locale)}`}>
   <span slot="page-title">{t("table.title", locale)}</span>
-  <div slot="actions" style="display: flex; gap: 8px; align-items: center;">
+  <div slot="actions" class="page-actions">
     <button type="button" class="btn btn-primary" id="create-task-btn"
       >{t("tasks.new_task", locale)}</button
     >
@@ -55,29 +41,55 @@ const priorityColors: Record<number, string> = {
     tasks.length === 0 ? (
       <EmptyState
         title={t("table.no_tasks", locale)}
-        description="Create your first task to see the table view."
+        description={t("table.no_tasks", locale)}
         actionText={t("tasks.new_task", locale)}
         actionEvent="meitheal:new-task"
       />
     ) : (
       <>
-        <div
-          class="table-filter-bar"
-          id="table-filter-bar"
-          style="display: flex; gap: 12px; padding: 12px 16px; align-items: center; flex-wrap: wrap;"
-        >
+        {/* Task Summary Bar */}
+        <div class="filter-summary-bar" id="task-summary">
+          <span class="summary-count">{counts.total}</span> tasks ·
+          <span class="summary-count">{counts.active}</span> active
+          {counts.overdue > 0 && (
+            <Fragment>· <span class="summary-overdue">{counts.overdue} {t("tasks.overdue", locale)}</span></Fragment>
+          )}
+        </div>
+
+        {/* Filter Bar — parity with tasks page */}
+        <div class="filter-bar" id="table-filter-bar">
           <input
             type="text"
-            class="form-input"
+            class="form-input filter-search"
             id="table-search"
             placeholder={t("table.filter_placeholder", locale)}
-            style="max-width: 200px; padding: 6px 10px; font-size: 13px;"
             aria-label="Filter table rows"
           />
           <select
-            class="form-select"
+            class="form-select filter-select"
+            id="table-filter-status"
+            aria-label="Filter by status"
+          >
+            <option value="">{t("tasks.all_statuses", locale)}</option>
+            <option value="pending">{t("task_status.pending", locale)}</option>
+            <option value="active">{t("task_status.active", locale)}</option>
+            <option value="complete">{t("task_status.complete", locale)}</option>
+          </select>
+          <select
+            class="form-select filter-select"
+            id="table-filter-priority"
+            aria-label="Filter by priority"
+          >
+            <option value="">{t("tasks.all_priorities", locale)}</option>
+            <option value="1">{t("priority.critical", locale)}</option>
+            <option value="2">{t("priority.high", locale)}</option>
+            <option value="3">{t("priority.medium", locale)}</option>
+            <option value="4">{t("priority.low", locale)}</option>
+            <option value="5">{t("priority.minimal", locale)}</option>
+          </select>
+          <select
+            class="form-select filter-select"
             id="table-filter-rice"
-            style="max-width: 140px; padding: 6px 8px; font-size: 13px;"
             aria-label="Filter by RICE score"
           >
             <option value="">{t("tasks.all_rice", locale)}</option>
@@ -85,278 +97,191 @@ const priorityColors: Record<number, string> = {
             <option value="medium">{t("tasks.rice_medium", locale)}</option>
             <option value="low">{t("tasks.rice_low", locale)}</option>
           </select>
+          <button type="button" class="filter-clear-btn" id="clear-filters">{t("tasks.clear_filters", locale)}</button>
         </div>
+
         <div class="table-container">
           <table class="data-table" id="task-table">
             <thead>
               <tr>
-                <th scope="col" style="width: 40px;">
+                <th scope="col" class="col-checkbox">
                   <input
                     type="checkbox"
                     id="select-all"
                     aria-label="Select all tasks"
                   />
                 </th>
-                <th
-                  scope="col"
-                  class="sortable"
-                  data-col="key"
-                  style="width: 90px;"
-                >
+                <th scope="col" class="sortable col-key" data-col="key">
                   Key
                 </th>
-                <th scope="col" class="sortable" data-col="title">
+                <th scope="col" class="sortable col-title" data-col="title">
                   {t("table.col_title", locale)}
                 </th>
-                <th
-                  scope="col"
-                  class="sortable"
-                  data-col="type"
-                  style="width: 70px; text-align: center;"
-                >
+                <th scope="col" class="sortable col-type" data-col="type">
                   Type
                 </th>
-                <th
-                  scope="col"
-                  class="sortable"
-                  data-col="status"
-                  style="width: 100px;"
-                >
+                <th scope="col" class="sortable col-status" data-col="status">
                   {t("table.col_status", locale)}
                 </th>
-                <th
-                  scope="col"
-                  class="sortable"
-                  data-col="priority"
-                  style="width: 100px;"
-                >
+                <th scope="col" class="sortable col-priority" data-col="priority" data-numeric="true">
                   {t("table.col_priority", locale)}
                 </th>
-                <th
-                  scope="col"
-                  class="sortable"
-                  data-col="due_date"
-                  style="width: 120px;"
-                >
+                <th scope="col" class="sortable col-due-date" data-col="due_date">
                   {t("table.col_due_date", locale)}
                 </th>
-                <th
-                  scope="col"
-                  class="sortable"
-                  data-col="rice"
-                  style="width: 80px; text-align: center;"
-                >
+                <th scope="col" class="sortable col-rice" data-col="rice" data-numeric="true">
                   {t("table.col_rice", locale)}
                 </th>
-                <th
-                  scope="col"
-                  style="width: 70px; text-align: center;"
-                  title={t("table.col_calendar", locale)}
-                >
+                <th scope="col" class="col-calendar" title={t("table.col_calendar", locale)}>
                   📅
                 </th>
-                <th scope="col" style="width: 100px;">
+                <th scope="col" class="col-custom-fields">
                   {t("table.col_custom_fields", locale)}
                 </th>
-                <th scope="col" style="width: 80px; text-align: center;">
+                <th scope="col" class="col-actions">
                   {t("table.col_actions", locale)}
                 </th>
               </tr>
             </thead>
             <tbody>
               {tasks.map((task) => {
-                const p = Number(task.priority ?? 3);
-                const s = String(task.status);
-                const isDone = s === "complete" || s === "done";
-                const fp =
-                  typeof task.framework_payload === "string"
-                    ? JSON.parse(String(task.framework_payload))
-                    : {};
-                const rice =
-                  fp.reach && fp.impact && fp.confidence && fp.effort
-                    ? Math.round(
-                        (Number(fp.reach) *
-                          Number(fp.impact) *
-                          Number(fp.confidence)) /
-                          Number(fp.effort),
-                      )
-                    : null;
-                const customFields = (() => {
-                  try {
-                    const cf =
-                      typeof task.custom_fields === "string"
-                        ? JSON.parse(String(task.custom_fields))
-                        : {};
-                    return Object.entries(cf).filter(
-                      ([_, v]) => v !== null && v !== undefined,
-                    );
-                  } catch {
-                    return [];
-                  }
-                })();
+                const cfEntries = Object.entries(task.custom_fields).filter(
+                  ([, v]) => v !== null && v !== undefined && v !== "",
+                );
                 return (
                   <tr
-                    data-id={String(task.id)}
-                    data-rice={rice !== null ? String(rice) : ""}
-                    data-board={String(task.board_id ?? "default")}
-                    class={isDone ? "row-done" : ""}
+                    data-id={task.id}
+                    data-rice={task.rice !== null ? String(task.rice) : ""}
+                    data-board={task.board_id}
+                    data-status={task.status}
+                    data-priority={String(task.priority)}
+                    data-title={task.title.toLowerCase()}
+                    class={`table-row ${task.is_done ? "row-done" : ""}`}
                   >
                     <td>
                       <input
                         type="checkbox"
                         class="row-check"
-                        data-id={String(task.id)}
-                        aria-label={`Select task: ${String(task.title)}`}
+                        data-id={task.id}
+                        aria-label={`Select task: ${task.title}`}
                       />
                     </td>
                     <td>
                       <span
                         class="ticket-key-badge"
-                        title={`Task ${formatTicketKey(Number(task.ticket_number)) ?? String(task.id).slice(0, 8)}`}
+                        title={`Task ${formatTicketKey(task.ticket_number ?? 0) ?? task.id.slice(0, 8)}`}
                       >
-                        {formatTicketKey(Number(task.ticket_number)) ??
-                          `#${String(task.id).slice(0, 8)}`}
+                        {formatTicketKey(task.ticket_number ?? 0) ??
+                          `#${task.id.slice(0, 8)}`}
                       </span>
                     </td>
                     <td>
                       <span
                         class="editable-cell"
                         contenteditable="true"
+                        role="textbox"
                         data-field="title"
-                        data-id={String(task.id)}
+                        data-id={task.id}
+                        data-original={task.title}
                       >
-                        {String(task.title)}
+                        {task.title}
                       </span>
                       {task.description && (
-                        <div style="font-size: 11px; color: var(--text-muted); margin-top: 2px;">
-                          {String(task.description).slice(0, 60)}
+                        <div class="cell-description">
+                          {task.description.slice(0, 60)}
                         </div>
                       )}
                     </td>
-                    <td style="text-align: center;">
-                      <TaskTypeIcon type={String(task.task_type)} />
+                    <td class="cell-center">
+                      <TaskTypeIcon type={task.task_type} />
                     </td>
                     <td>
                       <select
                         class="inline-select"
                         data-field="status"
-                        data-id={String(task.id)}
-                        aria-label={`Status for ${String(task.title)}`}
+                        data-id={task.id}
+                        aria-label={`Status for ${task.title}`}
                       >
                         <option
                           value="pending"
-                          selected={s === "pending" || s === "todo"}
+                          selected={task.status === "pending" || task.status === "todo"}
                         >
-                          Pending
+                          {t("task_status.pending", locale)}
                         </option>
                         <option
                           value="active"
-                          selected={s === "active" || s === "in_progress"}
+                          selected={task.status === "active" || task.status === "in_progress"}
                         >
-                          Active
+                          {t("task_status.active", locale)}
                         </option>
-                        <option value="complete" selected={isDone}>
-                          Complete
+                        <option value="complete" selected={task.is_done}>
+                          {t("task_status.complete", locale)}
                         </option>
                       </select>
                     </td>
                     <td>
                       <select
-                        class="inline-select"
+                        class={`inline-select ${priorityClasses[task.priority] ?? ""}`}
                         data-field="priority"
-                        data-id={String(task.id)}
-                        aria-label={`Priority for ${String(task.title)}`}
-                        style={`color: ${priorityColors[p]}`}
+                        data-id={task.id}
+                        aria-label={`Priority for ${task.title}`}
                       >
-                        <option
-                          value="1"
-                          selected={p === 1}
-                          style="color: #ef4444;"
-                        >
+                        <option value="1" selected={task.priority === 1} class="priority-critical">
                           {t("priority.critical", locale)}
                         </option>
-                        <option
-                          value="2"
-                          selected={p === 2}
-                          style="color: #f59e0b;"
-                        >
+                        <option value="2" selected={task.priority === 2} class="priority-high">
                           {t("priority.high", locale)}
                         </option>
-                        <option
-                          value="3"
-                          selected={p === 3}
-                          style="color: #3b82f6;"
-                        >
+                        <option value="3" selected={task.priority === 3} class="priority-medium">
                           {t("priority.medium", locale)}
                         </option>
-                        <option
-                          value="4"
-                          selected={p === 4}
-                          style="color: #10b981;"
-                        >
+                        <option value="4" selected={task.priority === 4} class="priority-low">
                           {t("priority.low", locale)}
                         </option>
-                        <option
-                          value="5"
-                          selected={p === 5}
-                          style="color: #6b7280;"
-                        >
+                        <option value="5" selected={task.priority === 5} class="priority-minimal">
                           {t("priority.minimal", locale)}
                         </option>
                       </select>
                     </td>
-                    <td class="text-sm td-due">
+                    <td class={`text-sm td-due ${task.is_overdue ? "overdue-date" : ""}`}>
                       {task.due_date
-                        ? formatRegionalDate(String(task.due_date), {
+                        ? formatRegionalDate(task.due_date, {
                             format: dateFormat as any,
                             timezone,
                           })
                         : "—"}
+                      {task.is_overdue && <span class="overdue-tag">{t("tasks.overdue", locale)}</span>}
                     </td>
-                    <td style="text-align: center;">
-                      {rice ? (
-                        <RiceBadge rice={rice} />
+                    <td class="cell-center">
+                      {task.rice !== null ? (
+                        <RiceBadge rice={task.rice} />
                       ) : (
-                        <span style="color: var(--text-muted);">—</span>
+                        <span class="text-muted">—</span>
                       )}
                     </td>
-                    <td style="text-align: center;">
-                      {String(task.calendar_sync_state) === "confirmed" ? (
-                        <span
-                          title="Calendar synced"
-                          style="color: var(--accent);"
-                        >
-                          ✅
-                        </span>
-                      ) : String(task.calendar_sync_state) === "pending" ? (
-                        <span
-                          title="Sync pending"
-                          style="color: var(--warning);"
-                        >
-                          ⏳
-                        </span>
+                    <td class="cell-center col-calendar">
+                      {task.calendar_sync_state === "confirmed" ? (
+                        <span title="Calendar synced" class="text-accent">✅</span>
+                      ) : task.calendar_sync_state === "pending" ? (
+                        <span title="Sync pending" class="text-warning">⏳</span>
                       ) : (
-                        <span
-                          title="Not synced"
-                          style="color: var(--text-muted);"
-                        >
-                          —
-                        </span>
+                        <span title="Not synced" class="text-muted">—</span>
                       )}
                     </td>
-                    <td style="font-size: 11px; color: var(--text-muted);">
-                      {customFields.length > 0
-                        ? customFields.map(([k, v]) => `${k}: ${v}`).join(", ")
+                    <td class="col-custom-fields cell-cf">
+                      {cfEntries.length > 0
+                        ? cfEntries.map(([k, v]) => `${k}: ${v}`).join(", ")
                         : "—"}
                     </td>
-                    <td style="text-align: center;">
+                    <td class="cell-center">
                       <button
-                        class="btn-icon delete-row"
-                        data-id={String(task.id)}
-                        title="Delete"
-                        aria-label="Delete task"
+                        type="button"
+                        class="task-action-btn danger delete-row"
+                        data-id={task.id}
+                        title={t("tasks.delete", locale)}
+                        aria-label={`Delete ${task.title}`}
                       >
-                        🗑
+                        ×
                       </button>
                     </td>
                   </tr>
@@ -369,18 +294,18 @@ const priorityColors: Record<number, string> = {
     )
   }
 
-  <div class="bulk-bar" id="bulk-bar" style="display: none;">
+  <div class="bulk-bar" id="bulk-bar">
     <span id="selected-count">0 selected</span>
-    <select class="form-select" id="bulk-status" style="max-width: 140px;">
+    <select class="form-select bulk-select" id="bulk-status">
       <option value="">{t("table.change_status", locale)}</option>
       <option value="pending">{t("task_status.pending", locale)}</option>
       <option value="active">{t("task_status.active", locale)}</option>
       <option value="complete">{t("task_status.complete", locale)}</option>
     </select>
     <button
-      class="btn btn-danger"
+      type="button"
+      class="btn btn-danger bulk-delete-btn"
       id="bulk-delete"
-      style="padding: 6px 12px; font-size: 13px;"
       >{t("table.delete_selected", locale)}</button
     >
   </div>
@@ -397,20 +322,37 @@ const priorityColors: Record<number, string> = {
     import { showToast } from "@lib/toast";
     import { confirmDialog } from "@lib/confirm-dialog";
 
-    // Table filter handlers
+    const FILTER_KEY = "meitheal-task-view-filters";
+
+    // Numeric columns for proper sorting
+    const NUMERIC_COLS = new Set(["priority", "rice"]);
+
+    // =============================================================================
+    // Filtering — parity with tasks page, shared localStorage key
+    // =============================================================================
+
     function applyTableFilters() {
       const searchVal =
-        (
-          document.getElementById("table-search") as HTMLInputElement
-        )?.value.toLowerCase() ?? "";
+        (document.getElementById("table-search") as HTMLInputElement)?.value.toLowerCase() ?? "";
+      const statusFilter =
+        (document.getElementById("table-filter-status") as HTMLSelectElement)?.value ?? "";
+      const priorityFilter =
+        (document.getElementById("table-filter-priority") as HTMLSelectElement)?.value ?? "";
       const riceFilter =
-        (document.getElementById("table-filter-rice") as HTMLSelectElement)
-          ?.value ?? "";
+        (document.getElementById("table-filter-rice") as HTMLSelectElement)?.value ?? "";
+
       document.querySelectorAll("#task-table tbody tr").forEach((row) => {
         const el = row as HTMLElement;
-        const title =
-          el.querySelector(".editable-cell")?.textContent?.toLowerCase() ?? "";
+        const title = (el.dataset.title ?? "");
         const matchSearch = !searchVal || title.includes(searchVal);
+        const matchStatus =
+          !statusFilter ||
+          el.dataset.status === statusFilter ||
+          (statusFilter === "complete" &&
+            (el.dataset.status === "done" || el.dataset.status === "complete"));
+        const matchPriority =
+          !priorityFilter || el.dataset.priority === priorityFilter;
+
         let matchRice = true;
         if (riceFilter) {
           const riceVal = el.dataset.rice;
@@ -423,32 +365,90 @@ const priorityColors: Record<number, string> = {
             else if (riceFilter === "low") matchRice = r < 8;
           }
         }
-        el.style.display = matchSearch && matchRice ? "" : "none";
-      });
-    }
-    document
-      .getElementById("table-search")
-      ?.addEventListener("input", applyTableFilters);
-    document
-      .getElementById("table-filter-rice")
-      ?.addEventListener("change", applyTableFilters);
 
-    // Inline editing on blur
+        const visible = matchSearch && matchStatus && matchPriority && matchRice;
+        el.style.display = visible ? "" : "none";
+      });
+
+      saveFilterState();
+    }
+
+    function saveFilterState() {
+      const state = {
+        search: (document.getElementById("table-search") as HTMLInputElement)?.value ?? "",
+        status: (document.getElementById("table-filter-status") as HTMLSelectElement)?.value ?? "",
+        priority: (document.getElementById("table-filter-priority") as HTMLSelectElement)?.value ?? "",
+        rice: (document.getElementById("table-filter-rice") as HTMLSelectElement)?.value ?? "",
+      };
+      localStorage.setItem(FILTER_KEY, JSON.stringify(state));
+    }
+
+    // Attach filter listeners
+    ["table-search", "table-filter-status", "table-filter-priority", "table-filter-rice"].forEach((id) => {
+      const el = document.getElementById(id);
+      if (!el) return;
+      el.addEventListener(id === "table-search" ? "input" : "change", applyTableFilters);
+    });
+
+    // Clear all filters
+    document.getElementById("clear-filters")?.addEventListener("click", () => {
+      (document.getElementById("table-search") as HTMLInputElement).value = "";
+      (document.getElementById("table-filter-status") as HTMLSelectElement).value = "";
+      (document.getElementById("table-filter-priority") as HTMLSelectElement).value = "";
+      (document.getElementById("table-filter-rice") as HTMLSelectElement).value = "";
+      applyTableFilters();
+    });
+
+    // Restore shared filter state on load
+    try {
+      const saved = localStorage.getItem(FILTER_KEY);
+      if (saved) {
+        const state = JSON.parse(saved);
+        if (state.search)
+          (document.getElementById("table-search") as HTMLInputElement).value = state.search;
+        if (state.status)
+          (document.getElementById("table-filter-status") as HTMLSelectElement).value = state.status;
+        if (state.priority)
+          (document.getElementById("table-filter-priority") as HTMLSelectElement).value = state.priority;
+        if (state.rice)
+          (document.getElementById("table-filter-rice") as HTMLSelectElement).value = state.rice;
+        applyTableFilters();
+      }
+    } catch {
+      /* ignore */
+    }
+
+    // =============================================================================
+    // Inline editing — with empty-revert (#23)
+    // =============================================================================
+
     document.querySelectorAll(".editable-cell").forEach((cell) => {
       cell.addEventListener("blur", async () => {
         const el = cell as HTMLElement;
         const id = el.dataset.id;
         const field = el.dataset.field;
         const value = el.textContent?.trim();
-        if (!id || !field || !value) return;
+        const original = el.dataset.original ?? "";
+
+        // Revert to original value if user cleared the field
+        if (!id || !field || !value) {
+          if (original) el.textContent = original;
+          return;
+        }
+
+        // No change — skip API call
+        if (value === original) return;
+
         try {
           await fetch(`/api/tasks/${id}`, {
             method: "PUT",
             headers: { "content-type": "application/json" },
             body: JSON.stringify({ [field]: value }),
           });
+          el.dataset.original = value; // Update stored original
           showToast("common.updated");
         } catch {
+          el.textContent = original; // Revert on error
           showToast("common.failed", "error");
         }
       });
@@ -460,14 +460,16 @@ const priorityColors: Record<number, string> = {
       });
     });
 
-    // Inline select change
+    // =============================================================================
+    // Inline select changes
+    // =============================================================================
+
     document.querySelectorAll(".inline-select").forEach((sel) => {
       sel.addEventListener("change", async (e) => {
         const el = e.target as HTMLSelectElement;
         const id = el.dataset.id;
         const field = el.dataset.field;
         try {
-          // Send priority as number (API expects typeof number)
           const value = field === "priority" ? Number(el.value) : el.value;
           await fetch(`/api/tasks/${id}`, {
             method: "PUT",
@@ -475,9 +477,10 @@ const priorityColors: Record<number, string> = {
             body: JSON.stringify({ [field!]: value }),
           });
           showToast(
-            field === "priority" ? "Priority updated" : "Status updated",
+            field === "priority"
+              ? "table.priority_updated"
+              : "table.status_updated",
           );
-          // Optimistic: update row styling based on new status
           if (field === "status") {
             const row = el.closest("tr");
             if (el.value === "complete" || el.value === "done") {
@@ -486,16 +489,12 @@ const priorityColors: Record<number, string> = {
               row?.classList.remove("row-done");
             }
           }
-          // Update priority select color
+          // Update priority class color
           if (field === "priority") {
-            const colors: Record<string, string> = {
-              "1": "#ef4444",
-              "2": "#f59e0b",
-              "3": "#3b82f6",
-              "4": "#10b981",
-              "5": "#6b7280",
-            };
-            el.style.color = colors[el.value] ?? "inherit";
+            const classes = ["priority-critical", "priority-high", "priority-medium", "priority-low", "priority-minimal"];
+            el.classList.remove(...classes);
+            const idx = Number(el.value) - 1;
+            if (classes[idx]) el.classList.add(classes[idx]);
           }
         } catch {
           showToast("common.failed", "error");
@@ -503,9 +502,41 @@ const priorityColors: Record<number, string> = {
       });
     });
 
+    // =============================================================================
+    // Row click → open task detail panel (#20)
+    // =============================================================================
+
+    document.querySelectorAll("#task-table tbody tr").forEach((row) => {
+      row.addEventListener("click", (e) => {
+        const target = e.target as HTMLElement;
+        // Don't trigger on interactive elements
+        if (
+          target.tagName === "INPUT" ||
+          target.tagName === "SELECT" ||
+          target.tagName === "BUTTON" ||
+          target.closest("button") ||
+          target.closest("select") ||
+          target.contentEditable === "true" ||
+          target.closest("[contenteditable]")
+        ) {
+          return;
+        }
+        const id = (row as HTMLElement).dataset.id;
+        if (id) {
+          document.dispatchEvent(
+            new CustomEvent("meitheal:open-task-detail", { detail: { id } }),
+          );
+        }
+      });
+    });
+
+    // =============================================================================
     // Delete rows
+    // =============================================================================
+
     document.querySelectorAll(".delete-row").forEach((btn) => {
-      btn.addEventListener("click", async () => {
+      btn.addEventListener("click", async (e) => {
+        e.stopPropagation();
         const id = (btn as HTMLElement).dataset.id;
         const ok = await confirmDialog({
           message: "This task will be permanently deleted.",
@@ -524,7 +555,10 @@ const priorityColors: Record<number, string> = {
       });
     });
 
-    // Select all / bulk actions
+    // =============================================================================
+    // Bulk actions
+    // =============================================================================
+
     const selectAll = document.getElementById("select-all") as HTMLInputElement;
     const bulkBar = document.getElementById("bulk-bar")!;
     const selectedCount = document.getElementById("selected-count")!;
@@ -612,10 +646,14 @@ const priorityColors: Record<number, string> = {
         }
       });
 
-    // Column sorting
+    // =============================================================================
+    // Column sorting — with numeric comparison fix (#36)
+    // =============================================================================
+
     document.querySelectorAll(".sortable").forEach((th) => {
       th.addEventListener("click", () => {
         const col = (th as HTMLElement).dataset.col;
+        const isNumeric = (th as HTMLElement).dataset.numeric === "true";
         const tbody = document.querySelector("#task-table tbody");
         if (!tbody || !col) return;
         const rows = Array.from(tbody.querySelectorAll("tr"));
@@ -624,38 +662,39 @@ const priorityColors: Record<number, string> = {
           .querySelectorAll(".sortable")
           .forEach((h) => h.classList.remove("sort-asc", "sort-desc"));
         (th as HTMLElement).classList.add(asc ? "sort-asc" : "sort-desc");
+
         rows.sort((a, b) => {
-          const aVal =
-            a.querySelector(`[data-field="${col}"]`)?.textContent ??
-            a.children[
-              col === "status"
-                ? 2
-                : col === "priority"
-                  ? 3
-                  : col === "due_date"
-                    ? 4
-                    : 1
-            ]?.textContent ??
-            "";
-          const bVal =
-            b.querySelector(`[data-field="${col}"]`)?.textContent ??
-            b.children[
-              col === "status"
-                ? 2
-                : col === "priority"
-                  ? 3
-                  : col === "due_date"
-                    ? 4
-                    : 1
-            ]?.textContent ??
-            "";
+          let aVal: string;
+          let bVal: string;
+
+          // Get value from data attribute or cell content
+          if (col === "rice") {
+            aVal = (a as HTMLElement).dataset.rice ?? "0";
+            bVal = (b as HTMLElement).dataset.rice ?? "0";
+          } else if (col === "priority") {
+            aVal = (a as HTMLElement).dataset.priority ?? "3";
+            bVal = (b as HTMLElement).dataset.priority ?? "3";
+          } else {
+            aVal =
+              a.querySelector(`[data-field="${col}"]`)?.textContent?.trim() ??
+              "";
+            bVal =
+              b.querySelector(`[data-field="${col}"]`)?.textContent?.trim() ??
+              "";
+          }
+
+          // Numeric comparison for priority and RICE columns
+          if (isNumeric || col === "rice" || col === "priority") {
+            const aNum = Number(aVal) || 0;
+            const bNum = Number(bVal) || 0;
+            return asc ? aNum - bNum : bNum - aNum;
+          }
+
           return asc ? aVal.localeCompare(bVal) : bVal.localeCompare(aVal);
         });
         rows.forEach((r) => tbody.appendChild(r));
       });
     });
-
-    // Keyboard shortcuts handled by Layout.astro global handler
 
     // Detect table horizontal overflow for scroll shadow
     const tableContainer = document.querySelector(".table-container");
@@ -672,138 +711,91 @@ const priorityColors: Record<number, string> = {
 </Layout>
 
 <style>
+  .filter-bar {
+    display: flex;
+    gap: 10px;
+    margin-bottom: 16px;
+    flex-wrap: wrap;
+    align-items: center;
+  }
+  .filter-search {
+    max-width: 200px;
+    flex: 1;
+    min-width: 150px;
+  }
+  .filter-select {
+    max-width: 150px;
+  }
+  .page-actions {
+    display: flex;
+    gap: 8px;
+    align-items: center;
+  }
   .table-container {
     overflow-x: auto;
     border-radius: var(--radius-lg);
     border: 1px solid var(--border);
   }
-  .data-table {
-    width: 100%;
-    border-collapse: collapse;
-    font-size: 14px;
-  }
-  .data-table th {
-    text-align: left;
-    padding: 12px 14px;
-    font-weight: 600;
-    font-size: 13px;
-    color: var(--text-secondary);
-    background: var(--bg-secondary);
-    border-bottom: 1px solid var(--border);
-    position: sticky;
-    top: 0;
-    cursor: default;
-    user-select: none;
-  }
-  .data-table td {
-    padding: 10px 14px;
-    border-bottom: 1px solid var(--border);
-  }
-  .data-table tr:hover td {
-    background: var(--bg-hover);
-  }
-  .data-table tbody tr:nth-child(even) td {
-    background: rgba(255, 255, 255, 0.02);
-  }
-  .data-table tbody tr:nth-child(even):hover td {
-    background: var(--bg-hover);
-  }
-  .data-table .row-done td {
-    opacity: 0.5;
-    text-decoration: line-through;
-  }
-  .sortable {
+  .table-row {
     cursor: pointer;
   }
-  .sortable:hover {
-    color: var(--text-primary);
-  }
-  .sortable.sort-asc::after {
-    content: " ↑";
-    color: var(--accent);
-  }
-  .sortable.sort-desc::after {
-    content: " ↓";
-    color: var(--accent);
-  }
-  .editable-cell {
-    cursor: text;
-    padding: 2px 4px;
-    border-radius: 3px;
-    display: inline-block;
-    min-width: 100px;
-    transition: background 200ms;
-  }
-  .editable-cell:hover {
+  .table-row:hover td {
     background: var(--bg-hover);
   }
-  .editable-cell:focus {
-    background: var(--bg-input);
-    outline: 1px solid var(--border-focus);
+  .cell-center {
+    text-align: center;
   }
-  .inline-select {
-    background: var(--bg-card, #1e1e2e);
-    border: 1px solid transparent;
-    color: var(--text-primary);
-    font-size: 13px;
-    padding: 4px 8px;
-    border-radius: var(--radius-sm);
-    cursor: pointer;
-    appearance: none;
-    -webkit-appearance: none;
-    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 12 12'%3E%3Cpath fill='%239ca3af' d='M3 5l3 3 3-3'/%3E%3C/svg%3E");
-    background-repeat: no-repeat;
-    background-position: right 6px center;
-    padding-right: 22px;
+  .cell-description {
+    font-size: 11px;
+    color: var(--text-muted);
+    margin-top: 2px;
   }
-  .inline-select option {
-    background: var(--bg-card, #1e1e2e);
-    color: var(--text-primary, #e2e8f0);
-    padding: 6px 10px;
-  }
-  .inline-select:hover {
-    border-color: var(--border);
-    background: var(--bg-hover);
-  }
-  .inline-select:focus {
-    border-color: var(--accent);
-    outline: none;
-    box-shadow: 0 0 0 2px rgba(16, 185, 129, 0.15);
-  }
-  .priority-indicator {
-    font-size: 13px;
-    font-weight: 500;
-  }
-  .rice-badge {
-    display: inline-block;
-    padding: 2px 8px;
-    border-radius: 10px;
-    font-size: 12px;
-    font-weight: 600;
-  }
-  .rice-high {
-    background: rgba(16, 185, 129, 0.15);
-    color: var(--accent);
-  }
-  .rice-med {
-    background: rgba(59, 130, 246, 0.15);
-    color: var(--info);
-  }
-  .rice-low {
-    background: rgba(107, 114, 128, 0.15);
+  .cell-cf {
+    font-size: 11px;
     color: var(--text-muted);
   }
-  .btn-icon {
-    background: none;
-    border: none;
-    cursor: pointer;
-    font-size: 14px;
-    padding: 4px;
-    opacity: 0.5;
-    transition: opacity 200ms;
+  .text-muted {
+    color: var(--text-muted);
   }
-  .btn-icon:hover {
-    opacity: 1;
+  .text-accent {
+    color: var(--accent);
+  }
+  .text-warning {
+    color: var(--warning);
+  }
+  .col-checkbox {
+    width: 40px;
+  }
+  .col-key {
+    width: 90px;
+  }
+  .col-type {
+    width: 70px;
+    text-align: center;
+  }
+  .col-status {
+    width: 100px;
+  }
+  .col-priority {
+    width: 100px;
+  }
+  .col-due-date {
+    width: 120px;
+  }
+  .col-rice {
+    width: 80px;
+    text-align: center;
+  }
+  .col-calendar {
+    width: 70px;
+    text-align: center;
+  }
+  .col-custom-fields {
+    width: 100px;
+  }
+  .col-actions {
+    width: 80px;
+    text-align: center;
   }
   .bulk-bar {
     position: fixed;
@@ -814,36 +806,18 @@ const priorityColors: Record<number, string> = {
     border: 1px solid var(--border);
     border-radius: var(--radius-lg);
     padding: 12px 20px;
-    display: flex;
+    display: none;
     gap: 12px;
     align-items: center;
     box-shadow: var(--shadow-lg);
     z-index: 50;
   }
-  .view-switcher {
-    display: flex;
-    border: 1px solid var(--border);
-    border-radius: var(--radius-sm);
-    overflow: hidden;
+  .bulk-select {
+    max-width: 140px;
   }
-  .view-btn {
+  .bulk-delete-btn {
     padding: 6px 12px;
-    text-decoration: none;
-    color: var(--text-secondary);
-    font-size: 16px;
-    transition: all 200ms;
-    border-right: 1px solid var(--border);
-  }
-  .view-btn:last-child {
-    border-right: none;
-  }
-  .view-btn:hover {
-    background: var(--bg-hover);
-    color: var(--text-primary);
-  }
-  .view-btn.active {
-    background: var(--accent-light);
-    color: var(--accent);
+    font-size: 13px;
   }
   .ticket-key-badge {
     display: inline-block;
@@ -856,5 +830,16 @@ const priorityColors: Record<number, string> = {
     background: rgba(16, 185, 129, 0.1);
     white-space: nowrap;
     cursor: help;
+  }
+  .overdue-tag {
+    font-size: 10px;
+    padding: 1px 6px;
+    border-radius: 8px;
+    background: var(--danger);
+    color: white;
+    margin-left: 4px;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
   }
 </style>

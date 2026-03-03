@@ -619,9 +619,10 @@ const { locale } = Astro.props;
   }
 
   .integration-card__body[aria-hidden="false"] {
-    max-height: 800px;
+    max-height: 1200px;
     padding: 16px 18px;
     border-top: 1px solid var(--border);
+    overflow-y: auto;
   }
 
   .integration-card__config {
