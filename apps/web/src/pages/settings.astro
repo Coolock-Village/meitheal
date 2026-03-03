@@ -64,57 +64,60 @@ const locale: Locale = cookieLocale === "ga" ? "ga" : "en";
        2. astro:page-load catches client-side navigations
        data-tabs-initialized guard prevents duplicate listener attachment -->
   <script is:inline>
+    function activateSettingsTab(tab, tabs, panes) {
+      tabs.forEach(function (t) {
+        t.classList.remove("active");
+        t.style.color = "var(--text-muted)";
+        t.style.borderBottomColor = "transparent";
+      });
+      panes.forEach(function (p) {
+        p.style.display = "none";
+      });
+
+      tab.classList.add("active");
+      var isDanger = tab.getAttribute("data-target") === "tab-system";
+      tab.style.color = "var(--text-primary)";
+      tab.style.borderBottomColor = isDanger
+        ? "var(--danger)"
+        : "var(--accent)";
+
+      var targetId = tab.getAttribute("data-target");
+      if (targetId) {
+        var targetPane = document.getElementById(targetId);
+        if (targetPane) targetPane.style.display = "block";
+        var tabKey = targetId.replace("tab-", "");
+        localStorage.setItem("meitheal-settings-tab", tabKey);
+        history.replaceState(null, "", "#" + tabKey);
+      }
+    }
+
     function initSettingsTabs() {
       var tabs = document.querySelectorAll(".settings-tab");
       var panes = document.querySelectorAll(".tab-pane");
       if (!tabs.length) return;
-      if (tabs[0].getAttribute("data-tabs-initialized")) return;
-      tabs[0].setAttribute("data-tabs-initialized", "true");
 
-      function activateTab(tab) {
-        tabs.forEach(function (t) {
-          t.classList.remove("active");
-          t.style.color = "var(--text-muted)";
-          t.style.borderBottomColor = "transparent";
-        });
-        panes.forEach(function (p) {
-          p.style.display = "none";
-        });
-
-        tab.classList.add("active");
-        var isDanger = tab.getAttribute("data-target") === "tab-system";
-        tab.style.color = "var(--text-primary)";
-        tab.style.borderBottomColor = isDanger
-          ? "var(--danger)"
-          : "var(--accent)";
-
-        var targetId = tab.getAttribute("data-target");
-        if (targetId) {
-          var targetPane = document.getElementById(targetId);
-          if (targetPane) targetPane.style.display = "block";
-          var tabKey = targetId.replace("tab-", "");
-          // Persist selected tab in localStorage (no URL pollution)
-          localStorage.setItem("meitheal-settings-tab", tabKey);
-          // Update URL hash for deep-linking
-          history.replaceState(null, "", "#" + tabKey);
-        }
-      }
-
-      tabs.forEach(function (tab) {
-        tab.addEventListener("click", function () {
-          activateTab(tab);
-        });
-      });
-
-      // Restore last-active tab from URL hash (priority) or localStorage
+      // Always re-apply active tab state (fixes bleed after client navigation)
       var hash = window.location.hash.replace("#", "");
       var initialTab = hash || localStorage.getItem("meitheal-settings-tab");
       if (initialTab) {
         var match = document.querySelector(
           '.settings-tab[data-target="tab-' + initialTab + '"]',
         );
-        if (match) activateTab(match);
+        if (match) activateSettingsTab(match, tabs, panes);
+      } else {
+        // Default to General tab
+        activateSettingsTab(tabs[0], tabs, panes);
       }
+
+      // Guard: only attach click listeners once
+      if (tabs[0].getAttribute("data-tabs-initialized")) return;
+      tabs[0].setAttribute("data-tabs-initialized", "true");
+
+      tabs.forEach(function (tab) {
+        tab.addEventListener("click", function () {
+          activateSettingsTab(tab, tabs, panes);
+        });
+      });
 
       // Clean up any stale ?tab= from the URL
       if (window.location.search.indexOf("tab=") !== -1) {

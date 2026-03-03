@@ -389,7 +389,7 @@ const { tasks, counts, customFieldDefs } = await getTasksForView();
     });
   });
 
-  // Ask AI handler — opens task context as a prompt in AI provider
+  // Ask AI handler — routes through configured AI provider
   document.querySelectorAll(".task-ask-ai").forEach((btn) => {
     btn.addEventListener("click", (e) => {
       e.stopPropagation();
@@ -399,8 +399,45 @@ const { tasks, counts, customFieldDefs } = await getTasksForView();
       const status = el.dataset.status ?? "pending";
       const priority = el.dataset.priority ?? "3";
       const prompt = `I have a task in my task manager:\n\nTitle: ${title}\nStatus: ${status}\nPriority: ${priority}/5\n${desc ? `Description: ${desc}` : ""}\n\nCan you help me break this down, suggest next steps, estimate effort, or identify potential blockers?`;
+
+      // Check configured provider (default: chatgpt)
+      const provider =
+        localStorage.getItem("meitheal-ai-provider") || "chatgpt";
+
+      if (provider === "ha_llm") {
+        // Open HA Assist modal with pre-filled prompt
+        const modal = document.getElementById("ask-ha-modal");
+        if (modal) {
+          modal.classList.add("active");
+          const input = modal.querySelector(
+            "#ask-ha-input",
+          ) as HTMLInputElement;
+          if (input) {
+            input.value = prompt;
+            input.focus();
+            // Auto-submit by dispatching the form
+            const form = input.closest("form");
+            if (form)
+              form.dispatchEvent(
+                new Event("submit", { bubbles: true, cancelable: true }),
+              );
+          }
+        }
+        return;
+      }
+
       const encodedPrompt = encodeURIComponent(prompt);
-      window.open(`https://chatgpt.com/?q=${encodedPrompt}`, "_blank");
+      const urls: Record<string, string> = {
+        chatgpt: `https://chatgpt.com/?q=${encodedPrompt}`,
+        claude: `https://claude.ai/new?q=${encodedPrompt}`,
+        gemini: `https://gemini.google.com/app?q=${encodedPrompt}`,
+        ollama:
+          localStorage.getItem("meitheal-ai-custom-url") ||
+          "http://localhost:11434",
+        custom: localStorage.getItem("meitheal-ai-custom-url") || "",
+      };
+      const url = urls[provider] || urls.chatgpt;
+      if (url) window.open(url, "_blank");
     });
   });
 

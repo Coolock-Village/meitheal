@@ -105,6 +105,7 @@ const { locale } = Astro.props;
               <option value="claude">Claude</option>
               <option value="gemini">Google Gemini</option>
               <option value="ollama">Ollama (local)</option>
+              <option value="ha_llm">Home Assistant (LLM)</option>
               <option value="custom">Custom URL</option>
             </select>
           </div>
@@ -355,6 +356,8 @@ const { locale } = Astro.props;
   const customUrlGroup = document.getElementById("ai-custom-url-group");
 
   aiProvider?.addEventListener("change", () => {
+    // Persist provider choice for Ask AI handler
+    localStorage.setItem("meitheal-ai-provider", aiProvider.value);
     if (customUrlGroup) {
       customUrlGroup.style.display =
         aiProvider.value === "custom" || aiProvider.value === "ollama"
@@ -367,6 +370,7 @@ const { locale } = Astro.props;
         claude: "Claude",
         gemini: "Gemini",
         ollama: "Ollama",
+        ha_llm: "HA LLM",
         custom: "Custom",
       };
       extBadge.textContent = names[aiProvider.value] || aiProvider.value;
