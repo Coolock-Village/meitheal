@@ -298,7 +298,7 @@ export const PUT: APIRoute = async ({ params, request }) => {
         action_data: { task_id: resolvedId, ticket_key: taskPayload.ticket_key },
         actions: [
           { action: `MEITHEAL_TASK_DONE_${resolvedId}`, title: "Mark Done" },
-          { action: `MEITHEAL_TASK_VIEW_${resolvedId}`, title: "View details", uri: `/meitheal_hub/task/${taskPayload.ticket_key}` }
+          { action: `MEITHEAL_TASK_VIEW_${resolvedId}`, title: "View details", uri: `/meitheal/task/${taskPayload.ticket_key}` }
         ]
       }).catch(err => logApiError("ha-notify", "Failed to send urgent update push", err));
     }).catch(() => {});

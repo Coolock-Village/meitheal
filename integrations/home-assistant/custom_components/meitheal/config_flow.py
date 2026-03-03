@@ -10,7 +10,7 @@ import voluptuous as vol
 from homeassistant.config_entries import ConfigFlow, ConfigFlowResult
 from homeassistant.const import CONF_HOST, CONF_PORT
 
-from .const import DEFAULT_HOST, DEFAULT_PORT, DOMAIN
+from .const import DEFAULT_HOST, DEFAULT_PORT, DOMAIN, LEGACY_HOST
 
 _LOGGER = logging.getLogger(__name__)
 
@@ -35,7 +35,7 @@ class MeithealConfigFlow(ConfigFlow, domain=DOMAIN):
                 await self.async_set_unique_id(DOMAIN)
                 self._abort_if_unique_id_configured()
                 return self.async_create_entry(
-                    title="Meitheal Hub",
+                    title="Meitheal",
                     data={CONF_HOST: host, CONF_PORT: port},
                 )
             errors["base"] = "cannot_connect"
@@ -57,9 +57,25 @@ class MeithealConfigFlow(ConfigFlow, domain=DOMAIN):
         try:
             timeout = aiohttp.ClientTimeout(total=10)
             async with aiohttp.ClientSession(timeout=timeout) as session:
-                url = f"http://{host}:{port}/api/health"
-                async with session.get(url) as response:
-                    return response.status == 200
+                candidates = [host]
+                # Backward compatibility: old addon hostname used "_hub" suffix.
+                if host == DEFAULT_HOST:
+                    candidates.append(LEGACY_HOST)
+
+                for candidate_host in candidates:
+                    url = f"http://{candidate_host}:{port}/api/health"
+                    try:
+                        async with session.get(url) as response:
+                            if response.status == 200:
+                                return True
+                    except (aiohttp.ClientError, TimeoutError):
+                        _LOGGER.debug(
+                            "Cannot connect to Meitheal at %s:%s",
+                            candidate_host,
+                            port,
+                        )
+                        continue
+                return False
         except (aiohttp.ClientError, TimeoutError):
             _LOGGER.debug("Cannot connect to Meitheal at %s:%s", host, port)
             return False

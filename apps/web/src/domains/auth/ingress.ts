@@ -1,11 +1,24 @@
 export const defaultIngressHeaders = ["x-ingress-path"] as const;
 
+export interface IngressContext {
+  ingressPath: string | undefined;
+  behindIngress: boolean;
+}
+
 export function normalizeIngressHeaders(headers: string[]): string[] {
   return [...new Set(headers.map((header) => header.trim().toLowerCase()).filter((header) => header.length > 0))];
 }
 
+export function resolveIngressContext(headers: Headers, supervisorTokenPresent: boolean): IngressContext {
+  const ingressPath = headers.get("x-ingress-path") ?? undefined;
+  return {
+    ingressPath,
+    behindIngress: Boolean(ingressPath) || supervisorTokenPresent,
+  };
+}
+
 export function getIngressPath(headers: Headers): string | undefined {
-  return headers.get("x-ingress-path") ?? undefined;
+  return resolveIngressContext(headers, false).ingressPath;
 }
 
 export function hasHassioToken(headers: Headers): boolean {

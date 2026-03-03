@@ -3,6 +3,7 @@
 declare namespace App {
   interface Locals {
     ingressPath: string | undefined;
+    behindIngress: boolean;
     hassioTokenPresent: boolean;
     hassUserId: string | undefined;
     hassIsAdmin: boolean;

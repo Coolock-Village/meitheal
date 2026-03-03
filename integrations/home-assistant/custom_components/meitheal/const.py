@@ -8,7 +8,8 @@ DOMAIN = "meitheal"
 PLATFORMS = [Platform.TODO, Platform.SENSOR]
 
 # Addon network defaults (internal Docker DNS)
-DEFAULT_HOST = "local_meitheal_hub"
+DEFAULT_HOST = "local_meitheal"
+LEGACY_HOST = "local_meitheal_hub"
 DEFAULT_PORT = 3000
 
 CONF_HOST = "host"

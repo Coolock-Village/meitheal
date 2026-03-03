@@ -17,7 +17,7 @@ test.describe("Phase 27: HA Security Hardening", () => {
             const content = await fs.readFile(profilePath, "utf-8");
 
             // Must declare a profile with HA-standard flags
-            expect(content).toContain("profile meitheal_hub flags=(attach_disconnected,mediate_deleted)");
+            expect(content).toContain("profile meitheal flags=(attach_disconnected,mediate_deleted)");
 
             // The file currently blocks /boot/** wl, via other rules (omitted from explicit deny)
             // S6-overlay requires /bin/** ix, so explicit shell deny was removed.

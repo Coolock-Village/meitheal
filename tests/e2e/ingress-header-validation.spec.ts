@@ -5,6 +5,7 @@ import {
   getMissingRequiredIngressHeaders,
   hasHassioToken,
   normalizeIngressHeaders,
+  resolveIngressContext,
   shouldEnforceIngressHeaders
 } from "../../apps/web/src/domains/auth/ingress";
 
@@ -64,3 +65,23 @@ test("X-Ingress-Path is echoed as response header when ingress is active", () =>
   expect(getIngressPath(headers)).toBe(ingressPath);
 });
 
+test("resolveIngressContext marks behindIngress when header is present", () => {
+  const ctx = resolveIngressContext(
+    new Headers({ "x-ingress-path": "/api/hassio_ingress/abc123" }),
+    false
+  );
+  expect(ctx.ingressPath).toBe("/api/hassio_ingress/abc123");
+  expect(ctx.behindIngress).toBeTruthy();
+});
+
+test("resolveIngressContext marks behindIngress when supervisor token exists", () => {
+  const ctx = resolveIngressContext(new Headers(), true);
+  expect(ctx.ingressPath).toBeUndefined();
+  expect(ctx.behindIngress).toBeTruthy();
+});
+
+test("resolveIngressContext reports standalone when no ingress signals exist", () => {
+  const ctx = resolveIngressContext(new Headers(), false);
+  expect(ctx.ingressPath).toBeUndefined();
+  expect(ctx.behindIngress).toBeFalsy();
+});

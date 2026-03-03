@@ -1,10 +1,11 @@
 import type { MiddlewareHandler } from "astro";
 import {
   getHassUserId,
-  getIngressPath,
   hasHassioToken,
   isHassAdmin,
+  resolveIngressContext,
 } from "@domains/auth/ingress";
+import { buildSecurityHeaders, isCsrfAllowed } from "@domains/auth/ingress-policy";
 import { createLogger, defaultRedactionPatterns } from "@meitheal/domain-observability";
 import { getPersistenceClient, ensureSchema } from "@domains/tasks/persistence/store";
 
@@ -98,20 +99,27 @@ async function rewriteIngressPaths(response: Response, ingressPath: string): Pro
 export const onRequest: MiddlewareHandler = async ({ request, locals }, next) => {
   const startTime = Date.now();
   const requestId = request.headers.get("x-request-id") ?? crypto.randomUUID();
-  const ingressPath = getIngressPath(request.headers);
-  // Detect HA addon environment: SUPERVISOR_TOKEN is always set in HA addons.
-  // We can't rely solely on X-Ingress-Path since the Supervisor proxy may not
-  // always set it. When in HA, all access goes through the Supervisor ingress
-  // proxy, so we must allow framing for the HA frontend iframe to work.
-  const isHaAddon = Boolean(process.env.SUPERVISOR_TOKEN);
-  const behindIngress = Boolean(ingressPath) || isHaAddon;
+  const supervisorTokenPresent = Boolean(process.env.SUPERVISOR_TOKEN);
+  const ingressContext = resolveIngressContext(request.headers, supervisorTokenPresent);
+  const { ingressPath, behindIngress } = ingressContext;
 
   locals.ingressPath = ingressPath;
+  locals.behindIngress = behindIngress;
   locals.hassioTokenPresent = hasHassioToken(request.headers);
 
   // Extract authenticated HA user identity from Supervisor ingress headers
   locals.hassUserId = getHassUserId(request.headers);
   locals.hassIsAdmin = isHassAdmin(request.headers);
+
+  if (behindIngress && !ingressPath) {
+    logger.log("warn", {
+      event: "ingress.path.missing",
+      domain: "observability",
+      component: "middleware",
+      request_id: requestId,
+      message: "Ingress mode active without x-ingress-path header; using supervisor-token context only.",
+    });
+  }
 
   // Load regional settings for SSR
   locals.timezone = "Europe/Dublin";
@@ -158,57 +166,15 @@ export const onRequest: MiddlewareHandler = async ({ request, locals }, next) =>
     const host = request.headers.get("host") ?? url.host;
     const isDev = import.meta.env.DEV;
 
-    if (!isDev) {
-      const originHost = origin ? new URL(origin).host : null;
-      const refererHost = referer ? new URL(referer).host : null;
-      // Behind ingress, Origin is the HA frontend host (e.g., 192.168.88.250:8123)
-      // but Host is the addon container. Skip CSRF check since the Supervisor already
-      // validated the ingress session before forwarding the request.
-      const allowed = ingressPath || originHost === host || refererHost === host;
-      if (!allowed && !origin && !referer) {
-        // Allow requests with no origin/referer (e.g. curl, HA internal calls)
-      } else if (!allowed) {
-        return new Response(
-          JSON.stringify({ error: "CSRF origin mismatch" }),
-          { status: 403, headers: { "content-type": "application/json" } }
-        );
-      }
+    if (!isCsrfAllowed({ behindIngress, isDev, origin, referer, host })) {
+      return new Response(
+        JSON.stringify({ error: "CSRF origin mismatch" }),
+        { status: 403, headers: { "content-type": "application/json" } }
+      );
     }
   }
 
-  // Security response headers (OWASP best practices)
-  // When accessed via HA ingress, the Supervisor validates the session
-  // before proxying — use permissive frame-ancestors since users access
-  // HA by IP, hostname, or custom domain (all would need whitelisting).
-  const frameAncestors = behindIngress ? "*" : "'self'";
-
-  const securityHeaders: Record<string, string> = {
-    "X-Content-Type-Options": "nosniff",
-    // X-Frame-Options: ALLOW-FROM is deprecated and unsupported in modern
-    // browsers. When behind ingress (or in HA addon), omit it entirely — CSP
-    // frame-ancestors handles the policy. For standalone, use SAMEORIGIN.
-    ...(!behindIngress ? { "X-Frame-Options": "SAMEORIGIN" } : {}),
-    "Referrer-Policy": "strict-origin-when-cross-origin",
-    "Permissions-Policy": "camera=(), microphone=(), geolocation=()",
-    "X-XSS-Protection": "1; mode=block",
-    "Content-Security-Policy": [
-      "default-src 'self'",
-      // data: needed for Astro ClientRouter navigation scripts
-      "script-src 'self' 'unsafe-inline' data:",
-      "style-src 'self' 'unsafe-inline'",
-      "img-src 'self' data: blob:",  // blob: for attachment previews
-      "font-src 'self' data:",
-      behindIngress
-        ? "connect-src 'self' ws: wss: http://supervisor http://supervisor:*"
-        : import.meta.env.DEV
-          ? "connect-src 'self' ws: wss:"
-          : "connect-src 'self'",
-      "object-src 'none'",
-      "base-uri 'self'",
-      "form-action 'self'",
-      `frame-ancestors ${frameAncestors}`,
-    ].join("; "),
-  };
+  const securityHeaders = buildSecurityHeaders(behindIngress, import.meta.env.DEV);
 
   // HA Supervisor already validates ingress sessions before proxying requests.
   // No additional auth enforcement needed on our side.

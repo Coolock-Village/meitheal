@@ -27,7 +27,8 @@ copied to `/homeassistant/custom_components/meitheal/` at boot.
 After installation, add the integration via HA UI:
 Settings → Devices & Services → Add Integration → "Meitheal"
 
-The addon hostname (`local_meitheal_hub`) and port (`3000`) are pre-filled.
+The addon hostname (`local_meitheal`) and port (`3000`) are pre-filled.
+Legacy installs using `local_meitheal_hub` are auto-detected during setup.
 
 ## Architecture
 

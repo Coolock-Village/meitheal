@@ -17,7 +17,7 @@ set -euo pipefail
 
 REPO_ROOT="$(cd "$(dirname "$0")/../.." && pwd)"
 DOCKER_USER="coolockvillage"
-IMAGE_BASE="${DOCKER_USER}/meitheal-hub"
+IMAGE_BASE="${DOCKER_USER}/meitheal"
 TAG="${1:-dev}"
 
 echo "=== Meitheal Hub — Docker Build & Push ==="

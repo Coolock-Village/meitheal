@@ -17,7 +17,7 @@ Options considered:
 
 **Dual-push to both GHCR and Docker Hub.**
 
-- `config.yaml` `image` field points to Docker Hub (`coolockvillage/meitheal-hub-{arch}`) since that's what HA Supervisor pulls.
+- `config.yaml` `image` field points to Docker Hub (`coolockvillage/meitheal-{arch}`) since that's what HA Supervisor pulls.
 - CI workflow pushes to both registries on every tag and `workflow_dispatch`.
 - Docker Hub account: `coolockvillage` (org account with PAT for CI).
 

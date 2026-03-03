@@ -24,11 +24,11 @@
 ```bash
 # Build from repo root
 podman build --build-arg BUILD_FROM="ghcr.io/home-assistant/amd64-base:3.20" \
-  -f meitheal-hub/Dockerfile -t local/meitheal-hub .
+  -f meitheal-hub/Dockerfile -t local/meitheal .
 
 # Run standalone (no Supervisor)
 podman run --rm -p 3333:3000 -v /tmp/meitheal-data:/data \
-  local/meitheal-hub /run-local.sh
+  local/meitheal /run-local.sh
 
 # Verify
 curl http://localhost:3333/api/health
@@ -126,7 +126,7 @@ With `auth_api: true`, Meitheal can validate user credentials against the Home A
 ## Publishing Requirements
 
 - `image` is configured in `config.yaml` and uses the `{arch}` suffix.
-- Images are published to Docker Hub under `coolockvillage/meitheal-hub-{arch}`.
+- Images are published to Docker Hub under `coolockvillage/meitheal-{arch}`.
 - Version tags and published container tags should match add-on `version`.
 - Root `repository.yaml` must stay present for repository publishing.
 - `apparmor.txt` must be present alongside `config.yaml`.

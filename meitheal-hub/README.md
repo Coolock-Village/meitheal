@@ -4,7 +4,7 @@ Meitheal Hub is the Home Assistant add-on runtime for Meitheal, the cooperative 
 
 This add-on is Astro-first and runs the Meitheal web runtime with SQLite persistence and Home Assistant ingress support.
 
-[![Docker Hub](https://img.shields.io/docker/v/coolockvillage/meitheal-hub-amd64?label=Docker%20Hub&logo=docker)](https://hub.docker.com/r/coolockvillage/meitheal-hub-amd64)
+[![Docker Hub](https://img.shields.io/docker/v/coolockvillage/meitheal-amd64?label=Docker%20Hub&logo=docker)](https://hub.docker.com/r/coolockvillage/meitheal-amd64)
 
 ## Quick Install on HA Green
 
@@ -23,11 +23,11 @@ This add-on is Astro-first and runs the Meitheal web runtime with SQLite persist
 ```bash
 # Build from repo root
 podman build --build-arg BUILD_FROM="ghcr.io/home-assistant/amd64-base:3.20" \
-  -f meitheal-hub/Dockerfile -t local/meitheal-hub .
+  -f meitheal-hub/Dockerfile -t local/meitheal .
 
 # Run standalone (no Supervisor)
 podman run --rm -p 3333:3000 -v /tmp/meitheal-data:/data \
-  local/meitheal-hub /run-local.sh
+  local/meitheal /run-local.sh
 
 # Verify
 curl http://localhost:3333/api/health

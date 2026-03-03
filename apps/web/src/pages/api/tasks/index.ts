@@ -246,7 +246,7 @@ export const POST: APIRoute = async ({ request }) => {
         action_data: { task_id: id, ticket_key },
         actions: [
           { action: `MEITHEAL_TASK_DONE_${id}`, title: "Mark Done" },
-          { action: `MEITHEAL_TASK_VIEW_${id}`, title: "View details", uri: `/meitheal_hub/task/${ticket_key}` }
+          { action: `MEITHEAL_TASK_VIEW_${id}`, title: "View details", uri: `/meitheal/task/${ticket_key}` }
         ]
       }).catch(err => logApiError("ha-notify", "Failed to send urgent task push", err));
     }).catch(() => {});
