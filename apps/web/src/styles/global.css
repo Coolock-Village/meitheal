@@ -11,37 +11,37 @@
 @layer base {
   :root {
     /* Runtime CSS vars — hex values for JS access + inline styles */
-    --bg-primary: #0f0f1a;
-    --bg-secondary: #1a1a2e;
-    --bg-card: #16213e;
-    --bg-hover: #1e2d4f;
-    --bg-input: #0a0a14;
-    --text-primary: #e8e8f0;
-    --text-secondary: #9b9bb4;
-    --text-muted: #5e5e78;
+    --bg-primary: #131320;
+      --bg-secondary: #1e1e34;
+      --bg-card: #1c2540;
+      --bg-hover: #253050;
+      --bg-input: #0e0e1a;
+      --text-primary: #eaeaf2;
+      --text-secondary: #a8a8c0;
+      --text-muted: #6e6e8a;
     --accent: #10b981;
     --accent-hover: #059669;
     --accent-light: rgba(16, 185, 129, 0.12);
     --warning: #f59e0b;
     --danger: #ef4444;
     --info: #3b82f6;
-    --border: #2a2a42;
+    --border: #32324e;
     --border-focus: #10b981;
 /* RGB channel vars — Tailwind <alpha-value> support */
-  --bg-primary-rgb: 15 15 26;
-  --bg-secondary-rgb: 26 26 46;
-  --bg-card-rgb: 22 33 62;
-  --bg-hover-rgb: 30 45 79;
-  --bg-input-rgb: 10 10 20;
-  --text-primary-rgb: 232 232 240;
-  --text-secondary-rgb: 155 155 180;
-  --text-muted-rgb: 94 94 120;
+  --bg-primary-rgb: 19 19 32;
+    --bg-secondary-rgb: 30 30 52;
+    --bg-card-rgb: 28 37 64;
+    --bg-hover-rgb: 37 48 80;
+    --bg-input-rgb: 14 14 26;
+    --text-primary-rgb: 234 234 242;
+    --text-secondary-rgb: 168 168 192;
+    --text-muted-rgb: 110 110 138;
   --accent-rgb: 16 185 129;
   --accent-hover-rgb: 5 150 105;
   --warning-rgb: 245 158 11;
   --danger-rgb: 239 68 68;
   --info-rgb: 59 130 246;
-  --border-rgb: 42 42 66;
+  --border-rgb: 50 50 78;
   --border-focus-rgb: 16 185 129;
     --radius-sm: 6px;
     --radius-md: 10px;
@@ -62,7 +62,7 @@
       --bg-input: #ffffff;
       --text-primary: #1a1a2e;
       --text-secondary: #4a4a6a;
-      --text-muted: #8888a4;
+      --text-muted: #7a7a96;
       --accent: #059669;
       --accent-hover: #047857;
       --accent-light: rgba(5, 150, 105, 0.1);
@@ -82,7 +82,7 @@
   --bg-input-rgb: 255 255 255;
   --text-primary-rgb: 26 26 46;
   --text-secondary-rgb: 74 74 106;
-  --text-muted-rgb: 136 136 164;
+  --text-muted-rgb: 122 122 150;
   --accent-rgb: 5 150 105;
   --accent-hover-rgb: 4 120 87;
   --warning-rgb: 217 119 6;
@@ -91,7 +91,7 @@
   --border-rgb: 209 213 224;
   --border-focus-rgb: 5 150 105;
     }
-  
+
     /* Auto theme — follows OS preference */
     @media (prefers-color-scheme: light) {
       [data-theme="auto"] {
@@ -102,7 +102,7 @@
         --bg-input: #ffffff;
         --text-primary: #1a1a2e;
         --text-secondary: #4a4a6a;
-        --text-muted: #8888a4;
+        --text-muted: #7a7a96;
         --accent: #059669;
         --accent-hover: #047857;
         --accent-light: rgba(5, 150, 105, 0.1);
@@ -122,7 +122,7 @@
   --bg-input-rgb: 255 255 255;
   --text-primary-rgb: 26 26 46;
   --text-secondary-rgb: 74 74 106;
-  --text-muted-rgb: 136 136 164;
+  --text-muted-rgb: 122 122 150;
   --accent-rgb: 5 150 105;
   --accent-hover-rgb: 4 120 87;
   --warning-rgb: 217 119 6;
@@ -172,7 +172,7 @@
           outline-offset: 2px;
           box-shadow: 0 0 0 4px var(--accent-light);
         }
-    
+
         /* Remove default outlines on pointer focus to avoid visual clutter */
         button:focus:not(:focus-visible),
         a:focus:not(:focus-visible) {
@@ -210,12 +210,12 @@
     @apply w-sidebar bg-bg-secondary/90 backdrop-blur-md flex flex-col border-r border-border fixed h-screen z-40;
     transition: transform 250ms cubic-bezier(0.4, 0, 0.2, 1);
     }
-    
+
     /* Collapsed sidebar slides off-screen */
     body.sidebar-collapsed .sidebar {
       transform: translateX(-100%);
     }
-    
+
     /* Toggle pill that hugs the sidebar edge */
     .sidebar-toggle {
       position: fixed;
@@ -239,19 +239,19 @@
       transition: left 250ms cubic-bezier(0.4, 0, 0.2, 1),
         opacity 200ms ease;
     }
-    
+
     .sidebar-toggle:hover {
       opacity: 1 !important;
       color: var(--accent);
       background: var(--bg-hover);
     }
-    
+
     /* Show on sidebar hover or when page is hovered near the edge */
     .sidebar:hover~.sidebar-toggle,
     .sidebar-toggle:hover {
       opacity: 0.7;
     }
-    
+
     /* When collapsed, move toggle to left edge and always show */
     body.sidebar-collapsed .sidebar-toggle {
       left: 0;
@@ -328,7 +328,7 @@
       overflow-x: hidden;
     transition: margin-left 250ms cubic-bezier(0.4, 0, 0.2, 1);
     }
-    
+
     /* When sidebar is collapsed, expand main content to full width */
     body.sidebar-collapsed .main-content {
       margin-left: 0;
@@ -342,19 +342,19 @@
     .empty-state {
       @apply flex flex-col items-center justify-center p-12 text-center rounded-xl border border-dashed border-border/60 bg-bg-secondary/30 my-8 mx-auto w-full max-w-2xl;
     }
-  
+
     .empty-state-icon {
       @apply mb-4 flex items-center justify-center;
     }
-  
+
     .empty-state-title {
       @apply text-lg font-semibold text-text-primary mb-2 tracking-tight;
     }
-  
+
     .empty-state-desc {
       @apply text-sm text-text-secondary max-w-sm mx-auto mb-6;
     }
-  
+
     .empty-state-actions {
       @apply flex items-center justify-center gap-3 mt-2;
     }
@@ -381,7 +381,7 @@
       padding-right: 2rem;
       cursor: pointer;
     }
-  
+
     .form-select option {
       @apply bg-bg-card text-text-primary;
     }
@@ -415,19 +415,19 @@
   .btn-secondary {
     @apply btn bg-transparent text-text-secondary border border-border;
     }
-    
+
     .btn-secondary:hover:not(:disabled) {
       @apply bg-bg-hover text-text-primary;
     }
-    
+
     .btn-ghost {
       @apply btn bg-transparent text-text-secondary border-transparent;
     }
-    
+
     .btn-ghost:hover:not(:disabled) {
       @apply bg-bg-secondary/50 text-text-primary;
     }
-    
+
     .btn-icon {
       @apply p-2 rounded-md bg-transparent text-text-secondary transition-colors cursor-pointer border border-transparent;
       display: inline-flex;
@@ -443,7 +443,7 @@
   .card {
     @apply bg-bg-card/80 backdrop-blur-md border border-border rounded-lg p-5 shadow-sm transition-all;
   }
-  
+
   .card:hover {
     @apply shadow-md border-border-focus/50;
   }
@@ -752,30 +752,30 @@
   }
 
     /* --- Task & Table UX Enhancements (Phase 55) --- */
-  
+
     /* Task count summary bar */
     .filter-summary-bar {
       @apply flex items-center gap-3 text-sm text-text-secondary py-2;
     }
-  
+
     .filter-summary-bar .summary-count {
       @apply font-semibold text-text-primary;
     }
-  
+
     .filter-summary-bar .summary-overdue {
       @apply font-semibold text-danger;
     }
-  
+
     /* Hover-reveal action buttons on task list items */
     .task-actions {
       @apply flex items-center gap-1 opacity-0 transition-opacity;
     }
-  
+
     .task-item:hover .task-actions,
     .task-item:focus-within .task-actions {
       @apply opacity-100;
     }
-  
+
     .task-action-btn {
       @apply bg-transparent border-none cursor-pointer text-text-muted p-1.5 rounded-md transition-colors text-sm leading-none;
       min-width: 28px;
@@ -784,73 +784,73 @@
       align-items: center;
       justify-content: center;
     }
-  
+
     .task-action-btn:hover {
       @apply bg-bg-hover text-text-primary;
     }
-  
+
     .task-action-btn.danger:hover {
       @apply text-danger bg-danger/10;
     }
-  
+
     /* Overdue date highlight */
     .overdue-date {
       @apply text-danger font-medium;
     }
-  
+
     /* Filter clear button */
     .filter-clear-btn {
       @apply text-xs text-text-muted cursor-pointer bg-transparent border-none transition-colors px-2 py-1 rounded;
     }
-  
+
     .filter-clear-btn:hover {
       @apply text-accent bg-accent/10;
     }
-  
+
     /* Priority CSS custom properties — replaces hardcoded hex in inline styles */
     .priority-critical {
       color: var(--danger);
     }
-  
+
     .priority-high {
       color: var(--warning);
     }
-  
+
     .priority-medium {
       color: var(--info);
     }
-  
+
     .priority-low {
       color: var(--accent);
     }
-  
+
     .priority-minimal {
       color: var(--text-muted);
     }
-  
+
     /* Responsive table column hiding for HA panels */
     @media (max-width: 768px) {
-  
+
       .data-table .col-calendar,
       .data-table .col-custom-fields {
         display: none;
       }
     }
-  
+
     @media (max-width: 600px) {
-  
+
       .data-table .col-rice,
       .data-table .col-type {
         display: none;
       }
     }
-  
+
     /* Filter result transitions */
     .task-item,
     .data-table tbody tr {
       transition: opacity 200ms ease, max-height 200ms ease;
     }
-  
+
     .task-item.filtered-out {
       opacity: 0;
       max-height: 0;
@@ -917,15 +917,15 @@
     .toast.warning {
       @apply bg-warning/90 text-white;
     }
-  
+
     /* --- HA Ingress Compact Mode (Phase 50) --- */
         /* Sidebar is shown in HA ingress — main-content margin is handled
            by the sidebar-collapsed class and ml-sidebar utility normally. */
-  
+
     body.ha-ingress .top-navigation .hamburger-btn {
       display: none !important;
     }
-  
+
     /* --- Screen Reader Only Utility --- */
     .sr-only {
       position: absolute;
@@ -1012,11 +1012,11 @@
       grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
       gap: 12px;
     }
-  
+
     .bento-empty-state {
       grid-column: 1 / -1;
     }
-  
+
     .bento-card {
       position: relative;
       display: flex;
@@ -1029,24 +1029,24 @@
         box-shadow 0.25s ease,
         border-color 0.25s ease;
     }
-  
+
     .bento-card:hover {
       transform: translateY(-3px) scale(1.01);
       border-color: var(--accent);
       box-shadow: 0 8px 24px rgba(16, 185, 129, 0.12),
         0 2px 8px rgba(0, 0, 0, 0.2);
     }
-  
+
     .bento-card-done {
       opacity: 0.55;
     }
-  
+
     .bento-card-stripe {
       width: 4px;
       flex-shrink: 0;
       border-radius: 10px 0 0 10px;
     }
-  
+
     .bento-card-body {
       flex: 1;
       padding: 12px 14px;
@@ -1055,7 +1055,7 @@
       flex-direction: column;
       gap: 8px;
     }
-  
+
     .bento-card-title {
       font-weight: 600;
       font-size: 0.875rem;
@@ -1066,38 +1066,38 @@
       -webkit-box-orient: vertical;
       overflow: hidden;
     }
-  
+
     .bento-card-title.done {
       text-decoration: line-through;
       color: var(--text-muted);
     }
-  
+
     .bento-card-footer {
       display: flex;
       align-items: center;
       gap: 6px;
       flex-wrap: wrap;
     }
-  
+
     .bento-card-due {
       font-size: 0.65rem;
       color: var(--text-muted);
       white-space: nowrap;
     }
-  
+
     .bento-card-labels {
       display: flex;
       gap: 4px;
       flex-wrap: wrap;
     }
-  
+
         .bento-card-header {
           display: flex;
           align-items: flex-start;
           justify-content: space-between;
           gap: 6px;
         }
-    
+
         .bento-ticket-key {
           font-size: 10px;
           font-family: 'JetBrains Mono', monospace;
@@ -1109,7 +1109,7 @@
           border-radius: 3px;
           white-space: nowrap;
         }
-    
+
         .bento-board-badge {
           font-size: 10px;
           font-weight: 500;
@@ -1118,7 +1118,7 @@
           border: 1px solid;
           white-space: nowrap;
         }
-    
+
         .bento-card-actions {
       position: absolute;
       top: 6px;
@@ -1128,11 +1128,11 @@
         opacity: 0;
         transition: opacity 0.2s ease;
       }
-      
+
       .bento-card:hover .bento-card-actions {
         opacity: 1;
       }
-      
+
       .bento-card-actions .card-action-btn {
         width: 26px;
         height: 26px;
@@ -1147,7 +1147,7 @@
         transition: background 0.15s ease, transform 0.15s ease;
         padding: 0;
       }
-      
+
       .bento-card-actions .card-action-btn:hover {
         background: var(--accent);
         transform: scale(1.1);

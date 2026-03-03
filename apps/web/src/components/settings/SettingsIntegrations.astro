@@ -41,6 +41,13 @@ const { locale } = Astro.props;
           </div>
         </div>
         <div class="integration-card__header-right">
+          <button
+            type="button"
+            class="info-btn"
+            data-explainer="ha"
+            aria-label="What is Home Assistant integration?"
+            onclick="event.stopPropagation()">ℹ️</button
+          >
           <span class="badge badge-pending" id="ha-connection-badge"
             >Checking…</span
           >
@@ -162,6 +169,13 @@ const { locale } = Astro.props;
           </div>
         </div>
         <div class="integration-card__header-right">
+          <button
+            type="button"
+            class="info-btn"
+            data-explainer="calendar"
+            aria-label="What is Calendar Sync?"
+            onclick="event.stopPropagation()">ℹ️</button
+          >
           <span class="badge badge-pending" id="cal-status">Checking…</span>
           <span class="integration-card__chevron">▸</span>
         </div>
@@ -205,30 +219,44 @@ const { locale } = Astro.props;
                 id="help-cal-entity"
               />
             </div>
-            <EntitySelector
-              domain="calendar"
-              id="cal-entity"
+            <!-- Dropdown populated by JS from detected entities -->
+            <select class="form-select" id="cal-entity">
+              <option value="" disabled selected>Loading entities…</option>
+            </select>
+            <input
+              type="text"
+              class="form-input"
+              id="cal-entity-manual"
               placeholder="calendar.meitheal_tasks"
-              helpText="Select from detected entities, or enter a custom entity ID."
+              style="display: none; margin-top: 6px;"
             />
           </div>
-          <div class="form-group">
-            <div class="form-label-row">
-              <label class="form-label" for="caldav-url"
-                >CalDAV URL (optional)</label
+
+          <!-- External CalDAV — collapsible -->
+          <details class="caldav-section">
+            <summary class="caldav-toggle">
+              <span>📡 External Calendar (CalDAV)</span>
+              <small
+                >For Nextcloud, Radicale, Baikal — not needed for HA calendars</small
               >
-              <HelpTooltip
-                text="For direct CalDAV sync with external calendar servers like Nextcloud, Radicale, or Baikal. Leave blank to use HA's built-in calendar integration only. When set, Meitheal will sync directly with your CalDAV server in addition to HA."
-                id="help-caldav"
+            </summary>
+            <div class="form-group" style="margin-top: 10px;">
+              <div class="form-label-row">
+                <label class="form-label" for="caldav-url">CalDAV URL</label>
+                <HelpTooltip
+                  text="For direct CalDAV sync with external calendar servers like Nextcloud, Radicale, or Baikal. Leave blank to use HA's built-in calendar integration only. When set, Meitheal will sync directly with your CalDAV server in addition to HA."
+                  id="help-caldav"
+                />
+              </div>
+              <input
+                type="url"
+                class="form-input"
+                id="caldav-url"
+                placeholder="https://your-server.com/dav/calendars/"
               />
             </div>
-            <input
-              type="url"
-              class="form-input"
-              id="caldav-url"
-              placeholder="https://your-server.com/dav/calendars/"
-            />
-          </div>
+          </details>
+
           <div class="integration-card__actions">
             <button type="button" class="btn btn-primary" id="save-cal"
               >Save Calendar Settings</button
@@ -255,11 +283,18 @@ const { locale } = Astro.props;
           <div class="integration-card__title-info">
             <strong>Todo Sync</strong>
             <span class="integration-card__desc"
-              >Real-time sync with HA todo lists</span
+              >Bridge HA todo lists with Meitheal</span
             >
           </div>
         </div>
         <div class="integration-card__header-right">
+          <button
+            type="button"
+            class="info-btn"
+            data-explainer="todo"
+            aria-label="What is Todo Sync?"
+            onclick="event.stopPropagation()">ℹ️</button
+          >
           <span class="badge badge-pending" id="todo-status">Disabled</span>
           <span class="integration-card__chevron">▸</span>
         </div>
@@ -270,6 +305,19 @@ const { locale } = Astro.props;
         id="integration-todo-body"
         aria-hidden="true"
       >
+        <!-- Bridge purpose explainer -->
+        <div
+          class="integration-callout integration-callout--info"
+          style="margin-bottom: 12px;"
+        >
+          <strong>🔗 HA Bridge</strong>
+          <div class="integration-callout__detail">
+            Bridges Home Assistant's built-in todo lists with Meitheal. Enable
+            this so your HA dashboards and automations that use <code
+              >todo.*</code
+            > entities stay in sync with tasks managed here.
+          </div>
+        </div>
         <!-- HA auto-detect callout -->
         <div
           id="todo-auto-info"
@@ -385,6 +433,13 @@ const { locale } = Astro.props;
           </div>
         </div>
         <div class="integration-card__header-right">
+          <button
+            type="button"
+            class="info-btn"
+            data-explainer="grocy"
+            aria-label="What is Grocy integration?"
+            onclick="event.stopPropagation()">ℹ️</button
+          >
           <span class="badge badge-pending" id="grocy-status"
             >Not configured</span
           >
@@ -397,8 +452,21 @@ const { locale } = Astro.props;
         id="integration-grocy-body"
         aria-hidden="true"
       >
+        <!-- Grocy auto-detect callout -->
+        <div
+          id="grocy-auto-info"
+          class="integration-callout integration-callout--success"
+          style="display: none;"
+        >
+          <strong>✓ Grocy detected via HA</strong>
+          <div class="integration-callout__detail">
+            Grocy addon found — URL auto-populated from HA ingress. No
+            additional setup needed.
+          </div>
+        </div>
+
         <div class="integration-card__config">
-          <div class="form-group">
+          <div class="form-group" id="grocy-url-group">
             <div class="form-label-row">
               <label class="form-label" for="grocy-url">Grocy URL</label>
               <HelpTooltip
@@ -413,7 +481,7 @@ const { locale } = Astro.props;
               placeholder="http://homeassistant.local:9192"
             />
           </div>
-          <div class="form-group">
+          <div class="form-group" id="grocy-key-group">
             <div class="form-label-row">
               <label class="form-label" for="grocy-key">API Key</label>
               <HelpTooltip
@@ -428,6 +496,15 @@ const { locale } = Astro.props;
               placeholder="••••••••"
             />
           </div>
+          <!-- Custom config toggle for auto-detected installs -->
+          <button
+            type="button"
+            class="btn btn-ghost"
+            id="grocy-custom-toggle"
+            style="display: none; font-size: 12px; padding: 4px 8px; align-self: flex-start;"
+          >
+            ⚙ Custom configuration
+          </button>
           <div class="form-group">
             <div class="form-label-row">
               <label class="form-label" for="grocy-sync-mode">Sync Mode</label>
@@ -469,6 +546,13 @@ const { locale } = Astro.props;
           </div>
         </div>
         <div class="integration-card__header-right">
+          <button
+            type="button"
+            class="info-btn"
+            data-explainer="n8n"
+            aria-label="What is n8n / Node-RED integration?"
+            onclick="event.stopPropagation()">ℹ️</button
+          >
           <span class="badge badge-pending" id="n8n-status">Not configured</span
           >
           <span class="integration-card__chevron">▸</span>
@@ -480,22 +564,52 @@ const { locale } = Astro.props;
         id="integration-n8n-body"
         aria-hidden="true"
       >
-        <div class="integration-card__config">
-          <div class="form-group">
-            <div class="form-label-row">
-              <label class="form-label" for="n8n-webhook-url">Webhook URL</label
-              >
-              <HelpTooltip
-                text="The webhook URL from your n8n or Node-RED flow. Meitheal will POST a JSON payload to this URL whenever selected task events occur. Create a webhook trigger node in your flow to receive these events."
-                id="help-n8n-url"
-              />
+        <!-- HA addon auto-detect callout -->
+        <div
+          id="n8n-auto-info"
+          class="integration-callout integration-callout--success"
+          style="display: none;"
+        >
+          <strong>✓ Automation addon detected</strong>
+          <div class="integration-callout__detail" id="n8n-auto-detail">
+            Events are sent/received automatically via WebSocket — no additional
+            webhook configuration needed.
+          </div>
+        </div>
+
+        <!-- Mode toggle: HA Addon vs Standalone -->
+        <div class="n8n-mode-toggle" style="margin-bottom: 12px;">
+          <label class="form-label" style="margin-bottom: 6px;"
+            >Connection Mode</label
+          >
+          <div class="mode-tabs">
+            <button
+              type="button"
+              class="mode-tab mode-tab--active"
+              id="n8n-mode-auto"
+              data-mode="auto"
+            >
+              🏠 HA Addon (auto)
+            </button>
+            <button
+              type="button"
+              class="mode-tab"
+              id="n8n-mode-standalone"
+              data-mode="standalone"
+            >
+              🌐 Standalone
+            </button>
+          </div>
+        </div>
+
+        <!-- HA Addon mode content -->
+        <div id="n8n-auto-content" class="integration-card__config">
+          <div class="integration-callout integration-callout--info">
+            <strong>🔗 Automatic via WebSocket</strong>
+            <div class="integration-callout__detail">
+              Node-RED and n8n addons communicate with Meitheal automatically
+              through the HA WebSocket. Select which events to broadcast below.
             </div>
-            <input
-              type="url"
-              class="form-input"
-              id="n8n-webhook-url"
-              placeholder="https://n8n.example.com/webhook/meitheal"
-            />
           </div>
           <div class="form-group">
             <label class="form-label">Trigger Events</label>
@@ -535,6 +649,107 @@ const { locale } = Astro.props;
             >
           </div>
         </div>
+
+        <!-- Standalone mode content -->
+        <div
+          id="n8n-standalone-content"
+          class="integration-card__config"
+          style="display: none;"
+        >
+          <div class="form-group">
+            <div class="form-label-row">
+              <label class="form-label" for="n8n-webhook-url">Webhook URL</label
+              >
+              <HelpTooltip
+                text="The webhook URL from your n8n or Node-RED flow. Meitheal will POST a JSON payload to this URL whenever selected task events occur."
+                id="help-n8n-url"
+              />
+            </div>
+            <input
+              type="url"
+              class="form-input"
+              id="n8n-webhook-url"
+              placeholder="https://n8n.example.com/webhook/meitheal"
+            />
+          </div>
+          <div class="form-group">
+            <div class="form-label-row">
+              <label class="form-label" for="n8n-api-key"
+                >API Key (optional)</label
+              >
+              <HelpTooltip
+                text="If your n8n/Node-RED instance requires authentication, enter the API key here. This is used in the Authorization header for webhook requests."
+                id="help-n8n-apikey"
+              />
+            </div>
+            <input
+              type="password"
+              class="form-input"
+              id="n8n-api-key"
+              placeholder="••••••••"
+            />
+          </div>
+          <div class="form-group">
+            <div class="form-label-row">
+              <label class="form-label" for="n8n-secret"
+                >Signing Secret (optional)</label
+              >
+              <HelpTooltip
+                text="HMAC-SHA256 secret for signing webhook payloads. Verify the X-Meitheal-Signature header on your receiving end."
+                id="help-n8n-secret"
+              />
+            </div>
+            <input
+              type="password"
+              class="form-input"
+              id="n8n-secret"
+              placeholder="••••••••"
+            />
+          </div>
+          <div class="form-group">
+            <label class="form-label">Trigger Events</label>
+            <div class="event-checkbox-grid">
+              <label class="event-checkbox">
+                <input
+                  type="checkbox"
+                  class="n8n-event-standalone"
+                  value="task.created"
+                  checked
+                /> Created
+              </label>
+              <label class="event-checkbox">
+                <input
+                  type="checkbox"
+                  class="n8n-event-standalone"
+                  value="task.updated"
+                  checked
+                /> Updated
+              </label>
+              <label class="event-checkbox">
+                <input
+                  type="checkbox"
+                  class="n8n-event-standalone"
+                  value="task.completed"
+                  checked
+                /> Completed
+              </label>
+              <label class="event-checkbox">
+                <input
+                  type="checkbox"
+                  class="n8n-event-standalone"
+                  value="task.deleted"
+                /> Deleted
+              </label>
+            </div>
+          </div>
+          <div class="integration-card__actions">
+            <button
+              type="button"
+              class="btn btn-primary"
+              id="save-n8n-standalone">Save Standalone Settings</button
+            >
+          </div>
+        </div>
       </div>
     </div>
 
@@ -556,6 +771,13 @@ const { locale } = Astro.props;
           </div>
         </div>
         <div class="integration-card__header-right">
+          <button
+            type="button"
+            class="info-btn"
+            data-explainer="webhooks"
+            aria-label="What are Webhooks?"
+            onclick="event.stopPropagation()">ℹ️</button
+          >
           <span class="badge badge-pending" id="webhook-status"
             >Not configured</span
           >
@@ -568,6 +790,18 @@ const { locale } = Astro.props;
         id="integration-webhooks-body"
         aria-hidden="true"
       >
+        <!-- Differentiation callout -->
+        <div
+          class="integration-callout integration-callout--info"
+          style="margin-bottom: 12px;"
+        >
+          <strong>📌 Webhooks vs Agents & AI</strong>
+          <div class="integration-callout__detail">
+            Webhooks send task events to external services and automations
+            (e.g., Zapier, IFTTT, custom APIs). For AI agent protocols like A2A,
+            MCP, and WebMCP, see the <strong>Agents & AI</strong> tab.
+          </div>
+        </div>
         <div class="integration-card__config">
           <div class="form-group">
             <div class="form-label-row">
@@ -623,6 +857,23 @@ const { locale } = Astro.props;
       </div>
     </div>
   </div>
+
+  <!-- ═══════ Integration Explainer Dialog ═══════ -->
+  <dialog
+    id="integration-explainer-dialog"
+    class="explainer-dialog"
+    aria-modal="true"
+  >
+    <div class="explainer-dialog__content">
+      <div class="explainer-dialog__header">
+        <h3 class="explainer-dialog__title" id="explainer-title"></h3>
+        <button type="button" class="explainer-dialog__close" aria-label="Close"
+          >&times;</button
+        >
+      </div>
+      <div class="explainer-dialog__body" id="explainer-body"></div>
+    </div>
+  </dialog>
 </div>
 
 <style>
@@ -1137,6 +1388,180 @@ const { locale } = Astro.props;
       grid-template-columns: 1fr;
     }
   }
+
+  /* ═══════ Info Button ═══════ */
+  .info-btn {
+    background: none;
+    border: 1px solid var(--border);
+    border-radius: 50%;
+    width: 26px;
+    height: 26px;
+    font-size: 13px;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: var(--text-muted);
+    transition: all 150ms ease;
+    flex-shrink: 0;
+    padding: 0;
+    line-height: 1;
+  }
+
+  .info-btn:hover {
+    border-color: var(--accent);
+    color: var(--accent);
+    background: var(--accent-light);
+    transform: scale(1.1);
+  }
+
+  /* ═══════ Info Callout (blue) ═══════ */
+  .integration-callout--info {
+    background: rgba(59, 130, 246, 0.06);
+    border: 1px solid rgba(59, 130, 246, 0.15);
+    color: var(--text-secondary);
+  }
+
+  .integration-callout--info strong {
+    color: var(--info);
+  }
+
+  /* ═══════ CalDAV Section ═══════ */
+  .caldav-section {
+    margin-top: 4px;
+    border-top: 1px solid var(--border);
+    padding-top: 8px;
+  }
+
+  .caldav-toggle {
+    cursor: pointer;
+    color: var(--text-muted);
+    font-size: 13px;
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+    list-style: none;
+  }
+
+  .caldav-toggle::-webkit-details-marker {
+    display: none;
+  }
+
+  .caldav-toggle small {
+    font-size: 11px;
+    color: var(--text-muted);
+  }
+
+  /* ═══════ Mode Tabs ═══════ */
+  .mode-tabs {
+    display: flex;
+    gap: 0;
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    overflow: hidden;
+  }
+
+  .mode-tab {
+    flex: 1;
+    padding: 8px 14px;
+    background: var(--bg-secondary);
+    border: none;
+    cursor: pointer;
+    font-size: 13px;
+    font-weight: 500;
+    color: var(--text-muted);
+    transition: all 150ms ease;
+    font-family: inherit;
+  }
+
+  .mode-tab:not(:last-child) {
+    border-right: 1px solid var(--border);
+  }
+
+  .mode-tab:hover {
+    background: var(--bg-hover);
+    color: var(--text-primary);
+  }
+
+  .mode-tab--active {
+    background: var(--accent-light);
+    color: var(--accent);
+    font-weight: 600;
+  }
+
+  /* ═══════ Explainer Dialog ═══════ */
+  .explainer-dialog {
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    background: var(--bg-card);
+    color: var(--text-primary);
+    max-width: 480px;
+    width: 90vw;
+    padding: 0;
+    box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
+  }
+
+  .explainer-dialog::backdrop {
+    background: rgba(0, 0, 0, 0.5);
+    backdrop-filter: blur(4px);
+  }
+
+  .explainer-dialog__content {
+    padding: 20px 24px;
+  }
+
+  .explainer-dialog__header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 12px;
+  }
+
+  .explainer-dialog__title {
+    font-size: 16px;
+    font-weight: 600;
+    margin: 0;
+    color: var(--text-primary);
+  }
+
+  .explainer-dialog__close {
+    background: none;
+    border: none;
+    font-size: 22px;
+    cursor: pointer;
+    color: var(--text-muted);
+    padding: 4px 8px;
+    border-radius: 6px;
+    line-height: 1;
+    transition: all 150ms ease;
+  }
+
+  .explainer-dialog__close:hover {
+    background: var(--bg-hover);
+    color: var(--text-primary);
+  }
+
+  .explainer-dialog__body {
+    font-size: 14px;
+    line-height: 1.6;
+    color: var(--text-secondary);
+  }
+
+  .explainer-dialog__body p {
+    margin: 0 0 8px;
+  }
+
+  .explainer-dialog__body p:last-child {
+    margin-bottom: 0;
+  }
+
+  .explainer-dialog__body code {
+    background: var(--bg-secondary);
+    padding: 2px 5px;
+    border-radius: 4px;
+    font-size: 12px;
+    font-family: "JetBrains Mono", monospace;
+  }
 </style>
 
 <script>
@@ -1257,4 +1682,277 @@ const { locale } = Astro.props;
 
   initHAConnectionStatus();
   document.addEventListener("astro:page-load", initHAConnectionStatus);
+
+  /**
+   * Integration Explainer Dialog
+   *
+   * Opens a native <dialog> with explainer content for each integration.
+   * Content is defined inline to keep it colocated with the component.
+   */
+  const EXPLAINER_CONTENT: Record<string, { title: string; body: string }> = {
+    ha: {
+      title: "🏠 Home Assistant",
+      body: `<p>Meitheal connects to Home Assistant via <strong>WebSocket</strong>, allowing it to consume and provide data automatically.</p>
+             <p>When running as an HA addon, no configuration is needed — the connection is established through the Supervisor API with a built-in token.</p>
+             <p>For standalone installs, enter your HA URL and a Long-Lived Access Token in the Advanced section.</p>`,
+    },
+    calendar: {
+      title: "📅 Calendar Sync",
+      body: `<p>Bidirectional sync between Meitheal tasks and HA calendar events. Tasks with due dates appear as calendar events, and calendar events become tasks.</p>
+             <p>When connected to HA, select a calendar entity from the dropdown — Meitheal auto-detects available calendars. For external servers (Nextcloud, Radicale, Baikal), expand the CalDAV section.</p>
+             <p>Sync window: past 7 days → next 30 days.</p>`,
+    },
+    todo: {
+      title: "✅ Todo Sync",
+      body: `<p>Bridges Home Assistant's built-in todo lists (<code>todo.*</code> entities) with Meitheal.</p>
+             <p>This ensures your HA dashboards, automations, and voice assistants that use <code>todo.*</code> entities stay in sync with tasks managed here.</p>
+             <p>Enable only for lists you actively use — disabled by default to save power.</p>`,
+    },
+    grocy: {
+      title: "🛒 Grocy",
+      body: `<p>Grocy is a household inventory and chore management system. This integration syncs Grocy chores and products with Meitheal tasks.</p>
+             <p>When Grocy is running as an HA addon, Meitheal auto-detects it and fills in the URL automatically. For standalone Grocy servers, enter the URL and API key manually.</p>
+             <p>Generate an API key in Grocy → Settings → API Keys.</p>`,
+    },
+    n8n: {
+      title: "⚙ n8n / Node-RED",
+      body: `<p>Trigger automation workflows when task events occur (created, updated, completed, deleted).</p>
+             <p><strong>HA Addon mode:</strong> Node-RED and n8n addons communicate automatically through the HA WebSocket — no webhook URL needed.</p>
+             <p><strong>Standalone mode:</strong> Enter the webhook URL from your n8n/Node-RED flow, plus optional API key and signing secret for authentication.</p>`,
+    },
+    webhooks: {
+      title: "🔔 Webhooks",
+      body: `<p>Generic outgoing HTTP webhooks that send task event payloads to any URL you specify (e.g., Zapier, IFTTT, custom APIs).</p>
+             <p>Each event is POSTed as JSON with an optional HMAC-SHA256 signature for verification.</p>
+             <p><strong>Not the same as Agents & AI</strong> — webhooks are for data pipelines and automations. For AI agent protocols (A2A, MCP, WebMCP), use the Agents & AI tab.</p>`,
+    },
+  };
+
+  function initExplainerDialog() {
+    const dialog = document.getElementById(
+      "integration-explainer-dialog",
+    ) as HTMLDialogElement | null;
+    const titleEl = document.getElementById("explainer-title");
+    const bodyEl = document.getElementById("explainer-body");
+    const closeBtn = dialog?.querySelector(".explainer-dialog__close");
+    if (!dialog || !titleEl || !bodyEl) return;
+
+    // Open on info button click
+    document.querySelectorAll(".info-btn[data-explainer]").forEach((btn) => {
+      btn.addEventListener("click", (e) => {
+        e.preventDefault();
+        e.stopPropagation();
+        const key = (btn as HTMLElement).dataset.explainer || "";
+        const content = EXPLAINER_CONTENT[key];
+        if (!content) return;
+        titleEl.textContent = content.title;
+        bodyEl.innerHTML = content.body;
+        dialog.showModal();
+      });
+    });
+
+    // Close button
+    closeBtn?.addEventListener("click", () => dialog.close());
+
+    // Close on backdrop click
+    dialog.addEventListener("click", (e) => {
+      if (e.target === dialog) dialog.close();
+    });
+  }
+
+  initExplainerDialog();
+  document.addEventListener("astro:page-load", initExplainerDialog);
+
+  /**
+   * n8n / Node-RED Mode Toggle
+   *
+   * Switches between HA Addon (auto) and Standalone modes.
+   */
+  function initN8nModeToggle() {
+    const autoBtn = document.getElementById("n8n-mode-auto");
+    const standaloneBtn = document.getElementById("n8n-mode-standalone");
+    const autoContent = document.getElementById("n8n-auto-content");
+    const standaloneContent = document.getElementById("n8n-standalone-content");
+    if (!autoBtn || !standaloneBtn || !autoContent || !standaloneContent)
+      return;
+    if (autoBtn.dataset.modeInit) return;
+    autoBtn.dataset.modeInit = "true";
+
+    function setMode(mode: string) {
+      if (mode === "auto") {
+        autoBtn!.classList.add("mode-tab--active");
+        standaloneBtn!.classList.remove("mode-tab--active");
+        autoContent!.style.display = "";
+        standaloneContent!.style.display = "none";
+      } else {
+        standaloneBtn!.classList.add("mode-tab--active");
+        autoBtn!.classList.remove("mode-tab--active");
+        autoContent!.style.display = "none";
+        standaloneContent!.style.display = "";
+      }
+    }
+
+    autoBtn.addEventListener("click", () => setMode("auto"));
+    standaloneBtn.addEventListener("click", () => setMode("standalone"));
+  }
+
+  initN8nModeToggle();
+  document.addEventListener("astro:page-load", initN8nModeToggle);
+
+  /**
+   * Calendar Entity Dropdown Population
+   *
+   * Populates the cal-entity <select> with detected HA calendar entities.
+   * Adds a "Custom entity…" option that reveals the manual input.
+   */
+  function initCalendarDropdown() {
+    const select = document.getElementById(
+      "cal-entity",
+    ) as HTMLSelectElement | null;
+    const manual = document.getElementById(
+      "cal-entity-manual",
+    ) as HTMLInputElement | null;
+    if (!select || !manual) return;
+    if (select.dataset.calInit) return;
+    select.dataset.calInit = "true";
+
+    // When select changes, show/hide manual input
+    select.addEventListener("change", () => {
+      if (select.value === "__custom__") {
+        manual.style.display = "";
+        manual.focus();
+      } else {
+        manual.style.display = "none";
+        manual.value = "";
+      }
+    });
+
+    // Populate from API
+    (async () => {
+      try {
+        const res = await fetch("/api/ha/calendars");
+        if (!res.ok) throw new Error("API error");
+        const data = (await res.json()) as {
+          calendars?: { entity_id: string; friendly_name: string }[];
+          sync?: { entityId: string | null };
+        };
+
+        const calendars = data.calendars ?? [];
+        const activeEntity = data.sync?.entityId ?? "";
+
+        // Clear loading option
+        select.innerHTML = "";
+
+        if (calendars.length === 0) {
+          select.innerHTML =
+            '<option value="" disabled selected>No calendars detected</option>';
+        } else {
+          // Default option
+          select.innerHTML =
+            '<option value="" disabled>Select a calendar…</option>';
+          for (const cal of calendars) {
+            const opt = document.createElement("option");
+            opt.value = cal.entity_id;
+            opt.textContent = `${cal.friendly_name} (${cal.entity_id})`;
+            if (cal.entity_id === activeEntity) opt.selected = true;
+            select.appendChild(opt);
+          }
+          // Auto-select if only one and nothing pre-selected
+          if (calendars.length === 1 && !activeEntity) {
+            select.selectedIndex = 1;
+          }
+        }
+
+        // Add custom option
+        const customOpt = document.createElement("option");
+        customOpt.value = "__custom__";
+        customOpt.textContent = "Custom entity…";
+        select.appendChild(customOpt);
+      } catch {
+        select.innerHTML =
+          '<option value="" disabled selected>Could not load calendars</option>';
+        // Add custom option as fallback
+        const customOpt = document.createElement("option");
+        customOpt.value = "__custom__";
+        customOpt.textContent = "Custom entity…";
+        select.appendChild(customOpt);
+        manual.style.display = "";
+      }
+    })();
+  }
+
+  initCalendarDropdown();
+  document.addEventListener("astro:page-load", initCalendarDropdown);
+
+  /**
+   * Grocy Auto-Detection
+   *
+   * Checks if Grocy addon is available via HA Supervisor API.
+   * Auto-fills URL when detected, hides manual fields.
+   * Addon slug: a0d7b954_grocy (hassio-addons repository)
+   */
+  async function initGrocyAutoDetect() {
+    const autoInfo = document.getElementById("grocy-auto-info");
+    const urlGroup = document.getElementById("grocy-url-group");
+    const keyGroup = document.getElementById("grocy-key-group");
+    const urlInput = document.getElementById(
+      "grocy-url",
+    ) as HTMLInputElement | null;
+    const customToggle = document.getElementById("grocy-custom-toggle");
+    const statusEl = document.getElementById("grocy-status");
+    if (!autoInfo || !urlGroup || !keyGroup || !urlInput) return;
+    if (autoInfo.dataset.grocyInit) return;
+    autoInfo.dataset.grocyInit = "true";
+
+    try {
+      // Check HA connection first
+      const haRes = await fetch("/api/ha/connection");
+      const haData = (await haRes.json()) as { connected?: boolean };
+      if (!haData.connected) return; // Not connected to HA, skip auto-detect
+
+      // Check if Grocy addon is installed via addons API
+      const addonsRes = await fetch("/api/ha/addons");
+      if (!addonsRes.ok) return;
+      const addonsData = (await addonsRes.json()) as {
+        addons?: {
+          slug: string;
+          name: string;
+          state: string;
+          ingress_url?: string;
+        }[];
+      };
+
+      const grocy = addonsData.addons?.find((a) => a.slug.includes("grocy"));
+      if (grocy) {
+        // Auto-detected!
+        autoInfo.style.display = "block";
+        urlGroup.style.display = "none";
+        keyGroup.style.display = "none";
+        if (customToggle) customToggle.style.display = "";
+
+        // Auto-fill URL from ingress
+        if (grocy.ingress_url) {
+          urlInput.value = grocy.ingress_url;
+        }
+
+        // Update badge
+        if (statusEl) {
+          statusEl.textContent = "Auto-detected";
+          statusEl.className = "badge badge-active";
+        }
+
+        // Custom toggle handler
+        customToggle?.addEventListener("click", () => {
+          urlGroup.style.display = "";
+          keyGroup.style.display = "";
+          customToggle.style.display = "none";
+        });
+      }
+    } catch {
+      console.warn("[Meitheal] Grocy auto-detect failed");
+    }
+  }
+
+  initGrocyAutoDetect();
+  document.addEventListener("astro:page-load", initGrocyAutoDetect);
 </script>
