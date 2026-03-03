@@ -189,11 +189,8 @@ Astro.response.headers.set("X-Content-Type-Options", "nosniff");
         }
       })();
     </script>
-    <!-- Ingress URL sync: reflect sub-route navigation in HA parent URL bar -->
-    <script>
-      import { initIngressUrlSync } from "../lib/ingress-url-sync";
-      initIngressUrlSync();
-    </script>
+    <!-- Ingress URL sync: DISABLED — removed to prevent potential HA panel routing interference -->
+
     <a href="#main-content" class="skip-to-content"
       >{t("nav.skip_to_content", locale)}</a
     >
