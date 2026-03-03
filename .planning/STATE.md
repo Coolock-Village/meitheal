@@ -11,8 +11,8 @@ Local-first task orchestration with HA calendar sync and Vikunja compatibility.
 - **Primary Delivery:** 6 of 6 phases complete (`01-06 complete`)
 - **Extension Track:** 15 of 15 phases complete (`15-24, 27-30 complete`)
 - **Overall phase count:** 21+ phases complete (including global track + security + UX)
-- **Phase 54:** Settings & Integrations UX overhaul — complete
-- **Current version:** `0.2.6`
+- **Phase 56:** Settings IA Overhaul — complete
+- **Current version:** `0.1.50`
 
 ## Phase Status Snapshot
 
@@ -47,11 +47,13 @@ Local-first task orchestration with HA calendar sync and Vikunja compatibility.
 5. `39-ha-addon-publishing` — `complete` (GHCR + Docker Hub, CI dual-push)
 6. `43-security-hardening` — `complete` (structured logging, DB fallback, SSRF, security.txt)
 7. `54-settings-integrations-ux` — `complete` (auto-detect connection, integration cards, tooltips)
+8. `56-settings-ia-overhaul` — `complete` (sidebar-first, HA→Integrations, PWA demote, Help section)
 
 ## Recent Decisions
 
 | Date | Decision | Context |
 |------|----------|---------|
+| 2026-03-03 | Settings IA overhaul — sidebar first, HA→Integrations, PWA compact, Help section | Persona audit: 10 findings, 4 med severity |
 | 2026-03-03 | Fix HA connection status — call `getHAConnection()` before `getHAConnectionStatus()` | Endpoint only read cached singleton; never established WebSocket |
 | 2026-03-03 | **Do NOT use `apiUrl()` for `fetch()` calls** — global monkey-patch handles it | `Layout.astro` inline script auto-prefixes `window.__ingress_path`; `apiUrl()` would double-prefix |
 | 2026-03-03 | Ingress-safe `serve.mjs` wrapper | Prevents 301 redirect loop from double trailing slashes |
@@ -83,10 +85,10 @@ Local-first task orchestration with HA calendar sync and Vikunja compatibility.
 
 ## Session Continuity
 
-Last session: 2026-03-03T15:02:00Z
-Stopped at: Fixed HA connection status bug (`connection.ts`). Documented global fetch monkey-patch pattern in CONVENTIONS.md.
+Last session: 2026-03-03T18:30:00Z
+Stopped at: Settings IA overhaul complete (Phase 56). HA Connection moved to Integrations, PWA demoted to compact, Help section added.
 
-Resume hint: Redeploy addon to verify settings page shows "Connected". Then continue UX audit (Dashboard/Home page).
+Resume hint: Tag v0.1.50 and deploy to HA addon. Consider setting up HA devcontainer for local addon testing.
 
 ---
-*Last updated: 2026-03-03 — HA connection status fix + ingress fetch docs*
+*Last updated: 2026-03-03 — Settings IA overhaul (Phase 56)*

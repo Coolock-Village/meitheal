@@ -107,6 +107,20 @@ Prevents ad-blocker interference and works fully offline.
 - Requires `docker buildx` + `docker login -u coolockvillage`
 - Host OS has `podman` only — use distrobox or CI instead
 
+### Local Testing with HA Devcontainer
+
+The recommended way to test addons during development:
+
+1. Copy [devcontainer.json](https://github.com/home-assistant/devcontainer/raw/main/addons/devcontainer.json) to `.devcontainer/devcontainer.json`
+2. Copy [tasks.json](https://github.com/home-assistant/devcontainer/raw/main/addons/tasks.json) to `.vscode/tasks.json`
+3. Open folder in VS Code → "Reopen in Container"
+4. Run task "Start Home Assistant" → access at `http://localhost:7123/`
+5. Addon auto-detected in Local Apps repository
+
+Reference: https://developers.home-assistant.io/docs/apps/testing/
+
+**Alternative**: Run `npm run dev` in `apps/web/` for UI-only changes (no HA Supervisor context).
+
 ### Key Files
 
 | File | Purpose |
