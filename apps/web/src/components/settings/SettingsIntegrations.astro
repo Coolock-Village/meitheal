@@ -440,7 +440,7 @@ const { locale } = Astro.props;
             aria-label="What is Grocy integration?"
             onclick="event.stopPropagation()">ℹ️</button
           >
-          <span class="badge badge-pending" id="grocy-status"
+          <span class="badge badge-disabled" id="grocy-status"
             >Not configured</span
           >
           <span class="integration-card__chevron">▸</span>
@@ -554,7 +554,8 @@ const { locale } = Astro.props;
             aria-label="What is n8n / Node-RED integration?"
             onclick="event.stopPropagation()">ℹ️</button
           >
-          <span class="badge badge-pending" id="n8n-status">Not configured</span
+          <span class="badge badge-disabled" id="n8n-status"
+            >Not configured</span
           >
           <span class="integration-card__chevron">▸</span>
         </div>
@@ -794,7 +795,7 @@ const { locale } = Astro.props;
             aria-label="What are Webhooks?"
             onclick="event.stopPropagation()">ℹ️</button
           >
-          <span class="badge badge-pending" id="webhook-status"
+          <span class="badge badge-disabled" id="webhook-status"
             >Not configured</span
           >
           <span class="integration-card__chevron">▸</span>
@@ -1140,6 +1141,14 @@ const { locale } = Astro.props;
   .badge-error {
     background: rgba(239, 68, 68, 0.15);
     color: var(--danger);
+  }
+
+  .badge-disabled {
+    background: transparent;
+    color: var(--text-muted);
+    border: 1px dashed rgba(107, 114, 128, 0.4);
+    font-style: italic;
+    opacity: 0.7;
   }
 
   /* ═══════ Responsive ═══════ */

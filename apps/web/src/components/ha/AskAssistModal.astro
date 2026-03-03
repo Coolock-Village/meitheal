@@ -62,25 +62,24 @@ const locale: Locale = cookieLocale === "ga" ? "ga" : "en";
       <div class="ask-welcome" id="ask-ha-welcome">
         <Icon name="sparkles" size={32} class="text-accent" />
         <p class="ask-welcome__text">
-          Control your home, ask questions, or get help with tasks.
+          Ask about your tasks, create new ones, or check what's overdue.
         </p>
         <div class="ask-welcome__hints">
           <button
             type="button"
             class="ask-hint"
-            data-hint="Turn off the living room lights"
-            >💡 Turn off lights</button
-          >
-          <button
-            type="button"
-            class="ask-hint"
-            data-hint="What's the temperature in the bedroom?"
-            >🌡️ Check temperature</button
-          >
-          <button
-            type="button"
-            class="ask-hint"
             data-hint="What tasks are overdue?">📋 Overdue tasks</button
+          >
+          <button
+            type="button"
+            class="ask-hint"
+            data-hint="Create a task to review the weekly plan"
+            >✏️ Create a task</button
+          >
+          <button
+            type="button"
+            class="ask-hint"
+            data-hint="How many active tasks do I have?">📊 Task summary</button
           >
         </div>
       </div>
@@ -125,7 +124,7 @@ const locale: Locale = cookieLocale === "ga" ? "ga" : "en";
 </div>
 
 <script>
-  import { showToast } from "@lib/toast";
+  // Toast import removed — errors shown inline in chat bubbles
 
   const overlay = document.getElementById("ask-ha-overlay");
   const closeBtn = document.getElementById("close-ask-ha-modal");
@@ -224,6 +223,10 @@ const locale: Locale = cookieLocale === "ga" ? "ga" : "en";
 
     const bubble = document.createElement("div");
     bubble.className = `ask-bubble ${isUser ? "ask-bubble--user" : "ask-bubble--assistant"}`;
+
+    if (!isUser && responseType === "error") {
+      bubble.classList.add("ask-bubble--error");
+    }
 
     if (!isUser && responseType) {
       const icon = document.createElement("span");
@@ -366,14 +369,20 @@ const locale: Locale = cookieLocale === "ga" ? "ga" : "en";
           "error",
         );
       } else {
-        showToast("Home Assistant is unreachable.", "error");
-        appendChat("Could not reach Home Assistant.", false, "error");
+        appendChat(
+          "Home Assistant isn't reachable right now. Check that the addon is connected.",
+          false,
+          "error",
+        );
       }
     } catch (err) {
       hideTyping();
       console.error(err);
-      showToast("Network error communicating with HA.", "error");
-      appendChat("Network error — check your connection.", false, "error");
+      appendChat(
+        "Network error — check your connection and try again.",
+        false,
+        "error",
+      );
     } finally {
       submitBtn.disabled = false;
       input.focus();
@@ -488,6 +497,10 @@ const locale: Locale = cookieLocale === "ga" ? "ga" : "en";
     border: 1px solid var(--border);
     align-self: flex-start;
     border-bottom-left-radius: 4px;
+  }
+  .ask-bubble--assistant.ask-bubble--error {
+    background: color-mix(in srgb, var(--bg-primary) 92%, #ef4444);
+    border-color: color-mix(in srgb, var(--border) 70%, #ef4444);
   }
   .ask-bubble__icon {
     font-size: 14px;

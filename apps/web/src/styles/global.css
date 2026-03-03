@@ -1330,7 +1330,8 @@
   }
 
   .modal {
-    @apply bg-bg-card border border-border rounded-xl shadow-lg w-full max-w-lg mx-4 p-6 animate-fade-in;
+    @apply bg-bg-card border border-border rounded-xl shadow-lg w-full max-w-lg mx-4 p-6;
+      animation: fade-in 0.2s ease forwards;
   }
 
   .modal-title {
@@ -1441,7 +1442,8 @@
 
   /* --- Misc --- */
   .shortcut-hint {
-    @apply fixed top-4 right-4 bg-bg-card border border-border rounded-lg px-4 py-2 text-xs text-text-muted shadow-md cursor-pointer z-50 animate-fade-in;
+    @apply fixed top-4 right-4 bg-bg-card border border-border rounded-lg px-4 py-2 text-xs text-text-muted shadow-md cursor-pointer z-50;
+      animation: fade-in 0.2s ease forwards;
   }
 
   .n8n-event {
@@ -1710,6 +1712,31 @@
   animation: fade-in 0.2s ease forwards;
 }
 
+/* Skeleton loading pulse — used for placeholder content during SSR/loading */
+@keyframes skeleton-pulse {
+  0% {
+    background-position: 200% 0;
+  }
+
+  100% {
+    background-position: -200% 0;
+  }
+}
+
+.skeleton-pulse {
+  background: linear-gradient(90deg,
+      rgba(107, 114, 128, 0.08) 25%,
+      rgba(107, 114, 128, 0.18) 50%,
+      rgba(107, 114, 128, 0.08) 75%);
+  background-size: 200% 100%;
+  animation: skeleton-pulse 1.5s ease-in-out infinite;
+  border-radius: 4px;
+  color: transparent !important;
+}
+
+.skeleton-pulse * {
+  visibility: hidden;
+}
 /* Stagger list items automatically */
 tbody tr,
 .kanban-card {
