@@ -22,6 +22,19 @@ We will go Page by page, auditing with @beautifulMentionand @beautifulMention to
 
 -- with /gsd use /clear to help with context drift as much as possibel and where relevant
 
+## Development & Testing Environments
+
+Use `/local-dev` for the full workflow. Quick reference:
+
+| Tier | URL | Purpose |
+|------|-----|---------|
+| 🔧 Local Dev | `localhost:4321` (or `--port 4500`) | UI/CSS/JS changes — `npm run dev` in `apps/web/` |
+| 🏠 HA Devcontainer | `localhost:7123` | Full HA Supervisor context — ingress, WebSocket, addon lifecycle. Per [HA app testing docs](https://developers.home-assistant.io/docs/apps/testing/) |
+| 🌐 **Live Production** | `ha.home.arpa:8123` | **Real system with real data**. Runs released Docker images. NOT a dev server. |
+
+> ⚠️ `ha.home.arpa` URLs below are for **verification of deployed releases only**. For development iterations, use Local Dev or HA Devcontainer.
+
+
 We will cover the following (in order)
 
 - Dashboard/Home — <http://ha.home.arpa:8123/868b2fee_meitheal_hub>
