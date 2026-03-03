@@ -498,12 +498,8 @@ const { locale } = Astro.props;
 </style>
 
 <script>
-  /**
-   * HA Connection Auto-Detect — Client-Side
-   *
-   * Fetches /api/ha/connection on load and populates the connection
-   * status card with auto-detected HA info.
-   */
+  import { apiUrl } from "@lib/ingress-fetch";
+
   function initHAConnectionStatus() {
     const indicator = document.getElementById("ha-indicator");
     const modeLabel = document.getElementById("ha-mode-label");
@@ -517,7 +513,7 @@ const { locale } = Astro.props;
 
     async function detectConnection() {
       try {
-        const res = await fetch("/api/ha/connection");
+        const res = await fetch(apiUrl("/api/ha/connection"));
         if (!res.ok) throw new Error("API error");
         const data = (await res.json()) as {
           connected: boolean;
