@@ -756,7 +756,7 @@ const { locale } = Astro.props;
    * Integration Card Collapse/Expand
    *
    * Handles the accordion-like behavior of integration cards.
-   * Cards with configured integrations expand on load.
+   * Cards with configured integrations auto-expand on load.
    */
   function initIntegrationCards() {
     document.querySelectorAll(".integration-card__header").forEach((header) => {
@@ -764,7 +764,7 @@ const { locale } = Astro.props;
       if (btn.dataset.cardInit) return;
       btn.dataset.cardInit = "true";
 
-      btn.addEventListener("click", () => {
+      function toggleCard() {
         const bodyId = btn.getAttribute("aria-controls");
         if (!bodyId) return;
         const body = document.getElementById(bodyId);
@@ -773,9 +773,34 @@ const { locale } = Astro.props;
         const isExpanded = btn.getAttribute("aria-expanded") === "true";
         btn.setAttribute("aria-expanded", String(!isExpanded));
         body.setAttribute("aria-hidden", String(isExpanded));
+      }
+
+      btn.addEventListener("click", toggleCard);
+
+      // Keyboard: Enter and Space toggle
+      btn.addEventListener("keydown", (e) => {
+        if (e.key === "Enter" || e.key === " ") {
+          e.preventDefault();
+          toggleCard();
+        }
       });
     });
   }
+
+  /**
+   * Programmatically expand an integration card by its body ID.
+   * Called from settings.astro restore functions when a card has config.
+   */
+  (window as any).expandIntegrationCard = function (bodyId: string) {
+    const body = document.getElementById(bodyId);
+    const header = document.querySelector(
+      `[aria-controls="${bodyId}"]`,
+    ) as HTMLButtonElement | null;
+    if (body && header) {
+      header.setAttribute("aria-expanded", "true");
+      body.setAttribute("aria-hidden", "false");
+    }
+  };
 
   initIntegrationCards();
   document.addEventListener("astro:page-load", initIntegrationCards);

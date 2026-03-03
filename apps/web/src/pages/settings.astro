@@ -1462,6 +1462,8 @@ const locale: Locale = cookieLocale === "ga" ? "ga" : "en";
             el.textContent = "Configured";
             el.className = "badge badge-active";
           }
+          // Auto-expand configured card
+          (window as any).expandIntegrationCard?.("integration-grocy-body");
         }
 
         // Calendar — set value on both select and manual input of EntitySelector
@@ -1474,6 +1476,8 @@ const locale: Locale = cookieLocale === "ga" ? "ga" : "en";
           ) as HTMLInputElement | null;
           if (calSelect) calSelect.value = String(s.cal_entity);
           if (calManual) calManual.value = String(s.cal_entity);
+          // Auto-expand configured card
+          (window as any).expandIntegrationCard?.("integration-calendar-body");
         }
         if (s.caldav_url)
           (document.getElementById("caldav-url") as HTMLInputElement).value =
@@ -1506,6 +1510,8 @@ const locale: Locale = cookieLocale === "ga" ? "ga" : "en";
             el.textContent = "Active";
             el.className = "badge badge-active";
           }
+          // Auto-expand configured card
+          (window as any).expandIntegrationCard?.("integration-todo-body");
         }
 
         // n8n
@@ -1518,6 +1524,8 @@ const locale: Locale = cookieLocale === "ga" ? "ga" : "en";
             el.textContent = "Configured";
             el.className = "badge badge-active";
           }
+          // Auto-expand configured card
+          (window as any).expandIntegrationCard?.("integration-n8n-body");
         }
         if (Array.isArray(s.n8n_events)) {
           document.querySelectorAll(".n8n-event").forEach((cb) => {
@@ -1542,6 +1550,8 @@ const locale: Locale = cookieLocale === "ga" ? "ga" : "en";
             el.textContent = "Active";
             el.className = "badge badge-active";
           }
+          // Auto-expand configured card
+          (window as any).expandIntegrationCard?.("integration-webhooks-body");
         } else {
           const el = document.getElementById("webhook-status");
           if (el) {
