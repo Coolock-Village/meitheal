@@ -54,8 +54,14 @@ if [ -f /opt/meitheal/apps/web/package.json ]; then
       echo "Missing Astro server entry at dist/server/entry.mjs"
       exit 1
     fi
-    echo "{\"event\":\"web.starting\",\"host\":\"${HOST}\",\"port\":\"${PORT}\",\"time\":\"$(date -u +\"%Y-%m-%dT%H:%M:%SZ\")\"}"
-    node dist/server/entry.mjs
+    echo "{\"event\":\"web.starting\",\"host\":\"${HOST}\",\"port\":\"${PORT}\",\"time\":\"$(date -u +"%Y-%m-%dT%H:%M:%SZ")\"}"
+    # Use ingress-safe wrapper to normalize double slashes from HA Supervisor
+    # before they reach Astro's routing layer (prevents 301 redirect loop).
+    if [ -f scripts/serve.mjs ]; then
+      node scripts/serve.mjs
+    else
+      node dist/server/entry.mjs
+    fi
   ) &
   WEB_PID=$!
 
