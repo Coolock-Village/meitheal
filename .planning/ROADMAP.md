@@ -44,6 +44,7 @@ Primary Delivery drives completion math and release readiness.
 | 52 | HA Notifications & Assist API | ✅ Complete | GSD sweep |
 | 53 | HA Connection & PWA Polish | ✅ Complete | GSD sweep |
 | 54 | Astro Native Modular UI & Settings Alignment | 📋 Planned | Next autonomous sweep |
+| 55 | Tasks & Table UX Overhaul | 🔄 In Progress | 50-persona review complete, context gathered |
 
 ## Primary Delivery Details
 
