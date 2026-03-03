@@ -21,7 +21,7 @@ hassio_role: default
 auth_api: true
 panel_icon: mdi:account-group
 panel_title: "Meitheal"
-panel_admin: false
+panel_admin: true
 apparmor: true
 map:
   - homeassistant_config:rw
