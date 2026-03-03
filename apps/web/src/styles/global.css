@@ -751,6 +751,114 @@
     @apply bg-accent/10 ring-2 ring-accent/30;
   }
 
+    /* --- Task & Table UX Enhancements (Phase 55) --- */
+  
+    /* Task count summary bar */
+    .filter-summary-bar {
+      @apply flex items-center gap-3 text-sm text-text-secondary py-2;
+    }
+  
+    .filter-summary-bar .summary-count {
+      @apply font-semibold text-text-primary;
+    }
+  
+    .filter-summary-bar .summary-overdue {
+      @apply font-semibold text-danger;
+    }
+  
+    /* Hover-reveal action buttons on task list items */
+    .task-actions {
+      @apply flex items-center gap-1 opacity-0 transition-opacity;
+    }
+  
+    .task-item:hover .task-actions,
+    .task-item:focus-within .task-actions {
+      @apply opacity-100;
+    }
+  
+    .task-action-btn {
+      @apply bg-transparent border-none cursor-pointer text-text-muted p-1.5 rounded-md transition-colors text-sm leading-none;
+      min-width: 28px;
+      min-height: 28px;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+    }
+  
+    .task-action-btn:hover {
+      @apply bg-bg-hover text-text-primary;
+    }
+  
+    .task-action-btn.danger:hover {
+      @apply text-danger bg-danger/10;
+    }
+  
+    /* Overdue date highlight */
+    .overdue-date {
+      @apply text-danger font-medium;
+    }
+  
+    /* Filter clear button */
+    .filter-clear-btn {
+      @apply text-xs text-text-muted cursor-pointer bg-transparent border-none transition-colors px-2 py-1 rounded;
+    }
+  
+    .filter-clear-btn:hover {
+      @apply text-accent bg-accent/10;
+    }
+  
+    /* Priority CSS custom properties — replaces hardcoded hex in inline styles */
+    .priority-critical {
+      color: var(--danger);
+    }
+  
+    .priority-high {
+      color: var(--warning);
+    }
+  
+    .priority-medium {
+      color: var(--info);
+    }
+  
+    .priority-low {
+      color: var(--accent);
+    }
+  
+    .priority-minimal {
+      color: var(--text-muted);
+    }
+  
+    /* Responsive table column hiding for HA panels */
+    @media (max-width: 768px) {
+  
+      .data-table .col-calendar,
+      .data-table .col-custom-fields {
+        display: none;
+      }
+    }
+  
+    @media (max-width: 600px) {
+  
+      .data-table .col-rice,
+      .data-table .col-type {
+        display: none;
+      }
+    }
+  
+    /* Filter result transitions */
+    .task-item,
+    .data-table tbody tr {
+      transition: opacity 200ms ease, max-height 200ms ease;
+    }
+  
+    .task-item.filtered-out {
+      opacity: 0;
+      max-height: 0;
+      overflow: hidden;
+      padding: 0;
+      margin: 0;
+      border: none;
+    }
   /* --- Task Detail Panel Enhancements (Phase 26) --- */
   .td-priority-dot {
     font-size: 16px;

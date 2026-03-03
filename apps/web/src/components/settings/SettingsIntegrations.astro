@@ -1,6 +1,8 @@
 ---
 import { t } from "../../i18n/translations";
 import type { Locale } from "../../lib/locale";
+import HelpTooltip from "../ui/HelpTooltip.astro";
+import EntitySelector from "../ui/EntitySelector.astro";
 
 interface Props {
   locale: Locale;
@@ -9,50 +11,58 @@ const { locale } = Astro.props;
 ---
 
 <div id="tab-integrations" class="tab-pane" style="display: none;">
-  <div class="settings-grid">
-    <!-- Integrations — Comprehensive Configuration -->
-    <div class="card" style="grid-column: 1 / -1;">
-      <div class="card-header">
-        <div>
-          <div class="card-title">
-            {t("settings.integrations_title", locale)}
-          </div>
-          <div class="card-subtitle">
-            {t("settings.integrations_subtitle", locale)}
-          </div>
-        </div>
+  <div class="integrations-layout">
+    <div class="integrations-header">
+      <div>
+        <h2 class="integrations-title">
+          {t("settings.integrations_title", locale)}
+        </h2>
+        <p class="integrations-subtitle">
+          {t("settings.integrations_subtitle", locale)}
+        </p>
       </div>
+    </div>
 
-      <!-- Calendar Sync -->
-      <div class="integration-section">
-        <div class="integration-header">
-          <div>
-            <strong>📅 Calendar Sync</strong>
-            <div class="integration-desc">
-              Bidirectional sync between Meitheal tasks and your calendars. HA
-              calendar events become tasks; tasks with due dates appear as
-              calendar events.
-            </div>
+    <!-- ═══════ Calendar Sync ═══════ -->
+    <div class="integration-card" id="integration-calendar">
+      <button
+        type="button"
+        class="integration-card__header"
+        aria-expanded="false"
+        aria-controls="integration-calendar-body"
+      >
+        <div class="integration-card__title-row">
+          <span class="integration-card__icon">📅</span>
+          <div class="integration-card__title-info">
+            <strong>Calendar Sync</strong>
+            <span class="integration-card__desc"
+              >Bidirectional sync with HA calendars</span
+            >
           </div>
-          <span class="badge badge-pending" id="cal-status">Checking…</span>
         </div>
+        <div class="integration-card__header-right">
+          <span class="badge badge-pending" id="cal-status">Checking…</span>
+          <span class="integration-card__chevron">▸</span>
+        </div>
+      </button>
 
+      <div
+        class="integration-card__body"
+        id="integration-calendar-body"
+        aria-hidden="true"
+      >
         <!-- HA auto-sync info callout -->
         <div
           id="cal-auto-info"
-          style="display: none; background: rgba(16,185,129,0.08); border: 1px solid rgba(16,185,129,0.2); border-radius: 8px; padding: 12px 16px; margin-bottom: 12px; font-size: 13px; color: var(--text-secondary);"
+          class="integration-callout integration-callout--success"
+          style="display: none;"
         >
-          <strong style="color: var(--accent);">✓ Automatic sync active</strong>
-          <span
-            id="cal-auto-entity"
-            style="font-family: 'JetBrains Mono', monospace; font-size: 11px; color: var(--text-muted); margin-left: 6px;"
-          ></span>
-          <div
-            style="margin-top: 4px; font-size: 12px; color: var(--text-muted);"
-          >
+          <strong>✓ Automatic sync active</strong>
+          <span id="cal-auto-entity" class="mono-text"></span>
+          <div class="integration-callout__detail">
             Running as an HA addon — Meitheal automatically detects your
             calendar entities and syncs events bidirectionally (past 7 days →
-            next 30 days). Deduplication prevents duplicate tasks.
+            next 30 days).
           </div>
         </div>
 
@@ -61,86 +71,92 @@ const { locale } = Astro.props;
           <label class="form-label" style="font-size: 12px; margin-bottom: 6px;"
             >Detected Calendar Entities</label
           >
-          <div
-            id="cal-entities-container"
-            style="display: flex; flex-direction: column; gap: 4px;"
-          >
-          </div>
+          <div id="cal-entities-container" class="entity-list-container"></div>
         </div>
 
-        <div class="integration-config">
+        <div class="integration-card__config">
           <div class="form-group">
-            <label class="form-label" for="cal-entity">Calendar Entity</label>
-            <input
-              type="text"
-              class="form-input"
+            <div class="form-label-row">
+              <label class="form-label" for="cal-entity">Calendar Entity</label>
+              <HelpTooltip
+                text="The HA calendar entity Meitheal syncs tasks with. Calendar events become tasks, and tasks with due dates appear as calendar events. Meitheal creates this entity automatically when running as an addon."
+                href="https://www.home-assistant.io/integrations/calendar/"
+                id="help-cal-entity"
+              />
+            </div>
+            <EntitySelector
+              domain="calendar"
               id="cal-entity"
               placeholder="calendar.meitheal_tasks"
+              helpText="Select from detected entities, or enter a custom entity ID."
             />
-            <small style="color: var(--text-muted); font-size: 11px;"
-              >The HA calendar entity to sync tasks to. Find it in HA →
-              Developer Tools → States → search "calendar."</small
-            >
           </div>
           <div class="form-group">
-            <label class="form-label" for="caldav-url"
-              >CalDAV URL (optional)</label
-            >
+            <div class="form-label-row">
+              <label class="form-label" for="caldav-url"
+                >CalDAV URL (optional)</label
+              >
+              <HelpTooltip
+                text="For direct CalDAV sync with external calendar servers like Nextcloud, Radicale, or Baikal. Leave blank to use HA's built-in calendar integration only. When set, Meitheal will sync directly with your CalDAV server in addition to HA."
+                id="help-caldav"
+              />
+            </div>
             <input
               type="url"
               class="form-input"
               id="caldav-url"
               placeholder="https://your-server.com/dav/calendars/"
             />
-            <small style="color: var(--text-muted); font-size: 11px;"
-              >For direct CalDAV sync (Nextcloud, Radicale, etc). Leave blank to
-              use HA calendar only.</small
-            >
           </div>
-          <div style="display: flex; gap: 8px; align-items: center;">
-            <button
-              type="button"
-              class="btn btn-primary"
-              id="save-cal"
-              style="font-size: 13px;">Save Calendar Settings</button
+          <div class="integration-card__actions">
+            <button type="button" class="btn btn-primary" id="save-cal"
+              >Save Calendar Settings</button
             >
-            <button
-              type="button"
-              class="btn btn-ghost"
-              id="test-cal"
-              style="font-size: 13px;">Sync Now</button
+            <button type="button" class="btn btn-ghost" id="test-cal"
+              >Sync Now</button
             >
-            <span
-              id="cal-sync-result"
-              style="font-size: 12px; color: var(--text-muted);"></span>
+            <span id="cal-sync-result" class="integration-card__result"></span>
           </div>
         </div>
       </div>
+    </div>
 
-      <!-- Todo Sync -->
-      <div class="integration-section">
-        <div class="integration-header">
-          <div>
-            <strong>✅ Todo Sync</strong>
-            <div class="integration-desc">
-              Sync between Meitheal tasks and HA todo lists. Real-time updates
-              via WebSocket. Disabled by default to save power — enable only for
-              lists you actively use.
-            </div>
+    <!-- ═══════ Todo Sync ═══════ -->
+    <div class="integration-card" id="integration-todo">
+      <button
+        type="button"
+        class="integration-card__header"
+        aria-expanded="false"
+        aria-controls="integration-todo-body"
+      >
+        <div class="integration-card__title-row">
+          <span class="integration-card__icon">✅</span>
+          <div class="integration-card__title-info">
+            <strong>Todo Sync</strong>
+            <span class="integration-card__desc"
+              >Real-time sync with HA todo lists</span
+            >
           </div>
-          <span class="badge badge-pending" id="todo-status">Disabled</span>
         </div>
+        <div class="integration-card__header-right">
+          <span class="badge badge-pending" id="todo-status">Disabled</span>
+          <span class="integration-card__chevron">▸</span>
+        </div>
+      </button>
 
+      <div
+        class="integration-card__body"
+        id="integration-todo-body"
+        aria-hidden="true"
+      >
         <!-- HA auto-detect callout -->
         <div
           id="todo-auto-info"
-          style="display: none; background: rgba(16,185,129,0.08); border: 1px solid rgba(16,185,129,0.2); border-radius: 8px; padding: 12px 16px; margin-bottom: 12px; font-size: 13px; color: var(--text-secondary);"
+          class="integration-callout integration-callout--success"
+          style="display: none;"
         >
-          <strong style="color: var(--accent);">✓ Todo list(s) detected</strong>
-          <div
-            id="todo-auto-entities"
-            style="margin-top: 4px; font-size: 12px; color: var(--text-muted);"
-          >
+          <strong>✓ Todo list(s) detected</strong>
+          <div id="todo-auto-entities" class="integration-callout__detail">
           </div>
         </div>
 
@@ -152,125 +168,144 @@ const { locale } = Astro.props;
           <label class="form-label" style="font-size: 12px; margin-bottom: 6px;"
             >Detected Todo Entities</label
           >
-          <div
-            id="todo-entities-container"
-            style="display: flex; flex-direction: column; gap: 4px;"
-          >
-          </div>
+          <div id="todo-entities-container" class="entity-list-container"></div>
         </div>
 
-        <div class="integration-config">
+        <div class="integration-card__config">
           <div class="form-group">
-            <label class="form-label" for="todo-enabled">Enable Todo Sync</label
-            >
-            <div style="display: flex; align-items: center; gap: 10px;">
-              <label
-                class="toggle-switch"
-                style="display: inline-flex; align-items: center; cursor: pointer; gap: 8px;"
+            <div class="form-label-row">
+              <label class="form-label" for="todo-enabled"
+                >Enable Todo Sync</label
               >
+              <HelpTooltip
+                text="When enabled, Meitheal syncs tasks with your HA todo lists in real-time via WebSocket. Disabled by default to save power — enable only for lists you actively use."
+                id="help-todo-enabled"
+              />
+            </div>
+            <div style="display: flex; align-items: center; gap: 10px;">
+              <label class="toggle-label">
                 <input
                   type="checkbox"
                   id="todo-enabled"
                   aria-label="Enable or disable todo list sync"
-                  style="width: 18px; height: 18px; accent-color: var(--accent);"
                 />
-                <span
-                  id="todo-enabled-label"
-                  style="font-size: 13px; color: var(--text-secondary);"
-                  >Off — sync disabled to save power</span
-                >
+                <span class="toggle-slider"></span>
               </label>
+              <span
+                id="todo-enabled-label"
+                style="font-size: 13px; color: var(--text-secondary);"
+                >Off — sync disabled to save power</span
+              >
             </div>
           </div>
 
           <div class="form-group">
-            <label class="form-label" for="todo-entity">Todo Entity</label>
-            <input
-              type="text"
-              class="form-input"
+            <div class="form-label-row">
+              <label class="form-label" for="todo-entity">Todo Entity</label>
+              <HelpTooltip
+                text="The HA todo list entity to sync with. Each todo entity represents a list (e.g., shopping_list, chores). Meitheal will keep this list in sync bidirectionally."
+                href="https://www.home-assistant.io/integrations/todo/"
+                id="help-todo-entity"
+              />
+            </div>
+            <EntitySelector
+              domain="todo"
               id="todo-entity"
               placeholder="todo.shopping_list"
+              helpText="Select from detected entities, or enter a custom entity ID."
             />
-            <small style="color: var(--text-muted); font-size: 11px;"
-              >The HA todo entity to sync with. Find it in HA → Developer Tools
-              → States → search "todo."</small
-            >
           </div>
 
           <div class="form-group">
-            <label class="form-label" for="todo-sync-direction"
-              >Sync Direction</label
-            >
+            <div class="form-label-row">
+              <label class="form-label" for="todo-sync-direction"
+                >Sync Direction</label
+              >
+              <HelpTooltip
+                text="Bidirectional keeps both Meitheal and HA in sync — changes in either place propagate. Inbound-only imports from HA without pushing back, which saves power and avoids write conflicts."
+                id="help-todo-direction"
+              />
+            </div>
             <select class="form-select" id="todo-sync-direction">
               <option value="inbound">Import HA → Meitheal</option>
               <option value="outbound">Export Meitheal → HA</option>
               <option value="bidirectional" selected>Bidirectional sync</option>
             </select>
-            <small style="color: var(--text-muted); font-size: 11px;"
-              >Bidirectional keeps both in sync. Inbound-only saves power if you
-              only need to read from HA.</small
-            >
           </div>
 
-          <div style="display: flex; gap: 8px; align-items: center;">
-            <button
-              type="button"
-              class="btn btn-primary"
-              id="save-todo"
-              style="font-size: 13px;">Save Todo Settings</button
+          <div class="integration-card__actions">
+            <button type="button" class="btn btn-primary" id="save-todo"
+              >Save Todo Settings</button
             >
-            <button
-              type="button"
-              class="btn btn-ghost"
-              id="sync-todo"
-              style="font-size: 13px;">Sync Now</button
+            <button type="button" class="btn btn-ghost" id="sync-todo"
+              >Sync Now</button
             >
-            <span
-              id="todo-sync-result"
-              style="font-size: 12px; color: var(--text-muted);"></span>
+            <span id="todo-sync-result" class="integration-card__result"></span>
           </div>
         </div>
       </div>
+    </div>
 
-      <!-- Grocy -->
-      <div class="integration-section">
-        <div class="integration-header">
-          <div>
-            <strong>🛒 Grocy</strong>
-            <div class="integration-desc">
-              Connect to Grocy for household inventory and chore management.
-              Meitheal can import Grocy tasks and expose its own tasks back.
-            </div>
+    <!-- ═══════ Grocy ═══════ -->
+    <div class="integration-card" id="integration-grocy">
+      <button
+        type="button"
+        class="integration-card__header"
+        aria-expanded="false"
+        aria-controls="integration-grocy-body"
+      >
+        <div class="integration-card__title-row">
+          <span class="integration-card__icon">🛒</span>
+          <div class="integration-card__title-info">
+            <strong>Grocy</strong>
+            <span class="integration-card__desc"
+              >Household inventory & chore management</span
+            >
           </div>
+        </div>
+        <div class="integration-card__header-right">
           <span class="badge badge-pending" id="grocy-status"
             >Not configured</span
           >
+          <span class="integration-card__chevron">▸</span>
         </div>
-        <div class="integration-config">
+      </button>
+
+      <div
+        class="integration-card__body"
+        id="integration-grocy-body"
+        aria-hidden="true"
+      >
+        <div class="integration-card__config">
           <div class="form-group">
-            <label class="form-label" for="grocy-url">Grocy URL</label>
+            <div class="form-label-row">
+              <label class="form-label" for="grocy-url">Grocy URL</label>
+              <HelpTooltip
+                text="The URL of your Grocy instance. If running Grocy as a Home Assistant add-on, it's typically available at http://homeassistant.local:9192 or via the HA ingress proxy."
+                id="help-grocy-url"
+              />
+            </div>
             <input
               type="url"
               class="form-input"
               id="grocy-url"
               placeholder="http://homeassistant.local:9192"
             />
-            <small style="color: var(--text-muted); font-size: 11px;"
-              >The URL of your Grocy instance. Often runs as a HA add-on on port
-              9192.</small
-            >
           </div>
           <div class="form-group">
-            <label class="form-label" for="grocy-key">API Key</label>
+            <div class="form-label-row">
+              <label class="form-label" for="grocy-key">API Key</label>
+              <HelpTooltip
+                text="Generate a Grocy API key in Grocy → Settings → API Keys → Add. This key allows Meitheal to read and write chores and tasks."
+                id="help-grocy-key"
+              />
+            </div>
             <input
               type="password"
               class="form-input"
               id="grocy-key"
               placeholder="••••••••"
             />
-            <small style="color: var(--text-muted); font-size: 11px;"
-              >Generate in Grocy → Settings → API Keys → Add.</small
-            >
           </div>
           <div class="form-group">
             <label class="form-label" for="grocy-sync-mode">Sync Mode</label>
@@ -280,48 +315,65 @@ const { locale } = Astro.props;
               <option value="bidirectional">Bidirectional sync</option>
             </select>
           </div>
-          <button
-            type="button"
-            class="btn btn-primary"
-            id="save-grocy"
-            style="font-size: 13px;">Save Grocy Settings</button
-          >
+          <div class="integration-card__actions">
+            <button type="button" class="btn btn-primary" id="save-grocy"
+              >Save Grocy Settings</button
+            >
+          </div>
         </div>
       </div>
+    </div>
 
-      <!-- n8n / Node-RED -->
-      <div class="integration-section">
-        <div class="integration-header">
-          <div>
-            <strong>⚙ n8n / Node-RED</strong>
-            <div class="integration-desc">
-              Trigger automation workflows when tasks are created, updated, or
-              completed. Create complex pipelines that react to task events.
-            </div>
+    <!-- ═══════ n8n / Node-RED ═══════ -->
+    <div class="integration-card" id="integration-n8n">
+      <button
+        type="button"
+        class="integration-card__header"
+        aria-expanded="false"
+        aria-controls="integration-n8n-body"
+      >
+        <div class="integration-card__title-row">
+          <span class="integration-card__icon">⚙</span>
+          <div class="integration-card__title-info">
+            <strong>n8n / Node-RED</strong>
+            <span class="integration-card__desc"
+              >Automation workflow triggers</span
+            >
           </div>
+        </div>
+        <div class="integration-card__header-right">
           <span class="badge badge-pending" id="n8n-status">Not configured</span
           >
+          <span class="integration-card__chevron">▸</span>
         </div>
-        <div class="integration-config">
+      </button>
+
+      <div
+        class="integration-card__body"
+        id="integration-n8n-body"
+        aria-hidden="true"
+      >
+        <div class="integration-card__config">
           <div class="form-group">
-            <label class="form-label" for="n8n-webhook-url">Webhook URL</label>
+            <div class="form-label-row">
+              <label class="form-label" for="n8n-webhook-url">Webhook URL</label
+              >
+              <HelpTooltip
+                text="The webhook URL from your n8n or Node-RED flow. Meitheal will POST a JSON payload to this URL whenever selected task events occur. Create a webhook trigger node in your flow to receive these events."
+                id="help-n8n-url"
+              />
+            </div>
             <input
               type="url"
               class="form-input"
               id="n8n-webhook-url"
               placeholder="https://n8n.example.com/webhook/meitheal"
             />
-            <small style="color: var(--text-muted); font-size: 11px;"
-              >The webhook URL from your n8n/Node-RED flow. Meitheal will POST
-              task events here.</small
-            >
           </div>
           <div class="form-group">
             <label class="form-label">Trigger Events</label>
-            <div style="display: flex; gap: 12px; flex-wrap: wrap;">
-              <label
-                style="font-size: 13px; display: flex; gap: 4px; align-items: center;"
-              >
+            <div class="event-checkbox-grid">
+              <label class="event-checkbox">
                 <input
                   type="checkbox"
                   class="n8n-event"
@@ -329,9 +381,7 @@ const { locale } = Astro.props;
                   checked
                 /> Created
               </label>
-              <label
-                style="font-size: 13px; display: flex; gap: 4px; align-items: center;"
-              >
+              <label class="event-checkbox">
                 <input
                   type="checkbox"
                   class="n8n-event"
@@ -339,9 +389,7 @@ const { locale } = Astro.props;
                   checked
                 /> Updated
               </label>
-              <label
-                style="font-size: 13px; display: flex; gap: 4px; align-items: center;"
-              >
+              <label class="event-checkbox">
                 <input
                   type="checkbox"
                   class="n8n-event"
@@ -349,35 +397,51 @@ const { locale } = Astro.props;
                   checked
                 /> Completed
               </label>
-              <label
-                style="font-size: 13px; display: flex; gap: 4px; align-items: center;"
-              >
+              <label class="event-checkbox">
                 <input type="checkbox" class="n8n-event" value="task.deleted" /> Deleted
               </label>
             </div>
           </div>
-          <button
-            type="button"
-            class="btn btn-primary"
-            id="save-n8n"
-            style="font-size: 13px;">Save n8n Settings</button
-          >
+          <div class="integration-card__actions">
+            <button type="button" class="btn btn-primary" id="save-n8n"
+              >Save n8n Settings</button
+            >
+          </div>
         </div>
       </div>
+    </div>
 
-      <!-- Webhooks -->
-      <div class="integration-section">
-        <div class="integration-header">
-          <div>
-            <strong>🔔 Webhooks</strong>
-            <div class="integration-desc">
-              Generic outgoing webhooks for any service. Each event sends a JSON
-              payload with the full task object and event type.
-            </div>
+    <!-- ═══════ Webhooks ═══════ -->
+    <div class="integration-card" id="integration-webhooks">
+      <button
+        type="button"
+        class="integration-card__header"
+        aria-expanded="false"
+        aria-controls="integration-webhooks-body"
+      >
+        <div class="integration-card__title-row">
+          <span class="integration-card__icon">🔔</span>
+          <div class="integration-card__title-info">
+            <strong>Webhooks</strong>
+            <span class="integration-card__desc"
+              >Generic outgoing event webhooks</span
+            >
           </div>
-          <span class="badge badge-active" id="webhook-status">Active</span>
         </div>
-        <div class="integration-config">
+        <div class="integration-card__header-right">
+          <span class="badge badge-pending" id="webhook-status"
+            >Not configured</span
+          >
+          <span class="integration-card__chevron">▸</span>
+        </div>
+      </button>
+
+      <div
+        class="integration-card__body"
+        id="integration-webhooks-body"
+        aria-hidden="true"
+      >
+        <div class="integration-card__config">
           <div class="form-group">
             <label class="form-label" for="webhook-endpoint">Endpoint URL</label
             >
@@ -389,45 +453,329 @@ const { locale } = Astro.props;
             />
           </div>
           <div class="form-group">
-            <label class="form-label" for="webhook-secret"
-              >Signing Secret (optional)</label
-            >
+            <div class="form-label-row">
+              <label class="form-label" for="webhook-secret"
+                >Signing Secret (optional)</label
+              >
+              <HelpTooltip
+                text="An HMAC-SHA256 secret used to sign webhook payloads. When set, Meitheal adds an X-Meitheal-Signature header to each request. Verify this header on your receiving end to ensure payloads are authentic and untampered."
+                id="help-webhook-secret"
+              />
+            </div>
             <input
               type="password"
               class="form-input"
               id="webhook-secret"
               placeholder="••••••••"
             />
-            <small style="color: var(--text-muted); font-size: 11px;"
-              >HMAC-SHA256 secret used to sign webhook payloads. Verify with the
-              X-Webhook-Signature header.</small
-            >
           </div>
           <div class="form-group">
-            <label class="form-label">Payload Format</label>
+            <label class="form-label" for="webhook-format">Payload Format</label
+            >
             <select class="form-select" id="webhook-format">
               <option value="json" selected>JSON</option>
               <option value="form">Form-encoded</option>
             </select>
           </div>
-          <div style="display: flex; gap: 8px;">
-            <button
-              type="button"
-              class="btn btn-primary"
-              id="save-webhook"
-              style="font-size: 13px;">Save Webhook</button
+          <div class="integration-card__actions">
+            <button type="button" class="btn btn-primary" id="save-webhook"
+              >Save Webhook</button
             >
-            <button
-              type="button"
-              class="btn btn-ghost"
-              id="test-webhook"
-              style="font-size: 13px;">Send Test</button
+            <button type="button" class="btn btn-ghost" id="test-webhook"
+              >Send Test</button
             >
           </div>
         </div>
       </div>
     </div>
-    <!-- /card -->
   </div>
-  <!-- /settings-grid (integrations) -->
 </div>
+
+<style>
+  /* ═══════ Integrations Layout ═══════ */
+  .integrations-layout {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+  }
+
+  .integrations-header {
+    margin-bottom: 8px;
+  }
+
+  .integrations-title {
+    font-size: 18px;
+    font-weight: 600;
+    color: var(--text-primary);
+    margin: 0;
+  }
+
+  .integrations-subtitle {
+    font-size: 13px;
+    color: var(--text-muted);
+    margin: 4px 0 0;
+  }
+
+  /* ═══════ Integration Card ═══════ */
+  .integration-card {
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    overflow: hidden;
+    background: var(--bg-primary);
+    transition: border-color 200ms ease;
+  }
+
+  .integration-card:hover {
+    border-color: color-mix(in srgb, var(--border) 70%, var(--accent));
+  }
+
+  .integration-card__header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    width: 100%;
+    padding: 14px 18px;
+    background: var(--bg-secondary);
+    border: none;
+    cursor: pointer;
+    text-align: left;
+    color: inherit;
+    font: inherit;
+    transition: background 150ms ease;
+  }
+
+  .integration-card__header:hover {
+    background: var(--bg-hover);
+  }
+
+  .integration-card__header:focus-visible {
+    outline: 2px solid var(--accent);
+    outline-offset: -2px;
+  }
+
+  .integration-card__title-row {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+  }
+
+  .integration-card__icon {
+    font-size: 20px;
+    width: 32px;
+    height: 32px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: var(--bg-primary);
+    border-radius: 8px;
+    border: 1px solid var(--border);
+    flex-shrink: 0;
+  }
+
+  .integration-card__title-info {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+  }
+
+  .integration-card__title-info strong {
+    font-size: 14px;
+    font-weight: 600;
+    color: var(--text-primary);
+  }
+
+  .integration-card__desc {
+    font-size: 12px;
+    color: var(--text-muted);
+  }
+
+  .integration-card__header-right {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    flex-shrink: 0;
+  }
+
+  .integration-card__chevron {
+    font-size: 12px;
+    color: var(--text-muted);
+    transition: transform 200ms ease;
+    width: 16px;
+    text-align: center;
+  }
+
+  .integration-card__header[aria-expanded="true"] .integration-card__chevron {
+    transform: rotate(90deg);
+  }
+
+  /* ═══════ Card Body ═══════ */
+  .integration-card__body {
+    max-height: 0;
+    overflow: hidden;
+    transition:
+      max-height 250ms ease,
+      padding 250ms ease;
+    padding: 0 18px;
+  }
+
+  .integration-card__body[aria-hidden="false"] {
+    max-height: 800px;
+    padding: 16px 18px;
+    border-top: 1px solid var(--border);
+  }
+
+  .integration-card__config {
+    display: flex;
+    flex-direction: column;
+    gap: 14px;
+  }
+
+  .integration-card__actions {
+    display: flex;
+    gap: 8px;
+    align-items: center;
+    padding-top: 4px;
+  }
+
+  .integration-card__result {
+    font-size: 12px;
+    color: var(--text-muted);
+  }
+
+  /* ═══════ Form Label Row (with tooltip) ═══════ */
+  .form-label-row {
+    display: flex;
+    align-items: center;
+    margin-bottom: 6px;
+  }
+
+  .form-label-row .form-label {
+    margin-bottom: 0;
+  }
+
+  /* ═══════ Callouts ═══════ */
+  .integration-callout {
+    border-radius: 8px;
+    padding: 12px 16px;
+    margin-bottom: 12px;
+    font-size: 13px;
+  }
+
+  .integration-callout--success {
+    background: rgba(16, 185, 129, 0.08);
+    border: 1px solid rgba(16, 185, 129, 0.2);
+    color: var(--text-secondary);
+  }
+
+  .integration-callout strong {
+    color: var(--accent);
+  }
+
+  .integration-callout__detail {
+    margin-top: 4px;
+    font-size: 12px;
+    color: var(--text-muted);
+  }
+
+  .mono-text {
+    font-family: "JetBrains Mono", monospace;
+    font-size: 11px;
+    color: var(--text-muted);
+    margin-left: 6px;
+  }
+
+  /* ═══════ Entity List ═══════ */
+  .entity-list-container {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+  }
+
+  /* ═══════ Event Checkboxes ═══════ */
+  .event-checkbox-grid {
+    display: flex;
+    gap: 12px;
+    flex-wrap: wrap;
+  }
+
+  .event-checkbox {
+    font-size: 13px;
+    display: flex;
+    gap: 6px;
+    align-items: center;
+    cursor: pointer;
+    color: var(--text-secondary);
+  }
+
+  .event-checkbox input[type="checkbox"] {
+    accent-color: var(--accent);
+  }
+
+  /* ═══════ Badges (standardized) ═══════ */
+  .badge {
+    display: inline-block;
+    padding: 3px 10px;
+    border-radius: 12px;
+    font-size: 12px;
+    font-weight: 500;
+    white-space: nowrap;
+  }
+
+  .badge-active {
+    background: rgba(16, 185, 129, 0.15);
+    color: var(--accent);
+  }
+
+  .badge-pending {
+    background: rgba(107, 114, 128, 0.15);
+    color: var(--text-muted);
+  }
+
+  .badge-error {
+    background: rgba(239, 68, 68, 0.15);
+    color: var(--danger);
+  }
+
+  /* ═══════ Responsive ═══════ */
+  @media (max-width: 768px) {
+    .integration-card__header {
+      padding: 12px 14px;
+    }
+    .integration-card__body[aria-hidden="false"] {
+      padding: 12px 14px;
+    }
+    .integration-card__desc {
+      display: none;
+    }
+  }
+</style>
+
+<script>
+  /**
+   * Integration Card Collapse/Expand
+   *
+   * Handles the accordion-like behavior of integration cards.
+   * Cards with configured integrations expand on load.
+   */
+  function initIntegrationCards() {
+    document.querySelectorAll(".integration-card__header").forEach((header) => {
+      const btn = header as HTMLButtonElement;
+      if (btn.dataset.cardInit) return;
+      btn.dataset.cardInit = "true";
+
+      btn.addEventListener("click", () => {
+        const bodyId = btn.getAttribute("aria-controls");
+        if (!bodyId) return;
+        const body = document.getElementById(bodyId);
+        if (!body) return;
+
+        const isExpanded = btn.getAttribute("aria-expanded") === "true";
+        btn.setAttribute("aria-expanded", String(!isExpanded));
+        body.setAttribute("aria-hidden", String(isExpanded));
+      });
+    });
+  }
+
+  initIntegrationCards();
+  document.addEventListener("astro:page-load", initIntegrationCards);
+</script>

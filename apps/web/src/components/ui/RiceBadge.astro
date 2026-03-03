@@ -9,8 +9,10 @@ if (rice === null || rice === undefined || isNaN(rice)) {
   return;
 }
 
-const riceClass = rice >= 50 ? "rice-high" : rice >= 20 ? "rice-med" : "rice-low";
+const riceClass =
+  rice >= 15 ? "rice-high" : rice >= 8 ? "rice-med" : "rice-low";
 ---
+
 <span class={`rice-badge ${riceClass}`}>
   {rice}
 </span>

@@ -115,7 +115,11 @@
         "cannot_undo": "This action cannot be undone.",
         "delete": "Delete",
         "duplicate_task": "Duplicate task",
-        "ask_ai": "Ask AI"
+        "ask_ai": "Ask AI",
+        "clear_filters": "Clear All",
+        "task_summary": "{total} tasks · {active} active · {overdue} overdue",
+        "overdue": "Overdue",
+        "due_prefix": "Due"
     },
     "kanban": {
         "title": "Kanban Board",

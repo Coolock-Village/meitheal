@@ -668,7 +668,7 @@ const locale: Locale = cookieLocale === "ga" ? "ga" : "en";
         }
       });
 
-    // Save HA settings
+    // Save HA settings (standalone mode only)
     document
       .getElementById("ha-form")
       ?.addEventListener("submit", async (e) => {
@@ -678,9 +678,6 @@ const locale: Locale = cookieLocale === "ga" ? "ga" : "en";
         const haToken = (
           document.getElementById("ha-token") as HTMLInputElement
         ).value;
-        const calEntity = (
-          document.getElementById("calendar-entity") as HTMLInputElement
-        ).value;
 
         const saveBtn = document.getElementById("save-ha") as HTMLButtonElement;
         const origText = saveBtn.innerHTML;
@@ -689,7 +686,6 @@ const locale: Locale = cookieLocale === "ga" ? "ga" : "en";
 
         await saveSetting("ha_url", haUrl);
         if (haToken) await saveSetting("ha_token", haToken);
-        await saveSetting("calendar_entity", calEntity);
 
         saveBtn.innerHTML = origText;
         saveBtn.disabled = false;
@@ -1178,9 +1174,23 @@ const locale: Locale = cookieLocale === "ga" ? "ga" : "en";
     }
     hydrateCalendarStatus();
 
+    /** Read entity value from EntitySelector (handles select OR manual input) */
+    function readEntityValue(id: string): string {
+      const select = document.getElementById(id) as HTMLSelectElement | null;
+      const manual = document.getElementById(
+        `${id}-manual`,
+      ) as HTMLInputElement | null;
+      // If the select is visible and has a value, use it
+      if (select && select.style.display !== "none" && select.value)
+        return select.value;
+      // Otherwise use the manual input
+      if (manual && manual.value) return manual.value;
+      // Fall back to select value even if hidden
+      return select?.value || manual?.value || "";
+    }
+
     document.getElementById("save-cal")?.addEventListener("click", async () => {
-      const entity = (document.getElementById("cal-entity") as HTMLInputElement)
-        .value;
+      const entity = readEntityValue("cal-entity");
       const caldav = (document.getElementById("caldav-url") as HTMLInputElement)
         .value;
 
@@ -1332,9 +1342,7 @@ const locale: Locale = cookieLocale === "ga" ? "ga" : "en";
         const enabled = (
           document.getElementById("todo-enabled") as HTMLInputElement
         ).checked;
-        const entity = (
-          document.getElementById("todo-entity") as HTMLInputElement
-        ).value;
+        const entity = readEntityValue("todo-entity");
         const direction = (
           document.getElementById("todo-sync-direction") as HTMLSelectElement
         ).value;
@@ -1456,18 +1464,33 @@ const locale: Locale = cookieLocale === "ga" ? "ga" : "en";
           }
         }
 
-        // Calendar
-        if (s.cal_entity)
-          (document.getElementById("cal-entity") as HTMLInputElement).value =
-            String(s.cal_entity);
+        // Calendar — set value on both select and manual input of EntitySelector
+        if (s.cal_entity) {
+          const calSelect = document.getElementById(
+            "cal-entity",
+          ) as HTMLSelectElement | null;
+          const calManual = document.getElementById(
+            "cal-entity-manual",
+          ) as HTMLInputElement | null;
+          if (calSelect) calSelect.value = String(s.cal_entity);
+          if (calManual) calManual.value = String(s.cal_entity);
+        }
         if (s.caldav_url)
           (document.getElementById("caldav-url") as HTMLInputElement).value =
             String(s.caldav_url);
 
         // Todo Sync
-        if (s.todo_entity)
-          (document.getElementById("todo-entity") as HTMLInputElement).value =
-            String(s.todo_entity);
+        // Todo — set value on both select and manual input of EntitySelector
+        if (s.todo_entity) {
+          const todoSelect = document.getElementById(
+            "todo-entity",
+          ) as HTMLSelectElement | null;
+          const todoManual = document.getElementById(
+            "todo-entity-manual",
+          ) as HTMLInputElement | null;
+          if (todoSelect) todoSelect.value = String(s.todo_entity);
+          if (todoManual) todoManual.value = String(s.todo_entity);
+        }
         if (s.todo_sync_direction)
           (
             document.getElementById("todo-sync-direction") as HTMLSelectElement
