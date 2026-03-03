@@ -1,5 +1,5 @@
 name: "Meitheal"
-version: "0.2.0"
+version: "0.2.1"
 slug: "meitheal"
 description: "Cooperative task and life engine with HA calendar sync"
 url: "https://github.com/Coolock-Village/meitheal"

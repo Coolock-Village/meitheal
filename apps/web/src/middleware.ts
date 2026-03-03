@@ -99,6 +99,12 @@ export const onRequest: MiddlewareHandler = async ({ request, locals }, next) =>
   const startTime = Date.now();
   const requestId = request.headers.get("x-request-id") ?? crypto.randomUUID();
   const ingressPath = getIngressPath(request.headers);
+  // Detect HA addon environment: SUPERVISOR_TOKEN is always set in HA addons.
+  // We can't rely solely on X-Ingress-Path since the Supervisor proxy may not
+  // always set it. When in HA, all access goes through the Supervisor ingress
+  // proxy, so we must allow framing for the HA frontend iframe to work.
+  const isHaAddon = Boolean(process.env.SUPERVISOR_TOKEN);
+  const behindIngress = Boolean(ingressPath) || isHaAddon;
 
   locals.ingressPath = ingressPath;
   locals.hassioTokenPresent = hasHassioToken(request.headers);
@@ -174,14 +180,14 @@ export const onRequest: MiddlewareHandler = async ({ request, locals }, next) =>
   // When accessed via HA ingress, the Supervisor validates the session
   // before proxying — use permissive frame-ancestors since users access
   // HA by IP, hostname, or custom domain (all would need whitelisting).
-  const frameAncestors = ingressPath ? "*" : "'self'";
+  const frameAncestors = behindIngress ? "*" : "'self'";
 
   const securityHeaders: Record<string, string> = {
     "X-Content-Type-Options": "nosniff",
     // X-Frame-Options: ALLOW-FROM is deprecated and unsupported in modern
-    // browsers. When behind ingress, omit it entirely — CSP frame-ancestors
-    // handles the policy. For standalone, use SAMEORIGIN.
-    ...(!ingressPath ? { "X-Frame-Options": "SAMEORIGIN" } : {}),
+    // browsers. When behind ingress (or in HA addon), omit it entirely — CSP
+    // frame-ancestors handles the policy. For standalone, use SAMEORIGIN.
+    ...(!behindIngress ? { "X-Frame-Options": "SAMEORIGIN" } : {}),
     "Referrer-Policy": "strict-origin-when-cross-origin",
     "Permissions-Policy": "camera=(), microphone=(), geolocation=()",
     "X-XSS-Protection": "1; mode=block",
@@ -192,7 +198,7 @@ export const onRequest: MiddlewareHandler = async ({ request, locals }, next) =>
       "style-src 'self' 'unsafe-inline'",
       "img-src 'self' data: blob:",  // blob: for attachment previews
       "font-src 'self' data:",
-      ingressPath
+      behindIngress
         ? "connect-src 'self' ws: wss: http://supervisor http://supervisor:*"
         : import.meta.env.DEV
           ? "connect-src 'self' ws: wss:"
