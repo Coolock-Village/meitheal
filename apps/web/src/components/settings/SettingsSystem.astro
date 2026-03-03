@@ -301,8 +301,46 @@ const { locale } = Astro.props;
           built for people who think in systems.
         </p>
         <p style="margin-top: 8px;">
-          Version: <code>0.1.33</code>
+          Version: <code>0.1.50</code>
         </p>
+        <div
+          id="pwa-status-compact"
+          class="pwa-compact-row"
+          style="margin-top: 8px;"
+        >
+          <div style="display: flex; align-items: center; gap: 8px;">
+            <span class="pwa-compact-dot" id="pwa-compact-dot"></span>
+            <span
+              style="font-size: 13px; color: var(--text-secondary);"
+              id="pwa-compact-label">PWA: Checking...</span
+            >
+            <span
+              class="badge badge-pending"
+              id="pwa-compact-badge"
+              style="font-size: 11px;">Checking</span
+            >
+          </div>
+          <details
+            id="pwa-compact-details"
+            style="display: none; margin-top: 6px;"
+          >
+            <summary
+              style="font-size: 12px; color: var(--accent); cursor: pointer; list-style: none;"
+            >
+              Why is PWA unavailable?
+            </summary>
+            <div
+              style="margin-top: 6px; font-size: 12px; color: var(--text-muted); line-height: 1.6; padding: 8px 12px; background: var(--bg-secondary); border-radius: 8px;"
+            >
+              PWA features (offline support, install prompt) require HTTPS.
+              Options:
+              <strong>Nabu Casa</strong> (automatic), <strong
+                >DuckDNS + Let's Encrypt</strong
+              > (free), or a <strong>reverse proxy</strong>. The app works fully
+              without HTTPS.
+            </div>
+          </details>
+        </div>
       </div>
       <div
         style="margin-top: 16px; padding-top: 12px; border-top: 1px solid var(--border); display: flex; gap: 12px; flex-wrap: wrap;"
@@ -330,6 +368,109 @@ const { locale } = Astro.props;
           class="btn btn-secondary"
           style="font-size: 12px; text-decoration: none; display: inline-flex; align-items: center; gap: 6px;"
           >⭐ Star on GitHub</a
+        >
+      </div>
+    </div>
+
+    <!-- Help & Support -->
+    <div class="card">
+      <div class="card-header">
+        <div>
+          <div class="card-title">Help & Support</div>
+          <div class="card-subtitle">
+            Documentation, guides, and community resources.
+          </div>
+        </div>
+      </div>
+      <div
+        style="font-size: 13px; color: var(--text-secondary); line-height: 1.8;"
+      >
+        <details open>
+          <summary
+            style="font-weight: 600; font-size: 14px; cursor: pointer; color: var(--text-primary); list-style: none; display: flex; align-items: center; gap: 6px;"
+          >
+            📖 Getting Started
+          </summary>
+          <div
+            style="margin-top: 8px; padding: 12px; background: var(--bg-secondary); border-radius: 8px; border: 1px solid var(--border);"
+          >
+            <p style="margin: 0 0 8px 0;">
+              <strong>Meitheal</strong> is a local-first task and life management
+              engine built for Home Assistant. Your data lives on your device. No
+              cloud required.
+            </p>
+            <ul style="margin: 0; padding-left: 20px; line-height: 2;">
+              <li>
+                Create tasks with <kbd
+                  style="font-size: 11px; padding: 1px 6px; background: var(--bg-primary); border: 1px solid var(--border); border-radius: 4px;"
+                  >n</kbd
+                > or the + button
+              </li>
+              <li>Switch views: Kanban, Table, Calendar, Today, Upcoming</li>
+              <li>Drag and drop to reorder, prioritize, and schedule</li>
+              <li>
+                Configure integrations (Calendar, Todo, Grocy) in the
+                Integrations tab
+              </li>
+              <li>All data is exportable as JSON, CSV, or raw SQLite</li>
+            </ul>
+          </div>
+        </details>
+        <details style="margin-top: 12px;">
+          <summary
+            style="font-weight: 600; font-size: 14px; cursor: pointer; color: var(--text-primary); list-style: none; display: flex; align-items: center; gap: 6px;"
+          >
+            🏗️ Architecture
+          </summary>
+          <div
+            style="margin-top: 8px; padding: 12px; background: var(--bg-secondary); border-radius: 8px; border: 1px solid var(--border);"
+          >
+            <p style="margin: 0 0 8px 0;">Meitheal is built with:</p>
+            <ul style="margin: 0; padding-left: 20px; line-height: 2;">
+              <li><strong>Astro</strong> for SSR and static generation</li>
+              <li>
+                <strong>SQLite</strong> (better-sqlite3) for local-first persistence
+              </li>
+              <li>
+                <strong>Home Assistant WebSocket API</strong> for calendar and todo
+                sync
+              </li>
+              <li>
+                <strong>Service Worker</strong> for offline caching (requires HTTPS)
+              </li>
+              <li>
+                <strong>Domain-Driven Design</strong> with bounded contexts per feature
+              </li>
+            </ul>
+          </div>
+        </details>
+      </div>
+      <div
+        style="margin-top: 16px; padding-top: 12px; border-top: 1px solid var(--border); display: flex; gap: 12px; flex-wrap: wrap;"
+      >
+        <a
+          href="https://github.com/Coolock-Village/meitheal#readme"
+          target="_blank"
+          rel="noopener noreferrer"
+          class="btn btn-secondary"
+          style="font-size: 12px; text-decoration: none; display: inline-flex; align-items: center; gap: 6px;"
+          >📄 Full README</a
+        >
+        <a
+          href="https://github.com/Coolock-Village/meitheal/wiki"
+          target="_blank"
+          rel="noopener noreferrer"
+          class="btn btn-secondary"
+          style="font-size: 12px; text-decoration: none; display: inline-flex; align-items: center; gap: 6px;"
+          >📚 Wiki</a
+        >
+        <a
+          href="https://github.com/Coolock-Village/meitheal/blob/main/CHANGELOG.md"
+          target="_blank"
+          rel="noopener noreferrer"
+          class="btn btn-secondary"
+          style="font-size: 12px; text-decoration: none; display: inline-flex; align-items: center; gap: 6px;"
+          >📋 Changelog</a
         >
       </div>
     </div>
@@ -405,4 +546,58 @@ const { locale } = Astro.props;
     box-shadow: 0 1px 0 rgba(0, 0, 0, 0.2);
     white-space: nowrap;
   }
+  .pwa-compact-row {
+    padding: 8px 0;
+    border-top: 1px solid var(--border);
+  }
+  .pwa-compact-dot {
+    display: inline-block;
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    background: var(--text-muted);
+    transition:
+      background 300ms ease,
+      box-shadow 300ms ease;
+  }
+  .pwa-compact-dot--active {
+    background: var(--accent);
+    box-shadow: 0 0 6px rgba(16, 185, 129, 0.4);
+  }
+  .pwa-compact-dot--unavailable {
+    background: #f59e0b;
+  }
 </style>
+
+<script>
+  function initPwaCompact() {
+    const dot = document.getElementById("pwa-compact-dot");
+    const label = document.getElementById("pwa-compact-label");
+    const badge = document.getElementById("pwa-compact-badge");
+    const details = document.getElementById("pwa-compact-details");
+    if (!dot || !label || !badge) return;
+    if (dot.dataset.pwaInit) return;
+    dot.dataset.pwaInit = "true";
+
+    const isSecure = window.isSecureContext;
+    const hasSW = "serviceWorker" in navigator;
+
+    if (isSecure && hasSW) {
+      dot.className = "pwa-compact-dot pwa-compact-dot--active";
+      label.textContent = "PWA: Active";
+      badge.textContent = "Active";
+      badge.className = "badge badge-active";
+      badge.style.fontSize = "11px";
+    } else {
+      dot.className = "pwa-compact-dot pwa-compact-dot--unavailable";
+      label.textContent = "PWA: Requires HTTPS";
+      badge.textContent = "HTTP only";
+      badge.className = "badge badge-pending";
+      badge.style.fontSize = "11px";
+      if (details) details.style.display = "block";
+    }
+  }
+
+  initPwaCompact();
+  document.addEventListener("astro:page-load", initPwaCompact);
+</script>

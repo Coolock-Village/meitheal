@@ -1,74 +1,122 @@
 # AGENTS
 
-## Purpose
+> This file defines mandatory behavior for human and AI contributors working in Meitheal.
+> Extends the shared rules in `~/.gemini/agents/agent-template.md`.
 
-This file defines mandatory behavior for human and AI contributors working in Meitheal.
+## Project Identity
 
-## Automation Review
-
-- CodeRabbitAI is enabled for PR review on this repository.
-- Treat CodeRabbit findings as required triage items (accept, fix, or explicitly document reject rationale).
+Meitheal is a **task management and strategic planning hub** running as a **Home Assistant add-on** (HA Supervisor). Built with Astro SSR, Drizzle ORM (SQLite), and domain-driven design.
 
 ## Hard Requirements
 
-- Preserve Astro-first architecture decisions.
-- Prefer official/open Astro integrations before custom implementations.
-- Maintain strict DDD bounded contexts and ubiquitous language.
-- Maintain KCS artifacts in the same change set as code behavior updates.
-- Keep Home Assistant add-on compatibility as a first-class constraint.
-- Keep Home Assistant publishing compatibility aligned with https://developers.home-assistant.io/docs/apps/publishing.
-- Maintain `repository.yaml` and add-on `config.yaml` `image` contract (`...-{arch}`) for publish readiness.
-- All client-side fetch calls must work behind HA ingress (global fetch wrapper in `Layout.astro`).
-- Never issue server-side redirects to bare `/` paths — they escape the ingress iframe.
+- Preserve **Astro-first** architecture decisions
+- Prefer official/open Astro integrations before custom implementations
+- Maintain strict **DDD bounded contexts** and ubiquitous language
+- Maintain **KCS artifacts** in the same change set as code behavior updates
+- Keep **Home Assistant add-on compatibility** as a first-class constraint
+- Keep HA publishing compatibility aligned with <https://developers.home-assistant.io/docs/apps/publishing>
+- Maintain `repository.yaml` and add-on `config.yaml` `image` contract (`...-{arch}`) for publish readiness
 
-## Required Files (CI Enforced)
+## Automation Review
 
-- `README.md`
-- `AGENTS.md`
-- `SKILL.md`
-- `WEBMCP.md`
-- `.coderabbit.yaml`
-- `.skills/core-workflows/SKILL.md`
-- `.zeroclaw/soul.md`
-- `docs/decisions/*.md`
-- `docs/kcs/*.md`
-- `public/.well-known/mcp.json`
-- `public/.well-known/jsondoc.json`
+- CodeRabbitAI is enabled for PR review on this repository
+- Treat CodeRabbit findings as required triage items (accept, fix, or explicitly document reject rationale)
+
+## Architecture
+
+**DDD monorepo** with Astro SSR + domain packages + event-driven integration.
+
+| Layer | Location | Purpose |
+|-------|----------|---------|
+| Web Runtime | `apps/web/` | Astro SSR app — pages, API routes, middleware |
+| Domain Packages | `packages/domain-*/` | Pure domain logic — `auth`, `tasks`, `strategy`, `observability` |
+| In-App Domains | `apps/web/src/domains/` | `auth/`, `ha/`, `todo/`, `tasks/`, `integrations/` |
+| Integration Core | `packages/integration-core/` | Calendar adapter interface + HA implementation |
+| API Layer | `apps/web/src/pages/api/` | Native + Vikunja v1 compat routes |
+| Middleware | `apps/web/src/middleware.ts` | Ingress rewriting, CSP, CSRF, rate limiting |
+| Ingress Wrapper | `apps/web/scripts/serve.mjs` | HTTP server normalizing `//` → `/` for HA |
 
 ## DDD Context Boundaries
 
-- `domain-auth` — ingress detection, CSRF, session policy
-- `domain-tasks` — task CRUD, persistence, sync
-- `domain-strategy` — RICE scoring, strategic lenses
-- `domain-observability` — structured logging, audit trail
-- `integration-core` — calendar/todo adapters, HA bridge
-- `domains/ha/` — HA events, WebSocket, connection status
-- `domains/todo/` — HA todo list sync, status mapping
+| Context | Path | Responsibility |
+|---------|------|---------------|
+| `domain-auth` | `packages/domain-auth/` | Ingress detection, CSRF, session policy |
+| `domain-tasks` | `packages/domain-tasks/` | Task CRUD, persistence, sync, domain events |
+| `domain-strategy` | `packages/domain-strategy/` | RICE scoring, strategic lenses |
+| `domain-observability` | `packages/domain-observability/` | Structured logging, audit trail |
+| `integration-core` | `packages/integration-core/` | Calendar/todo adapters, HA bridge |
+| `domains/ha/` | `apps/web/src/domains/ha/` | HA events, WebSocket, connection status |
+| `domains/todo/` | `apps/web/src/domains/todo/` | HA todo list sync, status mapping |
 
 Cross-context imports must occur through public package APIs, not deep path imports.
 
-## Ingress Patterns
+## Ingress Patterns (Critical)
 
 - `serve.mjs` normalizes `//` paths before Astro routing (prevents 301 redirect loops)
 - `ingress-policy.ts` determines ingress context from `X-Ingress-Path` header
 - `Layout.astro` monkey-patches `fetch()` to prefix API calls with ingress path
 - `middleware.ts` rewrites HTML attributes (`href`, `src`) with ingress prefix
-- ViewTransitions are disabled behind ingress to prevent redirect loops
+- ViewTransitions are **disabled** behind ingress to prevent redirect loops
+- All client-side fetch calls must work behind HA ingress (global fetch wrapper in `Layout.astro`)
+- **Never** issue server-side redirects to bare `/` paths — they escape the ingress iframe
 
-## KCS Rules
+### ⚠️ Gotchas
 
-- New behavior requires updated docs and a runbook touchpoint.
-- ADRs capture architectural and legal/security decisions.
-- Error messages should support self-service debugging.
+- **Do NOT wrap client-side `fetch()` with `apiUrl()`** — `Layout.astro` already monkey-patches `window.fetch` to auto-prefix. Using `apiUrl()` double-prefixes the path
+- **`getHAConnectionStatus()` is passive** — it only reads in-memory state. Call `await getHAConnection()` first to ensure WebSocket is established
 
-## Observability Rules
+## Coding Conventions
 
-Use structured JSON logs with the canonical schema from `packages/domain-observability`.
+| Category | Convention | Example |
+|----------|-----------|---------|
+| Files | kebab-case | `task-sync-service.ts` |
+| Functions | camelCase | `createTask()`, `resolveIntegrationOutcome()` |
+| Types/Interfaces | PascalCase | `TaskAggregate`, `CalendarSyncState` |
+| Test specs | `<name>.spec.ts` | `ha-calendar-adapter.spec.ts` |
 
-Do not introduce high-cardinality Loki labels (user IDs, task IDs, URLs).
+- No semicolons, double quotes, 2-space indent
+- Named exports only — no default exports
+- Import order: Node builtins → Framework → External → Workspace → Relative
+- Path alias: `@domains/` → `apps/web/src/domains/`
+- Discriminated unions for API results: `{ ok: true } | { ok: false, errorCode }`
+
+## Testing
+
+| Command | What |
+|---------|------|
+| `pnpm --filter @meitheal/tests test` | All tests |
+| `pnpm --filter @meitheal/tests test <file>` | Specific spec |
+| `pnpm check` | Typecheck all packages |
+
+- Tests import domain logic directly from workspace packages
+- HA tests use local HTTP server harness to simulate HA API
+- Persistence tests use temp SQLite (`file:${tmpdir}/...`)
+- No shared state between specs — no external mocking framework
+
+## Logging
+
+- Single JSON object per line to stdout (Loki-compatible)
+- Schema: `{ ts, level, event, domain, component, request_id, message, metadata }`
+- Redact secrets by default via `defaultRedactionPatterns`
+- Do not introduce high-cardinality Loki labels (user IDs, task IDs, URLs)
 
 ## Deploy Rules
 
-- Pushing code to `main` does NOT deploy. Push a version tag (`v*`) to trigger CI Docker build.
-- Version in `config.yaml` must match the tag (e.g., `version: "0.2.6"` ↔ `v0.2.6`).
-- Also bump `MEITHEAL_VERSION` in `run.sh` to match.
+- Pushing to `main` does NOT deploy. Push a version tag (`v*`) to trigger CI Docker build
+- Version in `config.yaml` must match the tag (e.g., `version: "0.2.6"` ↔ `v0.2.6`)
+- Also bump `MEITHEAL_VERSION` in `run.sh` to match
+
+## KCS Rules
+
+- New behavior requires updated docs and a runbook touchpoint
+- ADRs capture architectural and legal/security decisions
+- Error messages should support self-service debugging
+
+## Required Files (CI Enforced)
+
+- `README.md`, `AGENTS.md`, `SKILL.md`, `WEBMCP.md`
+- `.coderabbit.yaml`
+- `.skills/core-workflows/SKILL.md`
+- `.zeroclaw/soul.md`
+- `docs/decisions/*.md`, `docs/kcs/*.md`
+- `public/.well-known/mcp.json`, `public/.well-known/jsondoc.json`

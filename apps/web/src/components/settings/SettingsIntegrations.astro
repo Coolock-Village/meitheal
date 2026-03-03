@@ -23,6 +23,127 @@ const { locale } = Astro.props;
       </div>
     </div>
 
+    <!-- ═══════ Home Assistant ═══════ -->
+    <div class="integration-card" id="integration-ha">
+      <button
+        type="button"
+        class="integration-card__header"
+        aria-expanded="false"
+        aria-controls="integration-ha-body"
+      >
+        <div class="integration-card__title-row">
+          <span class="integration-card__icon">🏠</span>
+          <div class="integration-card__title-info">
+            <strong>Home Assistant</strong>
+            <span class="integration-card__desc"
+              >Connection and integration settings</span
+            >
+          </div>
+        </div>
+        <div class="integration-card__header-right">
+          <span class="badge badge-pending" id="ha-connection-badge"
+            >Checking…</span
+          >
+          <span class="integration-card__chevron">▸</span>
+        </div>
+      </button>
+
+      <div
+        class="integration-card__body"
+        id="integration-ha-body"
+        aria-hidden="true"
+      >
+        <!-- Connection Status Display -->
+        <div id="ha-connection-status" class="ha-status-row">
+          <div class="ha-status-row__left">
+            <div
+              class="ha-status-indicator ha-status-indicator--checking"
+              id="ha-indicator"
+            >
+              <span class="ha-status-indicator__dot"></span>
+            </div>
+            <div class="ha-status-row__info">
+              <span class="ha-status-row__mode" id="ha-mode-label"
+                >Detecting connection…</span
+              >
+              <span class="ha-status-row__detail" id="ha-detail-label"></span>
+            </div>
+          </div>
+        </div>
+
+        <!-- HA Info Panel — shown when connected -->
+        <div id="ha-info-panel" class="ha-info-panel" style="display: none;">
+          <div class="ha-info-grid">
+            <div class="ha-info-item">
+              <span class="ha-info-item__label">Version</span>
+              <span class="ha-info-item__value" id="ha-info-version">—</span>
+            </div>
+            <div class="ha-info-item">
+              <span class="ha-info-item__label">Location</span>
+              <span class="ha-info-item__value" id="ha-info-location">—</span>
+            </div>
+            <div class="ha-info-item">
+              <span class="ha-info-item__label">Timezone</span>
+              <span class="ha-info-item__value" id="ha-info-timezone">—</span>
+            </div>
+            <div class="ha-info-item">
+              <span class="ha-info-item__label">Mode</span>
+              <span class="ha-info-item__value" id="ha-info-mode">—</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- Test Connection -->
+        <div class="integration-card__config" style="margin-top: 8px;">
+          <div class="integration-card__actions">
+            <button type="button" class="btn btn-ghost" id="test-connection">
+              Test Connection
+            </button>
+          </div>
+          <div id="ha-status" class="ha-test-result"></div>
+        </div>
+
+        <!-- Advanced / Standalone Mode -->
+        <details class="ha-advanced-section" id="ha-advanced-section">
+          <summary class="ha-advanced-toggle">
+            <span>⚙ Advanced — Standalone Mode</span>
+            <small>Only needed if running outside Home Assistant</small>
+          </summary>
+          <form id="ha-form" class="ha-advanced-form">
+            <div class="form-group">
+              <label class="form-label" for="ha-url">HA URL</label>
+              <input
+                type="url"
+                class="form-input"
+                id="ha-url"
+                placeholder="http://homeassistant.local:8123"
+                pattern="https?://.*"
+              />
+            </div>
+            <div class="form-group">
+              <label class="form-label" for="ha-token">
+                Long-Lived Access Token
+              </label>
+              <input
+                type="password"
+                class="form-input"
+                id="ha-token"
+                placeholder="••••••••"
+              />
+              <small style="color: var(--text-muted); font-size: 12px;">
+                Generate in HA → Profile → Long-Lived Access Tokens
+              </small>
+            </div>
+            <div style="display: flex; gap: 8px;">
+              <button type="submit" class="btn btn-primary" id="save-ha">
+                💾 Save
+              </button>
+            </div>
+          </form>
+        </details>
+      </div>
+    </div>
+
     <!-- ═══════ Calendar Sync ═══════ -->
     <div class="integration-card" id="integration-calendar">
       <button
@@ -866,6 +987,156 @@ const { locale } = Astro.props;
       border-color 200ms ease,
       box-shadow 200ms ease;
   }
+
+  /* ═══════ HA Connection Card ═══════ */
+  .ha-status-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 12px;
+    background: var(--bg-secondary);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    margin-bottom: 8px;
+  }
+
+  .ha-status-row__left {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+  }
+
+  .ha-status-indicator {
+    width: 12px;
+    height: 12px;
+    flex-shrink: 0;
+  }
+
+  .ha-status-indicator__dot {
+    display: block;
+    width: 12px;
+    height: 12px;
+    border-radius: 50%;
+    background: var(--text-muted);
+    transition:
+      background 300ms ease,
+      box-shadow 300ms ease;
+  }
+
+  .ha-status-indicator--connected .ha-status-indicator__dot {
+    background: var(--accent);
+    box-shadow: 0 0 8px rgba(16, 185, 129, 0.4);
+  }
+
+  .ha-status-indicator--checking .ha-status-indicator__dot {
+    animation: status-pulse 1.5s ease-in-out infinite;
+  }
+
+  @keyframes status-pulse {
+    0%,
+    100% {
+      opacity: 0.4;
+    }
+    50% {
+      opacity: 1;
+    }
+  }
+
+  .ha-status-row__info {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+  }
+
+  .ha-status-row__mode {
+    font-size: 14px;
+    font-weight: 500;
+    color: var(--text-primary);
+  }
+
+  .ha-status-row__detail {
+    font-size: 12px;
+    color: var(--text-muted);
+  }
+
+  .ha-info-panel {
+    margin-bottom: 8px;
+  }
+
+  .ha-info-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 8px;
+    padding: 12px;
+    background: var(--bg-secondary);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+  }
+
+  .ha-info-item__label {
+    display: block;
+    font-size: 10px;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    color: var(--text-muted);
+  }
+
+  .ha-info-item__value {
+    font-size: 14px;
+    font-weight: 500;
+    color: var(--text-primary);
+  }
+
+  .ha-test-result {
+    font-size: 13px;
+    color: var(--text-secondary);
+    line-height: 1.6;
+    margin-top: 8px;
+  }
+
+  .ha-test-result small {
+    color: var(--text-muted);
+    font-size: 12px;
+  }
+
+  .ha-advanced-section {
+    margin-top: 12px;
+    border-top: 1px solid var(--border);
+    padding-top: 12px;
+  }
+
+  .ha-advanced-toggle {
+    cursor: pointer;
+    color: var(--text-muted);
+    font-size: 13px;
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+    list-style: none;
+  }
+
+  .ha-advanced-toggle::-webkit-details-marker {
+    display: none;
+  }
+
+  .ha-advanced-toggle small {
+    font-size: 11px;
+    color: var(--text-muted);
+  }
+
+  .ha-advanced-form {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+    margin-top: 12px;
+  }
+
+  @media (max-width: 768px) {
+    .ha-info-grid {
+      grid-template-columns: 1fr;
+    }
+  }
 </style>
 
 <script>
@@ -921,4 +1192,69 @@ const { locale } = Astro.props;
 
   initIntegrationCards();
   document.addEventListener("astro:page-load", initIntegrationCards);
+
+  /**
+   * HA Connection Status Detection
+   *
+   * Auto-detects HA connection on page load. Updates status indicator,
+   * info panel, and badge. Auto-expands the HA card when connected.
+   *
+   * Bounded context: integrations / ha-connection
+   */
+  async function initHAConnectionStatus() {
+    const indicator = document.getElementById("ha-indicator");
+    const modeLabel = document.getElementById("ha-mode-label");
+    const detailLabel = document.getElementById("ha-detail-label");
+    const badge = document.getElementById("ha-connection-badge");
+    const infoPanel = document.getElementById("ha-info-panel");
+    if (!indicator || !modeLabel || !badge) return;
+    if (indicator.dataset.haInit) return;
+    indicator.dataset.haInit = "true";
+
+    try {
+      const res = await fetch("/api/ha/connection");
+      const data = (await res.json()) as Record<string, unknown>;
+
+      if (data.connected) {
+        indicator.className =
+          "ha-status-indicator ha-status-indicator--connected";
+        modeLabel!.textContent = `✓ Connected as HA Addon`;
+        if (detailLabel) detailLabel.textContent = `HA ${data.version}`;
+        badge!.textContent = "Connected";
+        badge!.className = "badge badge-active";
+
+        if (infoPanel) {
+          infoPanel.style.display = "block";
+          const setVal = (id: string, val: unknown) => {
+            const el = document.getElementById(id);
+            if (el) el.textContent = String(val ?? "—");
+          };
+          setVal("ha-info-version", data.version);
+          setVal("ha-info-location", data.location_name);
+          setVal("ha-info-timezone", data.time_zone);
+          setVal("ha-info-mode", data.mode);
+        }
+
+        // Auto-expand HA card when connected
+        if ((window as any).expandIntegrationCard) {
+          (window as any).expandIntegrationCard("integration-ha-body");
+        }
+      } else {
+        indicator.className = "ha-status-indicator";
+        modeLabel!.textContent = "Not connected";
+        if (detailLabel)
+          detailLabel.textContent = String(data.mode ?? "Standalone");
+        badge!.textContent = "Disconnected";
+        badge!.className = "badge badge-pending";
+      }
+    } catch {
+      indicator.className = "ha-status-indicator";
+      modeLabel!.textContent = "Connection check failed";
+      badge!.textContent = "Error";
+      badge!.className = "badge badge-error";
+    }
+  }
+
+  initHAConnectionStatus();
+  document.addEventListener("astro:page-load", initHAConnectionStatus);
 </script>
