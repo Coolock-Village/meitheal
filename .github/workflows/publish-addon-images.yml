@@ -88,22 +88,9 @@ jobs:
           push: true
           platforms: ${{ matrix.platform }}
           cache-from: type=gha,scope=${{ matrix.arch }}
-          cache-to: type=gha,mode=max,scope=${{ matrix.arch }}
+          cache-to: type=gha,mode=max,scope=${{ matrix.arch }},ignore-error=true
           tags: |
             ghcr.io/${{ steps.meta.outputs.owner_lc }}/meitheal-${{ matrix.arch }}:${{ steps.meta.outputs.tag }}
             ghcr.io/${{ steps.meta.outputs.owner_lc }}/meitheal-${{ matrix.arch }}:latest
-
-      - name: Push to Docker Hub
-        continue-on-error: true
-        uses: docker/build-push-action@v6
-        with:
-          context: .
-          file: meitheal-hub/Dockerfile
-          build-args: |
-            BUILD_FROM=${{ steps.meta.outputs.build_from }}
-          push: true
-          platforms: ${{ matrix.platform }}
-          cache-from: type=gha,scope=${{ matrix.arch }}
-          tags: |
             coolockvillage/meitheal-${{ matrix.arch }}:${{ steps.meta.outputs.tag }}
             coolockvillage/meitheal-${{ matrix.arch }}:latest
