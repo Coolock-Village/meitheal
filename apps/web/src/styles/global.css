@@ -1782,6 +1782,230 @@ tbody tr:nth-child(n+6),
   height: 80px;
   animation: skeleton-pulse 1.5s ease-in-out infinite;
 }
+/* ===== Print Stylesheet (#37) ===== */
+@media print {
+
+  /* Hide non-content elements */
+  .sidebar,
+  .sidebar-overlay,
+  .header-bar,
+  .filter-bar,
+  .filter-summary-bar,
+  .bulk-bar,
+  .task-actions,
+  .task-action-btn,
+  .task-fav-btn,
+  .btn,
+  .toast-container,
+  .shortcut-modal-overlay,
+  .task-view-tabs,
+  nav,
+  footer {
+    display: none !important;
+  }
+
+  /* Full width content */
+  .main-content,
+  .content-area {
+    margin: 0 !important;
+    padding: 0 !important;
+    max-width: 100% !important;
+  }
+
+  /* Clean task items */
+  .task-item {
+    break-inside: avoid;
+    border: 1px solid #ccc !important;
+    margin-bottom: 8px !important;
+    padding: 8px 12px !important;
+    background: white !important;
+    color: black !important;
+  }
+
+  .task-item .task-checkbox {
+    appearance: auto !important;
+  }
+
+  /* Clean table */
+  .data-table {
+    font-size: 11px !important;
+    border-collapse: collapse !important;
+  }
+
+  .data-table th,
+  .data-table td {
+    border: 1px solid #ccc !important;
+    padding: 4px 8px !important;
+    background: white !important;
+    color: black !important;
+  }
+
+  .inline-select {
+    appearance: none !important;
+    border: none !important;
+    background: none !important;
+    color: black !important;
+    padding: 0 !important;
+  }
+
+  /* Page title */
+  body::before {
+    content: "Meitheal — Task List";
+    display: block;
+    font-size: 18px;
+    font-weight: 700;
+    margin-bottom: 16px;
+  }
+}
+
+/* ===== Button Press Micro-Interactions (Wave 7) ===== */
+.btn:active,
+.task-action-btn:active,
+.task-fav-btn:active {
+  transform: scale(0.96);
+}
+
+.btn {
+  transition: background 200ms ease, transform 100ms ease, box-shadow 200ms ease;
+}
+
+.btn:hover {
+  box-shadow: var(--shadow-sm);
+}
+
+/* ===== Active Filter Indicator (Wave 8) ===== */
+.filter-bar .form-select:not([value=""]),
+.filter-bar select:not(:invalid) {
+  border-color: var(--accent);
+  background-color: rgba(16, 185, 129, 0.05);
+}
+
+.filter-clear-btn {
+  position: relative;
+}
+
+/* ===== Loading Spinner for Async Ops (Wave 7) ===== */
+@keyframes spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+.btn-loading {
+  position: relative;
+  color: transparent !important;
+  pointer-events: none;
+}
+
+.btn-loading::after {
+  content: "";
+  position: absolute;
+  width: 14px;
+  height: 14px;
+  top: 50%;
+  left: 50%;
+  margin: -7px 0 0 -7px;
+  border: 2px solid rgba(255, 255, 255, 0.3);
+  border-top-color: white;
+  border-radius: 50%;
+  animation: spin 600ms linear infinite;
+}
+
+/* ===== Table Row Hover Transitions (Wave 9) ===== */
+.data-table tbody tr {
+  transition: background 150ms ease;
+}
+
+.data-table tbody tr:hover {
+  background: var(--bg-hover);
+}
+
+.data-table tbody tr.row-done {
+  opacity: 0.55;
+}
+
+.data-table tbody tr.row-done td {
+  text-decoration: line-through;
+}
+
+/* ===== Touch-Friendly Targets (Wave 10) ===== */
+@media (pointer: coarse) {
+
+  .task-checkbox,
+  .row-check {
+    width: 22px;
+    height: 22px;
+    min-width: 44px;
+    min-height: 44px;
+    cursor: pointer;
+  }
+
+  .task-action-btn {
+    min-width: 44px;
+    min-height: 44px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+
+  .btn-icon,
+  .delete-row {
+    min-width: 44px;
+    min-height: 44px;
+    font-size: 16px;
+  }
+
+  .inline-select {
+    min-height: 44px;
+    padding: 8px 12px;
+  }
+
+  .filter-bar {
+    gap: 8px;
+  }
+
+  .filter-bar .form-input,
+  .filter-bar .form-select {
+    min-height: 44px;
+    font-size: 16px;
+  }
+}
+
+/* ===== Filter Transitions (#30) ===== */
+.task-item {
+  transition: opacity 200ms ease, transform 200ms ease, max-height 300ms ease;
+}
+
+.task-item.filtered-out {
+  opacity: 0;
+  transform: translateY(-4px);
+  max-height: 0;
+  overflow: hidden;
+  margin: 0 !important;
+  padding: 0 !important;
+  border: none !important;
+  pointer-events: none;
+}
+
+/* ===== High Contrast Mode (Wave 12) ===== */
+@media (forced-colors: active) {
+  .task-item {
+    border: 1px solid ButtonText;
+  }
+
+  .task-fav-btn.is-fav {
+    color: Highlight;
+  }
+
+  .overdue-tag {
+    background: Mark;
+    color: MarkText;
+  }
+
+  .task-progress-fill {
+    background: Highlight;
+  }
+}
 /* ===== Accessibility: Reduced Motion ===== */
 /* VPAT 2.2.2 — disable animations for users who prefer reduced motion */
 @media (prefers-reduced-motion: reduce) {
