@@ -63,17 +63,9 @@ function applyRateLimitHeaders(response: Response, remaining: number, resetAt: n
 async function rewriteIngressPaths(response: Response, ingressPath: string): Promise<Response> {
   const contentType = response.headers.get("content-type") ?? "";
 
-  // Rewrite CSS url() paths — @fontsource embeds absolute url(/_astro/font.woff2)
-  // which the browser resolves against the HA root, bypassing ingress → 404.
-  if (contentType.includes("text/css")) {
-    const css = await response.text();
-    const rewritten = css.replace(/url\(\s*(["']?)\//g, `url($1${ingressPath}/`);
-    return new Response(rewritten, {
-      status: response.status,
-      statusText: response.statusText,
-      headers: response.headers,
-    });
-  }
+  // NOTE: CSS url() paths are rewritten at BUILD TIME by the
+  // fontsource-relative-paths Vite plugin in astro.config.mjs.
+  // No runtime CSS rewriting needed.
 
   if (!contentType.includes("text/html")) return response;
 

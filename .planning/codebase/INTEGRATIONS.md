@@ -144,6 +144,27 @@ Pattern: fetch `/api/ha/addons` → search by addon slug → show callout, hide 
 
 `.callout-link[data-tab]` elements trigger settings tab switches via `initCalloutLinks()`. Used in webhook differentiation callout to jump to "Agents & AI" tab.
 
+## HA Ingress Gotchas
+
+Known pitfalls when running behind HA Supervisor ingress.
+
+### Static Assets Bypass Middleware
+
+The Astro Node adapter serves `dist/client/_astro/*` as static files **outside** the middleware pipeline. This means:
+
+- CSS `url()` paths are **not** rewritten by the ingress rewriter at runtime
+- Any absolute path in a static file (e.g. `url(/_astro/font.woff2)`) resolves against `ha.home.arpa:8123/` instead of the ingress base
+
+**Fix pattern:** Use build-time transformations (Vite plugins) to make paths relative. See `fontsource-relative-paths` plugin in `astro.config.mjs`.
+
+### Healthcheck Has No Ingress Headers
+
+The container healthcheck (`/api/health`) runs inside the Docker network with `SUPERVISOR_TOKEN` but no `x-ingress-path` header. Middleware should suppress ingress-missing warnings for healthcheck paths to avoid log spam (~2,880 warnings/day).
+
+### Ingress Path Has Trailing Slashes
+
+The `x-ingress-path` header may contain trailing slashes (`/api/hassio_ingress/{token}//`). The `normalizePathLikeValue()` function in `auth/ingress.ts` strips these, but startup logs may show the raw value.
+
 ---
 
-*Integration audit: 2026-03-03 — Phase 57 updated*
+*Integration audit: 2026-03-03 — Phase 57b updated*

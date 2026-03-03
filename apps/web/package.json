@@ -5,6 +5,7 @@
   "type": "module",
   "scripts": {
     "dev": "astro dev",
+    "dev:clean": "rm -rf node_modules/.vite .astro && astro dev",
     "build": "astro build",
     "preview": "astro preview",
     "check": "astro check",

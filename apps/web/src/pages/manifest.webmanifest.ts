@@ -82,7 +82,7 @@ export const GET: APIRoute = ({ request }) => {
     status: 200,
     headers: {
       "Content-Type": "application/manifest+json",
-      "Cache-Control": "public, max-age=3600",
+      "Cache-Control": "public, max-age=86400",
     },
   });
 };
