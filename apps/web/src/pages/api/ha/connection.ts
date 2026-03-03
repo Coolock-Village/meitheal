@@ -9,10 +9,16 @@
  * @bounded-context integration
  */
 import type { APIRoute } from "astro";
-import { getHAConnectionStatus, getHAConfig } from "@domains/ha";
+import { getHAConnection, getHAConnectionStatus, getHAConfig } from "@domains/ha";
 
 export const GET: APIRoute = async () => {
   try {
+    // Ensure the HA connection is attempted before checking status.
+    // getHAConnectionStatus() only reads the in-memory singleton;
+    // without this call it would always report "disconnected" if no
+    // other code path has triggered getHAConnection() yet.
+    await getHAConnection();
+
     const status = getHAConnectionStatus();
     const mode = process.env.SUPERVISOR_TOKEN ? "ha-addon" : "standalone";
 
