@@ -1,7 +1,7 @@
 # Codebase Concerns
 
-**Analysis Date:** 2026-02-28
-**Commit:** 9b9f2ab
+**Analysis Date:** 2026-03-03
+**Version:** 0.2.6
 
 ## Tech Debt
 
@@ -16,9 +16,10 @@
 | Risk | Location | Current Mitigation | Status |
 |------|----------|-------------------|--------|
 | Ingress header spoofing | `middleware.ts`, `auth/ingress.ts` | Required header validation + 4 spoofing tests | ✅ Mitigated |
-| SSRF in unfurl | `pages/api/unfurl.ts` | Baseline guardrails | ⚠️ Needs DNS/IP deny list |
+| Ingress 301 redirect loop | `serve.mjs`, Astro SSR adapter | `serve.mjs` normalizes `//` → `/` before routing | ✅ Mitigated |
+| SSRF in unfurl | `pages/api/unfurl.ts` | Domain allowlist (.local/.home.arpa) | ✅ Mitigated |
 | Secret leakage in logs | `domain-observability/logger.ts` | 6 default redaction patterns | ✅ Mitigated |
-| Compat API abuse | `vikunja-compat/auth.ts` | Bearer token validation | ⚠️ No rate limiting yet |
+| Compat API abuse | `vikunja-compat/auth.ts` | Bearer token validation + rate limiting | ✅ Mitigated |
 
 ## Performance
 
@@ -59,4 +60,4 @@ No bottlenecks detected.
 
 ---
 
-*Concerns audit: 2026-02-28 @ 9b9f2ab*
+*Concerns audit: 2026-03-03 — v0.2.6*

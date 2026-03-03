@@ -1,7 +1,7 @@
 # Testing Patterns
 
-**Analysis Date:** 2026-02-28
-**Commit:** 9b9f2ab
+**Analysis Date:** 2026-03-03
+**Version:** 0.2.6
 
 ## Framework
 
@@ -17,7 +17,7 @@ pnpm --filter @meitheal/tests test <file>   # Specific spec
 pnpm check                                  # Typecheck all packages
 ```
 
-## Test Inventory (22 specs)
+## Test Inventory (38 specs)
 
 | Spec | Type | Status |
 |------|------|--------|
@@ -30,6 +30,10 @@ pnpm check                                  # Typecheck all packages
 | `ingress-header-validation.spec.ts` | Unit | ✅ Active (4 tests) |
 | `logger-redaction.spec.ts` | Unit | ✅ Active (1 test) |
 | `migration-splitter.spec.mjs` | Unit | ✅ Active (3 tests) |
+| `ha-security-hardening.spec.ts` | Security | ✅ Active |
+| `middleware-ingress-behavior.spec.ts` | Integration | ✅ Active |
+| `rename-sweep-regression.spec.ts` | Regression | ✅ Active |
+| `layout-ingress-viewtransitions.spec.ts` | Integration | ✅ Active |
 | `vikunja-compat.spec.ts` | E2E | ⏭ Skipped (requires running server) |
 | `well-known.spec.ts` | E2E | ⏭ Skipped (requires running server) |
 | `pages.spec.ts` | E2E | ⏭ Skipped (requires E2E_BASE_URL) |
@@ -43,8 +47,9 @@ pnpm check                                  # Typecheck all packages
 | `logging-observability.spec.ts` | Placeholder | ⏭ Skipped |
 | `api.spec.ts` | Placeholder | ⏭ Skipped |
 | `repo-standards.spec.ts` | Governance | ✅ Active (4 tests) |
+| + 12 additional specs | Various | ✅/⏭ (see `tests/e2e/`) |
 
-**Totals:** 33 passing, 7 skipped
+**Totals:** 38 specs total
 
 ## CI Jobs
 
@@ -67,4 +72,4 @@ pnpm check                                  # Typecheck all packages
 
 ---
 
-*Testing analysis: 2026-02-28 @ 9b9f2ab*
+*Testing analysis: 2026-03-03 — v0.2.6*

@@ -16,21 +16,23 @@ A clean-room OSS Life OS built on Astro SSR for households, homelabs, and commun
 
 ### Validated (implemented)
 
-- Astro SSR runtime with HA-first topology (`apps/web/`, `addons/meitheal-hub/`)
+- Astro SSR runtime with HA-first topology (`apps/web/`, `meitheal-hub/`)
 - DDD domain packages (`domain-auth`, `domain-tasks`, `domain-strategy`, `domain-observability`, `integration-core`)
-- SQLite/libSQL persistence with Drizzle schema and migrations
-- HA calendar sync and confirmation flow with idempotency
+- In-app domains (`auth/`, `ha/`, `todo/`, `tasks/`, `integrations/vikunja-compat/`)
+- SQLite/libSQL persistence with Drizzle schema and 3 migrations
+- HA calendar + todo sync (bidirectional) with confirmation flow
 - Vikunja compatibility API surface used by voice-assistant clients
+- Ingress-safe server wrapper (`serve.mjs`) preventing 301 redirect loops
 - Structured JSON logging and redaction policy
 - Governance and required docs checks
-- Competitor gap matrix + parity contract baseline in `docs/analysis/`
+- Settings UX with auto-detect HA connection and integration cards
 
 ### Active (next execution targets)
 
-- Reconcile CodeQL check-suite on PR #1
-- Continue HA publishing compliance checks (repository/add-on contracts)
+- Validate v0.2.6 addon on HA Green with real calendar entity
 - Run live HA and Vikunja compat workflows on deployed environment
-- Continue autonomous P0-P6 production optimization sweeps
+- Continue UX audit (Dashboard/Home page next)
+- PWA service worker scope validation under ingress
 
 ### Out of Scope (current cycle)
 
@@ -49,6 +51,7 @@ A clean-room OSS Life OS built on Astro SSR for households, homelabs, and commun
 | ADR-005 | Calendar sync + idempotency | Established |
 | ADR-006 | Integration RFC (iteration-05) | Draft |
 | ADR-007 | Competitor matrix/parity contract | Established |
+| ADR-008+ | 5 additional ADRs (see `docs/decisions/`) | Various |
 
 ## Constraints
 
@@ -71,4 +74,4 @@ A clean-room OSS Life OS built on Astro SSR for households, homelabs, and commun
 - `docs/kcs/*.md`
 
 ---
-*Last updated: 2026-02-28 during GSD recovery normalization pass*
+*Last updated: 2026-03-03 — v0.2.6 ingress fix + Settings UX*

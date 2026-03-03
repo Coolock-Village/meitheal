@@ -1,7 +1,7 @@
 # Technology Stack
 
 **Analysis Date:** 2026-03-03
-**Commit:** latest
+**Version:** 0.2.6
 
 ## Languages
 
@@ -58,6 +58,7 @@ Prevents ad-blocker interference and works fully offline.
 | `MEITHEAL_VERSION` | Auto | Addon version (set by run.sh, read by health endpoint) |
 | `MEITHEAL_DB_URL` | Yes | SQLite path (default: `file:/data/meitheal.db`) |
 | `SUPERVISOR_TOKEN` | Auto | HA supervisor auth |
+| `ASTRO_NODE_AUTOSTART` | Auto | Set to `disabled` by `serve.mjs` to prevent Astro double-server |
 | `MEITHEAL_VIKUNJA_API_TOKEN(S)` | Optional | Compat API auth |
 | `MEITHEAL_LOG_LEVEL` | Optional | Log level |
 | `MEITHEAL_LOG_REDACTION` | Optional | PII/secret redaction |
@@ -87,8 +88,8 @@ Prevents ad-blocker interference and works fully offline.
 
 | Step | Action | Details |
 |------|--------|---------|
-| 1. Bump version | Edit `meitheal-hub/config.yaml` → `version:` + `run.sh` | Must match tag (e.g. `0.2.0` → `v0.2.0`) |
-| 2. Commit + tag | `git commit` then `git tag v0.2.0` | Tag triggers CI |
+| 1. Bump version | Edit `meitheal-hub/config.yaml` → `version:` + `run.sh` | Must match tag (e.g. `0.2.6` → `v0.2.6`) |
+| 2. Commit + tag | `git commit` then `git tag v0.2.6` | Tag triggers CI |
 | 3. Push | `git push origin main --tags` | Pushes code + tag to GitHub |
 | 4. CI builds | `publish-addon-images.yml` runs automatically | Builds amd64 + aarch64 Docker images |
 | 5. Restart addon | HA → Settings → Add-ons → Meitheal → Restart | Pulls new image |
@@ -113,7 +114,8 @@ Prevents ad-blocker interference and works fully offline.
 | `meitheal-hub/Dockerfile` | Multi-stage: node:22-alpine3.23 builder → HA base runtime |
 | `meitheal-hub/config.yaml` | HA addon config (version, ingress, arch, watchdog, backup) |
 | `meitheal-hub/build.json` | Extended build config (base images, OCI labels) |
-| `meitheal-hub/run.sh` | Addon entrypoint (reads HA options, starts Node) |
+| `meitheal-hub/run.sh` | Addon entrypoint (reads HA options, starts Node via `serve.mjs`) |
+| `apps/web/scripts/serve.mjs` | Ingress-safe HTTP wrapper (normalizes `//` → `/`, prevents 301 loops) |
 | `meitheal-hub/translations/en.yaml` | UI translations for config options |
 | `meitheal-hub/build-push-dev.sh` | Local build + push script |
 | `repository.yaml` | HA addon repository metadata |
@@ -139,6 +141,12 @@ Prevents ad-blocker interference and works fully offline.
 | CSP headers | Strict policy injected on every response |
 | Regional settings | Reads cookies → sets `Astro.locals` (timezone, weekStart, dateFormat) |
 | CSRF protection | Validates `Origin` header on non-GET requests |
+| Rate limiting | Token-bucket per IP on `/api/` routes |
+| Ingress context | `ingress-policy.ts` determines ingress path from `X-Ingress-Path` header |
+
+## Ingress Double-Slash Fix (`scripts/serve.mjs`)
+
+HA Supervisor can send requests with `//` paths. Astro's internal `collapseDuplicateTrailingSlashes()` normalizes these and issues a 301 redirect to `/`, which escapes the ingress iframe. The `serve.mjs` wrapper normalizes `req.url` **before** Astro processes it, preventing unsafe redirects.
 
 ## Astro Lifecycle Patterns
 
@@ -149,7 +157,8 @@ Prevents ad-blocker interference and works fully offline.
 | Dual-init | `initFn()` + `addEventListener('astro:page-load', initFn)` for reliability |
 | `transition:persist` | Sidebar persists across navigations |
 | `<ViewTransitions fallback="swap" />` | Client-side navigation with prefetch |
+| Global fetch wrapper | `Layout.astro` monkey-patches `fetch()` to prefix requests with ingress path |
 
 ---
 
-*Stack analysis: 2026-03-03 — v0.2.0 slug rename*
+*Stack analysis: 2026-03-03 — v0.2.6 ingress redirect fix*

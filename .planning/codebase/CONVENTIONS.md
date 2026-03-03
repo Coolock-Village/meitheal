@@ -1,7 +1,7 @@
 # Coding Conventions
 
-**Analysis Date:** 2026-02-28
-**Commit:** 9b9f2ab
+**Analysis Date:** 2026-03-03
+**Version:** 0.2.6
 
 ## Naming
 
@@ -54,4 +54,4 @@
 
 ---
 
-*Convention analysis: 2026-02-28 @ 9b9f2ab*
+*Convention analysis: 2026-03-03 — v0.2.6*

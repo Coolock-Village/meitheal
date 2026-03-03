@@ -1,7 +1,7 @@
 # External Integrations
 
-**Analysis Date:** 2026-03-02
-**Commit:** df48f27
+**Analysis Date:** 2026-03-03
+**Version:** 0.2.6
 
 ## Home Assistant Calendar
 
@@ -76,8 +76,8 @@
 | Engine | SQLite via libSQL |
 | ORM | Drizzle ORM 0.45 |
 | Connection | `MEITHEAL_DB_URL` (default: `file:/data/meitheal.db`) |
-| Tables | `tasks`, `domain_events`, `integration_attempts`, `calendar_confirmations`, `todo_sync_confirmations`, `audit_trail` |
-| Migrations | `apps/web/drizzle/migrations/` (0001-0002) |
+| Tables | `tasks`, `boards`, `lanes`, `saved_filters`, `reminders`, `domain_events`, `integration_attempts`, `calendar_confirmations`, `todo_sync_confirmations`, `audit_trail` |
+| Migrations | `apps/web/drizzle/migrations/` (0001-0003) |
 
 ## Observability Pipeline
 
@@ -111,13 +111,15 @@ All secrets are **environment-only** — never stored in YAML/config files.
 | `SUPERVISOR_TOKEN` | HA Supervisor (auto) | HA API access |
 | `MEITHEAL_VIKUNJA_API_TOKEN(S)` | Environment | Vikunja compat auth |
 
-## Docker Hub
+## Docker Images
 
 | Image | Tags |
 |-------|------|
-| `coolockvillage/meitheal-hub-amd64` | `0.3.0`, `latest` |
-| `coolockvillage/meitheal-hub-aarch64` | `0.3.0`, `latest` |
+| `ghcr.io/coolock-village/meitheal-amd64` | `0.2.6`, `latest` |
+| `ghcr.io/coolock-village/meitheal-aarch64` | `0.2.6`, `latest` |
+| `coolockvillage/meitheal-amd64` | `0.2.6`, `latest` |
+| `coolockvillage/meitheal-aarch64` | `0.2.6`, `latest` |
 
 ---
 
-*Integration audit: 2026-03-02 @ df48f27*
+*Integration audit: 2026-03-03 — v0.2.6*

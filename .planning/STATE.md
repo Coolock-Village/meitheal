@@ -10,9 +10,9 @@ Local-first task orchestration with HA calendar sync and Vikunja compatibility.
 - **Planning model:** dual-track (`Primary Delivery` + `Extension Track`)
 - **Primary Delivery:** 6 of 6 phases complete (`01-06 complete`)
 - **Extension Track:** 15 of 15 phases complete (`15-24, 27-30 complete`)
-- **Overall phase count:** 21 of 21 complete
-- **Phase 43:** Security Hardening — complete (v0.1.17-v0.1.24)
-- **Current version:** `0.1.24`
+- **Overall phase count:** 21+ phases complete (including global track + security + UX)
+- **Phase 54:** Settings & Integrations UX overhaul — complete
+- **Current version:** `0.2.6`
 
 ## Phase Status Snapshot
 
@@ -38,53 +38,53 @@ Local-first task orchestration with HA calendar sync and Vikunja compatibility.
 9. `23-offline-image-uploads` — `complete`
 10. `24-perf-budgets-ci` — `complete`
 
-### Global Track (`27-43`)
+### Global Track (`27-54`)
 
 1. `27-security-accessibility` — `complete`
 2. `28-structured-logging` — `complete`
 3. `29-astro-optimization-audit` — `complete`
 4. `30-web-api-integration` — `complete` (23 browser APIs, 14 modules)
-5. `39-ha-addon-publishing` — `complete` (Docker Hub config, CI dual-push)
+5. `39-ha-addon-publishing` — `complete` (GHCR + Docker Hub, CI dual-push)
 6. `43-security-hardening` — `complete` (structured logging, DB fallback, SSRF, security.txt)
+7. `54-settings-integrations-ux` — `complete` (auto-detect connection, integration cards, tooltips)
 
 ## Recent Decisions
 
 | Date | Decision | Context |
 |------|----------|---------|
-| 2026-03-02 | Dynamic health version | `health.ts` now reads version from `config.yaml` instead of hardcoding |
-| 2026-03-02 | Allow .local/.home.arpa in SSRF | HA network domains are legitimate unfurl targets |
-| 2026-03-02 | RFC 9116 security.txt | Added `/.well-known/security.txt` endpoint |
-| 2026-03-02 | Calendar bridge merge | HA calendar events now sync into SQLite task store bidirectionally |
+| 2026-03-03 | Ingress-safe `serve.mjs` wrapper | Prevents 301 redirect loop from double trailing slashes |
+| 2026-03-03 | Addon rename `meitheal_hub` → `meitheal` | Slug shortened in `config.yaml`, `ingress-policy.ts` |
+| 2026-03-03 | Settings auto-detect HA connection | Replaced manual URL/token form with status card |
+| 2026-03-03 | ViewTransitions disabled behind ingress | Prevents redirect loops via ingress iframe |
+| 2026-03-02 | Dynamic health version | `health.ts` reads version from `config.yaml` |
+| 2026-03-02 | Calendar bridge merge | HA calendar events sync bidirectionally |
 | 2026-03-01 | Regional Settings & Sidebar Config | Plumbed `timezone`, `weekStart`, `date_format` via Astro.locals |
 
 ## Pending Todo Queue
 
-1. ~~Reconcile CodeQL check-suite status on PR #1.~~ — Resolved.
-2. Run live HA workflow with real calendar entity and `HA_TOKEN`. *(Requires deployed environment)*
-3. Run live Vikunja voice-assistant compatibility workflow. *(Requires deployed environment)*
-4. ~~Evaluate Phase 06 draft plans.~~ — Superseded by extension track.
-5. ~~Autonomous optimization sweeps.~~ — Complete: 0 TODO/FIXME/HACK, 0 errors, 0 warnings.
-6. ~~Set `DOCKERHUB_USERNAME` and `DOCKERHUB_TOKEN` as GitHub repo secrets for CI publishing.~~ — Done (`coolockvillage`).
-7. Push initial images to Docker Hub and test install on HA Green.
+1. Run live HA workflow with real calendar entity and deployed addon. *(Requires v0.2.6 running)*
+2. Run live Vikunja voice-assistant compatibility workflow.
+3. Push initial images to Docker Hub and test install on HA Green.
+4. Validate sidebar drag-and-drop reordering end-to-end.
+5. PWA service worker scope validation under ingress.
 
-> Item 7 requires triggering the `publish-addon-images` workflow and installing on HA Green.
-
-## Codebase Health (as of v0.1.24)
+## Codebase Health (as of v0.2.6)
 
 | Metric | Value |
 |--------|-------|
-| Tests | 129 passed, 0 failed, 45 skipped |
-| TODO/FIXME/HACK | 0 |
-| TS warnings | 0 |
-| API endpoints | 38 |
-| HA domain exports | 19 |
+| E2E test specs | 38 |
+| ADRs | 12 |
+| KCS docs | 11 |
+| API endpoint files | 42 |
+| DB migrations | 3 |
+| Build time | ~3.9s |
 
 ## Session Continuity
 
-Last session: 2026-03-02T13:12:00Z
-Stopped at: Phase 43 complete. Autonomous sweep shipped v0.1.17-v0.1.24.
+Last session: 2026-03-03T12:05:00Z
+Stopped at: v0.2.6 tagged and pushed. serve.mjs ingress fix + Settings UX overhaul complete. CI green.
 
-Resume hint: Set Docker Hub secrets in GitHub, push images, install on HA Green for live testing.
+Resume hint: Verify v0.2.6 image deploys correctly on HA, confirm ingress redirect fix works. Then continue UX audit (Dashboard/Home page).
 
 ---
-*Last updated: 2026-03-02 during Phase 43 autonomous sweep*
+*Last updated: 2026-03-03 — v0.2.6 ingress redirect fix + Settings UX*

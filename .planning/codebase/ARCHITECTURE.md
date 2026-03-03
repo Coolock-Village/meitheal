@@ -1,7 +1,7 @@
 # Architecture
 
-**Analysis Date:** 2026-02-28
-**Commit:** 9b9f2ab
+**Analysis Date:** 2026-03-03
+**Version:** 0.2.6
 
 ## Pattern
 
@@ -9,8 +9,8 @@
 
 | Aspect | Decision |
 |--------|----------|
-| Architecture | Domain-Driven Design, 5 bounded contexts |
-| Runtime | Astro SSR (Node standalone) for HA; Workers adapter (skeleton) for Cloudflare |
+| Architecture | Domain-Driven Design, 7 bounded contexts |
+| Runtime | Astro SSR (Node standalone, wrapped by `serve.mjs`) for HA; Workers adapter (skeleton) for Cloudflare |
 | Data | SQLite via Drizzle ORM, libSQL driver |
 | Events | Domain events with idempotency keys and request tracing |
 | Integration | Adapter pattern via `CalendarIntegrationAdapter` interface |
@@ -27,6 +27,13 @@
 - 4 packages: `domain-auth`, `domain-tasks`, `domain-strategy`, `domain-observability`
 - Used by `apps/web` and `integration-core`
 
+### In-App Domains (`apps/web/src/domains/`)
+- `auth/` — ingress detection (`ingress.ts`, `ingress-policy.ts`)
+- `ha/` — HA WebSocket events, connection management
+- `todo/` — HA todo list sync, status mapping
+- `tasks/` — persistence, sync service
+- `integrations/vikunja-compat/` — Vikunja compatibility layer
+
 ### Integration Core (`packages/integration-core/`)
 - `CalendarIntegrationAdapter` interface + `HomeAssistantCalendarAdapter` implementation
 - Error classification, timeout handling, retry semantics
@@ -36,8 +43,14 @@
 - **Compat (Vikunja v1):** 7 routes under `/api/v1/` — projects, tasks, labels, users, assignees, projectusers
 
 ### Middleware (`apps/web/src/middleware.ts`)
-- Ingress auth enforcement for HA
-- Required header validation, HASSIO token detection
+- Ingress path rewriting for HA
+- CSP headers, CSRF validation, rate limiting
+- Regional settings (timezone, weekStart, dateFormat)
+
+### Ingress Wrapper (`apps/web/scripts/serve.mjs`)
+- HTTP server that wraps Astro’s handler
+- Normalizes `//` → `/` before Astro routing (prevents 301 redirect loops)
+- Sets `ASTRO_NODE_AUTOSTART=disabled` to own the server
 
 ### Observability (`apps/web/src/domains/integrations/vikunja-compat/compat-logger.ts`)
 - Structured request logging for all compat routes
@@ -83,4 +96,4 @@ POST /api/tasks/create
 
 ---
 
-*Architecture analysis: 2026-02-28 @ 9b9f2ab*
+*Architecture analysis: 2026-03-03 — v0.2.6*

@@ -1,18 +1,18 @@
 # Codebase Structure
 
-**Analysis Date:** 2026-02-28
-**Commit:** 9b9f2ab
+**Analysis Date:** 2026-03-03
+**Version:** 0.2.6
 
 ## Directory Layout
 
 ```
 meitheal/
-├── .agents/rules/           # Agent behavior rules (autonomous.md)
+├── .agents/rules/           # Agent behavior rules (autonomous.md, design-and-ux.md)
 ├── .github/workflows/       # CI/CD (ci.yml, publish-addon, live-ha, live-vikunja)
 ├── .planning/               # GSD planning (codebase map, persona loops)
 ├── .skills/                 # Agent skill definitions
 ├── .zeroclaw/               # AI soul file
-├── addons/meitheal-hub/     # HA OS add-on
+├── meitheal-hub/            # HA OS add-on
 │   ├── Dockerfile
 │   ├── config.yaml
 │   ├── run.sh
@@ -21,24 +21,29 @@ meitheal/
 │       └── grafana/dashboards/compat-api.json
 ├── apps/
 │   ├── api/                 # Cloudflare Workers adapter (skeleton)
-│   └── web/                 # Astro SSR application (22 source files)
-│       ├── drizzle/         # Schema + migrations
-│       ├── scripts/         # Build/CI scripts (5 files)
+│   └── web/                 # Astro SSR application
+│       ├── drizzle/         # Schema + 3 migrations
+│       ├── scripts/         # Build/CI scripts + serve.mjs wrapper
 │       └── src/
 │           ├── content/config.ts
 │           ├── domains/
 │           │   ├── auth/ingress.ts
+│           │   ├── auth/ingress-policy.ts  # Ingress context from X-Ingress-Path
+│           │   ├── ha/ha-events.ts         # HA WebSocket events
 │           │   ├── integrations/vikunja-compat/
 │           │   │   ├── auth.ts
-│           │   │   ├── compat-logger.ts    # NEW: structured request logging
+│           │   │   ├── compat-logger.ts
 │           │   │   ├── http.ts
 │           │   │   └── store.ts
+│           │   ├── todo/                   # HA todo list sync
+│           │   │   ├── todo-bridge.ts
+│           │   │   └── todo-status-mapper.ts
 │           │   └── tasks/
 │           │       ├── persistence/store.ts
 │           │       └── task-sync-service.ts
 │           ├── middleware.ts
 │           └── pages/
-│               ├── api/     # 11 API endpoints (4 native + 7 compat)
+│               ├── api/     # 42 API endpoint files
 │               └── index.astro
 ├── docs/
 │   ├── decisions/           # 6 ADRs (0001–0006)
@@ -53,8 +58,8 @@ meitheal/
 │   ├── domain-tasks/
 │   └── integration-core/
 ├── tests/
-│   ├── e2e/                 # 22 Playwright specs (21 + new timezone test)
-│   ├── governance/          # 1 spec (repo standards)
+│   ├── e2e/                 # 38 Playwright specs
+│   ├── governance/          # Governance specs
 │   └── scripts/             # Live verification scripts
 ├── AGENTS.md
 ├── README.md
@@ -70,13 +75,14 @@ meitheal/
 
 | File | Purpose |
 |------|---------|
-| `apps/web/src/middleware.ts` | Ingress auth for all requests |
+| `apps/web/src/middleware.ts` | Ingress auth, CSP, CSRF, rate limiting |
+| `apps/web/scripts/serve.mjs` | Ingress-safe HTTP wrapper (prevents 301 loops) |
 | `packages/domain-tasks/src/vertical-slice.ts` | Task create + calendar sync (173 lines) |
 | `packages/integration-core/src/home-assistant-calendar.ts` | HA calendar adapter (166 lines) |
-| `apps/web/src/domains/integrations/vikunja-compat/compat-logger.ts` | Structured compat logging |
+| `apps/web/src/domains/auth/ingress-policy.ts` | Ingress context detection |
+| `apps/web/src/domains/ha/ha-events.ts` | HA WebSocket event bridge |
 | `apps/web/scripts/perf-budget-check.mjs` | CI performance enforcement |
-| `addons/meitheal-hub/run.sh` | HA add-on startup |
-| `addons/meitheal-hub/rootfs/etc/grafana/dashboards/compat-api.json` | Grafana dashboard |
+| `meitheal-hub/run.sh` | HA add-on startup (uses serve.mjs wrapper) |
 | `docs/decisions/0006-iteration-05-integrations-rfc.md` | Next iteration RFC |
 
 ## Where to Add New Code
@@ -88,9 +94,9 @@ meitheal/
 | New integration adapter | `packages/integration-core/src/` |
 | New E2E test | `tests/e2e/<name>.spec.ts` |
 | New governance test | `tests/governance/<name>.spec.ts` |
-| New ADR | `docs/decisions/000N-<name>.md` |
-| New KCS doc | `docs/kcs/<name>.md` |
-| New Grafana dashboard | `addons/meitheal-hub/rootfs/etc/grafana/dashboards/` |
+| New ADR | `docs/decisions/000N-<name>.md` (currently 12) |
+| New KCS doc | `docs/kcs/<name>.md` (currently 11) |
+| New Grafana dashboard | `meitheal-hub/rootfs/etc/grafana/dashboards/` |
 
 ## Naming
 
@@ -102,4 +108,4 @@ meitheal/
 
 ---
 
-*Structure analysis: 2026-02-28 @ 9b9f2ab*
+*Structure analysis: 2026-03-03 — v0.2.6*
