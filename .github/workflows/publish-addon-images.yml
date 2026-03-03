@@ -90,8 +90,8 @@ jobs:
           cache-from: type=gha,scope=${{ matrix.arch }}
           cache-to: type=gha,mode=max,scope=${{ matrix.arch }}
           tags: |
-            ghcr.io/${{ steps.meta.outputs.owner_lc }}/meitheal-hub-${{ matrix.arch }}:${{ steps.meta.outputs.tag }}
-            ghcr.io/${{ steps.meta.outputs.owner_lc }}/meitheal-hub-${{ matrix.arch }}:latest
+            ghcr.io/${{ steps.meta.outputs.owner_lc }}/meitheal-${{ matrix.arch }}:${{ steps.meta.outputs.tag }}
+            ghcr.io/${{ steps.meta.outputs.owner_lc }}/meitheal-${{ matrix.arch }}:latest
 
       - name: Push to Docker Hub
         continue-on-error: true
@@ -105,5 +105,5 @@ jobs:
           platforms: ${{ matrix.platform }}
           cache-from: type=gha,scope=${{ matrix.arch }}
           tags: |
-            coolockvillage/meitheal-hub-${{ matrix.arch }}:${{ steps.meta.outputs.tag }}
-            coolockvillage/meitheal-hub-${{ matrix.arch }}:latest
+            coolockvillage/meitheal-${{ matrix.arch }}:${{ steps.meta.outputs.tag }}
+            coolockvillage/meitheal-${{ matrix.arch }}:latest

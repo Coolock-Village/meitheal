@@ -7,7 +7,7 @@
     "BUILD_FROM": "{build_from}"
   },
   "labels": {
-    "org.opencontainers.image.title": "Meitheal Hub",
+    "org.opencontainers.image.title": "Meitheal",
     "org.opencontainers.image.description": "Cooperative task and life engine with HA calendar sync",
     "org.opencontainers.image.source": "https://github.com/Coolock-Village/meitheal",
     "org.opencontainers.image.licenses": "MIT"

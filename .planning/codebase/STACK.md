@@ -1,7 +1,7 @@
 # Technology Stack
 
-**Analysis Date:** 2026-03-02
-**Commit:** dddf93c
+**Analysis Date:** 2026-03-03
+**Commit:** latest
 
 ## Languages
 
@@ -55,9 +55,9 @@ Prevents ad-blocker interference and works fully offline.
 
 | Variable | Required | Purpose |
 |----------|----------|---------|
+| `MEITHEAL_VERSION` | Auto | Addon version (set by run.sh, read by health endpoint) |
 | `MEITHEAL_DB_URL` | Yes | SQLite path (default: `file:/data/meitheal.db`) |
 | `SUPERVISOR_TOKEN` | Auto | HA supervisor auth |
-| `HA_BASE_URL` + `HA_TOKEN` | Alt | HA auth fallback |
 | `MEITHEAL_VIKUNJA_API_TOKEN(S)` | Optional | Compat API auth |
 | `MEITHEAL_LOG_LEVEL` | Optional | Log level |
 | `MEITHEAL_LOG_REDACTION` | Optional | PII/secret redaction |
@@ -87,17 +87,17 @@ Prevents ad-blocker interference and works fully offline.
 
 | Step | Action | Details |
 |------|--------|---------|
-| 1. Bump version | Edit `meitheal-hub/config.yaml` → `version:` | Must match tag (e.g. `0.1.25` → `v0.1.25`) |
-| 2. Commit + tag | `git commit` then `git tag v0.1.25` | Tag triggers CI |
+| 1. Bump version | Edit `meitheal-hub/config.yaml` → `version:` + `run.sh` | Must match tag (e.g. `0.2.0` → `v0.2.0`) |
+| 2. Commit + tag | `git commit` then `git tag v0.2.0` | Tag triggers CI |
 | 3. Push | `git push origin main --tags` | Pushes code + tag to GitHub |
 | 4. CI builds | `publish-addon-images.yml` runs automatically | Builds amd64 + aarch64 Docker images |
-| 5. Restart addon | HA → Settings → Add-ons → Meitheal Hub → Restart | Pulls new image |
+| 5. Restart addon | HA → Settings → Add-ons → Meitheal → Restart | Pulls new image |
 
 ### CI Workflow: `publish-addon-images.yml`
 
 - **Triggers**: `v*` tag push, or manual `workflow_dispatch`
 - **Builds**: amd64 + aarch64 via `docker buildx`
-- **Pushes to**: GHCR (`ghcr.io/coolock-village/meitheal-hub-{arch}`) + Docker Hub (`coolockvillage/meitheal-hub-{arch}`)
+- **Pushes to**: GHCR (`ghcr.io/coolock-village/meitheal-{arch}`) + Docker Hub (`coolockvillage/meitheal-{arch}`)
 - **Validates**: release tag matches `config.yaml` version
 - **Lockfile**: `--frozen-lockfile` enforced for deterministic builds
 
@@ -112,7 +112,7 @@ Prevents ad-blocker interference and works fully offline.
 |------|---------|
 | `meitheal-hub/Dockerfile` | Multi-stage: node:22-alpine3.23 builder → HA base runtime |
 | `meitheal-hub/config.yaml` | HA addon config (version, ingress, arch, watchdog, backup) |
-| `meitheal-hub/build.json` | Extended build config (base images, OCI labels, codenotary) |
+| `meitheal-hub/build.json` | Extended build config (base images, OCI labels) |
 | `meitheal-hub/run.sh` | Addon entrypoint (reads HA options, starts Node) |
 | `meitheal-hub/translations/en.yaml` | UI translations for config options |
 | `meitheal-hub/build-push-dev.sh` | Local build + push script |
@@ -126,7 +126,7 @@ Prevents ad-blocker interference and works fully offline.
 | CSP | Strict policy — no external CDN allowed (`font-src 'self'`, `style-src 'self' 'unsafe-inline'`) |
 | Error responses | All API catch blocks return generic `"Internal server error"` (CWE-209) |
 | Viewport | WCAG 2.1 SC 1.4.4 compliant (no `user-scalable=0`) |
-| Image signing | Codenotary via `build.json` (`notary@coolock.village`) |
+| Image signing | OCI labels for provenance |
 | Watchdog | Supervisor health monitoring via `/api/health` |
 | Backup | `cold` — addon stops during backup for data consistency |
 | Lockfile | `--frozen-lockfile` enforced in Dockerfile (both build + prod stages) |
@@ -152,4 +152,4 @@ Prevents ad-blocker interference and works fully offline.
 
 ---
 
-*Stack analysis: 2026-03-02 @ dddf93c*
+*Stack analysis: 2026-03-03 — v0.2.0 slug rename*

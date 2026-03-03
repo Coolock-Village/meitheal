@@ -12,6 +12,8 @@ const startedAt = Date.now();
  * Falls back to package.json version or "unknown".
  */
 function getAddonVersion(): string {
+  // Prefer MEITHEAL_VERSION env var (set by run.sh in Docker)
+  if (process.env.MEITHEAL_VERSION) return process.env.MEITHEAL_VERSION;
   try {
     // In HA addon: /config.yaml is mounted; in dev: ../../meitheal-hub/config.yaml
     for (const p of ["/config.yaml", resolve(process.cwd(), "../../meitheal-hub/config.yaml")]) {
@@ -22,7 +24,7 @@ function getAddonVersion(): string {
       } catch { /* try next */ }
     }
   } catch { /* fallback */ }
-  return "0.1.23";
+  return "unknown";
 }
 
 const VERSION = getAddonVersion();
