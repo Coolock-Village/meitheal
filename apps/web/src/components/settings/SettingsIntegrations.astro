@@ -616,6 +616,17 @@ const { locale } = Astro.props;
               through the HA WebSocket. Select which events to broadcast below.
             </div>
           </div>
+          <div
+            id="n8n-auto-detect-info"
+            class="integration-callout integration-callout--success"
+            style="display: none;"
+            aria-live="polite"
+          >
+            <strong>✓ Node-RED detected via HA</strong>
+            <div class="integration-callout__detail">
+              Node-RED addon found and connected automatically.
+            </div>
+          </div>
           <div class="form-group">
             <label class="form-label">Trigger Events</label>
             <div class="event-checkbox-grid">
@@ -1508,6 +1519,7 @@ const { locale } = Astro.props;
     background: var(--accent-light);
     color: var(--accent);
     font-weight: 600;
+    box-shadow: inset 0 -2px 0 var(--accent);
   }
 
   /* ═══════ Explainer Dialog ═══════ */
@@ -1987,6 +1999,61 @@ const { locale } = Astro.props;
 
   initGrocyAutoDetect();
   document.addEventListener("astro:page-load", initGrocyAutoDetect);
+
+  /**
+   * Node-RED Auto-Detection
+   *
+   * Checks if Node-RED addon is available via HA Supervisor API.
+   * Addon slug: a0d7b954_nodered (hassio-addons repository)
+   * Reference: https://github.com/hassio-addons/app-node-red
+   */
+  async function initNodeRedAutoDetect() {
+    const callout = document.getElementById("n8n-auto-detect-info");
+    const statusEl = document.getElementById("n8n-status");
+    if (!callout) return;
+    if (callout.dataset.nrInit) return;
+    callout.dataset.nrInit = "true";
+
+    try {
+      const haRes = await fetch("/api/ha/connection");
+      const haData = (await haRes.json()) as { connected?: boolean };
+      if (!haData.connected) return;
+
+      const addonsRes = await fetch("/api/ha/addons");
+      if (!addonsRes.ok) return;
+      const addonsData = (await addonsRes.json()) as {
+        addons?: { slug: string; name: string; state: string }[];
+      };
+
+      const nodeRed = addonsData.addons?.find(
+        (a) =>
+          a.slug.includes("nodered") ||
+          a.slug.includes("node_red") ||
+          a.slug.includes("node-red"),
+      );
+      const n8n = addonsData.addons?.find((a) => a.slug.includes("n8n"));
+
+      if (nodeRed || n8n) {
+        callout.style.display = "block";
+        const name = nodeRed ? "Node-RED" : "n8n";
+        const strongEl = callout.querySelector("strong");
+        const detailEl = callout.querySelector(".integration-callout__detail");
+        if (strongEl) strongEl.textContent = `✓ ${name} detected via HA`;
+        if (detailEl)
+          detailEl.textContent = `${name} addon found and connected automatically.`;
+
+        if (statusEl) {
+          statusEl.textContent = "Auto-detected";
+          statusEl.className = "badge badge-active";
+        }
+      }
+    } catch {
+      console.warn("[Meitheal] Node-RED/n8n auto-detect failed");
+    }
+  }
+
+  initNodeRedAutoDetect();
+  document.addEventListener("astro:page-load", initNodeRedAutoDetect);
 
   /**
    * Callout Jump Links
