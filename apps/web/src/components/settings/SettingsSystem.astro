@@ -216,13 +216,11 @@ const { locale } = Astro.props;
             style="flex: 1; text-align: center; text-decoration: none;"
             >📊 Download CSV</a
           >
-          <a
-            href="/api/export/database.sqlite"
-            download
+          <button
+            type="button"
             class="btn btn-secondary"
             id="export-db-btn"
-            style="flex: 1; text-align: center; text-decoration: none;"
-            >🗄️ Raw DB</a
+            style="flex: 1; text-align: center;">🗄️ Raw DB</button
           >
         </div>
         <small

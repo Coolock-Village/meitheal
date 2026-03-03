@@ -36,3 +36,28 @@ complete_task:
 sync_todo:
   name: Sync Tasks
   description: Trigger a manual refresh of task data from Meitheal.
+
+search_tasks:
+  name: Search Tasks
+  description: Search tasks by keyword. Returns matching tasks from Meitheal.
+  fields:
+    query:
+      name: Search Query
+      description: Keyword to search in task titles and descriptions
+      required: true
+      selector:
+        text:
+    status:
+      name: Status Filter
+      description: Filter by task status
+      required: false
+      selector:
+        select:
+          options:
+            - todo
+            - in_progress
+            - done
+
+get_overdue_tasks:
+  name: Get Overdue Tasks
+  description: Get a list of all tasks that are past their due date and not yet completed.

@@ -92,11 +92,11 @@ const locale: Locale = cookieLocale === "ga" ? "ga" : "en";
         if (targetId) {
           var targetPane = document.getElementById(targetId);
           if (targetPane) targetPane.style.display = "block";
+          var tabKey = targetId.replace("tab-", "");
           // Persist selected tab in localStorage (no URL pollution)
-          localStorage.setItem(
-            "meitheal-settings-tab",
-            targetId.replace("tab-", ""),
-          );
+          localStorage.setItem("meitheal-settings-tab", tabKey);
+          // Update URL hash for deep-linking
+          history.replaceState(null, "", "#" + tabKey);
         }
       }
 
@@ -106,11 +106,12 @@ const locale: Locale = cookieLocale === "ga" ? "ga" : "en";
         });
       });
 
-      // Restore last-active tab from localStorage
-      var saved = localStorage.getItem("meitheal-settings-tab");
-      if (saved) {
+      // Restore last-active tab from URL hash (priority) or localStorage
+      var hash = window.location.hash.replace("#", "");
+      var initialTab = hash || localStorage.getItem("meitheal-settings-tab");
+      if (initialTab) {
         var match = document.querySelector(
-          '.settings-tab[data-target="tab-' + saved + '"]',
+          '.settings-tab[data-target="tab-' + initialTab + '"]',
         );
         if (match) activateTab(match);
       }
@@ -143,6 +144,26 @@ const locale: Locale = cookieLocale === "ga" ? "ga" : "en";
           console.error("Failed to export JSON:", err);
           showToast("settings.export_failed", "error");
         }
+      });
+
+    // Raw DB download with confirmation dialog
+    document
+      .getElementById("export-db-btn")
+      ?.addEventListener("click", async () => {
+        const confirmed = await confirmDialog({
+          message:
+            "This will download the entire raw SQLite database file. Continue?",
+          title: "Download Database",
+          confirmText: "Download",
+          variant: "warning",
+        });
+        if (!confirmed) return;
+        const a = document.createElement("a");
+        a.href = "/api/export/database.sqlite";
+        a.download = "";
+        document.body.appendChild(a);
+        a.click();
+        a.remove();
       });
 
     // Import Config Binding

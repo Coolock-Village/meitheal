@@ -2,6 +2,15 @@
 import { t } from "../../i18n/translations";
 import type { Locale } from "../../lib/locale";
 
+/**
+ * SettingsAgents — AI provider and agent protocol configuration.
+ *
+ * Phase 58: Added HA Conversation Agent picker at top.
+ *
+ * @domain settings
+ * @bounded-context agents
+ */
+
 interface Props {
   locale: Locale;
 }
@@ -15,22 +24,78 @@ const { locale } = Astro.props;
         <div>
           <div class="card-title">Agents & AI</div>
           <div class="card-subtitle">
-            Configure AI providers and agent-to-agent protocols mapping.
+            Configure Home Assistant conversation agents, external AI providers,
+            and agent-to-agent protocols.
           </div>
         </div>
       </div>
 
-      <!-- AI Provider -->
+      <!-- HA Conversation Agent (PRIMARY — top of page) -->
       <div class="integration-section">
         <div class="integration-header">
           <div>
-            <strong>🤖 AI Provider</strong>
+            <strong>🏠 HA Conversation Agent</strong>
             <div class="integration-desc">
-              Configure which AI service the "Ask AI" button sends tasks to.
-              Generates a pre-filled prompt with task context for analysis.
+              Select which Home Assistant conversation agent powers the "Ask
+              Assistant" chat (✦ button). This connects to HA's built-in Assist
+              pipeline or any configured LLM agent (Google AI, OpenAI, Ollama).
             </div>
           </div>
-          <span class="badge badge-active">ChatGPT</span>
+          <span class="badge badge-active" id="ha-agent-status">Default</span>
+        </div>
+        <div class="integration-config">
+          <div class="form-group">
+            <label class="form-label" for="ha-agent-select-settings"
+              >Conversation Agent</label
+            >
+            <select class="form-select" id="ha-agent-select-settings">
+              <option value="" selected>Default (built-in Assist)</option>
+            </select>
+            <small
+              style="color: var(--text-muted); font-size: 11px; margin-top: 4px; display: block;"
+            >
+              Agents are registered in HA → Settings → Voice Assistants. Add
+              Google Generative AI, OpenAI, or Ollama integrations to see more
+              options here.
+            </small>
+          </div>
+          <div
+            class="form-group"
+            style="display: flex; gap: 8px; align-items: center;"
+          >
+            <button
+              type="button"
+              class="btn btn-primary"
+              id="save-ha-agent"
+              style="font-size: 13px;">Save Agent Setting</button
+            >
+            <button
+              type="button"
+              class="btn btn-ghost"
+              id="test-ha-agent"
+              style="font-size: 13px;">Test</button
+            >
+            <span
+              id="ha-agent-test-result"
+              style="font-size: 12px; color: var(--text-muted);"></span>
+          </div>
+        </div>
+      </div>
+
+      <hr style="border-color: var(--border); margin: 16px 0;" />
+
+      <!-- External AI Provider (secondary) -->
+      <div class="integration-section">
+        <div class="integration-header">
+          <div>
+            <strong>🤖 External AI Provider</strong>
+            <div class="integration-desc">
+              Configure which external AI service the "Ask AI" button sends
+              tasks to (separate from HA Assist). Generates a pre-filled prompt
+              with task context for analysis.
+            </div>
+          </div>
+          <span class="badge badge-active" id="ext-ai-badge">ChatGPT</span>
         </div>
         <div class="integration-config">
           <div class="form-group">
@@ -48,9 +113,7 @@ const { locale } = Astro.props;
             id="ai-custom-url-group"
             style="display: none;"
           >
-            <label class="form-label" for="ai-custom-url"
-              >Custom API URL</label
-            >
+            <label class="form-label" for="ai-custom-url">Custom API URL</label>
             <input
               type="url"
               class="form-input"
@@ -66,6 +129,8 @@ const { locale } = Astro.props;
           >
         </div>
       </div>
+
+      <hr style="border-color: var(--border); margin: 16px 0;" />
 
       <!-- Agent Protocols -->
       <div class="integration-section">
@@ -127,9 +192,7 @@ const { locale } = Astro.props;
                 <span class="toggle-slider"></span>
               </label>
               <div>
-                <strong style="font-size: 14px;"
-                  >WebMCP (Browser Agent)</strong
-                >
+                <strong style="font-size: 14px;">WebMCP (Browser Agent)</strong>
                 <span
                   style="font-size: 10px; padding: 2px 6px; background: var(--accent); color: #fff; border-radius: 4px; margin-left: 6px; vertical-align: middle;"
                   >Experimental</span
@@ -183,3 +246,145 @@ const { locale } = Astro.props;
   </div>
   <!-- /settings-grid (agents) -->
 </div>
+
+<script>
+  import { showToast } from "@lib/toast";
+
+  // ── HA Conversation Agent picker ──
+  const haAgentSelect = document.getElementById(
+    "ha-agent-select-settings",
+  ) as HTMLSelectElement;
+  const haAgentStatus = document.getElementById("ha-agent-status");
+  const saveHaAgentBtn = document.getElementById("save-ha-agent");
+  const testHaAgentBtn = document.getElementById("test-ha-agent");
+  const testResult = document.getElementById("ha-agent-test-result");
+
+  // Load agents on tab show
+  async function loadHAAgents() {
+    try {
+      const res = await fetch("/api/ha/agents");
+      if (res.ok) {
+        const data = await res.json();
+        if (data.agents?.length > 0) {
+          haAgentSelect.innerHTML =
+            '<option value="">Default (built-in Assist)</option>';
+          for (const agent of data.agents) {
+            const opt = document.createElement("option");
+            opt.value = agent.id;
+            opt.textContent = agent.name;
+            haAgentSelect.appendChild(opt);
+          }
+        }
+      }
+    } catch {
+      // HA not connected — keep default
+    }
+
+    // Restore saved preference
+    try {
+      const res = await fetch("/api/settings?key=ha-assist-agent");
+      if (res.ok) {
+        const data = await res.json();
+        if (data?.value) {
+          haAgentSelect.value = data.value;
+          updateAgentBadge();
+        }
+      }
+    } catch {
+      /* ignore */
+    }
+  }
+
+  function updateAgentBadge() {
+    if (haAgentStatus) {
+      const selected = haAgentSelect.options[haAgentSelect.selectedIndex];
+      haAgentStatus.textContent = selected?.text || "Default";
+    }
+  }
+
+  haAgentSelect?.addEventListener("change", updateAgentBadge);
+
+  saveHaAgentBtn?.addEventListener("click", async () => {
+    try {
+      await fetch("/api/settings", {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          key: "ha-assist-agent",
+          value: haAgentSelect.value,
+        }),
+      });
+      showToast("Agent setting saved.", "success");
+      updateAgentBadge();
+    } catch {
+      showToast("Failed to save agent setting.", "error");
+    }
+  });
+
+  testHaAgentBtn?.addEventListener("click", async () => {
+    if (testResult) testResult.textContent = "Testing…";
+    try {
+      const body: Record<string, string> = { text: "Hello" };
+      if (haAgentSelect.value) body.agent_id = haAgentSelect.value;
+
+      const res = await fetch("/api/ha/assist", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(body),
+      });
+
+      if (res.ok) {
+        const data = await res.json();
+        if (testResult) testResult.textContent = `✅ "${data.speech}"`;
+        setTimeout(() => {
+          if (testResult) testResult.textContent = "";
+        }, 5000);
+      } else {
+        if (testResult) testResult.textContent = "❌ Agent unavailable";
+      }
+    } catch {
+      if (testResult) testResult.textContent = "❌ Connection failed";
+    }
+  });
+
+  // ── External AI Provider ──
+  const extBadge = document.getElementById("ext-ai-badge");
+  const aiProvider = document.getElementById(
+    "ai-provider",
+  ) as HTMLSelectElement;
+  const customUrlGroup = document.getElementById("ai-custom-url-group");
+
+  aiProvider?.addEventListener("change", () => {
+    if (customUrlGroup) {
+      customUrlGroup.style.display =
+        aiProvider.value === "custom" || aiProvider.value === "ollama"
+          ? ""
+          : "none";
+    }
+    if (extBadge) {
+      const names: Record<string, string> = {
+        chatgpt: "ChatGPT",
+        claude: "Claude",
+        gemini: "Gemini",
+        ollama: "Ollama",
+        custom: "Custom",
+      };
+      extBadge.textContent = names[aiProvider.value] || aiProvider.value;
+    }
+  });
+
+  // Init: Load agents when the tab is shown
+  const tabAgents = document.getElementById("tab-agents");
+  if (tabAgents) {
+    const observer = new MutationObserver(() => {
+      if (tabAgents.style.display !== "none") {
+        loadHAAgents();
+        observer.disconnect();
+      }
+    });
+    observer.observe(tabAgents, {
+      attributes: true,
+      attributeFilter: ["style"],
+    });
+  }
+</script>

@@ -32,6 +32,7 @@ from .const import (
     SERVICE_SYNC_TODO,
 )
 from .coordinator import MeithealCoordinator
+from .llm_api import async_register_llm_api
 
 _LOGGER = logging.getLogger(__name__)
 
@@ -99,6 +100,13 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
         DOMAIN, SERVICE_COMPLETE_TASK, handle_complete_task, schema=COMPLETE_TASK_SCHEMA
     )
     hass.services.async_register(DOMAIN, SERVICE_SYNC_TODO, handle_sync_todo)
+
+    # Register LLM API — makes Meitheal tasks available to all HA conversation agents
+    try:
+        unreg_llm = async_register_llm_api(hass, entry.entry_id)
+        entry.async_on_unload(unreg_llm)
+    except Exception:
+        _LOGGER.warning("Could not register Meitheal LLM API (HA version may not support llm module)")
 
     return True
 

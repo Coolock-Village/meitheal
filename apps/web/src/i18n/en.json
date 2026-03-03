@@ -53,7 +53,7 @@
         "pinned_tasks_plural": "{count} pinned tasks",
         "quick_add": "Quick Add",
         "quick_add_subtitle": "Press Enter to create a task instantly",
-        "quick_add_placeholder": "What needs to be done?",
+        "quick_add_placeholder": "What needs to be done? (try 'Buy groceries' or 'Review docs weekly')",
         "add": "Add",
         "recent_tasks": "Recent Tasks",
         "tasks_of_total": "{count} of {total} tasks",

@@ -21,7 +21,7 @@
  *
  * @kcs Keep in sync with meitheal-hub/config.yaml version.
  */
-const CACHE_VERSION = "0.1.24";
+const CACHE_VERSION = "0.1.25";
 const CACHE_NAME = `meitheal-v${CACHE_VERSION}`;
 const SYNC_TAG = "meitheal-background-sync";
 
@@ -37,6 +37,7 @@ const PRECACHE_PATHS = [
   "/",
   "/offline",
   "/today",
+  "/upcoming",
   "/tasks",
   "/kanban",
   "/table",

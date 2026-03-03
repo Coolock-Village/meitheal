@@ -363,14 +363,14 @@ export async function askAssist(
   const conn = await getHAConnection();
   if (!conn) return { speech: null, conversationId: null, responseType: null };
   try {
-    const msgData: Record<string, unknown> = {
+    const msgData: { type: "conversation/process"; text: string; agent_id?: string; conversation_id?: string } = {
       type: "conversation/process",
       text,
     };
     if (options?.agentId) msgData.agent_id = options.agentId;
     if (options?.conversationId) msgData.conversation_id = options.conversationId;
 
-    const result = await conn.sendMessagePromise<Record<string, unknown>>(msgData);
+    const result = await conn.sendMessagePromise<Record<string, unknown>>(msgData as any);
 
     // Parse full conversation response shape
     const payload = result as {
