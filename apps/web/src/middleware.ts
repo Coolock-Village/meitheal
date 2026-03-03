@@ -100,7 +100,7 @@ export const onRequest: MiddlewareHandler = async ({ request, locals }, next) =>
   const startTime = Date.now();
   const requestId = request.headers.get("x-request-id") ?? crypto.randomUUID();
   const supervisorTokenPresent = Boolean(process.env.SUPERVISOR_TOKEN);
-  const ingressContext = resolveIngressContext(request.headers, supervisorTokenPresent);
+  const ingressContext = resolveIngressContext(request.headers, supervisorTokenPresent, request.url);
   const { ingressPath, behindIngress } = ingressContext;
 
   locals.ingressPath = ingressPath;

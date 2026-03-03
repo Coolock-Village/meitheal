@@ -5,20 +5,58 @@ export interface IngressContext {
   behindIngress: boolean;
 }
 
+const INGRESS_PREFIX_RE = /^\/api\/hassio_ingress\/[^/]+/i;
+
 export function normalizeIngressHeaders(headers: string[]): string[] {
   return [...new Set(headers.map((header) => header.trim().toLowerCase()).filter((header) => header.length > 0))];
 }
 
-export function resolveIngressContext(headers: Headers, supervisorTokenPresent: boolean): IngressContext {
-  const ingressPath = headers.get("x-ingress-path") ?? undefined;
+function normalizePathLikeValue(value: string | undefined | null): string | undefined {
+  if (!value) return undefined;
+  const trimmed = value.trim();
+  if (!trimmed) return undefined;
+
+  try {
+    const parsed = new URL(trimmed);
+    const pathname = parsed.pathname.replace(/\/+$/, "");
+    return pathname || undefined;
+  } catch {
+    const pathname = trimmed.split("?")[0]?.split("#")[0]?.replace(/\/+$/, "");
+    return pathname || undefined;
+  }
+}
+
+function extractIngressPrefix(pathLikeValue: string | undefined | null): string | undefined {
+  const normalized = normalizePathLikeValue(pathLikeValue);
+  if (!normalized) return undefined;
+
+  const match = normalized.match(INGRESS_PREFIX_RE);
+  if (match) return match[0];
+  return undefined;
+}
+
+export function resolveIngressContext(
+  headers: Headers,
+  supervisorTokenPresent: boolean,
+  requestUrl?: string
+): IngressContext {
+  const explicitIngressPath = normalizePathLikeValue(
+    headers.get("x-ingress-path") ?? headers.get("x-forwarded-prefix")
+  );
+  const inferredIngressPath = extractIngressPrefix(headers.get("x-forwarded-uri"))
+    ?? extractIngressPrefix(headers.get("x-original-uri"))
+    ?? extractIngressPrefix(requestUrl)
+    ?? extractIngressPrefix(headers.get("referer"));
+  const ingressPath = explicitIngressPath ?? inferredIngressPath;
+
   return {
     ingressPath,
     behindIngress: Boolean(ingressPath) || supervisorTokenPresent,
   };
 }
 
-export function getIngressPath(headers: Headers): string | undefined {
-  return resolveIngressContext(headers, false).ingressPath;
+export function getIngressPath(headers: Headers, requestUrl?: string): string | undefined {
+  return resolveIngressContext(headers, false, requestUrl).ingressPath;
 }
 
 export function hasHassioToken(headers: Headers): boolean {

@@ -85,3 +85,40 @@ test("resolveIngressContext reports standalone when no ingress signals exist", (
   expect(ctx.ingressPath).toBeUndefined();
   expect(ctx.behindIngress).toBeFalsy();
 });
+
+test("resolveIngressContext normalizes trailing slash in ingress path header", () => {
+  const ctx = resolveIngressContext(
+    new Headers({ "x-ingress-path": "/api/hassio_ingress/abc123/" }),
+    false
+  );
+  expect(ctx.ingressPath).toBe("/api/hassio_ingress/abc123");
+  expect(ctx.behindIngress).toBeTruthy();
+});
+
+test("resolveIngressContext falls back to x-forwarded-prefix", () => {
+  const ctx = resolveIngressContext(
+    new Headers({ "x-forwarded-prefix": "/api/hassio_ingress/abc123/" }),
+    false
+  );
+  expect(ctx.ingressPath).toBe("/api/hassio_ingress/abc123");
+  expect(ctx.behindIngress).toBeTruthy();
+});
+
+test("resolveIngressContext infers ingress path from forwarded URI", () => {
+  const ctx = resolveIngressContext(
+    new Headers({ "x-forwarded-uri": "/api/hassio_ingress/abc123/tasks?view=table" }),
+    false
+  );
+  expect(ctx.ingressPath).toBe("/api/hassio_ingress/abc123");
+  expect(ctx.behindIngress).toBeTruthy();
+});
+
+test("resolveIngressContext infers ingress path from request URL when header missing", () => {
+  const ctx = resolveIngressContext(
+    new Headers(),
+    false,
+    "http://ha.home.arpa:8123/api/hassio_ingress/abc123/table"
+  );
+  expect(ctx.ingressPath).toBe("/api/hassio_ingress/abc123");
+  expect(ctx.behindIngress).toBeTruthy();
+});

@@ -57,7 +57,7 @@ const SHORTCUTS = [
 ];
 
 export const GET: APIRoute = ({ request }) => {
-  const ingressPath = getIngressPath(request.headers) ?? "";
+  const ingressPath = getIngressPath(request.headers, request.url) ?? "";
 
   // Prefix helper: prepend ingress path to absolute URLs
   const prefix = (path: string): string => `${ingressPath}${path}`;
