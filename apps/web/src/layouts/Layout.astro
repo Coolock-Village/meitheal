@@ -2937,7 +2937,18 @@ Astro.response.headers.set("X-Content-Type-Options", "nosniff");
           });
 
         // ───── Service Worker Registration ─────
-        if ("serviceWorker" in navigator) {
+        // PWA features (SW, install prompt, push) require a secure context
+        // (HTTPS or localhost). Most HA users have HTTPS via Nabu Casa or
+        // DuckDNS+LetsEncrypt. For HTTP users, degrade gracefully.
+        const isSecure = window.isSecureContext;
+        (window as any).__pwa_supported =
+          isSecure && "serviceWorker" in navigator;
+
+        if (!isSecure) {
+          console.info(
+            "[pwa] Insecure context (HTTP) — PWA features disabled. Enable HTTPS for offline support.",
+          );
+        } else if ("serviceWorker" in navigator) {
           const ip = window.__ingress_path || "";
           const swUrl = ip + "/sw.js";
           const swScope = ip + "/";
@@ -2974,7 +2985,7 @@ Astro.response.headers.set("X-Content-Type-Options", "nosniff");
                 }
               });
             })
-            .catch((err) => console.warn("SW registration failed:", err));
+            .catch((err) => console.warn("[pwa] SW registration failed:", err));
         }
 
         // ───── Sidebar Badge Hydration ─────

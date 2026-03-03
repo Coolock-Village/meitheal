@@ -110,10 +110,24 @@ When Meitheal runs as an HA add-on, all URLs are proxied through `/api/hassio_in
 | SW URL | `/sw.js` | `/api/hassio_ingress/{token}/sw.js` |
 | SW Scope | `/` | `/api/hassio_ingress/{token}/` |
 | Manifest scope | `/` | `/api/hassio_ingress/{token}/` |
-| Install prompt | ✅ | ✅ |
-| Offline caching | ✅ | ✅ |
+| Install prompt | ✅ | ✅ (HTTPS required) |
+| Offline caching | ✅ | ✅ (HTTPS required) |
+
+## HTTPS Requirement
+
+PWA features (service worker, install prompt, push notifications) require a **secure context** — HTTPS or localhost.
+
+| Access Method | HTTPS | PWA Available |
+|---------------|-------|---------------|
+| Nabu Casa | ✅ auto | ✅ |
+| DuckDNS + Let's Encrypt | ✅ addon | ✅ |
+| Reverse proxy (Caddy, NPM) | ✅ | ✅ |
+| Direct LAN HTTP | ❌ | ❌ |
+| localhost | ✅ implicit | ✅ |
+
+**Graceful degradation**: on insecure origins, Meitheal skips SW registration silently. The app works fully — you just won't get offline caching or the install prompt. Settings > General shows a PWA status card with actionable HTTPS guidance.
 
 ---
 
-*Last updated: 2026-03-02 — PWA Ingress-Aware Implementation*
+*Last updated: 2026-03-03 — PWA HTTPS graceful degradation*
 
