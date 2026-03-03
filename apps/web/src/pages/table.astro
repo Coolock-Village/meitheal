@@ -52,7 +52,12 @@ const priorityClasses: Record<number, string> = {
           <span class="summary-count">{counts.total}</span> tasks ·
           <span class="summary-count">{counts.active}</span> active
           {counts.overdue > 0 && (
-            <Fragment>· <span class="summary-overdue">{counts.overdue} {t("tasks.overdue", locale)}</span></Fragment>
+            <Fragment>
+              ·{" "}
+              <span class="summary-overdue">
+                {counts.overdue} {t("tasks.overdue", locale)}
+              </span>
+            </Fragment>
           )}
         </div>
 
@@ -73,7 +78,9 @@ const priorityClasses: Record<number, string> = {
             <option value="">{t("tasks.all_statuses", locale)}</option>
             <option value="pending">{t("task_status.pending", locale)}</option>
             <option value="active">{t("task_status.active", locale)}</option>
-            <option value="complete">{t("task_status.complete", locale)}</option>
+            <option value="complete">
+              {t("task_status.complete", locale)}
+            </option>
           </select>
           <select
             class="form-select filter-select"
@@ -97,7 +104,9 @@ const priorityClasses: Record<number, string> = {
             <option value="medium">{t("tasks.rice_medium", locale)}</option>
             <option value="low">{t("tasks.rice_low", locale)}</option>
           </select>
-          <button type="button" class="filter-clear-btn" id="clear-filters">{t("tasks.clear_filters", locale)}</button>
+          <button type="button" class="filter-clear-btn" id="clear-filters">
+            {t("tasks.clear_filters", locale)}
+          </button>
         </div>
 
         <div class="table-container">
@@ -123,16 +132,34 @@ const priorityClasses: Record<number, string> = {
                 <th scope="col" class="sortable col-status" data-col="status">
                   {t("table.col_status", locale)}
                 </th>
-                <th scope="col" class="sortable col-priority" data-col="priority" data-numeric="true">
+                <th
+                  scope="col"
+                  class="sortable col-priority"
+                  data-col="priority"
+                  data-numeric="true"
+                >
                   {t("table.col_priority", locale)}
                 </th>
-                <th scope="col" class="sortable col-due-date" data-col="due_date">
+                <th
+                  scope="col"
+                  class="sortable col-due-date"
+                  data-col="due_date"
+                >
                   {t("table.col_due_date", locale)}
                 </th>
-                <th scope="col" class="sortable col-rice" data-col="rice" data-numeric="true">
+                <th
+                  scope="col"
+                  class="sortable col-rice"
+                  data-col="rice"
+                  data-numeric="true"
+                >
                   {t("table.col_rice", locale)}
                 </th>
-                <th scope="col" class="col-calendar" title={t("table.col_calendar", locale)}>
+                <th
+                  scope="col"
+                  class="col-calendar"
+                  title={t("table.col_calendar", locale)}
+                >
                   📅
                 </th>
                 <th scope="col" class="col-custom-fields">
@@ -204,13 +231,18 @@ const priorityClasses: Record<number, string> = {
                       >
                         <option
                           value="pending"
-                          selected={task.status === "pending" || task.status === "todo"}
+                          selected={
+                            task.status === "pending" || task.status === "todo"
+                          }
                         >
                           {t("task_status.pending", locale)}
                         </option>
                         <option
                           value="active"
-                          selected={task.status === "active" || task.status === "in_progress"}
+                          selected={
+                            task.status === "active" ||
+                            task.status === "in_progress"
+                          }
                         >
                           {t("task_status.active", locale)}
                         </option>
@@ -226,31 +258,57 @@ const priorityClasses: Record<number, string> = {
                         data-id={task.id}
                         aria-label={`Priority for ${task.title}`}
                       >
-                        <option value="1" selected={task.priority === 1} class="priority-critical">
+                        <option
+                          value="1"
+                          selected={task.priority === 1}
+                          class="priority-critical"
+                        >
                           {t("priority.critical", locale)}
                         </option>
-                        <option value="2" selected={task.priority === 2} class="priority-high">
+                        <option
+                          value="2"
+                          selected={task.priority === 2}
+                          class="priority-high"
+                        >
                           {t("priority.high", locale)}
                         </option>
-                        <option value="3" selected={task.priority === 3} class="priority-medium">
+                        <option
+                          value="3"
+                          selected={task.priority === 3}
+                          class="priority-medium"
+                        >
                           {t("priority.medium", locale)}
                         </option>
-                        <option value="4" selected={task.priority === 4} class="priority-low">
+                        <option
+                          value="4"
+                          selected={task.priority === 4}
+                          class="priority-low"
+                        >
                           {t("priority.low", locale)}
                         </option>
-                        <option value="5" selected={task.priority === 5} class="priority-minimal">
+                        <option
+                          value="5"
+                          selected={task.priority === 5}
+                          class="priority-minimal"
+                        >
                           {t("priority.minimal", locale)}
                         </option>
                       </select>
                     </td>
-                    <td class={`text-sm td-due ${task.is_overdue ? "overdue-date" : ""}`}>
+                    <td
+                      class={`text-sm td-due ${task.is_overdue ? "overdue-date" : ""}`}
+                    >
                       {task.due_date
                         ? formatRegionalDate(task.due_date, {
                             format: dateFormat as any,
                             timezone,
                           })
                         : "—"}
-                      {task.is_overdue && <span class="overdue-tag">{t("tasks.overdue", locale)}</span>}
+                      {task.is_overdue && (
+                        <span class="overdue-tag">
+                          {t("tasks.overdue", locale)}
+                        </span>
+                      )}
                     </td>
                     <td class="cell-center">
                       {task.rice !== null ? (
@@ -261,11 +319,17 @@ const priorityClasses: Record<number, string> = {
                     </td>
                     <td class="cell-center col-calendar">
                       {task.calendar_sync_state === "confirmed" ? (
-                        <span title="Calendar synced" class="text-accent">✅</span>
+                        <span title="Calendar synced" class="text-accent">
+                          ✅
+                        </span>
                       ) : task.calendar_sync_state === "pending" ? (
-                        <span title="Sync pending" class="text-warning">⏳</span>
+                        <span title="Sync pending" class="text-warning">
+                          ⏳
+                        </span>
                       ) : (
-                        <span title="Not synced" class="text-muted">—</span>
+                        <span title="Not synced" class="text-muted">
+                          —
+                        </span>
                       )}
                     </td>
                     <td class="col-custom-fields cell-cf">
@@ -305,8 +369,7 @@ const priorityClasses: Record<number, string> = {
     <button
       type="button"
       class="btn btn-danger bulk-delete-btn"
-      id="bulk-delete"
-      >{t("table.delete_selected", locale)}</button
+      id="bulk-delete">{t("table.delete_selected", locale)}</button
     >
   </div>
 
@@ -333,17 +396,22 @@ const priorityClasses: Record<number, string> = {
 
     function applyTableFilters() {
       const searchVal =
-        (document.getElementById("table-search") as HTMLInputElement)?.value.toLowerCase() ?? "";
+        (
+          document.getElementById("table-search") as HTMLInputElement
+        )?.value.toLowerCase() ?? "";
       const statusFilter =
-        (document.getElementById("table-filter-status") as HTMLSelectElement)?.value ?? "";
+        (document.getElementById("table-filter-status") as HTMLSelectElement)
+          ?.value ?? "";
       const priorityFilter =
-        (document.getElementById("table-filter-priority") as HTMLSelectElement)?.value ?? "";
+        (document.getElementById("table-filter-priority") as HTMLSelectElement)
+          ?.value ?? "";
       const riceFilter =
-        (document.getElementById("table-filter-rice") as HTMLSelectElement)?.value ?? "";
+        (document.getElementById("table-filter-rice") as HTMLSelectElement)
+          ?.value ?? "";
 
       document.querySelectorAll("#task-table tbody tr").forEach((row) => {
         const el = row as HTMLElement;
-        const title = (el.dataset.title ?? "");
+        const title = el.dataset.title ?? "";
         const matchSearch = !searchVal || title.includes(searchVal);
         const matchStatus =
           !statusFilter ||
@@ -366,7 +434,8 @@ const priorityClasses: Record<number, string> = {
           }
         }
 
-        const visible = matchSearch && matchStatus && matchPriority && matchRice;
+        const visible =
+          matchSearch && matchStatus && matchPriority && matchRice;
         el.style.display = visible ? "" : "none";
       });
 
@@ -375,27 +444,52 @@ const priorityClasses: Record<number, string> = {
 
     function saveFilterState() {
       const state = {
-        search: (document.getElementById("table-search") as HTMLInputElement)?.value ?? "",
-        status: (document.getElementById("table-filter-status") as HTMLSelectElement)?.value ?? "",
-        priority: (document.getElementById("table-filter-priority") as HTMLSelectElement)?.value ?? "",
-        rice: (document.getElementById("table-filter-rice") as HTMLSelectElement)?.value ?? "",
+        search:
+          (document.getElementById("table-search") as HTMLInputElement)
+            ?.value ?? "",
+        status:
+          (document.getElementById("table-filter-status") as HTMLSelectElement)
+            ?.value ?? "",
+        priority:
+          (
+            document.getElementById(
+              "table-filter-priority",
+            ) as HTMLSelectElement
+          )?.value ?? "",
+        rice:
+          (document.getElementById("table-filter-rice") as HTMLSelectElement)
+            ?.value ?? "",
       };
       localStorage.setItem(FILTER_KEY, JSON.stringify(state));
     }
 
     // Attach filter listeners
-    ["table-search", "table-filter-status", "table-filter-priority", "table-filter-rice"].forEach((id) => {
+    [
+      "table-search",
+      "table-filter-status",
+      "table-filter-priority",
+      "table-filter-rice",
+    ].forEach((id) => {
       const el = document.getElementById(id);
       if (!el) return;
-      el.addEventListener(id === "table-search" ? "input" : "change", applyTableFilters);
+      el.addEventListener(
+        id === "table-search" ? "input" : "change",
+        applyTableFilters,
+      );
     });
 
     // Clear all filters
     document.getElementById("clear-filters")?.addEventListener("click", () => {
       (document.getElementById("table-search") as HTMLInputElement).value = "";
-      (document.getElementById("table-filter-status") as HTMLSelectElement).value = "";
-      (document.getElementById("table-filter-priority") as HTMLSelectElement).value = "";
-      (document.getElementById("table-filter-rice") as HTMLSelectElement).value = "";
+      (
+        document.getElementById("table-filter-status") as HTMLSelectElement
+      ).value = "";
+      (
+        document.getElementById("table-filter-priority") as HTMLSelectElement
+      ).value = "";
+      (
+        document.getElementById("table-filter-rice") as HTMLSelectElement
+      ).value = "";
       applyTableFilters();
     });
 
@@ -405,13 +499,22 @@ const priorityClasses: Record<number, string> = {
       if (saved) {
         const state = JSON.parse(saved);
         if (state.search)
-          (document.getElementById("table-search") as HTMLInputElement).value = state.search;
+          (document.getElementById("table-search") as HTMLInputElement).value =
+            state.search;
         if (state.status)
-          (document.getElementById("table-filter-status") as HTMLSelectElement).value = state.status;
+          (
+            document.getElementById("table-filter-status") as HTMLSelectElement
+          ).value = state.status;
         if (state.priority)
-          (document.getElementById("table-filter-priority") as HTMLSelectElement).value = state.priority;
+          (
+            document.getElementById(
+              "table-filter-priority",
+            ) as HTMLSelectElement
+          ).value = state.priority;
         if (state.rice)
-          (document.getElementById("table-filter-rice") as HTMLSelectElement).value = state.rice;
+          (
+            document.getElementById("table-filter-rice") as HTMLSelectElement
+          ).value = state.rice;
         applyTableFilters();
       }
     } catch {
@@ -491,7 +594,13 @@ const priorityClasses: Record<number, string> = {
           }
           // Update priority class color
           if (field === "priority") {
-            const classes = ["priority-critical", "priority-high", "priority-medium", "priority-low", "priority-minimal"];
+            const classes = [
+              "priority-critical",
+              "priority-high",
+              "priority-medium",
+              "priority-low",
+              "priority-minimal",
+            ];
             el.classList.remove(...classes);
             const idx = Number(el.value) - 1;
             if (classes[idx]) el.classList.add(classes[idx]);
@@ -509,13 +618,14 @@ const priorityClasses: Record<number, string> = {
     document.querySelectorAll("#task-table tbody tr").forEach((row) => {
       row.addEventListener("click", (e) => {
         const target = e.target as HTMLElement;
-        // Don't trigger on interactive elements
+        // Don't trigger on interactive elements or their containers
         if (
           target.tagName === "INPUT" ||
           target.tagName === "SELECT" ||
           target.tagName === "BUTTON" ||
           target.closest("button") ||
           target.closest("select") ||
+          target.closest("input") ||
           target.contentEditable === "true" ||
           target.closest("[contenteditable]")
         ) {
@@ -581,6 +691,8 @@ const priorityClasses: Record<number, string> = {
     });
 
     document.querySelectorAll(".row-check").forEach((cb) => {
+      // Prevent row click from intercepting checkbox interactions
+      cb.addEventListener("click", (e) => e.stopPropagation());
       cb.addEventListener("change", updateBulkBar);
     });
 

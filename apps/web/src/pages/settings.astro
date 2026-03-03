@@ -1062,6 +1062,28 @@ const locale: Locale = cookieLocale === "ga" ? "ga" : "en";
 
         if (!url) {
           showToast("settings.grocy_required", "error");
+          const urlInput = document.getElementById("grocy-url");
+          urlInput?.classList.add("form-input--error");
+          urlInput?.addEventListener(
+            "input",
+            () => urlInput.classList.remove("form-input--error"),
+            { once: true },
+          );
+          return;
+        }
+
+        // Basic URL validation
+        try {
+          new URL(url);
+        } catch {
+          showToast("Please enter a valid URL", "error");
+          const urlInput = document.getElementById("grocy-url");
+          urlInput?.classList.add("form-input--error");
+          urlInput?.addEventListener(
+            "input",
+            () => urlInput.classList.remove("form-input--error"),
+            { once: true },
+          );
           return;
         }
 

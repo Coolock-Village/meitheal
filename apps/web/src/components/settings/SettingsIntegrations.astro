@@ -748,6 +748,110 @@ const { locale } = Astro.props;
     .integration-card__desc {
       display: none;
     }
+    .integration-card__icon {
+      width: 28px;
+      height: 28px;
+      font-size: 16px;
+    }
+    .badge {
+      max-width: 100px;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+    .integration-card__actions {
+      flex-direction: column;
+      align-items: stretch;
+    }
+    .integration-card__actions .btn {
+      width: 100%;
+    }
+  }
+
+  /* ═══════ Form Validation States ═══════ */
+  .form-input--error {
+    border-color: var(--danger) !important;
+    box-shadow: 0 0 0 2px rgba(239, 68, 68, 0.15);
+  }
+
+  .form-error-text {
+    color: var(--danger);
+    font-size: 11px;
+    margin-top: 4px;
+    display: none;
+  }
+
+  .form-error-text--visible {
+    display: block;
+    animation: error-slide-in 200ms ease;
+  }
+
+  @keyframes error-slide-in {
+    from {
+      opacity: 0;
+      transform: translateY(-4px);
+    }
+    to {
+      opacity: 1;
+      transform: translateY(0);
+    }
+  }
+
+  /* ═══════ Micro-Animations ═══════ */
+  .integration-card__icon {
+    transition:
+      transform 200ms ease,
+      box-shadow 200ms ease;
+  }
+
+  .integration-card__header:hover .integration-card__icon {
+    transform: translateY(-1px);
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+  }
+
+  .integration-card__header:active {
+    transform: scale(0.995);
+    transition: transform 100ms ease;
+  }
+
+  .btn {
+    transition: all 150ms ease;
+  }
+
+  .btn:hover:not(:disabled) {
+    transform: translateY(-1px);
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
+  }
+
+  .btn:active:not(:disabled) {
+    transform: translateY(0);
+    box-shadow: none;
+  }
+
+  .btn--saving {
+    opacity: 0.7;
+    pointer-events: none;
+    animation: saving-pulse 1s ease-in-out infinite;
+  }
+
+  @keyframes saving-pulse {
+    0%,
+    100% {
+      opacity: 0.7;
+    }
+    50% {
+      opacity: 1;
+    }
+  }
+
+  /* ═══════ Focus Ring Animation ═══════ */
+  .form-input:focus-visible,
+  .form-select:focus-visible {
+    outline: none;
+    border-color: var(--accent);
+    box-shadow: 0 0 0 3px rgba(16, 185, 129, 0.15);
+    transition:
+      border-color 200ms ease,
+      box-shadow 200ms ease;
   }
 </style>
 
