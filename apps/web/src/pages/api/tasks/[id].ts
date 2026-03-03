@@ -23,7 +23,7 @@ export const GET: APIRoute = async ({ params }) => {
     sql: `SELECT t.id, t.title, t.description, t.status, t.priority, t.due_date, t.labels,
                  t.framework_payload, t.calendar_sync_state, t.board_id, t.custom_fields,
                  t.parent_id, t.time_tracked, t.start_date, t.end_date, t.progress, t.color,
-                 t.is_favorite, t.task_type, t.ticket_number, t.created_at, t.updated_at,
+                 t.is_favorite, t.task_type, t.ticket_number, t.checklists, t.created_at, t.updated_at,
                  p.title as parent_title, p.task_type as parent_task_type, p.ticket_number as parent_ticket_number
           FROM tasks t
           LEFT JOIN tasks p ON t.parent_id = p.id
@@ -197,6 +197,25 @@ export const PUT: APIRoute = async ({ params, request }) => {
       sanitized.task_type = tt;
     }
   }
+  // Phase 31: Checklists — JSON array of {text: string, done: boolean}
+  if (body.checklists !== undefined) {
+    if (typeof body.checklists !== "string") {
+      return new Response(JSON.stringify({ error: "checklists must be a JSON string array" }), { status: 400, headers: { "content-type": "application/json" } });
+    }
+    try {
+      const parsed = JSON.parse(body.checklists);
+      if (!Array.isArray(parsed)) throw new Error();
+      // Validate each item has text (string) and done (boolean)
+      for (const item of parsed) {
+        if (typeof item !== "object" || item === null) throw new Error();
+        if (typeof item.text !== "string") throw new Error();
+        if (typeof item.done !== "boolean") throw new Error();
+      }
+      sanitized.checklists = body.checklists;
+    } catch {
+      return new Response(JSON.stringify({ error: "checklists must be a valid JSON array of {text, done} objects" }), { status: 400, headers: { "content-type": "application/json" } });
+    }
+  }
 
   const updates: string[] = [];
   const args: InValue[] = [];
@@ -258,7 +277,7 @@ export const PUT: APIRoute = async ({ params, request }) => {
     sql: `SELECT id, title, description, status, priority, due_date, labels,
                  framework_payload, calendar_sync_state, board_id, custom_fields,
                  parent_id, time_tracked, start_date, end_date, progress, color,
-                 is_favorite, task_type, ticket_number, created_at, updated_at
+                 is_favorite, task_type, ticket_number, checklists, created_at, updated_at
           FROM tasks WHERE id = ? LIMIT 1`,
     args: [resolvedId],
   });
