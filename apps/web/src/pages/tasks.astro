@@ -454,7 +454,7 @@ const { tasks, counts, customFieldDefs } = await getTasksForView();
     saveFilterState();
   }
 
-  // Persist shared filter state
+  // Persist shared filter state — sync to localStorage + URL params (#39)
   function saveFilterState() {
     const state = {
       search:
@@ -474,6 +474,17 @@ const { tasks, counts, customFieldDefs } = await getTasksForView();
         "created_at-desc",
     };
     localStorage.setItem(FILTER_KEY, JSON.stringify(state));
+
+    // Sync to URL for deep-linking (#39)
+    const url = new URL(window.location.href);
+    Object.entries(state).forEach(([key, val]) => {
+      if (val && val !== "created_at-desc") {
+        url.searchParams.set(key, val);
+      } else {
+        url.searchParams.delete(key);
+      }
+    });
+    window.history.replaceState(null, "", url.toString());
   }
 
   // Attach filter listeners
@@ -504,29 +515,43 @@ const { tasks, counts, customFieldDefs } = await getTasksForView();
     applyFilters();
   });
 
-  // Restore filter state on load (shared key with table page)
+  // Restore filter state — URL params take priority (#39), then localStorage
   try {
-    const saved = localStorage.getItem(FILTER_KEY);
-    if (saved) {
-      const state = JSON.parse(saved);
-      if (state.search)
-        (document.getElementById("search-input") as HTMLInputElement).value =
-          state.search;
-      if (state.status)
-        (document.getElementById("filter-status") as HTMLSelectElement).value =
-          state.status;
-      if (state.priority)
-        (
-          document.getElementById("filter-priority") as HTMLSelectElement
-        ).value = state.priority;
-      if (state.rice)
-        (document.getElementById("filter-rice") as HTMLSelectElement).value =
-          state.rice;
-      if (state.sort)
-        (document.getElementById("sort-select") as HTMLSelectElement).value =
-          state.sort;
+    const urlParams = new URLSearchParams(window.location.search);
+    const hasUrlFilters =
+      urlParams.has("search") ||
+      urlParams.has("status") ||
+      urlParams.has("priority") ||
+      urlParams.has("rice") ||
+      urlParams.has("sort");
+
+    const source = hasUrlFilters
+      ? {
+          search: urlParams.get("search") ?? "",
+          status: urlParams.get("status") ?? "",
+          priority: urlParams.get("priority") ?? "",
+          rice: urlParams.get("rice") ?? "",
+          sort: urlParams.get("sort") ?? "created_at-desc",
+        }
+      : JSON.parse(localStorage.getItem(FILTER_KEY) ?? "{}");
+
+    if (source.search)
+      (document.getElementById("search-input") as HTMLInputElement).value =
+        source.search;
+    if (source.status)
+      (document.getElementById("filter-status") as HTMLSelectElement).value =
+        source.status;
+    if (source.priority)
+      (document.getElementById("filter-priority") as HTMLSelectElement).value =
+        source.priority;
+    if (source.rice)
+      (document.getElementById("filter-rice") as HTMLSelectElement).value =
+        source.rice;
+    if (source.sort)
+      (document.getElementById("sort-select") as HTMLSelectElement).value =
+        source.sort;
+    if (source.search || source.status || source.priority || source.rice)
       applyFilters();
-    }
   } catch {
     /* ignore */
   }
