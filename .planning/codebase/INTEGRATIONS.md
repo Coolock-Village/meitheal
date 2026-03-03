@@ -122,4 +122,28 @@ All secrets are **environment-only** — never stored in YAML/config files.
 
 ---
 
-*Integration audit: 2026-03-03 — v0.2.6*
+## Settings UI Patterns (Phase 57)
+
+### Explainer Dialog
+
+Native `<dialog>` element (`#integration-explainer-dialog`). Content is defined in the inline `EXPLAINER_CONTENT` map (keyed by integration name). Opened by `.info-btn[data-explainer]` buttons on card headers. Init guard via `dialog.dataset.explainerInit`. Backdrop click + × button close.
+
+### Mode Tabs
+
+`.mode-tabs` container with `.mode-tab` buttons. Active state: `.mode-tab--active`. Used by n8n/Node-RED for "HA Addon (auto)" vs "Standalone" mode. Mode persists to `localStorage` key `meitheal:n8n-mode`.
+
+### Auto-Detection
+
+Pattern: fetch `/api/ha/addons` → search by addon slug → show callout, hide manual fields, auto-fill URL. Used by Grocy (`a0d7b954_grocy` slug). Node-RED uses `a0d7b954_nodered`. Both callout containers use `aria-live="polite"` for screen reader updates.
+
+### Calendar Entity Dropdown
+
+`<select id="cal-entity">` populated by `initCalendarDropdown()` from `/api/ha/calendars`. Falls back to "Custom entity…" option revealing manual `<input id="cal-entity-manual">`. CalDAV settings in collapsible `<details class="caldav-section">`.
+
+### Callout Links
+
+`.callout-link[data-tab]` elements trigger settings tab switches via `initCalloutLinks()`. Used in webhook differentiation callout to jump to "Agents & AI" tab.
+
+---
+
+*Integration audit: 2026-03-03 — Phase 57 updated*
