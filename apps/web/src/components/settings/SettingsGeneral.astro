@@ -220,18 +220,23 @@ const { locale } = Astro.props;
           </div>
         </div>
       </div>
-      <div class="flex flex-col gap-3 mt-4">
+      <div
+        style="display: flex; flex-direction: column; gap: 12px; margin-top: 16px;"
+      >
         <div
-          class="flex items-center justify-between p-3 border border-border rounded-md bg-bg-secondary"
+          style="display: flex; align-items: center; justify-content: space-between; padding: 12px; border: 1px solid var(--border); border-radius: 8px; background: var(--bg-secondary);"
         >
           <div>
-            <strong class="block text-sm">🎯 Epic</strong>
-            <span class="text-xs text-text-muted">High-level initiatives</span>
+            <strong style="display: block; font-size: 14px;">🎯 Epic</strong>
+            <span style="font-size: 12px; color: var(--text-muted);"
+              >High-level initiatives</span
+            >
           </div>
           <select
-            class="form-select framework-mapping-select h-32"
+            class="form-select framework-mapping-select"
             data-task-type="epic"
             multiple
+            style="height: 80px; max-width: 260px;"
           >
             <option value="ddd">DDD (Domain-Driven Design)</option>
             <option value="rice">RICE (Priority Math)</option>
@@ -242,16 +247,19 @@ const { locale } = Astro.props;
         </div>
 
         <div
-          class="flex items-center justify-between p-3 border border-border rounded-md bg-bg-secondary"
+          style="display: flex; align-items: center; justify-content: space-between; padding: 12px; border: 1px solid var(--border); border-radius: 8px; background: var(--bg-secondary);"
         >
           <div>
-            <strong class="block text-sm">📖 Story</strong>
-            <span class="text-xs text-text-muted">User-facing features</span>
+            <strong style="display: block; font-size: 14px;">📖 Story</strong>
+            <span style="font-size: 12px; color: var(--text-muted);"
+              >User-facing features</span
+            >
           </div>
           <select
-            class="form-select framework-mapping-select h-32"
+            class="form-select framework-mapping-select"
             data-task-type="story"
             multiple
+            style="height: 80px; max-width: 260px;"
           >
             <option value="rice">RICE (Priority Math)</option>
             <option value="drice">DRICE (Deps + RICE)</option>
@@ -262,16 +270,19 @@ const { locale } = Astro.props;
         </div>
 
         <div
-          class="flex items-center justify-between p-3 border border-border rounded-md bg-bg-secondary"
+          style="display: flex; align-items: center; justify-content: space-between; padding: 12px; border: 1px solid var(--border); border-radius: 8px; background: var(--bg-secondary);"
         >
           <div>
-            <strong class="block text-sm">✅ Task</strong>
-            <span class="text-xs text-text-muted">Standard work items</span>
+            <strong style="display: block; font-size: 14px;">✅ Task</strong>
+            <span style="font-size: 12px; color: var(--text-muted);"
+              >Standard work items</span
+            >
           </div>
           <select
-            class="form-select framework-mapping-select h-32"
+            class="form-select framework-mapping-select"
             data-task-type="task"
             multiple
+            style="height: 80px; max-width: 260px;"
           >
             <option value="heart">HEART (UX Matrix)</option>
             <option value="rice">RICE (Priority Math)</option>
@@ -282,16 +293,21 @@ const { locale } = Astro.props;
         </div>
 
         <div
-          class="flex items-center justify-between p-3 border border-border rounded-md bg-bg-secondary"
+          style="display: flex; align-items: center; justify-content: space-between; padding: 12px; border: 1px solid var(--border); border-radius: 8px; background: var(--bg-secondary);"
         >
           <div>
-            <strong class="block text-sm">📝 Documentation</strong>
-            <span class="text-xs text-text-muted">Knowledge articles</span>
+            <strong style="display: block; font-size: 14px;"
+              >📝 Documentation</strong
+            >
+            <span style="font-size: 12px; color: var(--text-muted);"
+              >Knowledge articles</span
+            >
           </div>
           <select
-            class="form-select framework-mapping-select h-32"
+            class="form-select framework-mapping-select"
             data-task-type="documentation"
             multiple
+            style="height: 80px; max-width: 260px;"
           >
             <option value="kcs">KCS (Knowledge Workflow)</option>
             <option value="heart">HEART (UX Matrix)</option>
@@ -513,10 +529,10 @@ const { locale } = Astro.props;
           message?: string;
         };
 
-        indicator.className = "ha-status-indicator";
+        indicator!.className = "ha-status-indicator";
 
         if (data.connected) {
-          indicator.classList.add("ha-status-indicator--connected");
+          indicator!.classList.add("ha-status-indicator--connected");
           modeLabel!.textContent =
             data.mode === "ha-addon"
               ? "✓ Connected as HA Addon"
@@ -546,7 +562,7 @@ const { locale } = Astro.props;
             advancedSection.style.display = "none";
           }
         } else {
-          indicator.classList.add("ha-status-indicator--disconnected");
+          indicator!.classList.add("ha-status-indicator--disconnected");
           modeLabel!.textContent =
             data.mode === "standalone"
               ? "Standalone mode — configure below"
@@ -562,7 +578,7 @@ const { locale } = Astro.props;
           }
         }
       } catch {
-        indicator.className =
+        indicator!.className =
           "ha-status-indicator ha-status-indicator--disconnected";
         modeLabel!.textContent = "Connection check failed";
         badge!.textContent = "Error";

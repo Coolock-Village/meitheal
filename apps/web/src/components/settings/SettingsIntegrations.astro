@@ -308,7 +308,13 @@ const { locale } = Astro.props;
             />
           </div>
           <div class="form-group">
-            <label class="form-label" for="grocy-sync-mode">Sync Mode</label>
+            <div class="form-label-row">
+              <label class="form-label" for="grocy-sync-mode">Sync Mode</label>
+              <HelpTooltip
+                text="Controls how data flows between Grocy and Meitheal. Import pulls chores/products into tasks, Export pushes completed tasks to Grocy, and Bidirectional keeps both systems in sync."
+                id="help-grocy-sync"
+              />
+            </div>
             <select class="form-select" id="grocy-sync-mode">
               <option value="import">Import Grocy → Meitheal</option>
               <option value="export">Export Meitheal → Grocy</option>
@@ -443,8 +449,15 @@ const { locale } = Astro.props;
       >
         <div class="integration-card__config">
           <div class="form-group">
-            <label class="form-label" for="webhook-endpoint">Endpoint URL</label
-            >
+            <div class="form-label-row">
+              <label class="form-label" for="webhook-endpoint"
+                >Endpoint URL</label
+              >
+              <HelpTooltip
+                text="The URL where Meitheal will POST task event payloads as JSON. Events are sent for task creation, updates, completion, and deletion. Ensure the endpoint accepts POST requests with Content-Type: application/json."
+                id="help-webhook-endpoint"
+              />
+            </div>
             <input
               type="url"
               class="form-input"

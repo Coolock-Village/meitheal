@@ -175,6 +175,13 @@ const priorityClasses: Record<number, string> = {
                 const cfEntries = Object.entries(task.custom_fields).filter(
                   ([, v]) => v !== null && v !== undefined && v !== "",
                 );
+                const searchText = [
+                  task.title,
+                  task.description ?? "",
+                  ...task.labels,
+                ]
+                  .join(" ")
+                  .toLowerCase();
                 return (
                   <tr
                     data-id={task.id}
@@ -183,6 +190,7 @@ const priorityClasses: Record<number, string> = {
                     data-status={task.status}
                     data-priority={String(task.priority)}
                     data-title={task.title.toLowerCase()}
+                    data-search={searchText}
                     class={`table-row ${task.is_done ? "row-done" : ""}`}
                   >
                     <td>
@@ -411,7 +419,7 @@ const priorityClasses: Record<number, string> = {
 
       document.querySelectorAll("#task-table tbody tr").forEach((row) => {
         const el = row as HTMLElement;
-        const title = el.dataset.title ?? "";
+        const title = el.dataset.search ?? el.dataset.title ?? "";
         const matchSearch = !searchVal || title.includes(searchVal);
         const matchStatus =
           !statusFilter ||
