@@ -16,11 +16,11 @@ import dtGa from "../i18n/ga.json";
 const cookieLocale = Astro.cookies.get("meitheal-locale")?.value;
 const locale: Locale = cookieLocale === "ga" ? "ga" : "en";
 
-// Regional settings from middleware (SSR)
 const {
   timezone = "Europe/Dublin",
   weekStart = "monday",
   dateFormat = "relative",
+  ingressPath,
 } = Astro.locals;
 
 export interface Props {
@@ -153,7 +153,7 @@ Astro.response.headers.set("X-Content-Type-Options", "nosniff");
     <link rel="apple-touch-icon" href="/icon-192.png" />
     <meta name="theme-color" content="#1a1a2e" />
     <!-- Inter font self-hosted via @fontsource-variable/inter (imported in global.css) -->
-    <ViewTransitions fallback="swap" />
+    {!ingressPath && <ViewTransitions fallback="swap" />}
     <!-- Inject localization and settings maps into the window for client-scripts like toast.ts -->
     <script
       is:inline
