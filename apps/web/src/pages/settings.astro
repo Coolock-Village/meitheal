@@ -655,7 +655,7 @@ const locale: Locale = cookieLocale === "ga" ? "ga" : "en";
               if (comps.length > 0) {
                 const preview = comps.slice(0, SHOW_LIMIT);
                 const remaining = comps.length - SHOW_LIMIT;
-                compHtml = `<div style="margin-top: 8px; padding: 10px 12px; background: var(--bg-secondary); border: 1px solid var(--border); border-radius: 8px;">
+                compHtml = `<div style="margin-top: 8px; padding: 10px 12px; background: var(--bg-secondary); border: 1px solid var(--border); border-radius: 8px; max-width: 100%; overflow: hidden;">
                   <div style="font-size: 11px; text-transform: uppercase; letter-spacing: 0.5px; color: var(--text-muted); font-weight: 600; margin-bottom: 6px;">Components (${comps.length})</div>
                   <div style="display: flex; flex-wrap: wrap; gap: 4px;">
                     ${preview.map((c) => `<span style="font-family: 'JetBrains Mono', monospace; font-size: 11px; padding: 2px 6px; background: var(--bg-primary); border: 1px solid var(--border); border-radius: 4px; color: var(--text-secondary);">${c}</span>`).join("")}

@@ -309,7 +309,11 @@ const { locale } = Astro.props;
           style="margin-top: 8px;"
         >
           <div style="display: flex; align-items: center; gap: 8px;">
-            <span class="pwa-compact-dot" id="pwa-compact-dot"></span>
+            <span
+              class="pwa-compact-dot"
+              id="pwa-compact-dot"
+              role="status"
+              aria-label="PWA status indicator"></span>
             <span
               style="font-size: 13px; color: var(--text-secondary);"
               id="pwa-compact-label">PWA: Checking...</span
