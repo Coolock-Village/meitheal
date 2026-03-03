@@ -457,6 +457,7 @@ const { locale } = Astro.props;
           id="grocy-auto-info"
           class="integration-callout integration-callout--success"
           style="display: none;"
+          aria-live="polite"
         >
           <strong>✓ Grocy detected via HA</strong>
           <div class="integration-callout__detail">
@@ -580,7 +581,7 @@ const { locale } = Astro.props;
         <!-- Mode toggle: HA Addon vs Standalone -->
         <div class="n8n-mode-toggle" style="margin-bottom: 12px;">
           <label class="form-label" style="margin-bottom: 6px;"
-            >Connection Mode</label
+            >Integration Mode</label
           >
           <div class="mode-tabs">
             <button
@@ -603,7 +604,11 @@ const { locale } = Astro.props;
         </div>
 
         <!-- HA Addon mode content -->
-        <div id="n8n-auto-content" class="integration-card__config">
+        <div
+          id="n8n-auto-content"
+          class="integration-card__config"
+          aria-live="polite"
+        >
           <div class="integration-callout integration-callout--info">
             <strong>🔗 Automatic via WebSocket</strong>
             <div class="integration-callout__detail">
@@ -799,7 +804,11 @@ const { locale } = Astro.props;
           <div class="integration-callout__detail">
             Webhooks send task events to external services and automations
             (e.g., Zapier, IFTTT, custom APIs). For AI agent protocols like A2A,
-            MCP, and WebMCP, see the <strong>Agents & AI</strong> tab.
+            MCP, and WebMCP, see the <a
+              href="#"
+              class="callout-link"
+              data-tab="agents-ai">Agents &amp; AI</a
+            > tab.
           </div>
         </div>
         <div class="integration-card__config">
@@ -1426,6 +1435,18 @@ const { locale } = Astro.props;
     color: var(--info);
   }
 
+  .callout-link {
+    color: var(--accent);
+    text-decoration: underline;
+    text-underline-offset: 2px;
+    cursor: pointer;
+    font-weight: 600;
+  }
+
+  .callout-link:hover {
+    opacity: 0.8;
+  }
+
   /* ═══════ CalDAV Section ═══════ */
   .caldav-section {
     margin-top: 4px;
@@ -1736,6 +1757,8 @@ const { locale } = Astro.props;
     const bodyEl = document.getElementById("explainer-body");
     const closeBtn = dialog?.querySelector(".explainer-dialog__close");
     if (!dialog || !titleEl || !bodyEl) return;
+    if (dialog.dataset.explainerInit) return;
+    dialog.dataset.explainerInit = "true";
 
     // Open on info button click
     document.querySelectorAll(".info-btn[data-explainer]").forEach((btn) => {
@@ -1790,7 +1813,16 @@ const { locale } = Astro.props;
         autoContent!.style.display = "none";
         standaloneContent!.style.display = "";
       }
+      try {
+        localStorage.setItem("meitheal:n8n-mode", mode);
+      } catch {}
     }
+
+    // Restore persisted mode
+    try {
+      const saved = localStorage.getItem("meitheal:n8n-mode");
+      if (saved === "standalone") setMode("standalone");
+    } catch {}
 
     autoBtn.addEventListener("click", () => setMode("auto"));
     standaloneBtn.addEventListener("click", () => setMode("standalone"));
@@ -1955,4 +1987,30 @@ const { locale } = Astro.props;
 
   initGrocyAutoDetect();
   document.addEventListener("astro:page-load", initGrocyAutoDetect);
+
+  /**
+   * Callout Jump Links
+   *
+   * Handles click on [data-tab] links to switch settings tabs.
+   */
+  function initCalloutLinks() {
+    document.querySelectorAll(".callout-link[data-tab]").forEach((link) => {
+      link.addEventListener("click", (e) => {
+        e.preventDefault();
+        const tabId = (link as HTMLElement).dataset.tab;
+        if (!tabId) return;
+        // Find the corresponding tab button and click it
+        const tabBtn = document.querySelector(
+          `[data-settings-tab="${tabId}"]`,
+        ) as HTMLElement | null;
+        if (tabBtn) {
+          tabBtn.click();
+          tabBtn.scrollIntoView({ behavior: "smooth", block: "start" });
+        }
+      });
+    });
+  }
+
+  initCalloutLinks();
+  document.addEventListener("astro:page-load", initCalloutLinks);
 </script>
