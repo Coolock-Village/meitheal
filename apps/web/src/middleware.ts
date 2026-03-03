@@ -111,7 +111,11 @@ export const onRequest: MiddlewareHandler = async ({ request, locals }, next) =>
   locals.hassUserId = getHassUserId(request.headers);
   locals.hassIsAdmin = isHassAdmin(request.headers);
 
-  if (behindIngress && !ingressPath) {
+  // Suppress ingress.path.missing for healthcheck — it runs every 30s from
+  // inside the container with SUPERVISOR_TOKEN but no x-ingress-path header.
+  // Logging this would produce ~2,880 warnings/day, burying real issues.
+  const url = new URL(request.url);
+  if (behindIngress && !ingressPath && !url.pathname.startsWith("/api/health")) {
     logger.log("warn", {
       event: "ingress.path.missing",
       domain: "observability",
@@ -139,7 +143,6 @@ export const onRequest: MiddlewareHandler = async ({ request, locals }, next) =>
   }
 
   // Rate limiting (API routes only)
-  const url = new URL(request.url);
   const ip = request.headers.get("x-forwarded-for")?.split(",")[0]?.trim()
     || request.headers.get("x-real-ip")
     || "127.0.0.1";

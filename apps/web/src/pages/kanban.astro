@@ -1376,14 +1376,13 @@ const typeConfig: Record<
       var slots = document.querySelectorAll("img.kanban-attachment");
       if (!slots.length) return;
       try {
-        // Dynamic import — works in Vite dev via source path.
-        // In SSR/production builds, the module is pre-bundled by Layout.astro's
-        // static import and available through the bundled chunk.
-        var mod = await import(
-          /* @vite-ignore */ "/src/domains/offline/offline-store.ts"
-        ).catch(function () {
-          return null; // Silently skip if module not available (production SSR)
-        });
+        // Dynamic import — Vite resolves this at build time into the
+        // bundled chunk. No @vite-ignore needed since path is static.
+        var mod = await import("../../domains/offline/offline-store.ts").catch(
+          function () {
+            return null; // Silently skip if module not available
+          },
+        );
         if (!mod || !mod.getAttachmentsByTaskId) return;
         var getAttachmentsByTaskId = mod.getAttachmentsByTaskId;
         slots.forEach(async (img) => {
