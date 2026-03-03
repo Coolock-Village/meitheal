@@ -1,11 +1,11 @@
 name: "Meitheal"
-version: "0.2.1"
+version: "0.2.2"
 slug: "meitheal"
 description: "Cooperative task and life engine with HA calendar sync"
 url: "https://github.com/Coolock-Village/meitheal"
 github: "Coolock-Village/meitheal"
 docs_url: "https://github.com/Coolock-Village/meitheal/tree/main/meitheal-hub/DOCS.md"
-image: "coolockvillage/meitheal-{arch}"
+image: "ghcr.io/coolock-village/meitheal-{arch}"
 arch:
   - aarch64
   - amd64
