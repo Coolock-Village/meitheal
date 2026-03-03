@@ -131,7 +131,6 @@ const locale: Locale = cookieLocale === "ga" ? "ga" : "en";
   <script>
     import { exportLocalDataAsJson } from "@domains/offline/export-service";
     import { confirmDialog } from "@lib/confirm-dialog";
-    import { apiUrl } from "@lib/ingress-fetch";
 
     document
       .getElementById("export-json-btn")
@@ -159,7 +158,7 @@ const locale: Locale = cookieLocale === "ga" ? "ga" : "en";
           const text = await file.text();
           const payload = JSON.parse(text);
 
-          const response = await fetch(apiUrl("/api/import/settings"), {
+          const response = await fetch("/api/import/settings", {
             method: "POST",
             headers: { "Content-Type": "application/json" },
             body: JSON.stringify(payload),
@@ -236,7 +235,7 @@ const locale: Locale = cookieLocale === "ga" ? "ga" : "en";
     // Save a setting to the API
     async function saveSetting(key: string, value: unknown) {
       try {
-        await fetch(apiUrl("/api/settings"), {
+        await fetch("/api/settings", {
           method: "PUT",
           headers: { "content-type": "application/json" },
           body: JSON.stringify({ key, value }),
@@ -250,7 +249,7 @@ const locale: Locale = cookieLocale === "ga" ? "ga" : "en";
     async function loadSettings() {
       let settings: Record<string, any> = {};
       try {
-        const res = await fetch(apiUrl("/api/settings"));
+        const res = await fetch("/api/settings");
         settings = await res.json();
       } catch (e) {
         console.error("[Settings] Failed to load settings from API:", e);
@@ -582,7 +581,7 @@ const locale: Locale = cookieLocale === "ga" ? "ga" : "en";
                   .querySelector("button")
                   ?.addEventListener("click", async () => {
                     try {
-                      const curRes = await fetch(apiUrl("/api/settings"));
+                      const curRes = await fetch("/api/settings");
                       const curSettings = curRes.ok ? await curRes.json() : {};
                       const curFields = curSettings.custom_fields
                         ? JSON.parse(curSettings.custom_fields)
@@ -590,7 +589,7 @@ const locale: Locale = cookieLocale === "ga" ? "ga" : "en";
                       const updated = curFields.filter(
                         (f: { name: string }) => f.name !== field.name,
                       );
-                      await fetch(apiUrl("/api/settings"), {
+                      await fetch("/api/settings", {
                         method: "PUT",
                         headers: { "content-type": "application/json" },
                         body: JSON.stringify({
@@ -643,7 +642,7 @@ const locale: Locale = cookieLocale === "ga" ? "ga" : "en";
           statusEl.innerHTML =
             '<span style="color: var(--accent);">Testing HA connection...</span>';
         try {
-          const res = await fetch(apiUrl("/api/ha/connection"));
+          const res = await fetch("/api/ha/connection");
           const data = (await res.json()) as Record<string, unknown>;
           if (statusEl) {
             if (data.connected) {
@@ -780,7 +779,7 @@ const locale: Locale = cookieLocale === "ga" ? "ga" : "en";
           variant: "warning",
         });
         if (!confirmed) return;
-        await fetch(apiUrl("/api/settings?key=sidebar_config"), {
+        await fetch("/api/settings?key=sidebar_config", {
           method: "DELETE",
         }).catch(() => {});
         await saveSetting("sidebar_config", null);
@@ -826,14 +825,14 @@ const locale: Locale = cookieLocale === "ga" ? "ga" : "en";
             }
 
             try {
-              const settingsRes = await fetch(apiUrl("/api/settings"));
+              const settingsRes = await fetch("/api/settings");
               const settings = settingsRes.ok ? await settingsRes.json() : {};
               const existing = settings.custom_fields
                 ? JSON.parse(settings.custom_fields)
                 : [];
               existing.push({ name, type });
 
-              await fetch(apiUrl("/api/settings"), {
+              await fetch("/api/settings", {
                 method: "PUT",
                 headers: { "content-type": "application/json" },
                 body: JSON.stringify({
@@ -1122,7 +1121,7 @@ const locale: Locale = cookieLocale === "ga" ? "ga" : "en";
       ) as HTMLInputElement | null;
 
       try {
-        const res = await fetch(apiUrl("/api/ha/calendars"));
+        const res = await fetch("/api/ha/calendars");
         if (!res.ok) throw new Error("API error");
         const data = (await res.json()) as {
           calendars?: {
@@ -1238,9 +1237,7 @@ const locale: Locale = cookieLocale === "ga" ? "ga" : "en";
       btn.disabled = true;
 
       try {
-        const res = await fetch(apiUrl("/api/ha/calendars"), {
-          method: "POST",
-        });
+        const res = await fetch("/api/ha/calendars", { method: "POST" });
         const data = (await res.json()) as { message?: string };
         if (resultEl) resultEl.textContent = data.message ?? "Sync triggered";
         showToast("✅ Calendar sync triggered", "success");
@@ -1275,7 +1272,7 @@ const locale: Locale = cookieLocale === "ga" ? "ga" : "en";
       const enabledLabel = document.getElementById("todo-enabled-label");
 
       try {
-        const res = await fetch(apiUrl("/api/todo"));
+        const res = await fetch("/api/todo");
         if (!res.ok) throw new Error("API error");
         const data = (await res.json()) as {
           ok: boolean;
@@ -1388,7 +1385,7 @@ const locale: Locale = cookieLocale === "ga" ? "ga" : "en";
         // Enable/disable sync via API
         if (enabled && entity) {
           try {
-            await fetch(apiUrl("/api/todo/sync"), {
+            await fetch("/api/todo/sync", {
               method: "POST",
               headers: { "content-type": "application/json" },
               body: JSON.stringify({
@@ -1402,7 +1399,7 @@ const locale: Locale = cookieLocale === "ga" ? "ga" : "en";
           }
         } else {
           try {
-            await fetch(apiUrl("/api/todo/sync"), {
+            await fetch("/api/todo/sync", {
               method: "POST",
               headers: { "content-type": "application/json" },
               body: JSON.stringify({ action: "disable", entity_id: entity }),
@@ -1439,7 +1436,7 @@ const locale: Locale = cookieLocale === "ga" ? "ga" : "en";
           const entity = (
             document.getElementById("todo-entity") as HTMLInputElement
           ).value;
-          const res = await fetch(apiUrl("/api/todo/sync"), {
+          const res = await fetch("/api/todo/sync", {
             method: "POST",
             headers: { "content-type": "application/json" },
             body: JSON.stringify({
@@ -1469,7 +1466,7 @@ const locale: Locale = cookieLocale === "ga" ? "ga" : "en";
     // ───── Restore Integration Settings ─────
     (async function restoreIntegrationSettings() {
       try {
-        const res = await fetch(apiUrl("/api/settings"));
+        const res = await fetch("/api/settings");
         if (!res.ok) return;
         const s = (await res.json()) as Record<string, unknown>;
 
@@ -1644,9 +1641,7 @@ const locale: Locale = cookieLocale === "ga" ? "ga" : "en";
           return;
         }
         try {
-          const res = await fetch(apiUrl("/api/tasks?purge=all"), {
-            method: "DELETE",
-          });
+          const res = await fetch("/api/tasks?purge=all", { method: "DELETE" });
           if (res.ok) {
             showToast("settings.purge_success");
             setTimeout(() => window.location.reload(), 1000);
@@ -1667,7 +1662,7 @@ const locale: Locale = cookieLocale === "ga" ? "ga" : "en";
         });
         if (!ok) return;
         try {
-          const res = await fetch(apiUrl("/api/settings?reset=all"), {
+          const res = await fetch("/api/settings?reset=all", {
             method: "DELETE",
           });
           if (res.ok) {
@@ -1690,7 +1685,7 @@ const locale: Locale = cookieLocale === "ga" ? "ga" : "en";
         document.cookie = `meitheal-locale=${locale};path=/;max-age=31536000;SameSite=Lax`;
         // Persist to settings API
         try {
-          await fetch(apiUrl("/api/settings"), {
+          await fetch("/api/settings", {
             method: "PUT",
             headers: { "content-type": "application/json" },
             body: JSON.stringify({ key: "locale", value: locale }),
