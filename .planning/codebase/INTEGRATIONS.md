@@ -165,6 +165,24 @@ The container healthcheck (`/api/health`) runs inside the Docker network with `S
 
 The `x-ingress-path` header may contain trailing slashes (`/api/hassio_ingress/{token}//`). The `normalizePathLikeValue()` function in `auth/ingress.ts` strips these, but startup logs may show the raw value.
 
+### Devcontainer vs Local Build on Bazzite
+
+The HA devcontainer (`ghcr.io/home-assistant/devcontainer:2-addons`) requires Docker-in-Docker with real root — **does not work with rootless Podman**. Inner containers fail with `open sysctl kernel.domainname file: permission denied`.
+
+**Working alternative — Local Build + Local Run** (per HA docs):
+
+```bash
+# Build
+podman build --build-arg BUILD_FROM="ghcr.io/home-assistant/amd64-base:latest" \
+  -t local/meitheal-hub -f meitheal-hub/Dockerfile .
+
+# Run standalone (no Supervisor)
+mkdir -p /tmp/meitheal_test_data
+podman run --rm -v /tmp/meitheal_test_data:/data:Z -p 4600:3000 local/meitheal-hub
+```
+
+Addon runs on `http://127.0.0.1:4600` in standalone mode. "Failed to get addon config from Supervisor API" is expected.
+
 ---
 
 *Integration audit: 2026-03-03 — Phase 57b updated*
