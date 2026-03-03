@@ -57,6 +57,7 @@ No bottlenecks detected.
 - ✅ `OA-410` — Non-UTC timezone handling validated with 3 tests
 - ✅ `OA-411` — HA custom component shows structured error payloads
 - ✅ `OA-412` — Iteration-05 RFC drafted for webhook/Grocy/n8n
+- ✅ `OA-413` — HA connection status always showing "Disconnected" — `/api/ha/connection` never called `getHAConnection()` before reading singleton status
 
 ---
 

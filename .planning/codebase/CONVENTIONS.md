@@ -44,6 +44,14 @@
 | Error classification | HTTP→retry semantics | `classifyError(status)` |
 | Structured logging | Compat routes | `logCompatRequest({ route, method, status })` |
 | AbortController | External call timeouts | `HomeAssistantCalendarAdapter` |
+| Global fetch intercept | Ingress URL prefixing | `Layout.astro` `<head>` inline script |
+
+## ⚠️ Gotchas
+
+| Gotcha | Detail |
+|--------|--------|
+| **Do NOT wrap client-side `fetch()` with `apiUrl()`** | `Layout.astro` (lines 68-117) has an inline `<script>` that monkey-patches `window.fetch` to auto-prefix `window.__ingress_path` on ALL root-relative URLs (strings starting with `/`). Using `apiUrl()` on top of this **double-prefixes** the path. The `apiUrl()` helper in `lib/ingress-fetch.ts` exists only for non-fetch URL construction (e.g. `<a href>` in JS, SSE URLs). |
+| **`getHAConnectionStatus()` is passive** | It only reads the in-memory `connection` singleton — it does NOT attempt to connect. Always call `await getHAConnection()` first if you need to ensure the WebSocket is established. |
 
 ## Logging Convention
 

@@ -52,6 +52,8 @@ Local-first task orchestration with HA calendar sync and Vikunja compatibility.
 
 | Date | Decision | Context |
 |------|----------|---------|
+| 2026-03-03 | Fix HA connection status — call `getHAConnection()` before `getHAConnectionStatus()` | Endpoint only read cached singleton; never established WebSocket |
+| 2026-03-03 | **Do NOT use `apiUrl()` for `fetch()` calls** — global monkey-patch handles it | `Layout.astro` inline script auto-prefixes `window.__ingress_path`; `apiUrl()` would double-prefix |
 | 2026-03-03 | Ingress-safe `serve.mjs` wrapper | Prevents 301 redirect loop from double trailing slashes |
 | 2026-03-03 | Addon rename `meitheal_hub` → `meitheal` | Slug shortened in `config.yaml`, `ingress-policy.ts` |
 | 2026-03-03 | Settings auto-detect HA connection | Replaced manual URL/token form with status card |
@@ -81,10 +83,10 @@ Local-first task orchestration with HA calendar sync and Vikunja compatibility.
 
 ## Session Continuity
 
-Last session: 2026-03-03T12:05:00Z
-Stopped at: v0.2.6 tagged and pushed. serve.mjs ingress fix + Settings UX overhaul complete. CI green.
+Last session: 2026-03-03T15:02:00Z
+Stopped at: Fixed HA connection status bug (`connection.ts`). Documented global fetch monkey-patch pattern in CONVENTIONS.md.
 
-Resume hint: Verify v0.2.6 image deploys correctly on HA, confirm ingress redirect fix works. Then continue UX audit (Dashboard/Home page).
+Resume hint: Redeploy addon to verify settings page shows "Connected". Then continue UX audit (Dashboard/Home page).
 
 ---
-*Last updated: 2026-03-03 — v0.2.6 ingress redirect fix + Settings UX*
+*Last updated: 2026-03-03 — HA connection status fix + ingress fetch docs*
