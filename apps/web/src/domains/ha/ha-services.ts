@@ -335,38 +335,93 @@ export async function sendNotification(
   }
 }
 
-// ── Conversation / Assist Services (Phase 52) ──
-export async function askAssist(
-  text: string, agentId?: string,
-): Promise<string | null> {
-  const conn = await getHAConnection();
-  if (!conn) return null;
-  try {
-    const serviceData: Record<string, unknown> = { text };
-    if (agentId) serviceData.agent_id = agentId;
+// ── Conversation / Assist Services (Phase 52 → 58 enhanced) ──
 
-    const result = await conn.sendMessagePromise<Record<string, unknown>>({
-      type: "call_service", domain: "conversation", service: "process",
-      service_data: serviceData,
-      return_response: true,
-    });
-    
-    // Check if the response matches typical conversation.process shape
-    // Response path: result.response.speech.plain.speech
-    const payload = result as { response?: { speech?: { plain?: { speech?: string } } } };
-    const speechText = payload?.response?.speech?.plain?.speech;
-    
+/** Full response from HA conversation.process */
+export interface AssistResponse {
+  speech: string | null;
+  conversationId: string | null;
+  responseType: "action_done" | "query_answer" | "error" | null;
+}
+
+/** HA conversation agent descriptor */
+export interface ConversationAgent {
+  id: string;
+  name: string;
+  supported_languages: string[] | "*";
+}
+
+/**
+ * Send text to HA's conversation.process service.
+ * Supports multi-turn via conversation_id and agent selection via agent_id.
+ * @see https://developers.home-assistant.io/docs/intent_conversation_api
+ */
+export async function askAssist(
+  text: string,
+  options?: { agentId?: string; conversationId?: string },
+): Promise<AssistResponse> {
+  const conn = await getHAConnection();
+  if (!conn) return { speech: null, conversationId: null, responseType: null };
+  try {
+    const msgData: Record<string, unknown> = {
+      type: "conversation/process",
+      text,
+    };
+    if (options?.agentId) msgData.agent_id = options.agentId;
+    if (options?.conversationId) msgData.conversation_id = options.conversationId;
+
+    const result = await conn.sendMessagePromise<Record<string, unknown>>(msgData);
+
+    // Parse full conversation response shape
+    const payload = result as {
+      response?: {
+        response_type?: string;
+        speech?: { plain?: { speech?: string } };
+      };
+      conversation_id?: string;
+    };
+    const speechText = payload?.response?.speech?.plain?.speech ?? null;
+    const conversationId = payload?.conversation_id ?? null;
+    const responseType = (payload?.response?.response_type as AssistResponse["responseType"]) ?? null;
+
     logger.log("info", {
       event: "ha.conversation.success", domain: "ha", component: "ha-services",
-      request_id: SYS_REQ, message: `Asked Assist: "${text}"`,
+      request_id: SYS_REQ,
+      message: `Asked Assist: "${text}" → ${responseType ?? "unknown"} (conv: ${conversationId ?? "new"})`,
     });
-    return speechText ?? null;
+    return { speech: speechText, conversationId, responseType };
   } catch (err) {
     logger.log("error", {
       event: "ha.conversation.failed", domain: "ha", component: "ha-services",
       request_id: SYS_REQ, message: `Failed to ask assist: ${err}`,
     });
-    return null;
+    return { speech: null, conversationId: null, responseType: null };
+  }
+}
+
+/**
+ * List available HA conversation agents.
+ * Uses the conversation/agent/list WebSocket command.
+ */
+export async function listConversationAgents(): Promise<ConversationAgent[]> {
+  const conn = await getHAConnection();
+  if (!conn) return [];
+  try {
+    const result = await conn.sendMessagePromise<{ agents?: ConversationAgent[] }>({
+      type: "conversation/agent/list",
+    });
+    const agents = result?.agents ?? [];
+    logger.log("debug", {
+      event: "ha.conversation.agents_listed", domain: "ha", component: "ha-services",
+      request_id: SYS_REQ, message: `Found ${agents.length} conversation agent(s)`,
+    });
+    return agents;
+  } catch (err) {
+    logger.log("error", {
+      event: "ha.conversation.agents_list_failed", domain: "ha", component: "ha-services",
+      request_id: SYS_REQ, message: `Failed to list conversation agents: ${err}`,
+    });
+    return [];
   }
 }
 

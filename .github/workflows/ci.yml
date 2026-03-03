@@ -96,6 +96,13 @@ jobs:
           cache: pnpm
       - run: pnpm install --frozen-lockfile
       - run: pnpm --filter @meitheal/web build
+      - name: Guard — no absolute font paths in CSS
+        run: |
+          if grep -r 'url(/_astro/' apps/web/dist/client/_astro/*.css 2>/dev/null; then
+            echo "::error::Absolute /_astro/ font paths found in CSS — will 404 behind HA ingress"
+            exit 1
+          fi
+          echo "✅ No absolute font paths in CSS"
       - run: pnpm --filter @meitheal/web perf:budget
 
   security-audit:
