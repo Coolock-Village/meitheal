@@ -929,8 +929,10 @@ const locale: Locale = cookieLocale === "ga" ? "ga" : "en";
       saveBtn.disabled = true;
 
       await saveSetting("ai-provider", provider);
-      if (provider === "custom") {
+      localStorage.setItem("meitheal-ai-provider", provider);
+      if (provider === "custom" || provider === "ollama") {
         await saveSetting("ai-custom-url", customUrl);
+        localStorage.setItem("meitheal-ai-custom-url", customUrl);
       }
 
       saveBtn.innerHTML = origText;
