@@ -69,7 +69,7 @@ export async function registerServiceWorker(): Promise<ServiceWorkerRegistration
       // Also send via .ready to guarantee delivery to the active SW
       navigator.serviceWorker.ready.then((ready) => {
         sendIngressPath(ready.active)
-      })
+      }).catch(() => { /* SW not yet active — non-fatal */ })
     }
 
     // Check for SW updates every 5 minutes.

@@ -241,7 +241,7 @@
 
   /* Curated danger: Ruby Red #F05D5E */
   .stat-card-danger {
-    border-color: #f05d5e !important;
+    border-color: var(--danger) !important;
     background: rgba(240, 93, 94, 0.1) !important;
     box-shadow:
       0 0 16px rgba(240, 93, 94, 0.15),

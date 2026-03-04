@@ -82,7 +82,7 @@ function connectSSE(): void {
     sseConnection.close();
     sseConnection = null;
   }
-  
+
   // Clear any pending reconnects
   if (sseReconnectTimer) {
     clearTimeout(sseReconnectTimer);
@@ -107,10 +107,10 @@ function connectSSE(): void {
         sseConnection.close();
         sseConnection = null;
       }
-      
+
       sseReconnectAttempts++;
       const delay = Math.min(1000 * Math.pow(2, sseReconnectAttempts), MAX_SSE_RETRY_MS);
-      
+
       sseReconnectTimer = setTimeout(() => {
         if (currentState === "online") connectSSE();
       }, delay);
@@ -155,7 +155,7 @@ export function startConnectivityMonitor(): void {
     checkHealth().then((ok) => {
       transitionTo(ok ? "online" : "offline");
       if (ok) connectSSE();
-    })
+    }).catch(() => transitionTo("offline"))
   })
 
   window.addEventListener("offline", () => {
