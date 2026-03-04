@@ -1,7 +1,7 @@
 # Architecture
 
 **Analysis Date:** 2026-03-04
-**Version:** 0.1.55
+**Version:** 0.1.57
 
 ## Pattern
 
@@ -108,9 +108,11 @@ POST /api/tasks/create
 - Each tab is a standalone Astro component (`SettingsGeneral.astro`, `SettingsIntegrations.astro`, etc.)
 - Integration cards with auto-detect HA connection (WebSocket singleton)
 - Calendar sync toggle persisted to SQLite via `/api/integrations/calendar/settings`
+- Calendar sync settings (`calendar_sync_enabled`, `calendar_write_back`) saved + sync API called on save
 - ViewTransitions disabled behind HA ingress (prevents redirect loops)
 - Ingress state persistence: saves route + scroll to `sessionStorage`, restores within 60s after iframe recreation (`lib/ingress-state-persistence.ts`)
+- All `window.location.href` calls prepend `window.__ingress_path` for HA ingress compatibility (keyboard shortcuts, command palette, CSV export)
 
 ---
 
-*Architecture analysis: 2026-03-04 — v0.1.55*
+*Architecture analysis: 2026-03-04 — v0.1.57*

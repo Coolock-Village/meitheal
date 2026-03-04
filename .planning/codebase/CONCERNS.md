@@ -1,7 +1,7 @@
 # Codebase Concerns
 
-**Analysis Date:** 2026-03-03
-**Version:** 0.1.55
+**Analysis Date:** 2026-03-04
+**Version:** 0.1.57
 
 ## Tech Debt
 
@@ -60,7 +60,10 @@ No bottlenecks detected.
 - ✅ `OA-413` — HA connection status always showing "Disconnected" — `/api/ha/connection` never called `getHAConnection()` before reading singleton status
 - ✅ `OA-414` — HA version requirement too strict — `conversation` moved to `after_dependencies`, LLM API import made conditional (v0.1.55)
 - ✅ `OA-415` — Task type icons (`✅`) confused with completion state — changed to `📌` across Today and Upcoming views
+- ✅ `OA-416` — Keyboard shortcuts + command palette navigate to bare paths (`/tasks`, `/kanban`), causing 404 behind HA ingress — all 17 `window.location.href` calls now prepend `window.__ingress_path`
+- ✅ `OA-417` — n8n HA addon mode save handler wrongly required webhook URL — now saves `n8n_mode: ha_addon`, webhook URL optional
+- ✅ `OA-418` — Calendar settings `calendar_sync_enabled` and `calendar_write_back` not persisted — added to save handler + sync API call
 
 ---
 
-*Concerns audit: 2026-03-04 — v0.1.55*
+*Concerns audit: 2026-03-04 — v0.1.57*

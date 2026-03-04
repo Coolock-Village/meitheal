@@ -24,6 +24,16 @@ jobs:
           test -f .skills/core-workflows/SKILL.md
           test -f public/.well-known/mcp.json
           test -f public/.well-known/jsondoc.json
+      - name: CSS brace balance check
+        run: |
+          CSS_FILE="apps/web/src/styles/global.css"
+          OPEN=$(grep -o '{' "$CSS_FILE" | wc -l)
+          CLOSE=$(grep -o '}' "$CSS_FILE" | wc -l)
+          if [ "$OPEN" -ne "$CLOSE" ]; then
+            echo "::error file=$CSS_FILE::CSS brace imbalance: $OPEN opening vs $CLOSE closing braces"
+            exit 1
+          fi
+          echo "✅ CSS braces balanced: $OPEN/$CLOSE"
 
   typecheck-and-tests:
     runs-on: ubuntu-latest

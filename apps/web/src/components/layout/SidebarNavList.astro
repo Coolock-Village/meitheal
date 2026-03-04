@@ -36,6 +36,7 @@ function isExternal(href: string): boolean {
             href={item.href}
             class={`nav-link ${item.isActive ? "active" : ""} ${external ? "nav-link--external" : ""}`}
             data-page={item.key}
+            data-astro-prefetch={external ? undefined : "hover"}
             aria-label={`${item.label}${external ? " (opens in new tab)" : ""}`}
             {...(external
               ? { target: "_blank", rel: "noopener noreferrer" }

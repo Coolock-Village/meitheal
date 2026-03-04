@@ -117,28 +117,31 @@ function relativeTime(dueDate: string): string {
   >
 
   <div class="stats-grid">
-    <div class="stat-card">
+    <div class="stat-card" title="All tasks across every board and status">
       <span class="stat-icon">📋</span>
       <div>
         <div class="stat-value">{stats.total}</div>
         <div class="stat-label">{t("dashboard.total_tasks", locale)}</div>
       </div>
     </div>
-    <div class="stat-card">
+    <div class="stat-card" title="Tasks currently in progress or active">
       <span class="stat-icon">⚡</span>
       <div>
         <div class="stat-value">{stats.active}</div>
         <div class="stat-label">{t("dashboard.active", locale)}</div>
       </div>
     </div>
-    <div class="stat-card">
+    <div class="stat-card" title="Tasks marked as done">
       <span class="stat-icon">✅</span>
       <div>
         <div class="stat-value">{stats.completed}</div>
         <div class="stat-label">{t("dashboard.completed", locale)}</div>
       </div>
     </div>
-    <div class={`stat-card ${stats.overdue > 0 ? "stat-card-danger" : ""}`}>
+    <div
+      class={`stat-card ${stats.overdue > 0 ? "stat-card-danger" : ""}`}
+      title="Tasks past their due date across all boards"
+    >
       <span class="stat-icon">⏰</span>
       <div>
         <div

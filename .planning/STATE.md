@@ -12,7 +12,8 @@ Local-first task orchestration with HA calendar sync and Vikunja compatibility.
 - **Extension Track:** 15 of 15 phases complete (`15-24, 27-30 complete`)
 - **Overall phase count:** 21+ phases complete (including global track + security + UX)
 - **Phase 56:** Settings IA Overhaul — complete
-- **Current version:** `0.1.55`
+- **Phase 70:** Integration Auto-Discovery — complete (all 3 high-sev already implemented)
+- **Current version:** `0.1.57`
 
 ## Phase Status Snapshot
 
@@ -53,6 +54,11 @@ Local-first task orchestration with HA calendar sync and Vikunja compatibility.
 
 | Date | Decision | Context |
 |------|----------|---------|
+| 2026-03-04 | **v0.1.57** — 17 `window.location.href` calls patched with ingress path prefix | Keyboard shortcuts + command palette all caused 404 behind HA ingress |
+| 2026-03-04 | n8n auto-mode save no longer requires webhook URL | HA addon mode uses WebSocket, not HTTP; save handler now persists `n8n_mode: ha_addon` |
+| 2026-03-04 | Calendar settings persistence — `calendar_sync_enabled` + `calendar_write_back` | Save handler now persists both flags + calls `/api/integrations/calendar/sync` |
+| 2026-03-04 | 6 missing `ALLOWED_KEYS` added to import/export | `n8n_mode`, `n8n_api_key`, `n8n_signing_secret`, `todo_sync_enabled`, `todo_entity`, `todo_sync_direction` |
+| 2026-03-04 | CSRF structured logging (no debug payload in response) | Helps diagnose 403s without leaking internals |
 | 2026-03-04 | UI/UX polish wave — stat card icons, bento grid sizing, task type icons `✅`→`📌` | Page-by-page browser audit across all 7 views |
 | 2026-03-04 | Fix HA version requirement — `conversation` dep made optional, LLM API conditional | HA 2026.2.3 blocked integration load; `manifest.json` `after_dependencies` |
 | 2026-03-04 | New HA services: `search_tasks`, `get_overdue_tasks` with `SupportsResponse.ONLY` | Enables voice/LLM queries for task data |
@@ -71,29 +77,30 @@ Local-first task orchestration with HA calendar sync and Vikunja compatibility.
 
 ## Pending Todo Queue
 
-1. Run live HA workflow with real calendar entity and deployed addon. *(Requires v0.2.6 running)*
+1. ~~Run live HA workflow with real calendar entity and deployed addon.~~ *(v0.1.57 deployed, calendar sync persistence added)*
 2. Run live Vikunja voice-assistant compatibility workflow.
-3. Push initial images to Docker Hub and test install on HA Green.
+3. ~~Push initial images to Docker Hub and test install on HA Green.~~ *(CI builds via v0.1.57 tag)*
 4. Validate sidebar drag-and-drop reordering end-to-end.
 5. PWA service worker scope validation under ingress.
+6. Test calendar + todo entity selection in HA ingress after v0.1.57 restart.
 
-## Codebase Health (as of v0.2.6)
+## Codebase Health (as of v0.1.57)
 
 | Metric | Value |
 |--------|-------|
 | E2E test specs | 38 |
 | ADRs | 12 |
 | KCS docs | 11 |
-| API endpoint files | 42 |
+| API endpoint files | 43 |
 | DB migrations | 3 |
-| Build time | ~3.9s |
+| Build time | ~4.6s |
 
 ## Session Continuity
 
-Last session: 2026-03-04T13:00:00Z
-Stopped at: UI/UX improvement wave — stat cards polished, bento grid improved, task type icons fixed. HA version compatibility resolved (v0.1.55). Planning docs updated.
+Last session: 2026-03-04T18:30:00Z
+Stopped at: v0.1.57 pushed to Docker — ingress navigation fixes (17 calls), n8n auto-mode save, calendar settings persistence, 6 ALLOWED_KEYS added. All persona audit 70 findings resolved. Planning docs updated.
 
-Resume hint: Deploy v0.1.55 to HA addon. Continue page-by-page UX audit (Kanban, Calendar views next). Consider HA devcontainer for live testing.
+Resume hint: Verify v0.1.57 on HA after addon restart — test calendar/todo entity selection, n8n save in HA mode, keyboard shortcuts behind ingress. Continue page-by-page UX audit (Kanban, Calendar views).
 
 ---
-*Last updated: 2026-03-04 — UI/UX wave + HA version fix (v0.1.55)*
+*Last updated: 2026-03-04 — v0.1.57 ingress + integration fixes*
