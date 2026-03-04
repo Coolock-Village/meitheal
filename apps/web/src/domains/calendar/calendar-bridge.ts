@@ -69,10 +69,11 @@ export function startCalendarSync(config: CalendarSyncConfig): void {
 
 /**
  * Sync events FROM HA calendar TO Meitheal.
+ * Exported so the API can trigger manual syncs.
  * Merges calendar events into the tasks table with deduplication
  * via the calendar_confirmations table (keyed by provider_event_id).
  */
-async function syncFromHA(): Promise<void> {
+export async function syncFromHA(): Promise<void> {
   if (!syncConfig) return;
 
   const now = new Date();
