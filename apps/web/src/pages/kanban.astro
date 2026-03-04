@@ -726,7 +726,7 @@ const typeConfig: Record<
         if (targetSwimlane) {
           payload.task_type = targetSwimlane.dataset.swimlaneType;
         }
-        await fetch(`/api/tasks/${taskId}`, {
+        await fetch(`${window.__ingress_path || ""}/api/tasks/${taskId}`, {
           method: "PUT",
           headers: { "content-type": "application/json" },
           body: JSON.stringify(payload),
@@ -783,10 +783,10 @@ const typeConfig: Record<
         const id = btn.dataset.id;
         if (!id) return;
         try {
-          const res = await fetch(`/api/tasks/${id}`);
+          const res = await fetch(`${window.__ingress_path || ""}/api/tasks/${id}`);
           if (!res.ok) return;
           const task = await res.json();
-          const dupRes = await fetch("/api/tasks", {
+          const dupRes = await fetch((window.__ingress_path || "") + "/api/tasks", {
             method: "POST",
             headers: { "content-type": "application/json" },
             body: JSON.stringify({
@@ -841,7 +841,7 @@ const typeConfig: Record<
           try {
             const payload = { title, status };
             if (taskType) payload.task_type = taskType;
-            const res = await fetch("/api/tasks", {
+            const res = await fetch((window.__ingress_path || "") + "/api/tasks", {
               method: "POST",
               headers: { "content-type": "application/json" },
               body: JSON.stringify(payload),
@@ -894,7 +894,7 @@ const typeConfig: Record<
 
     async function fetchLanes() {
       try {
-        const res = await fetch("/api/lanes");
+        const res = await fetch((window.__ingress_path || "") + "/api/lanes");
         if (res.ok) {
           const data = await res.json();
           return data.lanes || [];
@@ -933,7 +933,7 @@ const typeConfig: Record<
           const laneId = input.dataset.id;
           const wipLimit = Math.max(0, parseInt(input.value) || 0);
           try {
-            await fetch(`/api/lanes/${laneId}`, {
+            await fetch(`${window.__ingress_path || ""}/api/lanes/${laneId}`, {
               method: "PUT",
               headers: { "content-type": "application/json" },
               body: JSON.stringify({ wip_limit: wipLimit }),
@@ -951,7 +951,7 @@ const typeConfig: Record<
           const newName = prompt("Rename lane:", currentLabel);
           if (newName?.trim()) {
             try {
-              await fetch(`/api/lanes/${laneId}`, {
+              await fetch(`${window.__ingress_path || ""}/api/lanes/${laneId}`, {
                 method: "PUT",
                 headers: { "content-type": "application/json" },
                 body: JSON.stringify({ label: newName.trim() }),
@@ -974,7 +974,7 @@ const typeConfig: Record<
           });
           if (!ok) return;
           try {
-            await fetch(`/api/lanes/${laneId}`, { method: "DELETE" });
+            await fetch(`${window.__ingress_path || ""}/api/lanes/${laneId}`, { method: "DELETE" });
             window.location.reload();
           } catch {}
         });
@@ -1008,7 +1008,7 @@ const typeConfig: Record<
           const updates = [];
           items.forEach((el, idx) => {
             updates.push(
-              fetch(`/api/lanes/${el.dataset.id}`, {
+              fetch(`${window.__ingress_path || ""}/api/lanes/${el.dataset.id}`, {
                 method: "PUT",
                 headers: { "content-type": "application/json" },
                 body: JSON.stringify({ position: idx }),
@@ -1075,7 +1075,7 @@ const typeConfig: Record<
         return;
       }
       try {
-        const res = await fetch("/api/lanes", {
+        const res = await fetch((window.__ingress_path || "") + "/api/lanes", {
           method: "POST",
           headers: { "content-type": "application/json" },
           body: JSON.stringify({ label: name }),

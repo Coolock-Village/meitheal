@@ -570,7 +570,7 @@ const priorityClasses: Record<number, string> = {
         if (value === original) return;
 
         try {
-          await fetch(`/api/tasks/${id}`, {
+          await fetch(`${window.__ingress_path || ""}/api/tasks/${id}`, {
             method: "PUT",
             headers: { "content-type": "application/json" },
             body: JSON.stringify({ [field]: value }),
@@ -601,7 +601,7 @@ const priorityClasses: Record<number, string> = {
         const field = el.dataset.field;
         try {
           const value = field === "priority" ? Number(el.value) : el.value;
-          await fetch(`/api/tasks/${id}`, {
+          await fetch(`${window.__ingress_path || ""}/api/tasks/${id}`, {
             method: "PUT",
             headers: { "content-type": "application/json" },
             body: JSON.stringify({ [field!]: value }),
@@ -683,7 +683,7 @@ const priorityClasses: Record<number, string> = {
         });
         if (!ok) return;
         try {
-          await fetch(`/api/tasks/${id}`, { method: "DELETE" });
+          await fetch(`${window.__ingress_path || ""}/api/tasks/${id}`, { method: "DELETE" });
           showToast("common.task_deleted");
           (btn as HTMLElement).closest("tr")?.remove();
         } catch {
@@ -732,7 +732,7 @@ const priorityClasses: Record<number, string> = {
         const checked = document.querySelectorAll(".row-check:checked");
         try {
           const promises = Array.from(checked).map((cb) =>
-            fetch(`/api/tasks/${(cb as HTMLElement).dataset.id}`, {
+            fetch(`${window.__ingress_path || ""}/api/tasks/${(cb as HTMLElement).dataset.id}`, {
               method: "PUT",
               headers: { "content-type": "application/json" },
               body: JSON.stringify({ status: newStatus }),
@@ -772,7 +772,7 @@ const priorityClasses: Record<number, string> = {
         if (!ok) return;
         try {
           const promises = Array.from(checked).map((cb) =>
-            fetch(`/api/tasks/${(cb as HTMLElement).dataset.id}`, {
+            fetch(`${window.__ingress_path || ""}/api/tasks/${(cb as HTMLElement).dataset.id}`, {
               method: "DELETE",
             }),
           );

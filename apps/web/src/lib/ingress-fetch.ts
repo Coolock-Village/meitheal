@@ -9,11 +9,7 @@
  * Bounded context: auth (ingress)
  */
 
-declare global {
-  interface Window {
-    __ingress_path?: string;
-  }
-}
+// Window.__ingress_path is declared in types/window.d.ts
 
 /**
  * Prefix an absolute path with the HA ingress path if present.
