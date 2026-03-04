@@ -167,8 +167,15 @@ export const onRequest: MiddlewareHandler = async ({ request, locals }, next) =>
     const isDev = import.meta.env.DEV;
 
     if (!isCsrfAllowed({ behindIngress, isDev, origin, referer, host })) {
+      logger.log("warn", {
+        event: "http.csrf_blocked",
+        domain: "security",
+        component: "middleware",
+        request_id: requestId,
+        message: `CSRF blocked: method=${method} path=${url.pathname} origin=${origin} referer=${referer} host=${host} behindIngress=${behindIngress} isDev=${isDev}`,
+      });
       return new Response(
-        JSON.stringify({ error: "CSRF origin mismatch" }),
+        JSON.stringify({ error: "CSRF origin mismatch", debug: { origin, referer, host, behindIngress } }),
         { status: 403, headers: { "content-type": "application/json" } }
       );
     }
