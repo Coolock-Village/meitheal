@@ -1,7 +1,7 @@
 # External Integrations
 
-**Analysis Date:** 2026-03-03
-**Version:** 0.2.6
+**Analysis Date:** 2026-03-04
+**Version:** 0.1.55
 
 ## Home Assistant Calendar
 
@@ -189,4 +189,4 @@ Addon runs on `http://127.0.0.1:4600` in standalone mode. "Failed to get addon c
 
 ---
 
-*Integration audit: 2026-03-03 — Phase 57b updated*
+*Integration audit: 2026-03-04 — Phase 57b updated*
