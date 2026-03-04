@@ -1,46 +1,97 @@
-# Panel 1: Frontier Experts — Phase 57 Integrations Iteration
+# Frontier Expert Panel — Phase 57: UI/UX + HA Optimization
 
-## Platform Architect
+**Phase:** 57 — UI/UX Polish Wave + HA Deep Integration
+**Iteration:** 01
+**Date:** 2026-03-04
 
-**Recommendation:** Add `aria-live="polite"` to dynamic status containers (`#cal-auto-info`, `#grocy-auto-info`, `#n8n-auto-info`) so screen readers announce auto-detection results.
+---
 
-- **Impact:** 3 — Moderate accessibility improvement for dynamic content announcements
-- **Effort:** 1 — Add one attribute to 3 elements
-- **Risk:** 1 — Zero regression risk
-- **Decision:** ✅ Accept (3 >= 1, concrete, testable: verify `aria-live` attribute exists)
+## 1. Platform Architect
 
-## OSS Integrations Specialist
+**Recommendation:** Split `global.css` (2224 lines) into domain-scoped CSS modules per Astro component.
 
-**Recommendation:** Use the established `@home-assistant/frontend` addon naming convention (`a0d7b954_nodered`) from `hassio-addons/app-node-red` for Node-RED auto-detection, same as the Grocy auto-detect pattern.
+- `global.css` is a monolith — dashboard styles, kanban styles, settings styles, and bento-grid all in one file
+- Astro natively supports scoped `<style>` blocks per component — use them
+- Extract dashboard-specific styles (`.stat-card`, `.bento-grid`, `.bento-card`) into `Dashboard.astro` scoped styles
+- Extract kanban-specific styles into `Kanban.astro` scoped styles
+- Keep only true global tokens (colors, typography, layout primitives) in `global.css`
 
-- **Impact:** 4 — Enables automatic n8n/Node-RED detection for HA users
-- **Effort:** 2 — Add one fetch call + DOM update, pattern exists from Grocy
-- **Risk:** 2 — Isolated change, fallback already in place
-- **Decision:** ✅ Accept (4 >= 2, concrete slug available)
+| Impact | Effort | Risk | Decision |
+|--------|--------|------|----------|
+| 4 | 4 | 2 | **Defer** — high-impact but high-effort refactor; schedule for dedicated CSS phase |
 
-## Reliability Engineer
+---
 
-**Recommendation:** Add a `data-init` guard to `initExplainerDialog()` to prevent duplicate event listener registration on repeated Astro page-load events.
+## 2. OSS Integrations Specialist
 
-- **Impact:** 3 — Prevents potential double-click behavior after client navigation
-- **Effort:** 1 — One line guard check
-- **Risk:** 1 — Pattern already used in other init functions
-- **Decision:** ✅ Accept (3 >= 1, testable: verify no duplicate listeners)
+**Recommendation:** Add HA theme variable passthrough so Meitheal respects the user's HA theme colors.
 
-## Security Engineer
+- HA exposes CSS custom properties on the ingress iframe (e.g. `--primary-color`, `--accent-color`, `--text-primary-color`)
+- Meitheal currently uses its own hardcoded dark theme variables
+- Map HA theme vars to Meitheal's `--accent`, `--bg-primary`, `--text-primary` when running inside ingress
+- Detect via `window.__ingress_path` presence — if set, cascade HA vars; if standalone, use defaults
+- Minimal CSS: `@media (prefers-color-scheme: dark) { :root { --accent: var(--primary-color, #10b981); } }`
 
-**Recommendation:** The explainer dialog uses `innerHTML` for body content from `EXPLAINER_CONTENT`, which is purely static inline strings (not user input). No XSS risk. No action needed.
+| Impact | Effort | Risk | Decision |
+|--------|--------|------|----------|
+| 5 | 2 | 2 | **Accept** — native HA feel with minimal effort |
 
-- **Impact:** 1 — No meaningful security gain; content is hardcoded
-- **Effort:** 3 — Would require refactoring to DOM API for static content
-- **Risk:** 1 — No risk in current state
-- **Decision:** ❌ Reject (1 < 3, impact below effort)
+---
 
-## Product Architect
+## 3. Reliability Engineer
 
-**Recommendation:** Rename "Connection Mode" label in n8n card to "Integration Mode" for consistency with domain language. The card is about workflow integration, not network connections.
+**Recommendation:** Add CSS build validation to CI — catch brace/syntax errors before deploy.
 
-- **Impact:** 2 — Minor language consistency improvement
-- **Effort:** 1 — One string change
-- **Risk:** 1 — No regression
-- **Decision:** ✅ Accept (2 >= 1, concrete)
+- The `global.css` unclosed brace bug (line 1180) broke the entire app at build time
+- PostCSS parser catches these, but only at `npm run build` — there's no standalone CSS lint step
+- Add a CI step: `npx postcss src/styles/global.css --no-map` to validate syntax
+- Also add a brace-balance check as a governance test (like `grep -c '{' | grep -c '}'`)
+- Prevents future CSS syntax regressions from reaching production
+
+| Impact | Effort | Risk | Decision |
+|--------|--------|------|----------|
+| 4 | 1 | 1 | **Accept** — trivial addition, prevents recurring issue |
+
+---
+
+## 4. Security Engineer
+
+**Recommendation:** Audit CSP `style-src` directive — ensure `unsafe-inline` isn't used for component styles.
+
+- Current CSP in `middleware.ts` sets headers but hasn't been validated against all style injection points
+- Astro's scoped `<style>` blocks generate inline styles by default — may conflict with strict CSP
+- If CSP is `style-src 'self'` only, scoped styles may break in strict mode
+- Verify with: load app with `Content-Security-Policy-Report-Only` and check for violations
+- No code change needed if current config works — just validate
+
+| Impact | Effort | Risk | Decision |
+|--------|--------|------|----------|
+| 3 | 1 | 1 | **Accept** — quick validation, security hygiene |
+
+---
+
+## 5. Product Architect
+
+**Recommendation:** Add user-configurable accent color in Settings → General, with HA theme auto-detect fallback.
+
+- Currently accent color is hardcoded (`#10b981` emerald)
+- Users may want to match their HA dashboard colors or personal preference
+- Store as `settings.accent_color` in SQLite
+- Load via `Astro.locals` into `:root` CSS variable
+- Default: HA theme color if available, else emerald
+
+| Impact | Effort | Risk | Decision |
+|--------|--------|------|----------|
+| 4 | 3 | 1 | **Accept** — enhances premium feel and HA integration |
+
+---
+
+## Summary
+
+| # | Persona | Recommendation | Decision |
+|---|---------|----------------|----------|
+| 1 | Platform Architect | Split global.css into scoped modules | Defer |
+| 2 | OSS Integrations | HA theme variable passthrough | **Accept** |
+| 3 | Reliability Engineer | CSS build validation in CI | **Accept** |
+| 4 | Security Engineer | Audit CSP style-src directive | **Accept** |
+| 5 | Product Architect | User-configurable accent color | **Accept** |

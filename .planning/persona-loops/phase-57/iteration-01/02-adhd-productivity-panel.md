@@ -1,46 +1,97 @@
-# Panel 2: ADHD/Productivity Specialists — Phase 57
+# ADHD/Productivity Panel — Phase 57: UI/UX + HA Optimization
 
-## Workflow Coach
+**Phase:** 57 — UI/UX Polish Wave + HA Deep Integration
+**Iteration:** 01
+**Date:** 2026-03-04
 
-**Recommendation:** Add a "Jump to Agents & AI" link inside the webhooks differentiation callout so users don't have to manually find the tab. Reduces navigation friction.
+---
 
-- **Impact:** 3 — Reduces cognitive load for users who landed on wrong tab
-- **Effort:** 1 — One `<a>` tag with tab-switch JS
-- **Risk:** 1 — Isolated change
-- **Decision:** ✅ Accept (3 >= 1, concrete)
+## 1. Workflow Coach
 
-## Execution Coach
+**Recommendation:** Add Astro `<ViewTransitions>` page-level loading indicators for ingress context.
 
-**Recommendation:** The n8n mode toggle state should persist to settings/localStorage so users don't re-select "Standalone" on every page load.
+- Page transitions behind HA ingress are visually choppy — no feedback during navigation
+- Astro's built-in loading bar (`<ViewTransitions fallback="swap">`) is disabled behind ingress
+- Instead: add a minimal CSS-only loading spinner that shows on `astro:before-swap` and hides on `astro:after-swap`
+- Uses `document.startViewTransition` API with fallback — no external deps
+- ADHD benefit: reduces perceived latency and "did it work?" anxiety
 
-- **Impact:** 4 — Significant friction reduction for standalone users who revisit settings
-- **Effort:** 2 — Read/write one localStorage key in init function
-- **Risk:** 1 — Isolated, no server-side impact
-- **Decision:** ✅ Accept (4 >= 2, testable: verify localStorage persistence)
+| Impact | Effort | Risk | Decision |
+|--------|--------|------|----------|
+| 3 | 2 | 2 | **Accept** — reduces cognitive load during page transitions |
 
-## Knowledge Coach
+---
 
-**Recommendation:** Update `.planning/codebase/INTEGRATIONS.md` to document the new explainer dialog pattern, mode-tabs pattern, and Grocy auto-detection flow for future contributors.
+## 2. Execution Coach
 
-- **Impact:** 3 — Documentation enables future-me and contributors
-- **Effort:** 2 — Update existing doc with 3 new sections
-- **Risk:** 1 — Documentation only
-- **Decision:** ✅ Accept (3 >= 2, concrete)
+**Recommendation:** Add keyboard shortcuts for frequent actions: `n` for New Task, `/` for Search, `k` for Kanban.
 
-## Focus Optimizer
+- Current workflow requires mouse for everything — Quick Add button, search icon, nav links
+- Power users (especially ADHD) benefit from muscle memory shortcuts
+- Implement via single `keydown` listener in `Layout.astro` — check `e.target.tagName` to avoid input conflicts
+- Map: `n` → `meitheal:new-task` event, `/` → focus search, `1-5` → nav pages
+- Display shortcut hints in tooltips on nav links
 
-**Recommendation:** The Phase 57 scope is well-contained — all changes are in `SettingsIntegrations.astro` + `global.css`. No scope creep observed. No action needed.
+| Impact | Effort | Risk | Decision |
+|--------|--------|------|----------|
+| 4 | 2 | 1 | **Accept** — high impact for keyboard-driven ADHD workflows |
 
-- **Impact:** 1 — Already clean
-- **Effort:** 1 — N/A
-- **Risk:** 1 — N/A
-- **Decision:** ❌ Reject (no action needed)
+---
 
-## Automation Coach
+## 3. Knowledge Coach
 
-**Recommendation:** Add a `cal-entity` value read from settings API on page load to pre-select the active calendar in the dropdown, so users see their current selection immediately.
+**Recommendation:** Add contextual help tooltips to dashboard stat cards showing what each metric means.
 
-- **Impact:** 4 — Critical for UX — users won't know their current setting without this
-- **Effort:** 2 — Add one fetch + select logic in `initCalendarDropdown()`
-- **Risk:** 1 — Already fetching, just need to set `selected`
-- **Decision:** ✅ Accept (4 >= 2, the code already has a placeholder for `activeEntity`)
+- Stat cards show numbers ("Total", "Due Today", "Overdue") but no explanation of scope
+- New users don't know if "Total" means all-time or current board, or what "Overdue" threshold is
+- Add `title` attribute or hover tooltip with 1-line explanation
+- E.g. "Tasks past their due date across all boards" for Overdue
+- KCS: knowledge embedded at point of use
+
+| Impact | Effort | Risk | Decision |
+|--------|--------|------|----------|
+| 3 | 1 | 1 | **Accept** — trivial effort, reduces confusion |
+
+---
+
+## 4. Focus Optimizer
+
+**Recommendation:** Add Astro `prefetch` for sidebar navigation links to eliminate perceived latency.
+
+- Astro supports `data-astro-prefetch` attribute on links — preloads page on hover/tap
+- Sidebar nav links are the primary navigation surface — prefetching them eliminates FOUC
+- Already have `@astrojs/prefetch` in the stack (via ViewTransitions)
+- Just add `data-astro-prefetch="hover"` to `.nav-link` elements
+- Near-zero effort, significant UX improvement
+
+| Impact | Effort | Risk | Decision |
+|--------|--------|------|----------|
+| 4 | 1 | 1 | **Accept** — near-zero effort, big UX gain |
+
+---
+
+## 5. Automation Coach
+
+**Recommendation:** Auto-persist sidebar collapsed state via `localStorage` so it survives page navigation.
+
+- Sidebar collapse toggle exists but resets on every page load
+- Users who prefer collapsed sidebar have to re-collapse every navigation
+- Store `sidebar-collapsed` in `localStorage` on toggle
+- Read on page load in `Layout.astro` and apply `body.sidebar-collapsed` class before paint
+- Prevents layout shift (FOUC) by reading before first render
+
+| Impact | Effort | Risk | Decision |
+|--------|--------|------|----------|
+| 4 | 1 | 1 | **Accept** — captures user preference, reduces friction |
+
+---
+
+## Summary
+
+| # | Persona | Recommendation | Decision |
+|---|---------|----------------|----------|
+| 1 | Workflow Coach | Ingress-safe loading indicator | **Accept** |
+| 2 | Execution Coach | Keyboard shortcuts (n, /, k) | **Accept** |
+| 3 | Knowledge Coach | Stat card help tooltips | **Accept** |
+| 4 | Focus Optimizer | Astro prefetch on nav links | **Accept** |
+| 5 | Automation Coach | Persist sidebar collapsed state | **Accept** |
