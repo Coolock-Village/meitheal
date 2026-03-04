@@ -22,7 +22,7 @@ export async function askAIForTask(taskId: string): Promise<void> {
     // Fallback: fetch from server API if not in offline store
     if (!raw) {
         try {
-            const res = await fetch(`/api/v1/tasks/${taskId}`);
+            const res = await fetch(`${window.__ingress_path || ""}/api/v1/tasks/${taskId}`);
             if (res.ok) {
                 const data = await res.json();
                 if (data) {
@@ -56,12 +56,12 @@ export async function askAIForTask(taskId: string): Promise<void> {
     let provider = "chatgpt";
     let customUrl = "";
     try {
-        const res = await fetch("/api/settings?key=ai-provider");
+        const res = await fetch((window.__ingress_path || "") + "/api/settings?key=ai-provider");
         if (res.ok) {
             const data = await res.json();
             if (data && data.value) provider = data.value;
         }
-        const resUrl = await fetch("/api/settings?key=ai-custom-url");
+        const resUrl = await fetch((window.__ingress_path || "") + "/api/settings?key=ai-custom-url");
         if (resUrl.ok) {
             const dataUrl = await resUrl.json();
             if (dataUrl && dataUrl.value) customUrl = dataUrl.value;

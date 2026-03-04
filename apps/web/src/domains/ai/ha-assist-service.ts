@@ -28,7 +28,7 @@ export async function buildTaskContext(taskId: string): Promise<string | null> {
 
   if (!task) {
     try {
-      const res = await fetch(`/api/v1/tasks/${taskId}`);
+      const res = await fetch(`${window.__ingress_path || ""}/api/v1/tasks/${taskId}`);
       if (res.ok) {
         const data = await res.json();
         if (data) {

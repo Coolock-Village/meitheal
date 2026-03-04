@@ -86,7 +86,7 @@ function getMeithealTools(): WebMCPTool[] {
         },
       },
       handler: async (input) => {
-        const res = await fetch("/api/tasks", {
+        const res = await fetch((window.__ingress_path || "") + "/api/tasks", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify(input),
@@ -118,7 +118,7 @@ function getMeithealTools(): WebMCPTool[] {
         const params = new URLSearchParams();
         if (input.query) params.set("q", String(input.query));
         if (input.status) params.set("status", String(input.status));
-        const res = await fetch(`/api/tasks?${params.toString()}`);
+        const res = await fetch(`${window.__ingress_path || ""}/api/tasks?${params.toString()}`);
         return res.json();
       },
     },
@@ -137,7 +137,7 @@ function getMeithealTools(): WebMCPTool[] {
         },
       },
       handler: async (input) => {
-        const res = await fetch(`/api/tasks/${input.taskId}`);
+        const res = await fetch(`${window.__ingress_path || ""}/api/tasks/${input.taskId}`);
         return res.json();
       },
     },
@@ -158,7 +158,7 @@ function getMeithealTools(): WebMCPTool[] {
         },
       },
       handler: async (input) => {
-        const res = await fetch(`/api/tasks/${input.taskId}`, {
+        const res = await fetch(`${window.__ingress_path || ""}/api/tasks/${input.taskId}`, {
           method: "PUT",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({ status: input.status }),
