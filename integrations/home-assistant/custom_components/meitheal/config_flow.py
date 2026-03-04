@@ -20,10 +20,64 @@ class MeithealConfigFlow(ConfigFlow, domain=DOMAIN):
 
     VERSION = 1
 
+    def __init__(self) -> None:
+        """Initialise flow state."""
+        self._discovered_host: str = DEFAULT_HOST
+        self._discovered_port: int = DEFAULT_PORT
+
+    # ── Supervisor addon discovery (zero-touch) ──────────────────────────
+
+    async def async_step_hassio(
+        self, discovery_info: dict[str, Any]
+    ) -> ConfigFlowResult:
+        """Handle Supervisor addon discovery.
+
+        Triggered automatically when the addon calls POST /discovery
+        on the Supervisor API at boot. The user sees a simple
+        "Meitheal Discovered — click Submit" confirmation instead of
+        the raw host/port form.
+        """
+        await self.async_set_unique_id(DOMAIN)
+        self._abort_if_unique_id_configured()
+
+        host = discovery_info.get(CONF_HOST, DEFAULT_HOST)
+        port = int(discovery_info.get(CONF_PORT, DEFAULT_PORT))
+
+        self._discovered_host = host
+        self._discovered_port = port
+
+        # Validate the connection before showing confirmation
+        if not await self._test_connection(host, port):
+            return self.async_abort(reason="cannot_connect")
+
+        return await self.async_step_hassio_confirm()
+
+    async def async_step_hassio_confirm(
+        self, user_input: dict[str, Any] | None = None
+    ) -> ConfigFlowResult:
+        """Confirm Supervisor addon discovery."""
+        if user_input is not None:
+            return self.async_create_entry(
+                title="Meitheal",
+                data={
+                    CONF_HOST: self._discovered_host,
+                    CONF_PORT: self._discovered_port,
+                },
+            )
+
+        return self.async_show_form(
+            step_id="hassio_confirm",
+            description_placeholders={
+                "addon": "Meitheal",
+            },
+        )
+
+    # ── Manual user setup (fallback) ─────────────────────────────────────
+
     async def async_step_user(
         self, user_input: dict[str, Any] | None = None
     ) -> ConfigFlowResult:
-        """Handle user setup step."""
+        """Handle manual user setup step."""
         errors: dict[str, str] = {}
 
         if user_input is not None:
@@ -50,6 +104,8 @@ class MeithealConfigFlow(ConfigFlow, domain=DOMAIN):
             ),
             errors=errors,
         )
+
+    # ── Connection test ──────────────────────────────────────────────────
 
     @staticmethod
     async def _test_connection(host: str, port: int) -> bool:

@@ -22,12 +22,28 @@ copied to `/homeassistant/custom_components/meitheal/` at boot.
 
 **Manual**: Copy this directory to `<ha_config>/custom_components/meitheal/`.
 
-## Configuration
+## Setup
 
-After installation, add the integration via HA UI:
-Settings → Devices & Services → Add Integration → "Meitheal"
+### Automatic (recommended)
 
-The addon hostname (`local_meitheal`) and port (`3000`) are pre-filled.
+When the Meitheal addon starts, it registers itself via the HA Supervisor
+Discovery API. You'll see a notification in HA:
+
+1. Go to **Settings → Devices & Services**
+2. Look for the **"Meitheal Discovered"** notification
+3. Click **Configure** → **Submit**
+
+That's it — entities and services are created automatically.
+
+### Manual fallback
+
+If discovery doesn't trigger (e.g. running outside HA OS):
+
+1. Go to **Settings → Devices & Services → Add Integration**
+2. Search for **"Meitheal"**
+3. Enter the hostname (`local_meitheal`) and port (`3000`)
+4. Click **Submit**
+
 Legacy installs using `local_meitheal_hub` are auto-detected during setup.
 
 ## Architecture
@@ -39,9 +55,19 @@ HA Core ←→ custom_components/meitheal ←→ Meitheal addon REST API ←→ 
 The component is a thin REST proxy. All task storage stays in Meitheal's SQLite.
 Data refreshes every 30 seconds via `DataUpdateCoordinator`.
 
-## Environment Variables
+## How Discovery Works
 
-- `MEITHEAL_API_BASE_URL` — Override addon URL (default: auto-detected from config entry)
+```text
+Addon boots → healthcheck passes → POST /discovery to Supervisor
+                                          ↓
+                            Supervisor triggers config_flow
+                                          ↓
+                            async_step_hassio() validates connection
+                                          ↓
+                            User sees "Meitheal Discovered — Submit"
+```
+
+The discovery call is idempotent — the Supervisor deduplicates on each boot.
 
 ## Voice Assistant Example
 

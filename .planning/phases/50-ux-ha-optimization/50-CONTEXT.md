@@ -40,3 +40,19 @@ The following must be included in settings import/export:
 - `ha_compact_mode`: boolean — override for compact mode
 - `ha_theme_sync`: boolean — follow HA theme
 - Fields ordering preserved in export JSON
+
+## Todo Sync Fix (Added 2026-03-04)
+
+### Problem
+
+Todo sync is non-functional because:
+1. `hassio_role: default` in `config.yaml` blocks `/addons` listing (auto-discovery fails)
+2. `initEntitySubscription()` never called on boot (entity cache empty)
+3. `startTodoSync()` only triggered from manual settings save, not auto-started on boot
+
+### Decisions
+
+- **Upgrade hassio_role to `manager`** — required for addon auto-discovery; does NOT grant admin-level access
+- **Initialize HA entities from middleware** — one-time init guard in `middleware.ts` is more reliable than `serve.mjs` because it has access to Astro path aliases
+- **Auto-start todo sync from SQLite** — on first request after boot, read saved `todo_sync_enabled`, `todo_entity`, `todo_sync_direction` from settings table and call `startTodoSync()`
+- **Graceful error handling** — `/api/ha/addons` should return `{ addons: [], message: "..." }` on 403, not crash

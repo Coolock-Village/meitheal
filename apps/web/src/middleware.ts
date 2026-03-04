@@ -8,6 +8,7 @@ import {
 import { buildSecurityHeaders, isCsrfAllowed } from "@domains/auth/ingress-policy";
 import { createLogger, defaultRedactionPatterns } from "@meitheal/domain-observability";
 import { getPersistenceClient, ensureSchema } from "@domains/tasks/persistence/store";
+import { initHAIntegrations } from "@domains/ha";
 
 const logger = createLogger({
   service: "meitheal-web",
@@ -89,6 +90,10 @@ async function rewriteIngressPaths(response: Response, ingressPath: string): Pro
 }
 
 export const onRequest: MiddlewareHandler = async ({ request, locals }, next) => {
+  // Lazy-init HA integrations on first request (entity subscription + todo sync auto-start).
+  // Fire-and-forget: don't block request processing on HA connection.
+  initHAIntegrations().catch(() => {});
+
   const startTime = Date.now();
   const requestId = request.headers.get("x-request-id") ?? crypto.randomUUID();
   const supervisorTokenPresent = Boolean(process.env.SUPERVISOR_TOKEN);

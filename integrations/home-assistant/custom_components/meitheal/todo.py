@@ -13,6 +13,8 @@ from homeassistant.components.todo import (
 )
 from homeassistant.config_entries import ConfigEntry
 from homeassistant.core import HomeAssistant
+from homeassistant.helpers.device_registry import DeviceEntryType
+from homeassistant.helpers.entity import DeviceInfo
 from homeassistant.helpers.entity_platform import AddEntitiesCallback
 from homeassistant.helpers.update_coordinator import CoordinatorEntity
 
@@ -20,6 +22,18 @@ from .const import DOMAIN
 from .coordinator import MeithealCoordinator, MeithealTask
 
 _LOGGER = logging.getLogger(__name__)
+
+
+def _device_info(entry: ConfigEntry) -> DeviceInfo:
+    """Return shared device info for all Meitheal entities."""
+    return DeviceInfo(
+        identifiers={(DOMAIN, entry.entry_id)},
+        name="Meitheal",
+        manufacturer="Coolock Village",
+        model="Task Engine",
+        entry_type=DeviceEntryType.SERVICE,
+        configuration_url="https://github.com/Coolock-Village/meitheal",
+    )
 
 
 def _status_to_ha(status: str) -> TodoItemStatus:
@@ -67,7 +81,7 @@ class MeithealTodoListEntity(CoordinatorEntity[MeithealCoordinator], TodoListEnt
     ) -> None:
         super().__init__(coordinator)
         self._attr_unique_id = f"{entry.entry_id}_todo"
-        self._attr_name = "Tasks"
+        self._attr_device_info = _device_info(entry)
 
     @property
     def todo_items(self) -> list[TodoItem] | None:

@@ -7,6 +7,8 @@ import logging
 from homeassistant.components.sensor import SensorEntity, SensorStateClass
 from homeassistant.config_entries import ConfigEntry
 from homeassistant.core import HomeAssistant
+from homeassistant.helpers.device_registry import DeviceEntryType
+from homeassistant.helpers.entity import DeviceInfo
 from homeassistant.helpers.entity_platform import AddEntitiesCallback
 from homeassistant.helpers.update_coordinator import CoordinatorEntity
 
@@ -14,6 +16,18 @@ from .const import DOMAIN
 from .coordinator import MeithealCoordinator
 
 _LOGGER = logging.getLogger(__name__)
+
+
+def _device_info(entry: ConfigEntry) -> DeviceInfo:
+    """Return shared device info for all Meitheal entities."""
+    return DeviceInfo(
+        identifiers={(DOMAIN, entry.entry_id)},
+        name="Meitheal",
+        manufacturer="Coolock Village",
+        model="Task Engine",
+        entry_type=DeviceEntryType.SERVICE,
+        configuration_url="https://github.com/Coolock-Village/meitheal",
+    )
 
 
 async def async_setup_entry(
@@ -47,7 +61,7 @@ class MeithealActiveTasksSensor(
     def __init__(self, coordinator: MeithealCoordinator, entry: ConfigEntry) -> None:
         super().__init__(coordinator)
         self._attr_unique_id = f"{entry.entry_id}_active_tasks"
-        self._attr_name = "Active Tasks"
+        self._attr_device_info = _device_info(entry)
 
     @property
     def native_value(self) -> int | None:
@@ -71,7 +85,7 @@ class MeithealOverdueTasksSensor(
     def __init__(self, coordinator: MeithealCoordinator, entry: ConfigEntry) -> None:
         super().__init__(coordinator)
         self._attr_unique_id = f"{entry.entry_id}_overdue_tasks"
-        self._attr_name = "Overdue Tasks"
+        self._attr_device_info = _device_info(entry)
 
     @property
     def native_value(self) -> int | None:
@@ -95,7 +109,7 @@ class MeithealTotalTasksSensor(
     def __init__(self, coordinator: MeithealCoordinator, entry: ConfigEntry) -> None:
         super().__init__(coordinator)
         self._attr_unique_id = f"{entry.entry_id}_total_tasks"
-        self._attr_name = "Total Tasks"
+        self._attr_device_info = _device_info(entry)
 
     @property
     def native_value(self) -> int | None:

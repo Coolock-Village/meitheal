@@ -17,8 +17,10 @@ ingress_port: 3000
 ingress_entry: /
 homeassistant_api: true
 hassio_api: true
-hassio_role: default
+hassio_role: manager
 auth_api: true
+discovery:
+  - meitheal
 panel_icon: mdi:account-group
 panel_title: "Meitheal"
 panel_admin: false

@@ -2,19 +2,28 @@
   "config": {
     "step": {
       "user": {
-        "title": "Meitheal Hub",
-        "description": "Connect to your Meitheal task engine. The addon hostname is auto-detected if running as an HA addon.",
+        "title": "Connect to Meitheal",
+        "description": "Enter your Meitheal addon connection details. If running as an HA addon, the defaults should work.",
         "data": {
-          "host": "Addon hostname",
+          "host": "Hostname",
           "port": "Port"
+        },
+        "data_description": {
+          "host": "Docker hostname of the Meitheal addon (usually 'local_meitheal')",
+          "port": "Port the Meitheal web server listens on"
         }
+      },
+      "hassio_confirm": {
+        "title": "Meitheal Discovered",
+        "description": "The Meitheal addon was automatically detected. Click Submit to finish setup."
       }
     },
     "abort": {
-      "already_configured": "Meitheal is already configured"
+      "already_configured": "Meitheal is already configured",
+      "cannot_connect": "Cannot reach the Meitheal addon. Make sure the addon is running."
     },
     "error": {
-      "cannot_connect": "Cannot reach Meitheal. Check the hostname and port."
+      "cannot_connect": "Cannot reach Meitheal at the specified address. Check that the addon is started and the hostname is correct."
     }
   },
   "entity": {

@@ -1,7 +1,7 @@
 #!/usr/bin/with-contenv bashio
 set -euo pipefail
 
-export MEITHEAL_VERSION="0.1.53"
+export MEITHEAL_VERSION="0.1.55"
 export NODE_ENV="production"
 STARTUP_TS=$(date -u +"%Y-%m-%dT%H:%M:%SZ")
 echo "{\"event\":\"addon.startup\",\"version\":\"${MEITHEAL_VERSION}\",\"time\":\"${STARTUP_TS}\"}"
@@ -93,6 +93,26 @@ if [ -f /opt/meitheal/apps/web/package.json ]; then
       exit 1
     fi
   done
+
+  # ── Auto-register integration via Supervisor Discovery ──
+  # Tells HA Supervisor this addon provides the "meitheal" service.
+  # HA Core will trigger async_step_hassio() in the custom component's
+  # config_flow, giving the user a simple "Discovered — click Submit"
+  # dialog instead of manual host/port entry.
+  # The Supervisor deduplicates these calls, so it's safe every boot.
+  if [ -n "${SUPERVISOR_TOKEN:-}" ]; then
+    DISCOVERY_PAYLOAD="{\"service\":\"meitheal\",\"config\":{\"host\":\"local_meitheal\",\"port\":${PORT}}}"
+    DISC_RESULT=$(curl -fsS -X POST \
+      -H "Authorization: Bearer ${SUPERVISOR_TOKEN}" \
+      -H "Content-Type: application/json" \
+      -d "${DISCOVERY_PAYLOAD}" \
+      http://supervisor/discovery 2>/dev/null || true)
+    if [ -n "${DISC_RESULT}" ]; then
+      echo "{\"event\":\"discovery.registered\",\"time\":\"$(date -u +\"%Y-%m-%dT%H:%M:%SZ\")\"}"
+    else
+      echo "{\"event\":\"discovery.registration.failed\",\"time\":\"$(date -u +\"%Y-%m-%dT%H:%M:%SZ\")\"}" >&2
+    fi
+  fi
 fi
 
 # Placeholder for Alloy sidecar integration path.

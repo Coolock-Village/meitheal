@@ -38,6 +38,16 @@ export const GET: APIRoute = async () => {
     });
 
     if (!res.ok) {
+      // 403/401 = addon lacks sufficient hassio_role for /addons endpoint.
+      // This is expected on older deployments with hassio_role: default.
+      // Don't log as error — it's a known config issue, not a crash.
+      if (res.status === 403 || res.status === 401) {
+        console.warn(`[api/ha/addons] Supervisor API returned ${res.status} — addon may need hassio_role: manager`);
+        return new Response(
+          JSON.stringify({ addons: [], message: "Insufficient permissions — upgrade addon to enable auto-discovery" }),
+          { status: 200, headers: { "Content-Type": "application/json" } },
+        );
+      }
       console.error(`[api/ha/addons] Supervisor API returned ${res.status}`);
       return new Response(
         JSON.stringify({ addons: [], message: `Supervisor API error: ${res.status}` }),

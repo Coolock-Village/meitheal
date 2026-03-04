@@ -22,6 +22,8 @@ SCAN_INTERVAL = timedelta(seconds=30)
 SERVICE_CREATE_TASK = "create_task"
 SERVICE_COMPLETE_TASK = "complete_task"
 SERVICE_SYNC_TODO = "sync_todo"
+SERVICE_SEARCH_TASKS = "search_tasks"
+SERVICE_GET_OVERDUE_TASKS = "get_overdue_tasks"
 
 # Meitheal task statuses
 STATUS_TODO = "todo"

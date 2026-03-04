@@ -11,7 +11,9 @@
   "single_config_entry": true,
   "integration_type": "hub",
   "iot_class": "local_polling",
-  "dependencies": [],
+  "dependencies": [
+    "hassio"
+  ],
   "after_dependencies": [
     "conversation"
   ]

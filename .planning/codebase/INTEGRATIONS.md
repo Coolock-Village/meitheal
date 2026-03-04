@@ -40,12 +40,16 @@
 |----------|-------|
 | Path | `integrations/home-assistant/custom_components/meitheal/` |
 | Type | `hub` integration with config flow |
+| Discovery | Supervisor Discovery API — zero-touch setup via `async_step_hassio` |
+| Device | All entities grouped under "Meitheal" device (manufacturer: Coolock Village, model: Task Engine) |
 | Entities | `todo.meitheal_tasks`, `sensor.meitheal_active_tasks`, `sensor.meitheal_overdue_tasks`, `sensor.meitheal_total_tasks` |
-| Services | `meitheal.create_task`, `meitheal.complete_task`, `meitheal.sync_todo` |
+| Services | `meitheal.create_task`, `meitheal.complete_task`, `meitheal.sync_todo`, `meitheal.search_tasks`, `meitheal.get_overdue_tasks` |
 | Communication | REST API to addon at `http://{host}:{port}/api/tasks` |
 | Polling | 30s via `DataUpdateCoordinator` |
 | Auto-install | Addon copies component to `/homeassistant/custom_components/` at boot |
-| Config | HA UI → Settings → Devices & Services → Add Integration → Meitheal |
+| Auto-setup | Addon calls `POST /discovery` on Supervisor API → triggers `async_step_hassio()` in config_flow |
+| Config | Auto-discovered on addon start; manual fallback: Settings → Devices & Services → Add Integration → Meitheal |
+| Icon | `icon.png` bundled in component directory |
 
 ## Vikunja Compatibility API
 
