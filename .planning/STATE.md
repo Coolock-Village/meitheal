@@ -82,7 +82,7 @@ Local-first task orchestration with HA calendar sync and Vikunja compatibility.
 2. Run live Vikunja voice-assistant compatibility workflow.
 3. ~~Push initial images to Docker Hub and test install on HA Green.~~ *(CI builds via v0.1.57 tag)*
 4. Validate sidebar drag-and-drop reordering end-to-end.
-5. PWA service worker scope validation under ingress.
+5. ~~PWA service worker scope validation under ingress.~~ *(Phase 59: SW registered, manifest valid, install prompt wired)*
 6. Test calendar + todo entity selection in HA ingress after v0.1.57 restart.
 
 ## Codebase Health (as of v0.1.57)
@@ -98,10 +98,10 @@ Local-first task orchestration with HA calendar sync and Vikunja compatibility.
 
 ## Session Continuity
 
-Last session: 2026-03-04T18:57:00Z
-Stopped at: v0.1.59 — CSS domain split complete. `global.css` split into 14 domain-scoped partials. Build passes, zero visual regressions. STACK.md, ARCHITECTURE.md, STRUCTURE.md updated.
+Last session: 2026-03-04T19:00:00Z
+Stopped at: v0.1.59 — Phase 59 PWA ingress activation complete. `registerServiceWorker()` wired in Layout.astro, install banner created, Settings PWA status upgraded, SW version synced to 0.1.58, manifest ID stabilized.
 
-Resume hint: Continue page-by-page UX audit (Kanban, Calendar views). Verify v0.1.59 on HA after addon restart.
+Resume hint: Continue page-by-page UX audit (Kanban, Calendar views). Test PWA install on HTTPS-enabled HA (Nabu Casa). Verify v0.1.59 on HA after addon restart.
 
 ---
-*Last updated: 2026-03-04 — v0.1.59 CSS domain split*
+*Last updated: 2026-03-04 — Phase 59 PWA ingress activation*
