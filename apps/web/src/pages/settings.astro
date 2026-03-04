@@ -1062,15 +1062,11 @@ const locale: Locale = cookieLocale === "ga" ? "ga" : "en";
         btn.disabled = false;
       });
 
-    // ───── n8n Save ─────
+    // ───── n8n Save (HA Addon / Auto mode) ─────
     document.getElementById("save-n8n")?.addEventListener("click", async () => {
-      const webhookUrl = (
-        document.getElementById("n8n-webhook-url") as HTMLInputElement
-      ).value;
-      if (!webhookUrl) {
-        showToast("settings.n8n_required", "error");
-        return;
-      }
+      const webhookUrl =
+        (document.getElementById("n8n-webhook-url") as HTMLInputElement)
+          ?.value || "";
 
       const events: string[] = [];
       document.querySelectorAll(".n8n-event:checked").forEach((cb) => {
@@ -1081,7 +1077,8 @@ const locale: Locale = cookieLocale === "ga" ? "ga" : "en";
       btn.textContent = "Saving...";
       btn.disabled = true;
 
-      await saveSetting("n8n_webhook_url", webhookUrl);
+      await saveSetting("n8n_mode", "ha_addon");
+      if (webhookUrl) await saveSetting("n8n_webhook_url", webhookUrl);
       await saveSetting("n8n_events", events);
 
       const statusEl = document.getElementById("n8n-status");

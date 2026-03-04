@@ -1167,26 +1167,26 @@ Astro.response.headers.set("X-Content-Type-Options", "nosniff");
             if (createBtn) {
               createBtn.click();
             } else {
-              window.location.href = "/tasks";
+              window.location.href = (window.__ingress_path || "") + "/tasks";
             }
           }
           if (e.key === "k") {
-            window.location.href = "/kanban";
+            window.location.href = (window.__ingress_path || "") + "/kanban";
           }
           if (e.key === "t") {
-            window.location.href = "/table";
+            window.location.href = (window.__ingress_path || "") + "/table";
           }
           if (e.key === "d") {
-            window.location.href = "/";
+            window.location.href = (window.__ingress_path || "") + "/";
           }
           if (e.key === "y") {
-            window.location.href = "/today";
+            window.location.href = (window.__ingress_path || "") + "/today";
           }
           if (e.key === "u") {
-            window.location.href = "/upcoming";
+            window.location.href = (window.__ingress_path || "") + "/upcoming";
           }
           if (e.key === "c") {
-            window.location.href = "/calendar";
+            window.location.href = (window.__ingress_path || "") + "/calendar";
           }
           if (e.key === "?") {
             e.preventDefault();
@@ -2899,28 +2899,33 @@ Astro.response.headers.set("X-Content-Type-Options", "nosniff");
                 "[data-action='create-task']",
               ) as HTMLElement;
               if (createBtn) createBtn.click();
-              else window.location.href = "/tasks";
+              else
+                window.location.href = (window.__ingress_path || "") + "/tasks";
             } else if (action === "new-board") {
               const boardBtn = document.querySelector(
                 ".board-add-btn",
               ) as HTMLElement;
               if (boardBtn) boardBtn.click();
             } else if (action === "go-dashboard") {
-              window.location.href = "/";
+              window.location.href = (window.__ingress_path || "") + "/";
             } else if (action === "go-kanban") {
-              window.location.href = "/kanban";
+              window.location.href = (window.__ingress_path || "") + "/kanban";
             } else if (action === "go-table") {
-              window.location.href = "/table";
+              window.location.href = (window.__ingress_path || "") + "/table";
             } else if (action === "go-settings") {
-              window.location.href = "/settings";
+              window.location.href =
+                (window.__ingress_path || "") + "/settings";
             } else if (action === "go-today") {
-              window.location.href = "/today";
+              window.location.href = (window.__ingress_path || "") + "/today";
             } else if (action === "go-upcoming") {
-              window.location.href = "/upcoming";
+              window.location.href =
+                (window.__ingress_path || "") + "/upcoming";
             } else if (action === "go-calendar") {
-              window.location.href = "/calendar";
+              window.location.href =
+                (window.__ingress_path || "") + "/calendar";
             } else if (action === "export-csv") {
-              window.location.href = "/api/export/tasks.csv";
+              window.location.href =
+                (window.__ingress_path || "") + "/api/export/tasks.csv";
             } else if (taskId) {
               openTaskDetail(taskId);
             }

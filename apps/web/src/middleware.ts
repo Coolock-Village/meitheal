@@ -172,10 +172,10 @@ export const onRequest: MiddlewareHandler = async ({ request, locals }, next) =>
         domain: "security",
         component: "middleware",
         request_id: requestId,
-        message: `CSRF blocked: method=${method} path=${url.pathname} origin=${origin} referer=${referer} host=${host} behindIngress=${behindIngress} isDev=${isDev}`,
+        message: `CSRF blocked: ${method} ${url.pathname} origin=${origin} host=${host} behindIngress=${behindIngress}`,
       });
       return new Response(
-        JSON.stringify({ error: "CSRF origin mismatch", debug: { origin, referer, host, behindIngress } }),
+        JSON.stringify({ error: "CSRF origin mismatch" }),
         { status: 403, headers: { "content-type": "application/json" } }
       );
     }
