@@ -50,11 +50,13 @@ Local-first task orchestration with HA calendar sync and Vikunja compatibility.
 7. `54-settings-integrations-ux` — `complete` (auto-detect connection, integration cards, tooltips)
 8. `56-settings-ia-overhaul` — `complete` (sidebar-first, HA→Integrations, PWA demote, Help section)
 9. `58-css-domain-split` — `complete` (2316-line monolith → 14 domain-scoped partials, 2-iteration GSD persona loop: 15 personas, 7 actions resolved, 3 deferred)
+10. `59-broad-quality-audit` — `complete` (security + code quality + UX: ~82 ingress fetch fixes, 22+ `as any` eliminated, 6 alert→toast, window.d.ts type declarations, API error handling)
 
 ## Recent Decisions
 
 | Date | Decision | Context |
 |------|----------|---------|
+| 2026-03-04 | **Phase 59** — Broad quality audit: ~82 ingress fetch fixes, type safety, UX anti-patterns | All fetch() calls now use window.__ingress_path for HA Supervisor safety; 30→8 `as any`; 6→0 `alert()`; try/catch on ha/calendars |
 | 2026-03-04 | **v0.1.59** — CSS domain split: 14 partials, lean `global.css` hub | `global.css` was 2316 lines; split into `_tokens`, `_base`, `_layout`, `_forms`, etc. |
 | 2026-03-04 | n8n auto-mode save no longer requires webhook URL | HA addon mode uses WebSocket, not HTTP; save handler now persists `n8n_mode: ha_addon` |
 | 2026-03-04 | Calendar settings persistence — `calendar_sync_enabled` + `calendar_write_back` | Save handler now persists both flags + calls `/api/integrations/calendar/sync` |
@@ -94,14 +96,14 @@ Local-first task orchestration with HA calendar sync and Vikunja compatibility.
 | KCS docs | 11 |
 | API endpoint files | 43 |
 | DB migrations | 3 |
-| Build time | ~4.6s |
+| Build time | ~3.7s |
 
 ## Session Continuity
 
-Last session: 2026-03-04T19:10:00Z
-Stopped at: v0.1.59 — Phase 58 complete (2 iterations). CSS domain split with full GSD persona optimization loop. Iteration 2 fixed: dup `@keyframes skeleton-pulse`, contaminated classes in `_feedback.css`/`_modal.css`/`_table.css`, added CSP comments, domain headers, class-map.
+Last session: 2026-03-04T19:41:00Z
+Stopped at: Phase 59 — Broad quality audit complete (6 commits). ~82 ingress fetch fixes, type safety improvements (window.d.ts), UX anti-patterns (alert→toast), API error handling. Build time: 3.69s.
 
-Resume hint: Continue page-by-page UX audit (Kanban, Calendar views). Verify v0.1.59 on HA after addon restart. Deferred items: CI brace glob, CSS duplicate lint, `!important` audit.
+Resume hint: Run GSD persona loop on audit findings. HA WebSocket reconnection logic is missing (deferred). 8 remaining `as any` casts are structural (dateFormat enum, Icon name, msgData). SQL template literals are safe (DDL/DML, not user-interpolated).
 
 ---
-*Last updated: 2026-03-04 — Phase 58 GSD persona loop complete (2 iterations)*
+*Last updated: 2026-03-04 — Phase 59 broad quality audit complete*

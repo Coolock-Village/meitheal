@@ -75,6 +75,8 @@ Prevents ad-blocker interference and works fully offline.
 **Convention:** `_` prefix = not standalone. Import order matters for cascade.
 **Why not Astro `<style>`?** Shared classes (`.btn`, `.card`, `.form-input`) span multiple pages — scoped styles would require `:global()` everywhere.
 **Quality:** Full GSD persona loop (15 personas, 2 iterations) — domain headers, CSP audit, class-map in `global.css`, zero duplicate `@keyframes`.
+**Type Safety:** `types/window.d.ts` — 16 typed window properties for cross-component communication (eliminated 22+ `as any` casts).
+**HA Ingress:** All ~82 client-side `fetch()` calls prefix `window.__ingress_path` for Supervisor ingress proxy safety.
 
 ## Configuration
 
