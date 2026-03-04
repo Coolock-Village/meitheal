@@ -26,10 +26,13 @@
  * _utilities → .sr-only, .skip-to-content, @keyframes fade-in-up/fade-in, prefers-reduced-motion
  * ============================================= */
 
-/* @import MUST come before any other statements per CSS spec.
- * Tailwind directives expand to real CSS, so they go after imports.
- * PostCSS processes @import first, then @tailwind, so this ordering
- * eliminates the "@import must precede all other statements" warnings. */
+/* Tailwind layer anchors — MUST be before @import statements so that
+ * @layer components/base/utilities blocks inside imported files have
+ * valid anchor points. The PostCSS "@import must precede" warnings
+ * are harmless — postcss-import resolves @import before @tailwind. */
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
 
 /* 1. Design tokens: fonts, CSS vars, themes */
 @import './_tokens.css';
@@ -52,8 +55,3 @@
 /* 4. Cross-cutting concerns */
 @import './_responsive.css';
 @import './_utilities.css';
-
-/* Tailwind directives — after imports to satisfy CSS spec */
-@tailwind base;
-@tailwind components;
-@tailwind utilities;

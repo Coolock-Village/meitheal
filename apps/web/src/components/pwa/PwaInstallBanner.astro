@@ -181,23 +181,17 @@
 </style>
 
 <script>
-  const DISMISS_KEY = "meitheal-pwa-dismiss";
-  const DISMISS_DAYS = 7;
+  const DISMISS_KEY = "meitheal-pwa-dismissed";
 
   function isDismissed(): boolean {
-    const raw = localStorage.getItem(DISMISS_KEY);
-    if (!raw) return false;
-    const ts = Number(raw);
-    if (isNaN(ts)) return false;
-    // Expired after DISMISS_DAYS
-    return Date.now() - ts < DISMISS_DAYS * 24 * 60 * 60 * 1000;
+    return localStorage.getItem(DISMISS_KEY) === "true";
   }
 
   function showBanner() {
     const banner = document.getElementById("pwa-install-banner");
     if (!banner || isDismissed()) return;
     banner.style.display = "flex";
-    // Trigger reflow for animation
+    // Trigger reflow for CSS animation
     void banner.offsetHeight;
     banner.classList.add("pwa-banner--visible");
   }
@@ -211,43 +205,53 @@
     }, 350);
   }
 
-  // Listen for installable event from Layout.astro
+  function dismissBanner() {
+    localStorage.setItem(DISMISS_KEY, "true");
+    hideBanner();
+  }
+
+  // Bind DOM event listeners — re-runs after each ViewTransitions swap
+  function bindBannerListeners() {
+    // Install button
+    document
+      .getElementById("pwa-install-btn")
+      ?.addEventListener("click", async () => {
+        const prompt = window.__pwa_install_prompt;
+        if (!prompt) return;
+        try {
+          await prompt.prompt();
+          const result = await prompt.userChoice;
+          if (result.outcome === "accepted") {
+            dismissBanner();
+          }
+        } catch {
+          // prompt() can only be called once
+        }
+        window.__pwa_install_prompt = null;
+      });
+
+    // Dismiss button — permanent dismiss
+    document
+      .getElementById("pwa-dismiss-btn")
+      ?.addEventListener("click", dismissBanner);
+
+    // If prompt already captured, show banner
+    if (window.__pwa_install_prompt && !isDismissed()) {
+      showBanner();
+    }
+  }
+
+  // Listen for installable event (fires from Layout.astro)
   window.addEventListener("meitheal-pwa-installable", () => {
     showBanner();
   });
 
   // Listen for installed event — hide permanently
   window.addEventListener("meitheal-pwa-installed", () => {
-    hideBanner();
+    dismissBanner();
   });
 
-  // Install button
-  document
-    .getElementById("pwa-install-btn")
-    ?.addEventListener("click", async () => {
-      const prompt = window.__pwa_install_prompt;
-      if (!prompt) return;
-      try {
-        await prompt.prompt();
-        const result = await prompt.userChoice;
-        if (result.outcome === "accepted") {
-          hideBanner();
-        }
-      } catch {
-        // prompt() can only be called once
-      }
-      window.__pwa_install_prompt = null;
-    });
-
-  // Dismiss button
-  document.getElementById("pwa-dismiss-btn")?.addEventListener("click", () => {
-    localStorage.setItem(DISMISS_KEY, String(Date.now()));
-    hideBanner();
-  });
-
-  // If prompt already captured (race condition — page loaded before listener),
-  // show banner immediately
-  if (window.__pwa_install_prompt && !isDismissed()) {
-    showBanner();
-  }
+  // Initial bind + re-bind after ViewTransitions page swap
+  bindBannerListeners();
+  document.addEventListener("astro:page-load", bindBannerListeners);
 </script>
