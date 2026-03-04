@@ -123,7 +123,7 @@ const locale: Locale = cookieLocale === "ga" ? "ga" : "en";
   });
 
   // Expose global open method
-  (window as any).openNewTaskModal = () => {
+  window.openNewTaskModal = () => {
     // If the detail panel is open, close it to avoid dual modal
     document.getElementById("task-detail-panel")?.classList.remove("open");
     document.getElementById("task-detail-overlay")?.classList.add("hidden");
@@ -141,7 +141,7 @@ const locale: Locale = cookieLocale === "ga" ? "ga" : "en";
     const target = (e.target as HTMLElement).closest("#create-task-btn");
     if (target) {
       e.preventDefault();
-      (window as any).openNewTaskModal();
+      window.openNewTaskModal();
     }
   });
 

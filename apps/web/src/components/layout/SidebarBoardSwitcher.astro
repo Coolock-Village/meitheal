@@ -90,12 +90,12 @@ const { locale } = Astro.props;
     }
 
     // Expose active board globally for page scripts
-    (window as any).__activeBoard = select.value;
+    window.__activeBoard = select.value;
 
     // Apply board filter to visible items
     function applyBoardFilter() {
       const board = select!.value;
-      (window as any).__activeBoard = board;
+      window.__activeBoard = board;
       // Filter task items (tasks page)
       document.querySelectorAll(".task-item[data-board]").forEach((el) => {
         const item = el as HTMLElement;

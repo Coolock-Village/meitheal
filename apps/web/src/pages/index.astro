@@ -395,7 +395,7 @@ function relativeTime(dueDate: string): string {
         const emptyState = taskList?.querySelector(".bento-empty-state");
         if (emptyState) emptyState.remove();
 
-        const activeBoard = (window as any).__activeBoard ?? "default";
+        const activeBoard = window.__activeBoard ?? "default";
         const newCard = document.createElement("div");
         newCard.className = "bento-card";
         newCard.dataset.board = activeBoard === "all" ? "default" : activeBoard;
@@ -420,7 +420,7 @@ function relativeTime(dueDate: string): string {
           );
 
         try {
-          const activeBoard = (window as any).__activeBoard ?? "default";
+          const activeBoard = window.__activeBoard ?? "default";
           const res = await fetch("/api/tasks", {
             method: "POST",
             headers: { "content-type": "application/json" },
@@ -492,13 +492,13 @@ function relativeTime(dueDate: string): string {
 
     // Header "+ New Task" button → open unified New Task modal
     document.getElementById("quick-add-btn")?.addEventListener("click", () => {
-      if (typeof (window as any).openNewTaskModal === "function") {
-        (window as any).openNewTaskModal();
+      if (typeof window.openNewTaskModal === "function") {
+        window.openNewTaskModal();
       } else {
         // Retry after a tick — NewTaskModal script may still be loading
         requestAnimationFrame(() => {
-          if (typeof (window as any).openNewTaskModal === "function") {
-            (window as any).openNewTaskModal();
+          if (typeof window.openNewTaskModal === "function") {
+            window.openNewTaskModal();
           } else {
             (
               document.getElementById("quick-title") as HTMLInputElement
@@ -515,8 +515,8 @@ function relativeTime(dueDate: string): string {
         // Don't intercept checkbox or button clicks
         if (target.closest("input, button, a")) return;
         const id = (el as HTMLElement).dataset.id;
-        if (id && typeof (window as any).openTaskDetail === "function") {
-          (window as any).openTaskDetail(id);
+        if (id && typeof window.openTaskDetail === "function") {
+          window.openTaskDetail(id);
         }
       });
     });

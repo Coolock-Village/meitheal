@@ -137,8 +137,8 @@ const { locale } = Astro.props;
     searchResults.style.display = "none";
     searchInput.value = "";
     // If we're on a page with the task detail panel available, open it natively
-    if (typeof (window as any).openTaskDetail === "function") {
-      (window as any).openTaskDetail(taskId);
+    if (typeof window.openTaskDetail === "function") {
+      window.openTaskDetail(taskId);
     } else {
       window.location.href = `/tasks#task-${taskId}`; // Redirect to tasks list and open panel using new anchor syntax
     }

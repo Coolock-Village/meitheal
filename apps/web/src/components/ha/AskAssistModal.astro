@@ -315,7 +315,7 @@ const locale: Locale = cookieLocale === "ga" ? "ga" : "en";
   });
 
   // Export globally for TopNavigation to trigger
-  (window as any).openAskHaModal = () => {
+  window.openAskHaModal = () => {
     isModalOpen = true;
     overlay?.classList.add("open");
     loadAgents();
@@ -327,7 +327,7 @@ const locale: Locale = cookieLocale === "ga" ? "ga" : "en";
     const target = (e.target as HTMLElement).closest("#ask-ha-btn");
     if (target) {
       e.preventDefault();
-      (window as any).openAskHaModal();
+      window.openAskHaModal();
     }
   });
 

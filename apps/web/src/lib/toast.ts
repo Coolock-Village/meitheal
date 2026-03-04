@@ -18,8 +18,8 @@ export function showToast(
     
     let displayMessage = message;
     // Attempt local i18n resolution mapped via Layout.astro <script is:inline>
-    if (typeof window !== "undefined" && (window as any).mI18n) {
-        const translated = (window as any).mI18n.get(message);
+    if (typeof window !== "undefined" && window.mI18n) {
+        const translated = window.mI18n.get(message);
         if (translated && translated !== message) {
             displayMessage = translated;
         }

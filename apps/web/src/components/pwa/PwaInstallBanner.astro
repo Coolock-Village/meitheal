@@ -225,7 +225,7 @@
   document
     .getElementById("pwa-install-btn")
     ?.addEventListener("click", async () => {
-      const prompt = (window as any).__pwa_install_prompt;
+      const prompt = window.__pwa_install_prompt;
       if (!prompt) return;
       try {
         await prompt.prompt();
@@ -236,7 +236,7 @@
       } catch {
         // prompt() can only be called once
       }
-      (window as any).__pwa_install_prompt = null;
+      window.__pwa_install_prompt = null;
     });
 
   // Dismiss button
@@ -247,7 +247,7 @@
 
   // If prompt already captured (race condition — page loaded before listener),
   // show banner immediately
-  if ((window as any).__pwa_install_prompt && !isDismissed()) {
+  if (window.__pwa_install_prompt && !isDismissed()) {
     showBanner();
   }
 </script>

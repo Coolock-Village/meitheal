@@ -10,7 +10,13 @@ interface Props {
 const { locale } = Astro.props;
 ---
 
-<div id="tab-integrations" class="tab-pane" style="display: none;">
+<div
+  id="tab-integrations"
+  class="tab-pane"
+  role="tabpanel"
+  aria-labelledby="tab-btn-integrations"
+  style="display: none;"
+>
   <div class="integrations-layout">
     <div class="integrations-header">
       <div>
@@ -280,6 +286,11 @@ const { locale } = Astro.props;
               >Sync Now</button
             >
             <span id="cal-sync-result" class="integration-card__result"></span>
+            <span
+              id="cal-last-synced"
+              class="integration-card__last-synced"
+              style="font-size: 11px; color: var(--text-muted); margin-left: auto;"
+            ></span>
           </div>
         </div>
       </div>
@@ -425,6 +436,11 @@ const { locale } = Astro.props;
               >Sync Now</button
             >
             <span id="todo-sync-result" class="integration-card__result"></span>
+            <span
+              id="todo-last-synced"
+              class="integration-card__last-synced"
+              style="font-size: 11px; color: var(--text-muted); margin-left: auto;"
+            ></span>
           </div>
         </div>
       </div>
@@ -1661,7 +1677,7 @@ const { locale } = Astro.props;
    * Programmatically expand an integration card by its body ID.
    * Called from settings.astro restore functions when a card has config.
    */
-  (window as any).expandIntegrationCard = function (bodyId: string) {
+  window.expandIntegrationCard = function (bodyId: string) {
     const body = document.getElementById(bodyId);
     const header = document.querySelector(
       `[aria-controls="${bodyId}"]`,
@@ -1718,8 +1734,8 @@ const { locale } = Astro.props;
         }
 
         // Auto-expand HA card when connected
-        if ((window as any).expandIntegrationCard) {
-          (window as any).expandIntegrationCard("integration-ha-body");
+        if (window.expandIntegrationCard) {
+          window.expandIntegrationCard("integration-ha-body");
         }
       } else {
         indicator.className = "ha-status-indicator";

@@ -750,7 +750,7 @@ const version =
     // Install button — show when install prompt available
     if (installBtn) {
       const showInstallBtn = () => {
-        if ((window as any).__pwa_install_prompt) {
+        if (window.__pwa_install_prompt) {
           installBtn.style.display = "";
         }
       };
@@ -758,7 +758,7 @@ const version =
       window.addEventListener("meitheal-pwa-installable", showInstallBtn);
 
       installBtn.addEventListener("click", async () => {
-        const prompt = (window as any).__pwa_install_prompt;
+        const prompt = window.__pwa_install_prompt;
         if (!prompt) return;
         try {
           await prompt.prompt();
@@ -770,7 +770,7 @@ const version =
         } catch {
           /* prompt can only be called once */
         }
-        (window as any).__pwa_install_prompt = null;
+        window.__pwa_install_prompt = null;
       });
     }
 

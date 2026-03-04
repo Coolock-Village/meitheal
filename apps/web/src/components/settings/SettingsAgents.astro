@@ -17,7 +17,13 @@ interface Props {
 const { locale } = Astro.props;
 ---
 
-<div id="tab-agents" class="tab-pane" style="display: none;">
+<div
+  id="tab-agents"
+  class="tab-pane"
+  role="tabpanel"
+  aria-labelledby="tab-btn-agents"
+  style="display: none;"
+>
   <div class="settings-grid">
     <div class="card" style="grid-column: 1 / -1;">
       <div class="card-header">
@@ -426,7 +432,7 @@ const { locale } = Astro.props;
   // ── Fix ingress-aware links ──
   // Agent Card + MCP manifest links need the ingress base path prepended
   function fixProtocolLinks() {
-    const base = (window as any).__meitheal_base || "";
+    const base = window.__meitheal_base || "";
     document.querySelectorAll(".protocol-link[data-path]").forEach((el) => {
       const path = (el as HTMLAnchorElement).dataset.path;
       if (path) (el as HTMLAnchorElement).href = base + path;

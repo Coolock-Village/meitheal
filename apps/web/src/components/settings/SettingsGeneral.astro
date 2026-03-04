@@ -8,7 +8,13 @@ interface Props {
 const { locale } = Astro.props;
 ---
 
-<div id="tab-general" class="tab-pane active" style="display: block;">
+<div
+  id="tab-general"
+  class="tab-pane active"
+  role="tabpanel"
+  aria-labelledby="tab-btn-general"
+  style="display: block;"
+>
   <div class="settings-grid">
     <!-- Sidebar Config -->
     <div class="card">
@@ -419,32 +425,46 @@ const { locale } = Astro.props;
     const closeBtn = document.getElementById("strategic-lenses-help-close");
     if (!btn || !popup) return;
 
-    function toggle() {
-      const isOpen = popup.style.display !== "none";
-      popup.style.display = isOpen ? "none" : "block";
-      btn.style.background = isOpen ? "var(--bg-secondary)" : "var(--accent)";
-      btn.style.color = isOpen ? "var(--text-muted)" : "#fff";
-      btn.style.borderColor = isOpen ? "var(--border)" : "var(--accent)";
+    function openPopup() {
+      popup.style.display = "block";
+      btn.style.background = "var(--accent)";
+      btn.style.color = "#fff";
+      btn.style.borderColor = "var(--accent)";
+      btn.setAttribute("aria-expanded", "true");
     }
 
-    btn.addEventListener("click", toggle);
-    closeBtn?.addEventListener("click", () => {
+    function closePopup() {
       popup.style.display = "none";
       btn.style.background = "var(--bg-secondary)";
       btn.style.color = "var(--text-muted)";
       btn.style.borderColor = "var(--border)";
+      btn.setAttribute("aria-expanded", "false");
+      btn.focus();
+    }
+
+    btn.setAttribute("aria-expanded", "false");
+    btn.setAttribute("aria-haspopup", "true");
+    btn.addEventListener("click", function () {
+      popup.style.display !== "none" ? closePopup() : openPopup();
     });
 
-    document.addEventListener("click", (e) => {
+    closeBtn?.addEventListener("click", closePopup);
+
+    // Escape key closes popup
+    document.addEventListener("keydown", function (e) {
+      if (e.key === "Escape" && popup.style.display !== "none") {
+        closePopup();
+      }
+    });
+
+    // Click outside closes popup
+    document.addEventListener("click", function (e) {
       if (
         popup.style.display !== "none" &&
         !popup.contains(e.target) &&
         e.target !== btn
       ) {
-        popup.style.display = "none";
-        btn.style.background = "var(--bg-secondary)";
-        btn.style.color = "var(--text-muted)";
-        btn.style.borderColor = "var(--border)";
+        closePopup();
       }
     });
   })();

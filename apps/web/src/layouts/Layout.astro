@@ -1087,7 +1087,7 @@ Astro.response.headers.set("X-Content-Type-Options", "nosniff");
         import { confirmDialog } from "@lib/confirm-dialog";
 
         // Expose for is:inline scripts (kanban)
-        (window as any).confirmDialog = confirmDialog;
+        window.confirmDialog = confirmDialog;
         // Connection status check
         async function checkHealth() {
           const indicator = document.getElementById("connection-status");
@@ -1191,8 +1191,8 @@ Astro.response.headers.set("X-Content-Type-Options", "nosniff");
           if (!taskId) return;
           searchResults.style.display = "none";
           searchInput.value = "";
-          if (typeof (window as any).openTaskDetail === "function") {
-            (window as any).openTaskDetail(taskId);
+          if (typeof window.openTaskDetail === "function") {
+            window.openTaskDetail(taskId);
           } else {
             window.location.href = `/tasks#edit-${taskId}`;
           }
@@ -1417,7 +1417,7 @@ Astro.response.headers.set("X-Content-Type-Options", "nosniff");
           }
 
           // Expose active board globally for page scripts
-          (window as any).__activeBoard = select.value;
+          window.__activeBoard = select.value;
 
           // Apply board filter to visible items
           function isDoneStatus(s: string) {
@@ -1427,7 +1427,7 @@ Astro.response.headers.set("X-Content-Type-Options", "nosniff");
           // strategic lens payload integration
           function applyBoardFilter() {
             const board = select!.value;
-            (window as any).__activeBoard = board;
+            window.__activeBoard = board;
             // Filter task items (tasks page)
             document
               .querySelectorAll(".task-item[data-board]")
@@ -1799,7 +1799,7 @@ Astro.response.headers.set("X-Content-Type-Options", "nosniff");
               else relText = `in ${diffDays}d`;
               // Use window global regional formatting or fallback
               let fmtDate = dueDate.toLocaleDateString();
-              const df = (window as any).mSettings?.dateFormat;
+              const df = window.mSettings?.dateFormat;
               if (df === "absolute-iso") {
                 fmtDate = dueVal.split("T")[0] ?? dueVal;
               } else if (df === "absolute-eu") {
@@ -1895,8 +1895,8 @@ Astro.response.headers.set("X-Content-Type-Options", "nosniff");
             } catch {}
 
             // Attach Strategic Lens Evaluator Payload Hook
-            if ((window as any).attachStrategicLens) {
-              (window as any).attachStrategicLens(
+            if (window.attachStrategicLens) {
+              window.attachStrategicLens(
                 taskId,
                 String(t.task_type ?? "task"),
                 String(t.framework_payload ?? "{}"),
@@ -1977,10 +1977,10 @@ Astro.response.headers.set("X-Content-Type-Options", "nosniff");
               "td-checklist-progress",
             ) as HTMLElement;
 
-            (window as any).__currentChecklists = [];
+            window.__currentChecklists = [];
             try {
               if (t.checklists) {
-                (window as any).__currentChecklists =
+                window.__currentChecklists =
                   typeof t.checklists === "string"
                     ? JSON.parse(String(t.checklists))
                     : t.checklists;
@@ -1989,8 +1989,8 @@ Astro.response.headers.set("X-Content-Type-Options", "nosniff");
               /* skip */
             }
 
-            (window as any).refreshChecklistsVisuals = () => {
-              const list = (window as any).__currentChecklists || [];
+            window.refreshChecklistsVisuals = () => {
+              const list = window.__currentChecklists || [];
               if (checklistsContainer) {
                 checklistsContainer.innerHTML = "";
                 let doneCount = 0;
@@ -2010,7 +2010,7 @@ Astro.response.headers.set("X-Content-Type-Options", "nosniff");
                   cb.addEventListener("change", () => {
                     list[index].done = cb.checked;
                     saveTD("checklists", JSON.stringify(list));
-                    (window as any).refreshChecklistsVisuals();
+                    window.refreshChecklistsVisuals();
                   });
                   // Edit text
                   const txt = row.querySelector(
@@ -2030,7 +2030,7 @@ Astro.response.headers.set("X-Content-Type-Options", "nosniff");
                   del.addEventListener("click", () => {
                     list.splice(index, 1);
                     saveTD("checklists", JSON.stringify(list));
-                    (window as any).refreshChecklistsVisuals();
+                    window.refreshChecklistsVisuals();
                   });
                   checklistsContainer.appendChild(row);
                 });
@@ -2046,7 +2046,7 @@ Astro.response.headers.set("X-Content-Type-Options", "nosniff");
                 }
               }
             };
-            (window as any).refreshChecklistsVisuals();
+            window.refreshChecklistsVisuals();
 
             // Load comments
             loadComments(taskId);
@@ -2275,14 +2275,14 @@ Astro.response.headers.set("X-Content-Type-Options", "nosniff");
           .getElementById("td-add-checklist-item")
           ?.addEventListener("click", () => {
             if (!currentTaskId) return;
-            const list = (window as any).__currentChecklists || [];
+            const list = window.__currentChecklists || [];
             list.push({ text: "New Item", done: false });
-            (window as any).__currentChecklists = list;
+            window.__currentChecklists = list;
             saveTD("checklists", JSON.stringify(list)).then(() => {
               if (
-                typeof (window as any).refreshChecklistsVisuals === "function"
+                typeof window.refreshChecklistsVisuals === "function"
               ) {
-                (window as any).refreshChecklistsVisuals();
+                window.refreshChecklistsVisuals();
                 // focus the newly added input
                 const container = document.getElementById("td-checklists");
                 if (container) {
@@ -2864,7 +2864,7 @@ Astro.response.headers.set("X-Content-Type-Options", "nosniff");
         checkHash();
 
         // Expose openTaskDetail globally for cross-page use (table, index new-task flow)
-        (window as any).openTaskDetail = openTaskDetail;
+        window.openTaskDetail = openTaskDetail;
 
         // Delegated click → open task detail for any task element
         document.body.addEventListener("click", (e) => {
@@ -3116,7 +3116,7 @@ Astro.response.headers.set("X-Content-Type-Options", "nosniff");
         // (HTTPS or localhost). Most HA users have HTTPS via Nabu Casa or
         // DuckDNS+LetsEncrypt. For HTTP users, degrade gracefully.
         const isSecure = window.isSecureContext;
-        (window as any).__pwa_supported =
+        window.__pwa_supported =
           isSecure && "serviceWorker" in navigator;
 
         if (!isSecure) {
@@ -3293,13 +3293,13 @@ Astro.response.headers.set("X-Content-Type-Options", "nosniff");
       // Capture install prompt — store globally for install banner + settings
       window.addEventListener("beforeinstallprompt", (e: Event) => {
         e.preventDefault();
-        (window as any).__pwa_install_prompt = e;
+        window.__pwa_install_prompt = e;
         window.dispatchEvent(new CustomEvent("meitheal-pwa-installable"));
       });
 
       // Track installation
       window.addEventListener("appinstalled", () => {
-        (window as any).__pwa_install_prompt = null;
+        window.__pwa_install_prompt = null;
         window.dispatchEvent(new CustomEvent("meitheal-pwa-installed"));
       });
 

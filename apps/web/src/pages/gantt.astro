@@ -382,8 +382,8 @@ const epics = ganttTasks.filter(t => String(t.task_type) === 'epic');
   document.querySelectorAll(".gantt-bar").forEach(bar => {
     bar.addEventListener("click", () => {
       const id = (bar as HTMLElement).dataset.id;
-      if (id && typeof (window as any).openTaskDetail === "function") {
-         (window as any).openTaskDetail(id);
+      if (id && typeof window.openTaskDetail === "function") {
+         window.openTaskDetail(id);
       } else if (id) {
          window.location.href = `/tasks#edit-${id}`;
       }

@@ -15,33 +15,39 @@ const locale: Locale = cookieLocale === "ga" ? "ga" : "en";
 <Layout title={`Meitheal — ${t("settings.title", locale)}`}>
   <span slot="page-title">{t("settings.title", locale)}</span>
 
-  <div
-    class="settings-tabs"
-    style="display: flex; gap: 24px; border-bottom: 1px solid var(--border); margin-bottom: 24px; overflow-x: auto; -webkit-overflow-scrolling: touch; scrollbar-width: none;"
-  >
+  <div class="settings-tabs" role="tablist" aria-label="Settings sections">
     <button
       class="settings-tab active"
       data-target="tab-general"
-      style="padding-bottom: 12px; border-bottom: 2px solid var(--accent); color: var(--text-primary); font-weight: 500; cursor: pointer; background: transparent; white-space: nowrap;"
-      >General</button
+      role="tab"
+      aria-selected="true"
+      aria-controls="tab-general"
+      id="tab-btn-general">General</button
     >
     <button
       class="settings-tab"
       data-target="tab-integrations"
-      style="padding-bottom: 12px; border-bottom: 2px solid transparent; color: var(--text-muted); font-weight: 500; cursor: pointer; background: transparent; white-space: nowrap;"
-      >Integrations</button
+      role="tab"
+      aria-selected="false"
+      aria-controls="tab-integrations"
+      id="tab-btn-integrations">Integrations</button
     >
     <button
       class="settings-tab"
       data-target="tab-agents"
-      style="padding-bottom: 12px; border-bottom: 2px solid transparent; color: var(--text-muted); font-weight: 500; cursor: pointer; background: transparent; white-space: nowrap;"
-      >Agents & AI</button
+      role="tab"
+      aria-selected="false"
+      aria-controls="tab-agents"
+      id="tab-btn-agents">Agents & AI</button
     >
     <button
       class="settings-tab"
       data-target="tab-system"
-      style="padding-bottom: 12px; border-bottom: 2px solid transparent; color: var(--text-muted); font-weight: 500; cursor: pointer; background: transparent; white-space: nowrap;"
-      >System & Danger</button
+      role="tab"
+      aria-selected="false"
+      aria-controls="tab-system"
+      id="tab-btn-system"
+      data-danger>System & Danger</button
     >
   </div>
 
@@ -67,24 +73,25 @@ const locale: Locale = cookieLocale === "ga" ? "ga" : "en";
     function activateSettingsTab(tab, tabs, panes) {
       tabs.forEach(function (t) {
         t.classList.remove("active");
-        t.style.color = "var(--text-muted)";
-        t.style.borderBottomColor = "transparent";
+        t.setAttribute("aria-selected", "false");
+        t.setAttribute("tabindex", "-1");
       });
       panes.forEach(function (p) {
         p.style.display = "none";
+        p.setAttribute("aria-hidden", "true");
       });
 
       tab.classList.add("active");
-      var isDanger = tab.getAttribute("data-target") === "tab-system";
-      tab.style.color = "var(--text-primary)";
-      tab.style.borderBottomColor = isDanger
-        ? "var(--danger)"
-        : "var(--accent)";
+      tab.setAttribute("aria-selected", "true");
+      tab.setAttribute("tabindex", "0");
 
       var targetId = tab.getAttribute("data-target");
       if (targetId) {
         var targetPane = document.getElementById(targetId);
-        if (targetPane) targetPane.style.display = "block";
+        if (targetPane) {
+          targetPane.style.display = "block";
+          targetPane.setAttribute("aria-hidden", "false");
+        }
         var tabKey = targetId.replace("tab-", "");
         localStorage.setItem("meitheal-settings-tab", tabKey);
         history.replaceState(null, "", "#" + tabKey);
@@ -109,13 +116,38 @@ const locale: Locale = cookieLocale === "ga" ? "ga" : "en";
         activateSettingsTab(tabs[0], tabs, panes);
       }
 
-      // Guard: only attach click listeners once
+      // Guard: only attach listeners once
       if (tabs[0].getAttribute("data-tabs-initialized")) return;
       tabs[0].setAttribute("data-tabs-initialized", "true");
 
       tabs.forEach(function (tab) {
         tab.addEventListener("click", function () {
           activateSettingsTab(tab, tabs, panes);
+        });
+      });
+
+      // Keyboard navigation: Arrow Left/Right between tabs (WAI-ARIA Tabs pattern)
+      var tabsArr = Array.from(tabs);
+      tabsArr.forEach(function (tab, idx) {
+        tab.addEventListener("keydown", function (e) {
+          var nextIdx;
+          if (e.key === "ArrowRight" || e.key === "ArrowDown") {
+            e.preventDefault();
+            nextIdx = (idx + 1) % tabsArr.length;
+          } else if (e.key === "ArrowLeft" || e.key === "ArrowUp") {
+            e.preventDefault();
+            nextIdx = (idx - 1 + tabsArr.length) % tabsArr.length;
+          } else if (e.key === "Home") {
+            e.preventDefault();
+            nextIdx = 0;
+          } else if (e.key === "End") {
+            e.preventDefault();
+            nextIdx = tabsArr.length - 1;
+          }
+          if (nextIdx !== undefined) {
+            activateSettingsTab(tabsArr[nextIdx], tabs, panes);
+            tabsArr[nextIdx].focus();
+          }
         });
       });
 
@@ -1153,7 +1185,11 @@ const locale: Locale = cookieLocale === "ga" ? "ga" : "en";
           document.getElementById("grocy-sync-mode") as HTMLSelectElement
         ).value;
 
-        if (!url) {
+        // If auto-detected, the URL field may be visible but should not be required
+        const grocyAutoDetected = document.getElementById("grocy-auto-info");
+        const isAutoDetected =
+          grocyAutoDetected && grocyAutoDetected.style.display !== "none";
+        if (!url && !isAutoDetected) {
           showToast("settings.grocy_required", "error");
           const urlInput = document.getElementById("grocy-url");
           urlInput?.classList.add("form-input--error");
@@ -1371,10 +1407,23 @@ const locale: Locale = cookieLocale === "ga" ? "ga" : "en";
       btn.disabled = true;
 
       try {
-        const res = await fetch("/api/ha/calendars", { method: "POST" });
-        const data = (await res.json()) as { message?: string };
+        const res = await fetch("/api/integrations/calendar/sync", {
+          method: "POST",
+          headers: { "content-type": "application/json" },
+          body: JSON.stringify({ action: "sync" }),
+        });
+        const data = (await res.json()) as { ok: boolean; message?: string };
         if (resultEl) resultEl.textContent = data.message ?? "Sync triggered";
-        showToast("✅ Calendar sync triggered", "success");
+        showToast(
+          data.ok ? "✅ Calendar sync triggered" : "❌ Calendar sync failed",
+          data.ok ? "success" : "error",
+        );
+        // Update last-synced timestamp
+        if (data.ok) {
+          const lastSynced = document.getElementById("cal-last-synced");
+          if (lastSynced)
+            lastSynced.textContent = `Last synced: ${new Date().toLocaleTimeString()}`;
+        }
       } catch {
         if (resultEl) resultEl.textContent = "Sync failed";
         showToast("❌ Calendar sync failed", "error");
@@ -1567,9 +1616,7 @@ const locale: Locale = cookieLocale === "ga" ? "ga" : "en";
         btn.disabled = true;
 
         try {
-          const entity = (
-            document.getElementById("todo-entity") as HTMLInputElement
-          ).value;
+          const entity = readEntityValue("todo-entity");
           const res = await fetch("/api/todo/sync", {
             method: "POST",
             headers: { "content-type": "application/json" },
@@ -1585,6 +1632,12 @@ const locale: Locale = cookieLocale === "ga" ? "ga" : "en";
             data.ok ? "✅ Todo sync triggered" : "❌ Todo sync failed",
             data.ok ? "success" : "error",
           );
+          // Update last-synced timestamp
+          if (data.ok) {
+            const lastSynced = document.getElementById("todo-last-synced");
+            if (lastSynced)
+              lastSynced.textContent = `Last synced: ${new Date().toLocaleTimeString()}`;
+          }
         } catch {
           if (resultEl) resultEl.textContent = "Sync failed";
           showToast("❌ Todo sync failed", "error");
@@ -1619,7 +1672,7 @@ const locale: Locale = cookieLocale === "ga" ? "ga" : "en";
             el.className = "badge badge-active";
           }
           // Auto-expand configured card
-          (window as any).expandIntegrationCard?.("integration-grocy-body");
+          window.expandIntegrationCard?.("integration-grocy-body");
         }
 
         // Calendar — set value on both select and manual input of EntitySelector
@@ -1633,7 +1686,7 @@ const locale: Locale = cookieLocale === "ga" ? "ga" : "en";
           if (calSelect) calSelect.value = String(s.cal_entity);
           if (calManual) calManual.value = String(s.cal_entity);
           // Auto-expand configured card
-          (window as any).expandIntegrationCard?.("integration-calendar-body");
+          window.expandIntegrationCard?.("integration-calendar-body");
         }
         if (s.caldav_url)
           (document.getElementById("caldav-url") as HTMLInputElement).value =
@@ -1676,7 +1729,7 @@ const locale: Locale = cookieLocale === "ga" ? "ga" : "en";
             el.className = "badge badge-active";
           }
           // Auto-expand configured card
-          (window as any).expandIntegrationCard?.("integration-todo-body");
+          window.expandIntegrationCard?.("integration-todo-body");
         }
 
         // n8n
@@ -1690,7 +1743,7 @@ const locale: Locale = cookieLocale === "ga" ? "ga" : "en";
             el.className = "badge badge-active";
           }
           // Auto-expand configured card
-          (window as any).expandIntegrationCard?.("integration-n8n-body");
+          window.expandIntegrationCard?.("integration-n8n-body");
         }
         if (Array.isArray(s.n8n_events)) {
           document.querySelectorAll(".n8n-event").forEach((cb) => {
@@ -1746,7 +1799,7 @@ const locale: Locale = cookieLocale === "ga" ? "ga" : "en";
             el.className = "badge badge-active";
           }
           // Auto-expand configured card
-          (window as any).expandIntegrationCard?.("integration-webhooks-body");
+          window.expandIntegrationCard?.("integration-webhooks-body");
         } else {
           const el = document.getElementById("webhook-status");
           if (el) {

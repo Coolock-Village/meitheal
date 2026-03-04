@@ -21,9 +21,9 @@ export function formatRegionalDate(
   let df: DateFormat = "relative";
   let tz = "Europe/Dublin";
 
-  if (typeof window !== "undefined" && (window as any).mSettings) {
-    df = (window as any).mSettings.dateFormat || "relative";
-    tz = (window as any).mSettings.timezone || "Europe/Dublin";
+  if (typeof window !== "undefined" && window.mSettings) {
+    df = window.mSettings.dateFormat || "relative";
+    tz = window.mSettings.timezone || "Europe/Dublin";
   }
 
   if (options?.format) df = options.format;

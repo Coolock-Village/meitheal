@@ -1,0 +1,77 @@
+/**
+ * Global Window Extensions — Meitheal Application
+ *
+ * Type declarations for cross-component communication via window globals.
+ * These functions are registered by Astro island components and called
+ * from other components that need to trigger UI actions.
+ *
+ * @domain shared
+ * @bounded-context cross-component-communication
+ */
+
+interface MeithealWindowExtensions {
+  // === Task UI ===
+  /** Opens task detail panel/modal for the given task ID */
+  openTaskDetail?: (taskId: string) => void;
+  /** Opens the new task creation modal */
+  openNewTaskModal?: () => void;
+
+  // === Settings UI ===
+  /** Expands an integration settings card by its DOM ID */
+  expandIntegrationCard?: (cardId: string) => void;
+  /** Opens the AskAssist HA modal */
+  openAskHaModal?: () => void;
+  /** Confirm dialog utility registered by Layout.astro */
+  confirmDialog?: (options: {
+    title: string;
+    message: string;
+    confirmText?: string;
+    cancelText?: string;
+    dangerous?: boolean;
+  }) => Promise<boolean>;
+
+  // === App State ===
+  /** Currently active board ID for filtering */
+  __activeBoard?: string;
+  /** Base path for Meitheal (set by Layout.astro for ingress) */
+  __meitheal_base?: string;
+  /** HA ingress path prefix */
+  __ingress_path?: string;
+  /** Global settings object (dateFormat, timezone, etc.) */
+  mSettings?: {
+    dateFormat?: string;
+    timezone?: string;
+    [key: string]: unknown;
+  };
+  /** I18n translation map */
+  mI18n?: Map<string, string>;
+
+  // === Checklists ===
+  /** Current checklist items for task detail view */
+  __currentChecklists?: Array<{ id: string; text: string; done: boolean }>;
+  /** Re-renders checklist UI after state change */
+  refreshChecklistsVisuals?: () => void;
+
+  // === Strategic Lens ===
+  /** Attaches strategic lens overlay to a task card */
+  attachStrategicLens?: (taskId: string, element: HTMLElement) => void;
+
+  // === PWA ===
+  /** Stored beforeinstallprompt event for PWA install */
+  __pwa_install_prompt?: BeforeInstallPromptEvent | null;
+  /** Whether PWA is supported in this browser context */
+  __pwa_supported?: boolean;
+}
+
+/** BeforeInstallPromptEvent — not in lib.dom.d.ts */
+interface BeforeInstallPromptEvent extends Event {
+  readonly platforms: string[];
+  readonly userChoice: Promise<{ outcome: "accepted" | "dismissed" }>;
+  prompt(): Promise<void>;
+}
+
+declare global {
+  interface Window extends MeithealWindowExtensions {}
+}
+
+export {};
