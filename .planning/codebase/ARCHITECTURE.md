@@ -1,7 +1,7 @@
 # Architecture
 
-**Analysis Date:** 2026-03-03
-**Version:** 0.2.6
+**Analysis Date:** 2026-03-04
+**Version:** 0.1.55
 
 ## Pattern
 
@@ -33,6 +33,14 @@
 - `todo/` — HA todo list sync, status mapping
 - `tasks/` — persistence, sync service
 - `integrations/vikunja-compat/` — Vikunja compatibility layer
+
+### HA Custom Component (Python, `integrations/home-assistant/custom_components/meitheal/`)
+- Config flow integration with Supervisor auto-discovery (`async_step_hassio`)
+- `DataUpdateCoordinator` for 30s polling of task data
+- 4 entities: `todo.meitheal_tasks`, `sensor.meitheal_active_tasks`, `sensor.meitheal_overdue_tasks`, `sensor.meitheal_total_tasks`
+- 5 services: `create_task`, `complete_task`, `sync_todo`, `search_tasks`, `get_overdue_tasks`
+- LLM API surface (optional, via `conversation` after_dependency): exposes task tools to voice assistants
+- `hassio` as hard dependency for Supervisor discovery
 
 ### Integration Core (`packages/integration-core/`)
 - `CalendarIntegrationAdapter` interface + `HomeAssistantCalendarAdapter` implementation
@@ -94,6 +102,14 @@ POST /api/tasks/create
 - `AbortController` timeouts on external calls
 - Structured JSON error responses from all API routes
 
+## Settings Architecture
+
+- Tab-based sidebar: General, Integrations, AI Agents, About, Help
+- Each tab is a standalone Astro component (`SettingsGeneral.astro`, `SettingsIntegrations.astro`, etc.)
+- Integration cards with auto-detect HA connection (WebSocket singleton)
+- Calendar sync toggle persisted to SQLite via `/api/integrations/calendar/settings`
+- ViewTransitions disabled behind HA ingress (prevents redirect loops)
+
 ---
 
-*Architecture analysis: 2026-03-03 — v0.2.6*
+*Architecture analysis: 2026-03-04 — v0.1.55*

@@ -1,7 +1,7 @@
 # Codebase Structure
 
-**Analysis Date:** 2026-03-03
-**Version:** 0.2.6
+**Analysis Date:** 2026-03-04
+**Version:** 0.1.55
 
 ## Directory Layout
 
@@ -45,12 +45,17 @@ meitheal/
 │           └── pages/
 │               ├── api/     # 42 API endpoint files
 │               └── index.astro
+│           ├── components/
+│           │   └── settings/      # Tab components (SettingsGeneral, SettingsIntegrations, etc.)
+│           └── styles/
+│               └── global.css     # Design system (2224 lines, @layer base/components/utilities)
 ├── docs/
 │   ├── decisions/           # 6 ADRs (0001–0006)
 │   ├── kcs/                 # 5 KCS docs
 │   ├── methodologies/       # Framework docs
 │   └── prfaq/               # Product FAQ docs
-├── integrations/home-assistant/  # HACS custom component
+├── integrations/home-assistant/  # HA custom component (Python)
+│   └── custom_components/meitheal/  # Config flow, coordinator, services, LLM API
 ├── packages/
 │   ├── domain-auth/
 │   ├── domain-observability/
@@ -108,4 +113,4 @@ meitheal/
 
 ---
 
-*Structure analysis: 2026-03-03 — v0.2.6*
+*Structure analysis: 2026-03-04 — v0.1.55*
