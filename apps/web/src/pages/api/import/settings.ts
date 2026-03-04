@@ -26,8 +26,10 @@ const ALLOWED_KEYS = new Set([
     "agent-protocols-a2a-enabled", "agent-protocols-webmcp-enabled", "agent-protocols-mcp-enabled",
     // ── Webhooks & Integrations ──
     "webhook_endpoint", "webhook_secret", "webhook_format",
-    "n8n_webhook_url", "n8n_events",
+    "n8n_webhook_url", "n8n_events", "n8n_mode", "n8n_api_key", "n8n_signing_secret",
     "grocy_url", "grocy_api_key", "grocy_sync_mode",
+    // ── Todo Sync ──
+    "todo_sync_enabled", "todo_entity", "todo_sync_direction",
     // ── Custom Fields ──
     "custom_fields",
     // ── Custom Theme ──
