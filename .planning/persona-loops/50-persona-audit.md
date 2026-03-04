@@ -71,12 +71,12 @@
 1. **Write Cloudflare deployment guide** (Persona #43 — KCS gap)
 2. **Add sync queue TTL cleanup** (Persona #12 — data hygiene)
 
-## Phase 5 Backlog (from audit)
+## Phase 5 Backlog (from audit) — ✅ ALL COMPLETE
 
-- timingSafeEqual for bearer auth (#1)
-- CSRF protection on Workers (#4)
-- Conflict notification UI (#14)
-- Structured logging in Worker (#32)
-- Domain events from Worker CRUD (#34)
-- D1 unavailability fallback (#39)
-- Shared types package extraction (#50)
+- ✅ timingSafeEqual for bearer auth (#1) — `worker.ts:229-238`
+- ✅ CSRF protection on Workers (#4) — `worker.ts:252-282`
+- ✅ Conflict notification / 409 (#14) — `worker.ts:362-371`
+- ✅ Structured logging in Worker (#32) — `worker.ts:35-48`
+- ✅ Domain events from Worker CRUD (#34) — `worker.ts:52-63`
+- ✅ D1 unavailability fallback (#39) — `worker.ts:298-303`
+- ✅ Shared types package extraction (#50) — `packages/domain-*`
