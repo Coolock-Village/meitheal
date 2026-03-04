@@ -6,7 +6,7 @@ const cookieLocale = Astro.cookies.get("meitheal-locale")?.value;
 const locale: Locale = cookieLocale === "ga" ? "ga" : "en";
 ---
 
-<div id="new-task-overlay" class="modal-overlay relative z-[200]">
+<div id="new-task-overlay" class="modal-overlay z-[200]">
   <div class="modal-content max-w-lg w-full p-6 animate-slide-in">
     <div
       class="modal-header flex items-center justify-between mb-4 border-b border-border pb-3"
@@ -229,7 +229,7 @@ const locale: Locale = cookieLocale === "ga" ? "ga" : "en";
         due_date: extractedDue,
       };
 
-      const res = await fetch("/api/tasks", {
+      const res = await fetch((window.__ingress_path || "") + "/api/tasks", {
         method: "POST",
         headers: { "content-type": "application/json" },
         body: JSON.stringify(body),

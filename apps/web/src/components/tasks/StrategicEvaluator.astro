@@ -268,7 +268,7 @@ const defaultMapping: Record<string, string> = {
     });
 
     try {
-      const res = await fetch(`/api/tasks/${currentTaskId}`, {
+      const res = await fetch(`${window.__ingress_path || ""}/api/tasks/${currentTaskId}`, {
         method: "PUT",
         headers: { "content-type": "application/json" },
         body: JSON.stringify({
@@ -376,7 +376,7 @@ const defaultMapping: Record<string, string> = {
     // 1. Build the AI Prompt
     let prompt = `I am evaluating a task against several strategic frameworks to score priority, impact, or domain relevance.\n\n`;
     try {
-      const res = await fetch(`/api/tasks/${currentTaskId}`);
+      const res = await fetch(`${window.__ingress_path || ""}/api/tasks/${currentTaskId}`);
       if (res.ok) {
         const { task } = await res.json();
         prompt += `### Task Details:\n`;
@@ -440,7 +440,7 @@ const defaultMapping: Record<string, string> = {
       }
 
       // Attempt to load provider from settings
-      fetch("/api/settings?key=ai-provider")
+      fetch((window.__ingress_path || "") + "/api/settings?key=ai-provider")
         .then((r) => r.json())
         .then((data) => {
           const provider = data?.value || "chatgpt";

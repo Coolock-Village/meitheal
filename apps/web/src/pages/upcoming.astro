@@ -234,7 +234,7 @@ const totalTasks = days.reduce((sum, d) => sum + d.tasks.length, 0);
         const id = cb.dataset.id;
         if (!id) return;
         try {
-          await fetch(`/api/tasks/${id}`, {
+          await fetch(`${window.__ingress_path || ""}/api/tasks/${id}`, {
             method: "PATCH",
             headers: { "Content-Type": "application/json" },
             body: JSON.stringify({ status: cb.checked ? "done" : "pending" }),

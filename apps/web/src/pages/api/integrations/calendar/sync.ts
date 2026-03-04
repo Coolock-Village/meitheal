@@ -14,6 +14,7 @@ import {
   startCalendarSync,
   stopCalendarSync,
   getCalendarSyncStatus,
+  syncFromHA,
 } from "@domains/calendar/calendar-bridge";
 
 /**
@@ -42,7 +43,7 @@ export const GET: APIRoute = async () => {
 export const POST: APIRoute = async ({ request }) => {
   try {
     let body: {
-      action?: "enable" | "disable";
+      action?: "sync" | "enable" | "disable";
       entity_id?: string;
       write_back?: boolean;
       interval_ms?: number;
@@ -60,6 +61,22 @@ export const POST: APIRoute = async ({ request }) => {
     const action = body.action ?? "enable";
 
     switch (action) {
+      case "sync": {
+        // Trigger an immediate sync (uses existing config if active)
+        try {
+          await syncFromHA();
+          return new Response(
+            JSON.stringify({ ok: true, message: "Calendar sync triggered" }),
+            { status: 200, headers: { "Content-Type": "application/json" } },
+          );
+        } catch (err) {
+          return new Response(
+            JSON.stringify({ ok: false, error: `Sync failed: ${err}` }),
+            { status: 500, headers: { "Content-Type": "application/json" } },
+          );
+        }
+      }
+
       case "enable": {
         if (!body.entity_id) {
           return new Response(

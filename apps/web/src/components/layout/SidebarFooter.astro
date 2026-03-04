@@ -44,7 +44,7 @@ const { locale } = Astro.props;
     const dot = indicator.querySelector(".status-dot");
     const text = indicator.querySelector(".status-text");
     try {
-      const res = await fetch("/api/health");
+      const res = await fetch((window.__ingress_path || "") + "/api/health");
       const data = await res.json();
       if (data.status === "ok") {
         dot?.classList.add("bg-green-500");

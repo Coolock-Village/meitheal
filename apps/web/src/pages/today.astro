@@ -339,7 +339,7 @@ const typeIcons: Record<string, string> = {
         const id = cb.dataset.id;
         if (!id) return;
         try {
-          await fetch(`/api/tasks/${id}`, {
+          await fetch(`${window.__ingress_path || ""}/api/tasks/${id}`, {
             method: "PATCH",
             headers: { "Content-Type": "application/json" },
             body: JSON.stringify({ status: cb.checked ? "done" : "pending" }),
@@ -390,7 +390,7 @@ const typeIcons: Record<string, string> = {
     if (!text) return;
 
     try {
-      const res = await fetch("/api/tasks", {
+      const res = await fetch((window.__ingress_path || "") + "/api/tasks", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ title: text }),

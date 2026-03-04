@@ -310,7 +310,7 @@ const { locale } = Astro.props;
   // Load agents on tab show
   async function loadHAAgents() {
     try {
-      const res = await fetch("/api/ha/agents");
+      const res = await fetch((window.__ingress_path || "") + "/api/ha/agents");
       if (res.ok) {
         const data = await res.json();
         if (data.agents?.length > 0) {
@@ -330,7 +330,7 @@ const { locale } = Astro.props;
 
     // Restore saved preference
     try {
-      const res = await fetch("/api/settings?key=ha-assist-agent");
+      const res = await fetch((window.__ingress_path || "") + "/api/settings?key=ha-assist-agent");
       if (res.ok) {
         const data = await res.json();
         if (data?.value) {
@@ -354,7 +354,7 @@ const { locale } = Astro.props;
 
   saveHaAgentBtn?.addEventListener("click", async () => {
     try {
-      await fetch("/api/settings", {
+      await fetch((window.__ingress_path || "") + "/api/settings", {
         method: "PUT",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
@@ -375,7 +375,7 @@ const { locale } = Astro.props;
       const body: Record<string, string> = { text: "Hello" };
       if (haAgentSelect.value) body.agent_id = haAgentSelect.value;
 
-      const res = await fetch("/api/ha/assist", {
+      const res = await fetch((window.__ingress_path || "") + "/api/ha/assist", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(body),

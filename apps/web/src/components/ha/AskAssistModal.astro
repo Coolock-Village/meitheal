@@ -18,7 +18,7 @@ const cookieLocale = Astro.cookies.get("meitheal-locale")?.value;
 const locale: Locale = cookieLocale === "ga" ? "ga" : "en";
 ---
 
-<div id="ask-ha-overlay" class="modal-overlay relative z-[200]">
+<div id="ask-ha-overlay" class="modal-overlay z-[200]">
   <div class="modal-content max-w-lg w-full p-0 animate-slide-in ask-modal">
     <!-- Header -->
     <div
@@ -150,7 +150,7 @@ const locale: Locale = cookieLocale === "ga" ? "ga" : "en";
   // Load available agents
   async function loadAgents() {
     try {
-      const res = await fetch("/api/ha/agents");
+      const res = await fetch((window.__ingress_path || "") + "/api/ha/agents");
       if (res.ok) {
         const data = await res.json();
         if (data.agents && data.agents.length > 0) {
@@ -347,7 +347,7 @@ const locale: Locale = cookieLocale === "ga" ? "ga" : "en";
       if (agentSelect?.value) body.agent_id = agentSelect.value;
       if (conversationId) body.conversation_id = conversationId;
 
-      const res = await fetch("/api/ha/assist", {
+      const res = await fetch((window.__ingress_path || "") + "/api/ha/assist", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(body),

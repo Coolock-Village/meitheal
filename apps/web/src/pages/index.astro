@@ -421,7 +421,7 @@ function relativeTime(dueDate: string): string {
 
         try {
           const activeBoard = window.__activeBoard ?? "default";
-          const res = await fetch("/api/tasks", {
+          const res = await fetch((window.__ingress_path || "") + "/api/tasks", {
             method: "POST",
             headers: { "content-type": "application/json" },
             body: JSON.stringify({
@@ -474,7 +474,7 @@ function relativeTime(dueDate: string): string {
         }
 
         try {
-          await fetch(`/api/tasks/${id}`, {
+          await fetch(`${window.__ingress_path || ""}/api/tasks/${id}`, {
             method: "PUT",
             headers: { "content-type": "application/json" },
             body: JSON.stringify({ status: newStatus }),

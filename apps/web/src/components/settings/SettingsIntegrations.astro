@@ -1710,7 +1710,7 @@ const { locale } = Astro.props;
     indicator.dataset.haInit = "true";
 
     try {
-      const res = await fetch("/api/ha/connection");
+      const res = await fetch((window.__ingress_path || "") + "/api/ha/connection");
       const data = (await res.json()) as Record<string, unknown>;
 
       if (data.connected) {
@@ -1914,7 +1914,7 @@ const { locale } = Astro.props;
     // Populate from API
     (async () => {
       try {
-        const res = await fetch("/api/ha/calendars");
+        const res = await fetch((window.__ingress_path || "") + "/api/ha/calendars");
         if (!res.ok) throw new Error("API error");
         const data = (await res.json()) as {
           calendars?: { entity_id: string; friendly_name: string }[];
@@ -1990,12 +1990,12 @@ const { locale } = Astro.props;
 
     try {
       // Check HA connection first
-      const haRes = await fetch("/api/ha/connection");
+      const haRes = await fetch((window.__ingress_path || "") + "/api/ha/connection");
       const haData = (await haRes.json()) as { connected?: boolean };
       if (!haData.connected) return; // Not connected to HA, skip auto-detect
 
       // Check if Grocy addon is installed via addons API
-      const addonsRes = await fetch("/api/ha/addons");
+      const addonsRes = await fetch((window.__ingress_path || "") + "/api/ha/addons");
       if (!addonsRes.ok) return;
       const addonsData = (await addonsRes.json()) as {
         addons?: {
@@ -2055,11 +2055,11 @@ const { locale } = Astro.props;
     callout.dataset.nrInit = "true";
 
     try {
-      const haRes = await fetch("/api/ha/connection");
+      const haRes = await fetch((window.__ingress_path || "") + "/api/ha/connection");
       const haData = (await haRes.json()) as { connected?: boolean };
       if (!haData.connected) return;
 
-      const addonsRes = await fetch("/api/ha/addons");
+      const addonsRes = await fetch((window.__ingress_path || "") + "/api/ha/addons");
       if (!addonsRes.ok) return;
       const addonsData = (await addonsRes.json()) as {
         addons?: { slug: string; name: string; state: string }[];
