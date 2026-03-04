@@ -70,7 +70,14 @@ No bottlenecks detected.
 - ✅ `OA-423` — Offline page missing `role="alert"` + `aria-live` — added both
 - ✅ `OA-424` — KCS pwa-offline-guide.md stale — updated with cache eviction, install flow, update flow
 - ✅ `OA-425` — SW update check 60s too aggressive for addon — reduced to 300s (5 min)
+- ✅ `OA-426` — ~82 bare `fetch('/api/...')` calls would fail behind HA ingress — all now use `window.__ingress_path` prefix
+- ✅ `OA-427` — 30+ `as any` casts across codebase — reduced to 2 via `types/window.d.ts`, `LayoutShiftEntry`, `env.d.ts` typed DateFormat
+- ✅ `OA-428` — 6 raw `alert()` calls — replaced with `showToast()` notifications
+- ✅ `OA-429` — `ha/calendars.ts` GET endpoint leaked stack traces — wrapped in try/catch
+- ✅ `OA-430` — CSS `@import` after `@tailwind` caused 10+ PostCSS warnings per build — reordered in `global.css`
+- ✅ `OA-431` — Dead modal classes in `_modal.css` (`.modal-overlay`, `.modal-content`, `.modal-title`, `.modal-actions`) — removed by user
+- ✅ `OA-432` — Duplicate `Window.__ingress_path` declaration in `ingress-fetch.ts` — centralized in `types/window.d.ts`
 
 ---
 
-*Concerns audit: 2026-03-04 — v0.1.59 Phase 59 PWA activation*
+*Concerns audit: 2026-03-04 — Phase 60 broad quality audit + deferrals*
