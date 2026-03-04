@@ -325,6 +325,22 @@ Astro.response.headers.set("X-Content-Type-Options", "nosniff");
     </script>
   </head>
   <body>
+    <!-- Page transition loading indicator -->
+    <div class="meitheal-loading-bar" aria-hidden="true"></div>
+
+    <!-- Wire Astro view transitions to loading bar -->
+    <script is:inline>
+      document.addEventListener("astro:before-preparation", function () {
+        document.documentElement.classList.add("is-loading");
+      });
+      document.addEventListener("astro:after-swap", function () {
+        document.documentElement.classList.remove("is-loading");
+      });
+      document.addEventListener("astro:page-load", function () {
+        document.documentElement.classList.remove("is-loading");
+      });
+    </script>
+
     <!-- Sidebar collapse: restore state immediately to avoid FOUC -->
     <script is:inline>
       (function () {

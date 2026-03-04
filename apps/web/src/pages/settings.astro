@@ -471,7 +471,7 @@ const locale: Locale = cookieLocale === "ga" ? "ga" : "en";
             <div class="drag-handle" style="cursor: grab; color: var(--text-muted); padding: 2px 4px; user-select: none;">☰</div>
             <input type="checkbox" class="sidebar-visible-cb" data-key="${key}" ${isVisible ? "checked" : ""} />
             <span style="min-width: 100px; font-weight: 500;">${SIDEBAR_LABELS[key] || key}</span>
-            <input type="text" class="form-input sidebar-label-input" data-key="${key}" value="${labelStr}" placeholder="Custom Label" style="flex: 1;" />
+            <input type="text" class="form-input sidebar-label-input" data-key="${key}" value="${labelStr}" placeholder="Custom Label" style="flex: 1; max-width: 240px;" />
           `;
 
             // Drag events

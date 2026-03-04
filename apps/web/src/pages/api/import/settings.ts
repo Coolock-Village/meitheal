@@ -33,7 +33,7 @@ const ALLOWED_KEYS = new Set([
     // ── Custom Fields ──
     "custom_fields",
     // ── Custom Theme ──
-    "custom_theme_css", "custom_theme_name",
+    "custom_theme_css", "custom_theme_name", "accent-color",
 ]);
 
 export const POST: APIRoute = async ({ request }) => {
