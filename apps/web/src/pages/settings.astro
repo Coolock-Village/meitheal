@@ -1095,6 +1095,55 @@ const locale: Locale = cookieLocale === "ga" ? "ga" : "en";
       showToast("settings.n8n_saved");
     });
 
+    // ───── n8n Standalone Save ─────
+    document
+      .getElementById("save-n8n-standalone")
+      ?.addEventListener("click", async () => {
+        const webhookUrl = (
+          document.getElementById("n8n-webhook-url") as HTMLInputElement
+        ).value;
+        const apiKey = (
+          document.getElementById("n8n-api-key") as HTMLInputElement
+        ).value;
+        const secret = (
+          document.getElementById("n8n-secret") as HTMLInputElement
+        ).value;
+
+        if (!webhookUrl) {
+          showToast("settings.n8n_required", "error");
+          return;
+        }
+
+        const events: string[] = [];
+        document
+          .querySelectorAll(".n8n-event-standalone:checked")
+          .forEach((cb) => {
+            events.push((cb as HTMLInputElement).value);
+          });
+
+        const btn = document.getElementById(
+          "save-n8n-standalone",
+        ) as HTMLButtonElement;
+        btn.textContent = "Saving...";
+        btn.disabled = true;
+
+        await saveSetting("n8n_mode", "standalone");
+        await saveSetting("n8n_webhook_url", webhookUrl);
+        if (apiKey) await saveSetting("n8n_api_key", apiKey);
+        if (secret) await saveSetting("n8n_signing_secret", secret);
+        await saveSetting("n8n_events", events);
+
+        const statusEl = document.getElementById("n8n-status");
+        if (statusEl) {
+          statusEl.textContent = "Configured";
+          statusEl.className = "badge badge-active";
+        }
+
+        btn.textContent = "Save Standalone Settings";
+        btn.disabled = false;
+        showToast("settings.n8n_saved");
+      });
+
     // ───── Grocy Save ─────
     document
       .getElementById("save-grocy")
@@ -1643,6 +1692,36 @@ const locale: Locale = cookieLocale === "ga" ? "ga" : "en";
               s.n8n_events as string[]
             ).includes((cb as HTMLInputElement).value);
           });
+          // Also restore standalone event checkboxes
+          document.querySelectorAll(".n8n-event-standalone").forEach((cb) => {
+            (cb as HTMLInputElement).checked = (
+              s.n8n_events as string[]
+            ).includes((cb as HTMLInputElement).value);
+          });
+        }
+        // n8n standalone fields
+        if (s.n8n_api_key) {
+          (document.getElementById("n8n-api-key") as HTMLInputElement).value =
+            String(s.n8n_api_key);
+        }
+        if (s.n8n_signing_secret) {
+          (document.getElementById("n8n-secret") as HTMLInputElement).value =
+            String(s.n8n_signing_secret);
+        }
+        // Switch to standalone tab if mode is standalone
+        if (s.n8n_mode === "standalone") {
+          const autoTab = document.getElementById("n8n-mode-auto");
+          const standaloneTab = document.getElementById("n8n-mode-standalone");
+          const autoContent = document.getElementById("n8n-auto-content");
+          const standaloneContent = document.getElementById(
+            "n8n-standalone-content",
+          );
+          if (autoTab && standaloneTab) {
+            autoTab.classList.remove("mode-tab--active");
+            standaloneTab.classList.add("mode-tab--active");
+          }
+          if (autoContent) autoContent.style.display = "none";
+          if (standaloneContent) standaloneContent.style.display = "";
         }
 
         // Webhook
