@@ -140,6 +140,44 @@ Astro.response.headers.set("X-Content-Type-Options", "nosniff");
       })();
     </script>
 
+    <!-- Ingress state persistence: restore last route after iframe recreation -->
+    <!-- Runs pre-paint so the user never sees a flash of the wrong page -->
+    <script is:inline>
+      (function () {
+        if (!window.__ingress_path) return;
+        if (window.location.pathname !== "/") return;
+        try {
+          var raw = sessionStorage.getItem("meitheal-navigation-state");
+          if (!raw) return;
+          var state = JSON.parse(raw);
+          if (
+            typeof state.path !== "string" ||
+            typeof state.timestamp !== "number"
+          )
+            return;
+          // Only restore if saved within the last 60 seconds
+          if (Date.now() - state.timestamp > 60000) {
+            sessionStorage.removeItem("meitheal-navigation-state");
+            return;
+          }
+          // Don't redirect to root (no-op)
+          if (state.path === "/") return;
+          // Redirect to saved path — prepend ingress path for proper routing
+          var target = window.__ingress_path + state.path;
+          // Save scroll position to restore after redirect
+          if (state.scrollY) {
+            sessionStorage.setItem(
+              "meitheal-restore-scroll",
+              String(state.scrollY),
+            );
+          }
+          window.location.replace(target);
+        } catch (e) {
+          // sessionStorage unavailable or parse error — silently continue
+        }
+      })();
+    </script>
+
     <!-- Theme init — runs before paint to prevent flash -->
     <script is:inline>
       (function () {
@@ -3054,6 +3092,62 @@ Astro.response.headers.set("X-Content-Type-Options", "nosniff");
             document.body.style.overflow = "";
           }
         });
+
+        // ───── Ingress State Persistence ─────
+        // Save current route + scroll so that when HA destroys the iframe
+        // (user clicks another sidebar item) and recreates it (clicks back),
+        // we can restore the position instead of always landing on Dashboard.
+        (function initIngressStatePersistence() {
+          const ip = window.__ingress_path;
+          if (!ip) return;
+
+          const STORAGE_KEY = "meitheal-navigation-state";
+          const SCROLL_KEY = "meitheal-restore-scroll";
+
+          function saveState() {
+            try {
+              sessionStorage.setItem(
+                STORAGE_KEY,
+                JSON.stringify({
+                  path: window.location.pathname,
+                  scrollY: window.scrollY,
+                  timestamp: Date.now(),
+                }),
+              );
+            } catch {}
+          }
+
+          // Save on every page load / Astro navigation
+          saveState();
+          document.addEventListener("astro:page-load", saveState);
+
+          // Save on unload (user clicking away from Meitheal)
+          window.addEventListener("beforeunload", saveState);
+
+          // Debounced scroll tracking
+          let scrollTimer: ReturnType<typeof setTimeout> | null = null;
+          window.addEventListener(
+            "scroll",
+            () => {
+              if (scrollTimer) clearTimeout(scrollTimer);
+              scrollTimer = setTimeout(saveState, 500);
+            },
+            { passive: true },
+          );
+
+          // Restore scroll position after redirect (if pending)
+          const pendingScroll = sessionStorage.getItem(SCROLL_KEY);
+          if (pendingScroll) {
+            sessionStorage.removeItem(SCROLL_KEY);
+            const y = parseInt(pendingScroll, 10);
+            if (y > 0) {
+              // Delay to let the page render first
+              requestAnimationFrame(() => {
+                window.scrollTo(0, y);
+              });
+            }
+          }
+        })();
       </script>
     </div>
     <StrategicEvaluator />

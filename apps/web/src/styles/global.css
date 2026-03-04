@@ -1177,7 +1177,7 @@
       .bento-card-actions .card-action-btn:hover {
         background: var(--accent);
         transform: scale(1.1);
-    
+      }
 
   /* --- Loading skeleton --- */
   .skeleton {
@@ -1290,7 +1290,7 @@
       font-size: 1.25rem;
       flex-shrink: 0;
     }
-    
+
     .stat-value {
       font-size: 1.5rem;
       font-weight: 700;
@@ -1298,7 +1298,7 @@
       letter-spacing: -0.02em;
       color: var(--text-primary);
     }
-    
+
     .stat-label {
       font-size: 0.75rem;
       color: var(--text-muted);
