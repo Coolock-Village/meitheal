@@ -1,7 +1,7 @@
 # Codebase Structure
 
 **Analysis Date:** 2026-03-04
-**Version:** 0.1.55
+**Version:** 0.1.59
 
 ## Directory Layout
 
@@ -48,7 +48,21 @@ meitheal/
 │           ├── components/
 │           │   └── settings/      # Tab components (SettingsGeneral, SettingsIntegrations, etc.)
 │           └── styles/
-│               └── global.css     # Design system (2224 lines, @layer base/components/utilities)
+│               ├── global.css     # Hub: @tailwind + @import for 14 partials
+│               ├── _tokens.css    # Fonts, :root vars, themes, HA passthrough
+│               ├── _base.css      # Resets, typography, scrollbar
+│               ├── _layout.css    # Sidebar, main-content, topbar, stats
+│               ├── _forms.css     # Inputs, selects, labels
+│               ├── _buttons.css   # btn variants + micro-interactions
+│               ├── _cards.css     # Cards, badges, status indicators
+│               ├── _tasks.css     # Task items, bento, checklist, priorities
+│               ├── _kanban.css    # Kanban board, cards, drag-drop, lanes
+│               ├── _table.css     # Data table, sticky col, filters
+│               ├── _feedback.css  # Toast, skeleton, empty states
+│               ├── _search.css    # Search input/results
+│               ├── _modal.css     # Modal overlay + dialog
+│               ├── _responsive.css # Mobile, print, touch, high contrast
+│               └── _utilities.css  # a11y, transitions, reduced motion
 ├── docs/
 │   ├── decisions/           # 6 ADRs (0001–0006)
 │   ├── kcs/                 # 5 KCS docs
@@ -101,6 +115,7 @@ meitheal/
 | New E2E test | `tests/e2e/<name>.spec.ts` |
 | New governance test | `tests/governance/<name>.spec.ts` |
 | New ADR | `docs/decisions/000N-<name>.md` (currently 12) |
+| New CSS domain | `apps/web/src/styles/_<domain>.css` + add `@import` to `global.css` |
 | New KCS doc | `docs/kcs/<name>.md` (currently 11) |
 | New Grafana dashboard | `meitheal-hub/rootfs/etc/grafana/dashboards/` |
 
@@ -114,4 +129,4 @@ meitheal/
 
 ---
 
-*Structure analysis: 2026-03-04 — v0.1.55*
+*Structure analysis: 2026-03-04 — v0.1.59*

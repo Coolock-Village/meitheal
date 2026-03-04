@@ -1,7 +1,7 @@
 # Architecture
 
 **Analysis Date:** 2026-03-04
-**Version:** 0.1.57
+**Version:** 0.1.59
 
 ## Pattern
 
@@ -102,6 +102,14 @@ POST /api/tasks/create
 - `AbortController` timeouts on external calls
 - Structured JSON error responses from all API routes
 
+## Styling Architecture
+
+- **Entry file:** `src/styles/global.css` — `@tailwind` directives + 14 `@import` partials
+- **Partials:** `_tokens.css`, `_base.css`, `_layout.css`, `_forms.css`, `_buttons.css`, `_cards.css`, `_tasks.css`, `_kanban.css`, `_table.css`, `_feedback.css`, `_search.css`, `_modal.css`, `_responsive.css`, `_utilities.css`
+- **Convention:** `_` prefix = not standalone. Domain-scoped by DDD bounded context
+- **Tailwind:** `@layer base/components/utilities` within partials. `@tailwind` directives in entry file only
+- **No Astro scoping:** Shared classes (`.btn`, `.card`, `.form-input`) span all pages
+
 ## Settings Architecture
 
 - Tab-based sidebar: General, Integrations, AI Agents, About, Help
@@ -115,4 +123,4 @@ POST /api/tasks/create
 
 ---
 
-*Architecture analysis: 2026-03-04 — v0.1.57*
+*Architecture analysis: 2026-03-04 — v0.1.59*

@@ -1,0 +1,199 @@
+/* _feedback.css — Toast, skeleton, empty states, loading, error boundary */
+@layer components {
+  /* --- Toast --- */
+      margin-bottom: 24px;
+      overflow-x: auto;
+      -webkit-overflow-scrolling: touch;
+      scrollbar-width: none;
+    }
+  
+    .settings-tabs::-webkit-scrollbar {
+      display: none;
+    }
+  
+    .settings-tab {
+      padding: 8px 0 12px;
+      border: none;
+      border-bottom: 2px solid transparent;
+      color: var(--text-muted);
+      font-weight: 500;
+      font-size: 14px;
+      cursor: pointer;
+      background: transparent;
+      white-space: nowrap;
+
+  /* --- Loading skeleton --- */
+        }
+
+        .bento-board-badge {
+          font-size: 10px;
+          font-weight: 500;
+          padding: 1px 6px;
+          border-radius: 4px;
+          border: 1px solid;
+          white-space: nowrap;
+        }
+
+        .bento-card-actions {
+
+  /* --- Empty state variants --- */
+
+  .btn-danger:hover {
+    @apply bg-red-600;
+  }
+
+  .btn-icon {
+    @apply bg-transparent border-none cursor-pointer text-text-muted text-sm p-1 rounded transition-colors;
+  }
+
+  .btn-icon:hover {
+    @apply text-text-primary bg-bg-hover;
+  }
+
+  /* --- Misc UI --- */
+  /* --- Misc --- */
+  .shortcut-hint {
+    @apply fixed top-4 right-4 bg-bg-card border border-border rounded-lg px-4 py-2 text-xs text-text-muted shadow-md cursor-pointer z-50;
+      animation: fade-in 0.2s ease forwards;
+  }
+
+  .n8n-event {
+    @apply flex items-center justify-between py-2 px-3 bg-bg-secondary/50 rounded-md text-sm;
+  }
+
+  .n8n-event {
+    @apply flex items-center justify-between py-2 px-3 bg-bg-secondary/50 rounded-md text-sm;
+  }
+}
+
+/* Skeleton loading pulse */
+/* Skeleton loading pulse — used for placeholder content during SSR/loading */
+@keyframes skeleton-pulse {
+  0% {
+    background-position: 200% 0;
+  }
+
+  100% {
+    background-position: -200% 0;
+  }
+}
+
+.skeleton-pulse {
+  background: linear-gradient(90deg,
+      rgba(107, 114, 128, 0.08) 25%,
+      rgba(107, 114, 128, 0.18) 50%,
+      rgba(107, 114, 128, 0.08) 75%);
+  background-size: 200% 100%;
+  animation: skeleton-pulse 1.5s ease-in-out infinite;
+  border-radius: 4px;
+  color: transparent !important;
+}
+
+.skeleton-pulse * {
+  visibility: hidden;
+}
+
+/* Stagger animations */
+/* Stagger list items automatically */
+tbody tr,
+.kanban-card {
+  opacity: 0;
+  animation: fade-in-up 0.4s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+}
+
+tbody tr:nth-child(1),
+.kanban-card:nth-child(1) {
+  animation-delay: 0.05s;
+}
+
+tbody tr:nth-child(2),
+.kanban-card:nth-child(2) {
+  animation-delay: 0.10s;
+}
+
+tbody tr:nth-child(3),
+.kanban-card:nth-child(3) {
+  animation-delay: 0.15s;
+}
+
+tbody tr:nth-child(4),
+.kanban-card:nth-child(4) {
+  animation-delay: 0.20s;
+}
+
+tbody tr:nth-child(5),
+.kanban-card:nth-child(5) {
+  animation-delay: 0.25s;
+}
+
+tbody tr:nth-child(n+6),
+.kanban-card:nth-child(n+6) {
+  animation-delay: 0.30s;
+}
+
+/* Modal appearance */
+.shortcut-modal-overlay {
+  animation: fade-in 0.2s ease forwards;
+}
+
+.shortcut-modal-content {
+  animation: fade-in-up 0.3s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+}
+
+/* Skeleton loading rows */
+/* ===== Skeleton Loading ===== */
+@keyframes skeleton-pulse {
+
+  0%,
+  100% {
+    opacity: 0.4;
+  }
+
+  50% {
+    opacity: 0.15;
+  }
+}
+
+.skeleton-row {
+  @apply rounded-lg bg-bg-card/60 border border-border/30;
+  height: 48px;
+  animation: skeleton-pulse 1.5s ease-in-out infinite;
+}
+
+.skeleton-row:nth-child(2) {
+  animation-delay: 0.15s;
+}
+
+.skeleton-row:nth-child(3) {
+  animation-delay: 0.3s;
+}
+
+.skeleton-row:nth-child(4) {
+  animation-delay: 0.45s;
+}
+
+.skeleton-card {
+  @apply rounded-lg bg-bg-card/40 border border-border/20;
+  height: 80px;
+  animation: skeleton-pulse 1.5s ease-in-out infinite;
+}
+
+/* Error boundary */
+/* ===== Error Boundary (Wave 13) ===== */
+.error-boundary {
+  padding: 24px;
+  text-align: center;
+  color: var(--text-muted);
+  border: 1px dashed var(--border);
+  border-radius: var(--radius-lg);
+  margin: 16px 0;
+}
+
+.error-boundary h3 {
+  color: var(--danger);
+  margin-bottom: 8px;
+}
+
+.error-boundary .btn {
+  margin-top: 12px;
+}

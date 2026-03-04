@@ -1,7 +1,7 @@
 # Technology Stack
 
 **Analysis Date:** 2026-03-04
-**Version:** 0.1.57
+**Version:** 0.1.59
 
 ## Languages
 
@@ -48,6 +48,32 @@
 
 Fonts are bundled in the build — no external CDN requests to Google Fonts.
 Prevents ad-blocker interference and works fully offline.
+
+## CSS Architecture
+
+**Approach:** Domain-scoped CSS partials with `@import`.
+
+`global.css` is a lean hub file (~37 lines) that declares `@tailwind` directives and imports 14 partials:
+
+| Partial | Domain | Content |
+|---------|--------|---------|
+| `_tokens.css` | Design system | Fonts, `:root` vars, light/auto themes, HA passthr |
+| `_base.css` | Global | Resets, typography, scrollbar, focus |
+| `_layout.css` | Layout | Sidebar, main-content, topbar, stat-card, HA compact |
+| `_forms.css` | Forms | Inputs, selects, labels, groups |
+| `_buttons.css` | Buttons | btn variants, micro-interactions, loading spinner |
+| `_cards.css` | Cards | Card, badges, status indicators |
+| `_tasks.css` | Tasks (DDD) | Task items, bento grid, checklist, task detail, priorities |
+| `_kanban.css` | Kanban (DDD) | Board, columns, cards, drag-drop, lane management |
+| `_table.css` | Table | Data table, sticky column, editable cells, filters |
+| `_feedback.css` | Feedback | Toast, skeleton, empty states, error boundary |
+| `_search.css` | Search | Search input, results, items |
+| `_modal.css` | Modal | Overlay, dialog, titles, actions |
+| `_responsive.css` | Cross-cutting | Mobile, print, touch, high contrast |
+| `_utilities.css` | Cross-cutting | a11y, transitions, animations, reduced motion |
+
+**Convention:** `_` prefix = not standalone. Import order matters for cascade.
+**Why not Astro `<style>`?** Shared classes (`.btn`, `.card`, `.form-input`) span multiple pages — scoped styles would require `:global()` everywhere.
 
 ## Configuration
 
@@ -177,4 +203,4 @@ HA Supervisor can send requests with `//` paths. Astro's internal `collapseDupli
 
 ---
 
-*Stack analysis: 2026-03-04 — v0.2.6 ingress redirect fix*
+*Stack analysis: 2026-03-04 — v0.1.59 CSS domain split*

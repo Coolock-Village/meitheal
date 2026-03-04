@@ -1,0 +1,194 @@
+/* _layout.css — Sidebar, main-content, topbar, page-header, stats, HA ingress compact */
+@layer components {
+  /* --- Layout --- */
+  .sidebar {
+    @apply w-sidebar bg-bg-secondary/90 backdrop-blur-md flex flex-col border-r border-border fixed h-screen z-40;
+    transition: transform 250ms cubic-bezier(0.4, 0, 0.2, 1);
+    }
+
+    /* Collapsed sidebar slides off-screen */
+    body.sidebar-collapsed .sidebar {
+      transform: translateX(-100%);
+    }
+
+    /* Toggle pill that hugs the sidebar edge */
+    .sidebar-toggle {
+      position: fixed;
+      top: 50%;
+      left: 240px;
+      transform: translateY(-50%) translateX(-50%);
+      z-index: 41;
+      width: 24px;
+      height: 48px;
+      border-radius: 0 8px 8px 0;
+      background: var(--bg-secondary);
+      border: 1px solid var(--border);
+      border-left: none;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      color: var(--text-muted);
+      font-size: 12px;
+      opacity: 0;
+      transition: left 250ms cubic-bezier(0.4, 0, 0.2, 1),
+        opacity 200ms ease;
+    }
+
+    .sidebar-toggle:hover {
+      opacity: 1 !important;
+      color: var(--accent);
+      background: var(--bg-hover);
+    }
+
+    /* Show on sidebar hover or when page is hovered near the edge */
+    .sidebar:hover~.sidebar-toggle,
+    .sidebar-toggle:hover {
+      opacity: 0.7;
+    }
+
+    /* When collapsed, move toggle to left edge and always show */
+    body.sidebar-collapsed .sidebar-toggle {
+      left: 0;
+      opacity: 1;
+      border-radius: 0 8px 8px 0;
+      border-left: 1px solid var(--border);
+  }
+
+  .sidebar-header {
+    @apply p-5 border-b border-border;
+  }
+
+  .sidebar-header h1 {
+    @apply text-lg font-bold text-accent;
+  }
+
+  .sidebar-nav {
+    @apply flex-1 py-3;
+  }
+
+  .nav-link {
+    @apply flex items-center gap-3 px-5 py-2.5 text-sm text-text-secondary transition-colors rounded-none;
+  }
+
+  .nav-link:hover {
+    @apply bg-bg-hover text-text-primary;
+  }
+
+  .nav-link.active {
+    @apply bg-accent/10 text-accent border-r-2 border-accent;
+  }
+
+  .nav-badge {
+    @apply ml-auto text-xs bg-accent/20 text-accent px-2 py-0.5 rounded-[10px] min-w-[20px] text-center;
+  }
+
+  .sidebar-footer {
+    @apply px-5 py-4 border-t border-border;
+  }
+
+  .board-switcher {
+    @apply px-5 py-3 border-t border-border;
+  }
+
+  .board-switcher-label {
+    @apply text-[10px] uppercase tracking-wide text-text-muted mb-1.5 font-semibold;
+  }
+
+  .board-select {
+    @apply bg-bg-input border border-border rounded-sm text-text-primary text-[13px] px-2 py-1.5 cursor-pointer w-[calc(100%-32px)];
+  }
+
+  .board-select option {
+    @apply bg-bg-card text-text-primary;
+  }
+
+  .board-select:focus {
+    @apply outline-none border-accent;
+  }
+
+  .board-add-btn {
+    @apply w-[26px] h-[26px] border border-dashed border-border rounded-full bg-transparent text-text-muted cursor-pointer text-base leading-none ml-1 align-middle transition-all;
+  }
+
+  .board-add-btn:hover {
+    @apply border-accent text-accent;
+  }
+
+  /* --- Main content area --- */
+  .main-content {
+    @apply ml-sidebar flex-1 flex flex-col min-h-screen;
+    min-width: 0;
+    /* prevent flex children from expanding beyond viewport */
+      overflow-x: hidden;
+    transition: margin-left 250ms cubic-bezier(0.4, 0, 0.2, 1);
+    }
+
+    /* When sidebar is collapsed, expand main content to full width */
+    body.sidebar-collapsed .main-content {
+      margin-left: 0;
+  }
+
+  .page-header {
+    @apply flex items-center justify-between px-6 py-4 bg-bg-secondary/50 border-b border-border;
+  }
+
+    /* --- Empty State --- */
+    .empty-state {
+      @apply flex flex-col items-center justify-center p-12 text-center rounded-xl border border-dashed border-border/60 bg-bg-secondary/30 my-8 mx-auto w-full max-w-2xl;
+    }
+
+    .empty-state-icon {
+      @apply mb-4 flex items-center justify-center;
+    }
+
+    .empty-state-title {
+      @apply text-lg font-semibold text-text-primary mb-2 tracking-tight;
+    }
+
+    .empty-state-desc {
+      @apply text-sm text-text-secondary max-w-sm mx-auto mb-6;
+    }
+
+    .empty-state-actions {
+      @apply flex items-center justify-center gap-3 mt-2;
+    }
+
+  .content-area {
+    @apply flex-1 p-6;
+  }
+
+  /* --- Topbar actions --- */
+  .topbar-actions {
+    @apply flex items-center gap-2;
+  }
+
+  .status-text {
+    @apply text-xs;
+  }
+
+  /* --- Search --- */
+  .search-container {
+    @apply relative flex-1 max-w-sm mx-6;
+  }
+
+  .search-input {
+    @apply w-full bg-bg-input border border-border rounded-md px-3 py-2 text-sm text-text-primary outline-none transition-colors;
+  }
+
+  .search-input::placeholder {
+    @apply text-text-muted;
+  }
+
+  .search-input:focus {
+    @apply border-accent ring-2 ring-accent/15;
+  }
+
+  .search-results {
+    @apply absolute top-full left-0 right-0 mt-1 bg-bg-card border border-border rounded-lg shadow-lg overflow-hidden z-50;
+  }
+
+  .search-item {
+    @apply flex flex-col gap-0.5 px-4 py-2.5 text-sm text-text-primary no-underline transition-colors;
+  }
+}

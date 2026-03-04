@@ -13,7 +13,7 @@ Local-first task orchestration with HA calendar sync and Vikunja compatibility.
 - **Overall phase count:** 21+ phases complete (including global track + security + UX)
 - **Phase 56:** Settings IA Overhaul — complete
 - **Phase 70:** Integration Auto-Discovery — complete (all 3 high-sev already implemented)
-- **Current version:** `0.1.57`
+- **Current version:** `0.1.59`
 
 ## Phase Status Snapshot
 
@@ -49,12 +49,13 @@ Local-first task orchestration with HA calendar sync and Vikunja compatibility.
 6. `43-security-hardening` — `complete` (structured logging, DB fallback, SSRF, security.txt)
 7. `54-settings-integrations-ux` — `complete` (auto-detect connection, integration cards, tooltips)
 8. `56-settings-ia-overhaul` — `complete` (sidebar-first, HA→Integrations, PWA demote, Help section)
+9. `58-css-domain-split` — `complete` (2316-line monolith → 14 domain-scoped partials)
 
 ## Recent Decisions
 
 | Date | Decision | Context |
 |------|----------|---------|
-| 2026-03-04 | **v0.1.57** — 17 `window.location.href` calls patched with ingress path prefix | Keyboard shortcuts + command palette all caused 404 behind HA ingress |
+| 2026-03-04 | **v0.1.59** — CSS domain split: 14 partials, lean `global.css` hub | `global.css` was 2316 lines; split into `_tokens`, `_base`, `_layout`, `_forms`, etc. |
 | 2026-03-04 | n8n auto-mode save no longer requires webhook URL | HA addon mode uses WebSocket, not HTTP; save handler now persists `n8n_mode: ha_addon` |
 | 2026-03-04 | Calendar settings persistence — `calendar_sync_enabled` + `calendar_write_back` | Save handler now persists both flags + calls `/api/integrations/calendar/sync` |
 | 2026-03-04 | 6 missing `ALLOWED_KEYS` added to import/export | `n8n_mode`, `n8n_api_key`, `n8n_signing_secret`, `todo_sync_enabled`, `todo_entity`, `todo_sync_direction` |
@@ -97,10 +98,10 @@ Local-first task orchestration with HA calendar sync and Vikunja compatibility.
 
 ## Session Continuity
 
-Last session: 2026-03-04T18:30:00Z
-Stopped at: v0.1.57 pushed to Docker — ingress navigation fixes (17 calls), n8n auto-mode save, calendar settings persistence, 6 ALLOWED_KEYS added. All persona audit 70 findings resolved. Planning docs updated.
+Last session: 2026-03-04T18:57:00Z
+Stopped at: v0.1.59 — CSS domain split complete. `global.css` split into 14 domain-scoped partials. Build passes, zero visual regressions. STACK.md, ARCHITECTURE.md, STRUCTURE.md updated.
 
-Resume hint: Verify v0.1.57 on HA after addon restart — test calendar/todo entity selection, n8n save in HA mode, keyboard shortcuts behind ingress. Continue page-by-page UX audit (Kanban, Calendar views).
+Resume hint: Continue page-by-page UX audit (Kanban, Calendar views). Verify v0.1.59 on HA after addon restart.
 
 ---
-*Last updated: 2026-03-04 — v0.1.57 ingress + integration fixes*
+*Last updated: 2026-03-04 — v0.1.59 CSS domain split*

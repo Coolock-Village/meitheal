@@ -1,0 +1,53 @@
+/* _modal.css — Modal overlay, dialog, title, actions */
+@layer components {
+  /* --- Modal --- */
+    @apply text-base font-semibold text-text-primary;
+  }
+
+  .card-subtitle {
+    @apply text-xs text-text-muted mt-0.5;
+  }
+
+  /* --- Buttons --- */
+  .btn {
+    @apply inline-flex items-center justify-center border-none px-4 py-2.5 rounded-md font-medium text-sm cursor-pointer transition-colors;
+  }
+
+  .btn-ghost {
+    @apply bg-transparent text-text-secondary border border-border px-4 py-2.5 rounded-md font-medium text-sm cursor-pointer transition-colors;
+  }
+
+  .btn-ghost:hover {
+    @apply bg-bg-hover text-text-primary;
+  }
+
+  .btn-danger {
+    @apply bg-danger text-white border-none px-4 py-2.5 rounded-md font-medium text-sm cursor-pointer transition-colors;
+}
+
+/* Keyboard shortcuts modal */
+/* ===== Keyboard Shortcuts Modal ===== */
+.shortcut-modal-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 70;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(0, 0, 0, 0.6);
+}
+
+.shortcut-modal-overlay.hidden {
+  display: none !important;
+}
+
+.shortcut-modal-content {
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  padding: 24px 32px;
+  max-width: 360px;
+  width: 90%;
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.4);
+}
+

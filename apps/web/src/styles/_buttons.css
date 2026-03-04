@@ -1,0 +1,94 @@
+/* _buttons.css — Button variants (consolidated) */
+@layer components {
+  /* --- Buttons --- */
+    /* --- Buttons --- */
+    .btn {
+      @apply inline-flex items-center justify-center gap-2 px-4 py-2.5 rounded-md font-medium text-sm transition-colors cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed;
+    }
+  .btn-primary {
+    @apply btn bg-accent text-white border-transparent;
+  }
+
+    .btn-primary:hover:not(:disabled) {
+    @apply bg-accent-hover;
+  }
+
+  .btn-secondary {
+    @apply btn bg-transparent text-text-secondary border border-border;
+    }
+
+    .btn-secondary:hover:not(:disabled) {
+      @apply bg-bg-hover text-text-primary;
+    }
+
+    .btn-ghost {
+      @apply btn bg-transparent text-text-secondary border-transparent;
+    }
+
+    .btn-ghost:hover:not(:disabled) {
+      @apply bg-bg-secondary/50 text-text-primary;
+    }
+
+    .btn-icon {
+      @apply p-2 rounded-md bg-transparent text-text-secondary transition-colors cursor-pointer border border-transparent;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+  }
+
+    .btn-icon:hover:not(:disabled) {
+    @apply bg-bg-hover text-text-primary;
+  }
+
+  .btn-danger {
+    @apply bg-danger text-white border-none px-4 py-2.5 rounded-md font-medium text-sm cursor-pointer transition-colors;
+  }
+
+  .btn-danger:hover {
+    @apply bg-red-600;
+  }
+}
+
+/* Button micro-interactions */
+/* ===== Button Press Micro-Interactions (Wave 7) ===== */
+.btn:active,
+.task-action-btn:active,
+.task-fav-btn:active {
+  transform: scale(0.96);
+}
+
+.btn {
+  transition: background 200ms ease, transform 100ms ease, box-shadow 200ms ease;
+}
+
+.btn:hover {
+  box-shadow: var(--shadow-sm);
+}
+
+/* Loading spinner for async ops */
+/* ===== Loading Spinner for Async Ops (Wave 7) ===== */
+@keyframes spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+.btn-loading {
+  position: relative;
+  color: transparent !important;
+  pointer-events: none;
+}
+
+.btn-loading::after {
+  content: "";
+  position: absolute;
+  width: 14px;
+  height: 14px;
+  top: 50%;
+  left: 50%;
+  margin: -7px 0 0 -7px;
+  border: 2px solid rgba(255, 255, 255, 0.3);
+  border-top-color: white;
+  border-radius: 50%;
+  animation: spin 600ms linear infinite;
+}

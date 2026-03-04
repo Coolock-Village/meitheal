@@ -1,0 +1,200 @@
+/* _tokens.css — Design tokens, themes, font faces */
+
+/* Self-hosted Inter font — latin subset only (no Google Fonts CDN dependency) */
+@font-face {
+  font-family: 'Inter Variable';
+  font-style: normal;
+  font-display: swap;
+  font-weight: 100 900;
+  src: url('@fontsource-variable/inter/files/inter-latin-wght-normal.woff2') format('woff2-variations');
+  unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+0304, U+0308, U+0329, U+2000-206F, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD;
+}
+
+/* Self-hosted JetBrains Mono — latin subset only (inline, not @import — must come before @tailwind) */
+@font-face {
+  font-family: 'JetBrains Mono';
+  font-style: normal;
+  font-display: swap;
+  font-weight: 400;
+  src: url('@fontsource/jetbrains-mono/files/jetbrains-mono-latin-400-normal.woff2') format('woff2'),
+    url('@fontsource/jetbrains-mono/files/jetbrains-mono-latin-400-normal.woff') format('woff');
+}
+
+@font-face {
+  font-family: 'JetBrains Mono';
+  font-style: normal;
+  font-display: swap;
+  font-weight: 500;
+  src: url('@fontsource/jetbrains-mono/files/jetbrains-mono-latin-500-normal.woff2') format('woff2'),
+    url('@fontsource/jetbrains-mono/files/jetbrains-mono-latin-500-normal.woff') format('woff');
+}
+
+/* ===== Design Tokens ===== */
+@layer base {
+  :root {
+    /* Runtime CSS vars — hex values for JS access + inline styles */
+    --bg-primary: #131320;
+      --bg-secondary: #1e1e34;
+      --bg-card: #1c2540;
+      --bg-hover: #253050;
+      --bg-input: #0e0e1a;
+      --text-primary: #eaeaf2;
+      --text-secondary: #a8a8c0;
+      --text-muted: #6e6e8a;
+    --accent: #10b981;
+    --accent-hover: #059669;
+    --accent-light: rgba(16, 185, 129, 0.12);
+    --warning: #f59e0b;
+    --danger: #ef4444;
+    --info: #3b82f6;
+    --border: #32324e;
+    --border-focus: #10b981;
+    /* RGB channel vars — Tailwind <alpha-value> support */
+    --bg-primary-rgb: 19 19 32;
+      --bg-secondary-rgb: 30 30 52;
+      --bg-card-rgb: 28 37 64;
+      --bg-hover-rgb: 37 48 80;
+      --bg-input-rgb: 14 14 26;
+      --text-primary-rgb: 234 234 242;
+      --text-secondary-rgb: 168 168 192;
+      --text-muted-rgb: 110 110 138;
+    --accent-rgb: 16 185 129;
+    --accent-hover-rgb: 5 150 105;
+    --warning-rgb: 245 158 11;
+    --danger-rgb: 239 68 68;
+    --info-rgb: 59 130 246;
+    --border-rgb: 50 50 78;
+    --border-focus-rgb: 16 185 129;
+      --radius-sm: 6px;
+      --radius-md: 10px;
+      --radius-lg: 16px;
+      --shadow-sm: 0 1px 3px rgba(0, 0, 0, 0.3);
+      --shadow-md: 0 4px 12px rgba(0, 0, 0, 0.4);
+      --shadow-lg: 0 8px 24px rgba(0, 0, 0, 0.5);
+      --transition: 200ms ease;
+      --sidebar-width: 240px;
+  }
+
+    /* Light theme overrides */
+    [data-theme="light"] {
+      --bg-primary: #f8f9fc;
+      --bg-secondary: #eef0f5;
+      --bg-card: #ffffff;
+      --bg-hover: #e2e6ee;
+      --bg-input: #ffffff;
+      --text-primary: #1a1a2e;
+      --text-secondary: #4a4a6a;
+      --text-muted: #7a7a96;
+      --accent: #059669;
+      --accent-hover: #047857;
+      --accent-light: rgba(5, 150, 105, 0.1);
+      --warning: #d97706;
+      --danger: #dc2626;
+      --info: #2563eb;
+      --border: #d1d5e0;
+      --border-focus: #059669;
+      --shadow-sm: 0 1px 3px rgba(0, 0, 0, 0.08);
+      --shadow-md: 0 4px 12px rgba(0, 0, 0, 0.1);
+      --shadow-lg: 0 8px 24px rgba(0, 0, 0, 0.12);
+      /* RGB channels for Tailwind opacity modifiers */
+      --bg-primary-rgb: 248 249 252;
+      --bg-secondary-rgb: 238 240 245;
+      --bg-card-rgb: 255 255 255;
+      --bg-hover-rgb: 226 230 238;
+      --bg-input-rgb: 255 255 255;
+      --text-primary-rgb: 26 26 46;
+      --text-secondary-rgb: 74 74 106;
+      --text-muted-rgb: 122 122 150;
+      --accent-rgb: 5 150 105;
+      --accent-hover-rgb: 4 120 87;
+      --warning-rgb: 217 119 6;
+      --danger-rgb: 220 38 38;
+      --info-rgb: 37 99 235;
+      --border-rgb: 209 213 224;
+      --border-focus-rgb: 5 150 105;
+    }
+
+    /* Auto theme — follows OS preference */
+    @media (prefers-color-scheme: light) {
+      [data-theme="auto"] {
+        --bg-primary: #f8f9fc;
+        --bg-secondary: #eef0f5;
+        --bg-card: #ffffff;
+        --bg-hover: #e2e6ee;
+        --bg-input: #ffffff;
+        --text-primary: #1a1a2e;
+        --text-secondary: #4a4a6a;
+        --text-muted: #7a7a96;
+        --accent: #059669;
+        --accent-hover: #047857;
+        --accent-light: rgba(5, 150, 105, 0.1);
+        --warning: #d97706;
+        --danger: #dc2626;
+        --info: #2563eb;
+        --border: #d1d5e0;
+        --border-focus: #059669;
+        --shadow-sm: 0 1px 3px rgba(0, 0, 0, 0.08);
+        --shadow-md: 0 4px 12px rgba(0, 0, 0, 0.1);
+        --shadow-lg: 0 8px 24px rgba(0, 0, 0, 0.12);
+        /* RGB channels for Tailwind opacity modifiers */
+        --bg-primary-rgb: 248 249 252;
+        --bg-secondary-rgb: 238 240 245;
+        --bg-card-rgb: 255 255 255;
+        --bg-hover-rgb: 226 230 238;
+        --bg-input-rgb: 255 255 255;
+        --text-primary-rgb: 26 26 46;
+        --text-secondary-rgb: 74 74 106;
+        --text-muted-rgb: 122 122 150;
+        --accent-rgb: 5 150 105;
+        --accent-hover-rgb: 4 120 87;
+        --warning-rgb: 217 119 6;
+        --danger-rgb: 220 38 38;
+        --info-rgb: 37 99 235;
+        --border-rgb: 209 213 224;
+        --border-focus-rgb: 5 150 105;
+      }
+    }
+
+  /* --- HA Theme Passthrough --- */
+  body.ha-ingress {
+    --accent: var(--primary-color, #10b981);
+    --accent-hover: var(--primary-color, #059669);
+    --border-focus: var(--primary-color, #10b981);
+  }
+}
+
+/* --- Page Transition Loading Bar --- */
+.page-loading-bar {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 0;
+  height: 3px;
+  background: linear-gradient(90deg, var(--accent), var(--info));
+  z-index: 9999;
+  transition: width 0.3s ease;
+  pointer-events: none;
+  opacity: 0;
+}
+
+.page-loading-bar.active {
+  opacity: 1;
+  animation: loading-progress 1.5s ease-in-out;
+}
+
+@keyframes loading-progress {
+  0% {
+    width: 0;
+    opacity: 1;
+  }
+
+  60% {
+    width: 70%;
+    opacity: 1;
+  }
+
+  100% {
+    width: 100%;
+    opacity: 0;
+  }
+}
