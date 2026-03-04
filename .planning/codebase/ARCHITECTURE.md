@@ -109,6 +109,7 @@ POST /api/tasks/create
 - Integration cards with auto-detect HA connection (WebSocket singleton)
 - Calendar sync toggle persisted to SQLite via `/api/integrations/calendar/settings`
 - ViewTransitions disabled behind HA ingress (prevents redirect loops)
+- Ingress state persistence: saves route + scroll to `sessionStorage`, restores within 60s after iframe recreation (`lib/ingress-state-persistence.ts`)
 
 ---
 

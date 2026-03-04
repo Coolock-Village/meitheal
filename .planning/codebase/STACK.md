@@ -152,6 +152,7 @@ Reference: https://developers.home-assistant.io/docs/apps/testing/
 | Feature | Details |
 |---------|---------|
 | Ingress path rewriting | Rewrites HTML `href`/`src` + CSS `url()` for HA ingress proxy |
+| Ingress state persistence | Saves route + scroll to `sessionStorage`; restores within 60s after iframe recreation |
 | CSP headers | Strict policy injected on every response |
 | Regional settings | Reads cookies → sets `Astro.locals` (timezone, weekStart, dateFormat) |
 | CSRF protection | Validates `Origin` header on non-GET requests |
@@ -172,6 +173,7 @@ HA Supervisor can send requests with `//` paths. Astro's internal `collapseDupli
 | `transition:persist` | Sidebar persists across navigations |
 | `<ViewTransitions fallback="swap" />` | Client-side navigation with prefetch |
 | Global fetch wrapper | `Layout.astro` monkey-patches `fetch()` to prefix requests with ingress path |
+| Ingress state persistence | Inline `<head>` script reads `sessionStorage` and redirects to saved route (if < 60s old); processed `<body>` script saves route + scroll on navigation, scroll (debounced), and `beforeunload` — `ingress-state-persistence.ts` |
 
 ---
 

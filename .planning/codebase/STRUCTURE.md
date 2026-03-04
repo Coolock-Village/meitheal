@@ -86,6 +86,7 @@ meitheal/
 | `packages/integration-core/src/home-assistant-calendar.ts` | HA calendar adapter (166 lines) |
 | `apps/web/src/domains/auth/ingress-policy.ts` | Ingress context detection |
 | `apps/web/src/domains/ha/ha-events.ts` | HA WebSocket event bridge |
+| `apps/web/src/lib/ingress-state-persistence.ts` | Route + scroll persistence across HA iframe recreation |
 | `apps/web/scripts/perf-budget-check.mjs` | CI performance enforcement |
 | `meitheal-hub/run.sh` | HA add-on startup (uses serve.mjs wrapper) |
 | `docs/decisions/0006-iteration-05-integrations-rfc.md` | Next iteration RFC |
