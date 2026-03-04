@@ -1,4 +1,10 @@
-/* _base.css — Resets, typography, scrollbar, focus-visible */
+/* =============================================
+ * _base.css — Resets, typography, scrollbar, focus-visible
+ *
+ * Domain: Global base styles
+ * Owns: html/body resets, h1-h6, a, code, scrollbar, ::selection
+ * Does NOT own: component styles — use domain-specific partials
+ * ============================================= */
 @layer base {
   html {
     @apply text-base;

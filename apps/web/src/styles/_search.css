@@ -1,4 +1,10 @@
-/* _search.css — Search container, input, results, items */
+/* =============================================
+ * _search.css — Search container, input, results, items
+ *
+ * Domain: Search bounded context
+ * Owns: .search-container, .search-input, .search-results, .search-item
+ * Does NOT own: modal overlays (_modal.css), command palette logic
+ * ============================================= */
 @layer components {
   /* --- Search --- */
   /* --- Topbar / Layout chrome --- */

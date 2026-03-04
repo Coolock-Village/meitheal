@@ -1,4 +1,10 @@
-/* _responsive.css — Mobile, print, touch, table column hiding */
+/* =============================================
+ * _responsive.css — Mobile, print, touch, table column hiding
+ *
+ * Domain: Cross-cutting responsive overrides
+ * Owns: @media queries for mobile, print, touch, high-contrast
+ * Does NOT own: base component styles — only responsive overrides of them
+ * ============================================= */
 
 /* Mobile breakpoint */
 /* ===== Responsive ===== */

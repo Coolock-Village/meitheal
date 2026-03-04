@@ -1,73 +1,12 @@
-/* _feedback.css — Toast, skeleton, empty states, loading, error boundary */
-@layer components {
-  /* --- Toast --- */
-      margin-bottom: 24px;
-      overflow-x: auto;
-      -webkit-overflow-scrolling: touch;
-      scrollbar-width: none;
-    }
-  
-    .settings-tabs::-webkit-scrollbar {
-      display: none;
-    }
-  
-    .settings-tab {
-      padding: 8px 0 12px;
-      border: none;
-      border-bottom: 2px solid transparent;
-      color: var(--text-muted);
-      font-weight: 500;
-      font-size: 14px;
-      cursor: pointer;
-      background: transparent;
-      white-space: nowrap;
-
-  /* --- Loading skeleton --- */
-        }
-
-        .bento-board-badge {
-          font-size: 10px;
-          font-weight: 500;
-          padding: 1px 6px;
-          border-radius: 4px;
-          border: 1px solid;
-          white-space: nowrap;
-        }
-
-        .bento-card-actions {
-
-  /* --- Empty state variants --- */
-
-  .btn-danger:hover {
-    @apply bg-red-600;
-  }
-
-  .btn-icon {
-    @apply bg-transparent border-none cursor-pointer text-text-muted text-sm p-1 rounded transition-colors;
-  }
-
-  .btn-icon:hover {
-    @apply text-text-primary bg-bg-hover;
-  }
-
-  /* --- Misc UI --- */
-  /* --- Misc --- */
-  .shortcut-hint {
-    @apply fixed top-4 right-4 bg-bg-card border border-border rounded-lg px-4 py-2 text-xs text-text-muted shadow-md cursor-pointer z-50;
-      animation: fade-in 0.2s ease forwards;
-  }
-
-  .n8n-event {
-    @apply flex items-center justify-between py-2 px-3 bg-bg-secondary/50 rounded-md text-sm;
-  }
-
-  .n8n-event {
-    @apply flex items-center justify-between py-2 px-3 bg-bg-secondary/50 rounded-md text-sm;
-  }
-}
-
-/* Skeleton loading pulse */
-/* Skeleton loading pulse — used for placeholder content during SSR/loading */
+/* =============================================
+ * _feedback.css — Toast, skeleton, empty states, loading, error boundary
+ *
+ * Domain: Feedback bounded context
+ * Owns: toast, skeleton loading, empty states, error boundary, stagger animations
+ * Does NOT own: modals (_modal.css), buttons (_buttons.css), settings tabs (_layout.css)
+ * ============================================= */
+/* CSP audit: No external url() references. All animations are CSS-only — safe for strict CSP. */
+/* Skeleton loading pulse — gradient sweep for placeholder content */
 @keyframes skeleton-pulse {
   0% {
     background-position: 200% 0;
@@ -93,7 +32,42 @@
   visibility: hidden;
 }
 
-/* Stagger animations */
+/* Skeleton fade — opacity pulse for skeleton rows/cards */
+@keyframes skeleton-fade {
+
+  0%,
+  100% {
+    opacity: 0.4;
+  }
+
+  50% {
+    opacity: 0.15;
+  }
+}
+
+.skeleton-row {
+  @apply rounded-lg bg-bg-card/60 border border-border/30;
+  height: 48px;
+  animation: skeleton-fade 1.5s ease-in-out infinite;
+}
+
+.skeleton-row:nth-child(2) {
+  animation-delay: 0.15s;
+}
+
+.skeleton-row:nth-child(3) {
+  animation-delay: 0.3s;
+}
+
+.skeleton-row:nth-child(4) {
+  animation-delay: 0.45s;
+}
+
+.skeleton-card {
+  @apply rounded-lg bg-bg-card/40 border border-border/20;
+  height: 80px;
+  animation: skeleton-fade 1.5s ease-in-out infinite;
+}
 /* Stagger list items automatically */
 tbody tr,
 .kanban-card {
@@ -131,55 +105,32 @@ tbody tr:nth-child(n+6),
   animation-delay: 0.30s;
 }
 
-/* Modal appearance */
-.shortcut-modal-overlay {
-  animation: fade-in 0.2s ease forwards;
-}
-
-.shortcut-modal-content {
-  animation: fade-in-up 0.3s cubic-bezier(0.16, 1, 0.3, 1) forwards;
-}
-
-/* Skeleton loading rows */
-/* ===== Skeleton Loading ===== */
-@keyframes skeleton-pulse {
-
-  0%,
-  100% {
-    opacity: 0.4;
+/* Shortcut hint toast */
+@layer components {
+  .shortcut-hint {
+    @apply fixed top-4 right-4 bg-bg-card border border-border rounded-lg px-4 py-2 text-xs text-text-muted shadow-md cursor-pointer z-50;
+    animation: fade-in 0.2s ease forwards;
   }
 
-  50% {
-    opacity: 0.15;
-  }
-}
+    .n8n-event {
+      @apply flex items-center justify-between py-2 px-3 bg-bg-secondary/50 rounded-md text-sm;
+    }
 
-.skeleton-row {
-  @apply rounded-lg bg-bg-card/60 border border-border/30;
-  height: 48px;
-  animation: skeleton-pulse 1.5s ease-in-out infinite;
-}
+    /* Empty state variants */
+    .empty-icon {
+      @apply text-5xl mb-4 opacity-30;
+    }
 
-.skeleton-row:nth-child(2) {
-  animation-delay: 0.15s;
-}
+    .empty-text {
+      @apply text-lg font-medium text-text-secondary mb-2;
+    }
 
-.skeleton-row:nth-child(3) {
-  animation-delay: 0.3s;
-}
-
-.skeleton-row:nth-child(4) {
-  animation-delay: 0.45s;
-}
-
-.skeleton-card {
-  @apply rounded-lg bg-bg-card/40 border border-border/20;
-  height: 80px;
-  animation: skeleton-pulse 1.5s ease-in-out infinite;
+    .empty-sub {
+      @apply text-sm text-text-muted mb-6;
+    }
 }
 
 /* Error boundary */
-/* ===== Error Boundary (Wave 13) ===== */
 .error-boundary {
   padding: 24px;
   text-align: center;

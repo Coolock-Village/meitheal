@@ -49,7 +49,7 @@ Local-first task orchestration with HA calendar sync and Vikunja compatibility.
 6. `43-security-hardening` — `complete` (structured logging, DB fallback, SSRF, security.txt)
 7. `54-settings-integrations-ux` — `complete` (auto-detect connection, integration cards, tooltips)
 8. `56-settings-ia-overhaul` — `complete` (sidebar-first, HA→Integrations, PWA demote, Help section)
-9. `58-css-domain-split` — `complete` (2316-line monolith → 14 domain-scoped partials)
+9. `58-css-domain-split` — `complete` (2316-line monolith → 14 domain-scoped partials, 2-iteration GSD persona loop: 15 personas, 7 actions resolved, 3 deferred)
 
 ## Recent Decisions
 
@@ -98,10 +98,10 @@ Local-first task orchestration with HA calendar sync and Vikunja compatibility.
 
 ## Session Continuity
 
-Last session: 2026-03-04T19:00:00Z
-Stopped at: v0.1.59 — Phase 59 PWA ingress activation complete. `registerServiceWorker()` wired in Layout.astro, install banner created, Settings PWA status upgraded, SW version synced to 0.1.58, manifest ID stabilized.
+Last session: 2026-03-04T19:10:00Z
+Stopped at: v0.1.59 — Phase 58 complete (2 iterations). CSS domain split with full GSD persona optimization loop. Iteration 2 fixed: dup `@keyframes skeleton-pulse`, contaminated classes in `_feedback.css`/`_modal.css`/`_table.css`, added CSP comments, domain headers, class-map.
 
-Resume hint: Continue page-by-page UX audit (Kanban, Calendar views). Test PWA install on HTTPS-enabled HA (Nabu Casa). Verify v0.1.59 on HA after addon restart.
+Resume hint: Continue page-by-page UX audit (Kanban, Calendar views). Verify v0.1.59 on HA after addon restart. Deferred items: CI brace glob, CSS duplicate lint, `!important` audit.
 
 ---
-*Last updated: 2026-03-04 — Phase 59 PWA ingress activation*
+*Last updated: 2026-03-04 — Phase 58 GSD persona loop complete (2 iterations)*

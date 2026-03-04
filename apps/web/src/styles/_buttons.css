@@ -1,4 +1,10 @@
-/* _buttons.css — Button variants (consolidated) */
+/* =============================================
+ * _buttons.css — Button variants (consolidated)
+ *
+ * Domain: Button bounded context
+ * Owns: .btn, .btn-ghost, .btn-danger, .btn-icon, .btn-sm, hover/focus states
+ * Does NOT own: form inputs (_forms.css), card actions (_cards.css)
+ * ============================================= */
 @layer components {
   /* --- Buttons --- */
     /* --- Buttons --- */

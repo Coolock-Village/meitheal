@@ -1,4 +1,14 @@
-/* _tokens.css — Design tokens, themes, font faces */
+/* =============================================
+ * _tokens.css — Design tokens, themes, font faces
+ *
+ * Domain: Design system foundation
+ * Owns: @font-face, :root vars, theme overrides, HA passthrough vars
+ * Does NOT own: component styles, layout, responsive overrides
+ *
+ * CSP audit: All url() references point to local @fontsource bundles.
+ * No external CDN URLs — complies with strict font-src 'self' CSP.
+ * If adding new url() references, ensure they are local assets only.
+ * ============================================= */
 
 /* Self-hosted Inter font — latin subset only (no Google Fonts CDN dependency) */
 @font-face {

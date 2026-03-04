@@ -1,4 +1,10 @@
-/* _kanban.css — Kanban board, columns, cards, drag-drop, lane management */
+/* =============================================
+ * _kanban.css — Kanban board, columns, cards, drag-drop, lane management
+ *
+ * Domain: Kanban bounded context
+ * Owns: .kanban-board, .kanban-column, .kanban-card, .drag-over, .lane-*
+ * Does NOT own: task items (_tasks.css), generic cards (_cards.css)
+ * ============================================= */
 @layer components {
   /* --- Kanban board --- */
   /* --- Kanban board --- */

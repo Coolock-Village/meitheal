@@ -1,4 +1,10 @@
-/* _utilities.css — a11y, transitions, animations, reduced motion */
+/* =============================================
+ * _utilities.css — a11y, transitions, animations, reduced motion
+ *
+ * Domain: Cross-cutting utilities
+ * Owns: .sr-only, .skip-to-content, @keyframes, prefers-reduced-motion, filter indicators
+ * Does NOT own: skeleton loading (_feedback.css), component animations
+ * ============================================= */
 
 /* Skip-to-content (a11y) */
 /* ===== Skip-to-content (a11y) ===== */

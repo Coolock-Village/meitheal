@@ -1,4 +1,10 @@
-/* _forms.css — Form inputs, selects, labels, groups */
+/* =============================================
+ * _forms.css — Form inputs, selects, labels, groups
+ *
+ * Domain: Form bounded context
+ * Owns: .form-input, .form-select, .form-label, .form-group, settings-tab
+ * Does NOT own: inline table selects (_table.css), buttons (_buttons.css)
+ * ============================================= */
 @layer components {
   /* --- Forms --- */
   .form-input,

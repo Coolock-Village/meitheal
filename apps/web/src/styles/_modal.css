@@ -1,32 +1,12 @@
-/* _modal.css — Modal overlay, dialog, title, actions */
-@layer components {
-  /* --- Modal --- */
-    @apply text-base font-semibold text-text-primary;
-  }
-
-  .card-subtitle {
-    @apply text-xs text-text-muted mt-0.5;
-  }
-
-  /* --- Buttons --- */
-  .btn {
-    @apply inline-flex items-center justify-center border-none px-4 py-2.5 rounded-md font-medium text-sm cursor-pointer transition-colors;
-  }
-
-  .btn-ghost {
-    @apply bg-transparent text-text-secondary border border-border px-4 py-2.5 rounded-md font-medium text-sm cursor-pointer transition-colors;
-  }
-
-  .btn-ghost:hover {
-    @apply bg-bg-hover text-text-primary;
-  }
-
-  .btn-danger {
-    @apply bg-danger text-white border-none px-4 py-2.5 rounded-md font-medium text-sm cursor-pointer transition-colors;
-}
+/* =============================================
+ * _modal.css — Modal overlay, dialog, title, actions
+ *
+ * Domain: Modal bounded context
+ * Owns: modal overlay, dialog, shortcut modal, animations
+ * Does NOT own: buttons (_buttons.css), cards (_cards.css)
+ * ============================================= */
 
 /* Keyboard shortcuts modal */
-/* ===== Keyboard Shortcuts Modal ===== */
 .shortcut-modal-overlay {
   position: fixed;
   inset: 0;
@@ -35,6 +15,7 @@
   align-items: center;
   justify-content: center;
   background: rgba(0, 0, 0, 0.6);
+  animation: fade-in 0.2s ease forwards;
 }
 
 .shortcut-modal-overlay.hidden {
@@ -49,5 +30,5 @@
   max-width: 360px;
   width: 90%;
   box-shadow: 0 8px 32px rgba(0, 0, 0, 0.4);
+  animation: fade-in-up 0.3s cubic-bezier(0.16, 1, 0.3, 1) forwards;
 }
-

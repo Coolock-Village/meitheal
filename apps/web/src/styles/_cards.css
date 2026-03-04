@@ -1,4 +1,10 @@
-/* _cards.css — Cards, badges, status indicators */
+/* =============================================
+ * _cards.css — Cards, badges, status indicators
+ *
+ * Domain: Card bounded context
+ * Owns: .card, .card-title, .card-subtitle, .badge, .status-dot
+ * Does NOT own: kanban cards (_kanban.css), task items (_tasks.css)
+ * ============================================= */
 @layer components {
   /* --- Cards --- */
   .card {

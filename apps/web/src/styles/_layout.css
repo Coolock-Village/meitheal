@@ -1,4 +1,10 @@
-/* _layout.css — Sidebar, main-content, topbar, page-header, stats, HA ingress compact */
+/* =============================================
+ * _layout.css — Sidebar, main-content, topbar, stats, HA ingress compact
+ *
+ * Domain: Layout bounded context
+ * Owns: .sidebar, .main-content, .topbar, .stat-card, .page-header, .content-area
+ * Does NOT own: cards (_cards.css), tasks (_tasks.css), modals (_modal.css)
+ * ============================================= */
 @layer components {
   /* --- Layout --- */
   .sidebar {
