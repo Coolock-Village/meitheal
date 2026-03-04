@@ -12,7 +12,7 @@ Local-first task orchestration with HA calendar sync and Vikunja compatibility.
 - **Extension Track:** 15 of 15 phases complete (`15-24, 27-30 complete`)
 - **Overall phase count:** 21+ phases complete (including global track + security + UX)
 - **Phase 56:** Settings IA Overhaul — complete
-- **Current version:** `0.1.50`
+- **Current version:** `0.1.55`
 
 ## Phase Status Snapshot
 
@@ -53,6 +53,11 @@ Local-first task orchestration with HA calendar sync and Vikunja compatibility.
 
 | Date | Decision | Context |
 |------|----------|---------|
+| 2026-03-04 | UI/UX polish wave — stat card icons, bento grid sizing, task type icons `✅`→`📌` | Page-by-page browser audit across all 7 views |
+| 2026-03-04 | Fix HA version requirement — `conversation` dep made optional, LLM API conditional | HA 2026.2.3 blocked integration load; `manifest.json` `after_dependencies` |
+| 2026-03-04 | New HA services: `search_tasks`, `get_overdue_tasks` with `SupportsResponse.ONLY` | Enables voice/LLM queries for task data |
+| 2026-03-04 | `hassio` added as hard dependency in `manifest.json` | Required for Supervisor discovery API |
+| 2026-03-04 | `/api/ha/addons` graceful 403 handling | Returns empty list with message instead of error on insufficient perms |
 | 2026-03-03 | Settings IA overhaul — sidebar first, HA→Integrations, PWA compact, Help section | Persona audit: 10 findings, 4 med severity |
 | 2026-03-03 | Fix HA connection status — call `getHAConnection()` before `getHAConnectionStatus()` | Endpoint only read cached singleton; never established WebSocket |
 | 2026-03-03 | **Do NOT use `apiUrl()` for `fetch()` calls** — global monkey-patch handles it | `Layout.astro` inline script auto-prefixes `window.__ingress_path`; `apiUrl()` would double-prefix |
@@ -85,10 +90,10 @@ Local-first task orchestration with HA calendar sync and Vikunja compatibility.
 
 ## Session Continuity
 
-Last session: 2026-03-03T18:30:00Z
-Stopped at: Settings IA overhaul complete (Phase 56). HA Connection moved to Integrations, PWA demoted to compact, Help section added.
+Last session: 2026-03-04T13:00:00Z
+Stopped at: UI/UX improvement wave — stat cards polished, bento grid improved, task type icons fixed. HA version compatibility resolved (v0.1.55). Planning docs updated.
 
-Resume hint: Tag v0.1.50 and deploy to HA addon. Consider setting up HA devcontainer for local addon testing.
+Resume hint: Deploy v0.1.55 to HA addon. Continue page-by-page UX audit (Kanban, Calendar views next). Consider HA devcontainer for live testing.
 
 ---
-*Last updated: 2026-03-03 — Settings IA overhaul (Phase 56)*
+*Last updated: 2026-03-04 — UI/UX wave + HA version fix (v0.1.55)*

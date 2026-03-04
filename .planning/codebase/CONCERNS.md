@@ -58,7 +58,9 @@ No bottlenecks detected.
 - ✅ `OA-411` — HA custom component shows structured error payloads
 - ✅ `OA-412` — Iteration-05 RFC drafted for webhook/Grocy/n8n
 - ✅ `OA-413` — HA connection status always showing "Disconnected" — `/api/ha/connection` never called `getHAConnection()` before reading singleton status
+- ✅ `OA-414` — HA version requirement too strict — `conversation` moved to `after_dependencies`, LLM API import made conditional (v0.1.55)
+- ✅ `OA-415` — Task type icons (`✅`) confused with completion state — changed to `📌` across Today and Upcoming views
 
 ---
 
-*Concerns audit: 2026-03-03 — v0.2.6*
+*Concerns audit: 2026-03-04 — v0.1.55*
