@@ -13,6 +13,23 @@ Python custom component that registers Meitheal as a first-class HA integration.
 | `meitheal.create_task`          | Service        | Create a task                      |
 | `meitheal.complete_task`        | Service        | Mark a task done                   |
 | `meitheal.sync_todo`            | Service        | Manual data refresh                |
+| `meitheal.search_tasks`         | Service        | Search tasks by keyword/status     |
+| `meitheal.get_overdue_tasks`    | Service        | List all overdue tasks             |
+
+All entities are grouped under a single **Meitheal** device (manufacturer: Coolock Village, model: Task Engine).
+
+### LLM API Tools (Conversation Agents)
+
+When HA 2026.3+ is available, Meitheal registers an LLM API that exposes these tools to all conversation agents (Google AI, OpenAI, Ollama):
+
+| Tool | Description |
+| ---- | ----------- |
+| `meitheal_search_tasks` | Search by keyword, status, or priority |
+| `meitheal_get_task` | Get full task details by ID |
+| `meitheal_create_task` | Create a new task |
+| `meitheal_complete_task` | Mark a task as done |
+| `meitheal_get_overdue` | List overdue tasks |
+| `meitheal_task_summary` | Get counts (active, overdue, total, done) |
 
 ## Installation
 
