@@ -291,6 +291,7 @@ Astro.response.headers.set("X-Content-Type-Options", "nosniff");
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <title>{title}</title>
     <meta name="description" content={description} />
+    <link rel="icon" type="image/svg+xml" href={`${basePath}/favicon.svg`} />
     <meta property="og:title" content={title} />
     <meta property="og:description" content={description} />
     <meta property="og:type" content="website" />
@@ -1092,7 +1093,9 @@ Astro.response.headers.set("X-Content-Type-Options", "nosniff");
           const dot = indicator.querySelector(".status-dot");
           const text = indicator.querySelector(".status-text");
           try {
-            const res = await fetch((window.__ingress_path || "") + "/api/health");
+            const res = await fetch(
+              (window.__ingress_path || "") + "/api/health",
+            );
             const data = await res.json();
             if (data.status === "ok") {
               dot?.classList.add("online");
@@ -1384,7 +1387,9 @@ Astro.response.headers.set("X-Content-Type-Options", "nosniff");
 
           // Load boards from API
           try {
-            const res = await fetch((window.__ingress_path || "") + "/api/boards");
+            const res = await fetch(
+              (window.__ingress_path || "") + "/api/boards",
+            );
             if (res.ok) {
               const data = await res.json();
               const boards = data.boards ?? [];
@@ -1465,11 +1470,14 @@ Astro.response.headers.set("X-Content-Type-Options", "nosniff");
             const title = prompt("Board name:");
             if (!title?.trim()) return;
             try {
-              const res = await fetch((window.__ingress_path || "") + "/api/boards", {
-                method: "POST",
-                headers: { "content-type": "application/json" },
-                body: JSON.stringify({ title: title.trim() }),
-              });
+              const res = await fetch(
+                (window.__ingress_path || "") + "/api/boards",
+                {
+                  method: "POST",
+                  headers: { "content-type": "application/json" },
+                  body: JSON.stringify({ title: title.trim() }),
+                },
+              );
               if (res.ok) {
                 const board = await res.json();
                 localStorage.setItem("meitheal_active_board", board.id);
@@ -1518,7 +1526,9 @@ Astro.response.headers.set("X-Content-Type-Options", "nosniff");
               "td-status",
             ) as HTMLSelectElement | null;
             try {
-              const lanesRes = await fetch((window.__ingress_path || "") + "/api/lanes");
+              const lanesRes = await fetch(
+                (window.__ingress_path || "") + "/api/lanes",
+              );
               if (lanesRes.ok && statusSelect) {
                 const lanesData = await lanesRes.json();
                 const lanes = lanesData.lanes || [];
@@ -1535,7 +1545,9 @@ Astro.response.headers.set("X-Content-Type-Options", "nosniff");
               /* keep existing options */
             }
 
-            const res = await fetch(`${window.__ingress_path || ""}/api/tasks/${taskId}`);
+            const res = await fetch(
+              `${window.__ingress_path || ""}/api/tasks/${taskId}`,
+            );
             if (!res.ok) return;
             const t = (await res.json()) as Record<string, unknown>;
 
@@ -1593,11 +1605,14 @@ Astro.response.headers.set("X-Content-Type-Options", "nosniff");
                         title: "Unlink",
                       })
                     ) {
-                      await fetch(`${window.__ingress_path || ""}/api/tasks/${currentTaskId}`, {
-                        method: "PATCH",
-                        headers: { "Content-Type": "application/json" },
-                        body: JSON.stringify({ parent_id: null }),
-                      });
+                      await fetch(
+                        `${window.__ingress_path || ""}/api/tasks/${currentTaskId}`,
+                        {
+                          method: "PATCH",
+                          headers: { "Content-Type": "application/json" },
+                          body: JSON.stringify({ parent_id: null }),
+                        },
+                      );
                       openTaskDetail(String(currentTaskId));
                     }
                   });
@@ -1619,7 +1634,9 @@ Astro.response.headers.set("X-Content-Type-Options", "nosniff");
             if (childrenDiv) {
               childrenDiv.innerHTML = "";
               try {
-                const childRes = await fetch(`${window.__ingress_path || ""}/api/tasks?parent_id=${taskId}`);
+                const childRes = await fetch(
+                  `${window.__ingress_path || ""}/api/tasks?parent_id=${taskId}`,
+                );
                 if (childRes.ok) {
                   const childData = await childRes.json();
                   const children = childData.tasks ?? [];
@@ -1654,7 +1671,9 @@ Astro.response.headers.set("X-Content-Type-Options", "nosniff");
               activityDiv.innerHTML = "";
               const loadActivity = async () => {
                 try {
-                  const actRes = await fetch(`${window.__ingress_path || ""}/api/tasks/${taskId}/activity`);
+                  const actRes = await fetch(
+                    `${window.__ingress_path || ""}/api/tasks/${taskId}/activity`,
+                  );
                   if (!actRes.ok) return;
                   const entries = await actRes.json();
                   if (!Array.isArray(entries) || entries.length === 0) {
@@ -1839,7 +1858,9 @@ Astro.response.headers.set("X-Content-Type-Options", "nosniff");
             ) as HTMLSelectElement;
             const currentBoardId = String(t.board_id ?? "default");
             try {
-              const boardRes = await fetch((window.__ingress_path || "") + "/api/boards");
+              const boardRes = await fetch(
+                (window.__ingress_path || "") + "/api/boards",
+              );
               if (boardRes.ok) {
                 const boardData = await boardRes.json();
                 const boards = boardData.boards ?? [];
@@ -1879,7 +1900,9 @@ Astro.response.headers.set("X-Content-Type-Options", "nosniff");
             // Load settings-defined custom fields
             _settingsFields = [];
             try {
-              const settingsRes = await fetch((window.__ingress_path || "") + "/api/settings");
+              const settingsRes = await fetch(
+                (window.__ingress_path || "") + "/api/settings",
+              );
               if (settingsRes.ok) {
                 const allSettings = await settingsRes.json();
                 if (allSettings?.custom_fields) {
@@ -2060,7 +2083,9 @@ Astro.response.headers.set("X-Content-Type-Options", "nosniff");
             "td-comments",
           ) as HTMLElement;
           try {
-            const res = await fetch(`${window.__ingress_path || ""}/api/tasks/${taskId}/comments`);
+            const res = await fetch(
+              `${window.__ingress_path || ""}/api/tasks/${taskId}/comments`,
+            );
             const data = (await res.json()) as {
               comments: Array<{
                 content: string;
@@ -2153,11 +2178,14 @@ Astro.response.headers.set("X-Content-Type-Options", "nosniff");
         async function saveTD(field: string, value: unknown) {
           if (!currentTaskId) return;
           try {
-            const res = await fetch(`${window.__ingress_path || ""}/api/tasks/${currentTaskId}`, {
-              method: "PUT",
-              headers: { "content-type": "application/json" },
-              body: JSON.stringify({ [field]: value }),
-            });
+            const res = await fetch(
+              `${window.__ingress_path || ""}/api/tasks/${currentTaskId}`,
+              {
+                method: "PUT",
+                headers: { "content-type": "application/json" },
+                body: JSON.stringify({ [field]: value }),
+              },
+            );
             if (res.ok) {
               const notif = document.getElementById("save-notification");
               if (notif) {
@@ -2720,9 +2748,12 @@ Astro.response.headers.set("X-Content-Type-Options", "nosniff");
             const toast = document.createElement("div");
             toast.className = "toast";
             try {
-              const res = await fetch(`${window.__ingress_path || ""}/api/tasks/${currentTaskId}/duplicate`, {
-                method: "POST",
-              });
+              const res = await fetch(
+                `${window.__ingress_path || ""}/api/tasks/${currentTaskId}/duplicate`,
+                {
+                  method: "POST",
+                },
+              );
               if (!res.ok) {
                 toast.className = "toast error";
                 toast.textContent = "Failed to duplicate";
@@ -2810,9 +2841,12 @@ Astro.response.headers.set("X-Content-Type-Options", "nosniff");
             });
             if (!ok) return;
             try {
-              const res = await fetch(`${window.__ingress_path || ""}/api/tasks/${currentTaskId}`, {
-                method: "DELETE",
-              });
+              const res = await fetch(
+                `${window.__ingress_path || ""}/api/tasks/${currentTaskId}`,
+                {
+                  method: "DELETE",
+                },
+              );
               // Treat 204 (deleted) and 404 (already gone) as success
               if (res.ok || res.status === 404) {
                 closeTD();
@@ -2833,11 +2867,14 @@ Astro.response.headers.set("X-Content-Type-Options", "nosniff");
               "td-comment-input",
             ) as HTMLInputElement;
             if (!input.value.trim() || !currentTaskId) return;
-            await fetch(`${window.__ingress_path || ""}/api/tasks/${currentTaskId}/comments`, {
-              method: "POST",
-              headers: { "content-type": "application/json" },
-              body: JSON.stringify({ content: input.value.trim() }),
-            });
+            await fetch(
+              `${window.__ingress_path || ""}/api/tasks/${currentTaskId}/comments`,
+              {
+                method: "POST",
+                headers: { "content-type": "application/json" },
+                body: JSON.stringify({ content: input.value.trim() }),
+              },
+            );
             input.value = "";
             loadComments(currentTaskId);
           });
@@ -3166,7 +3203,9 @@ Astro.response.headers.set("X-Content-Type-Options", "nosniff");
         // if the DB wasn't ready during SSR. This hydrates it client-side.
         async function refreshSidebarBadge() {
           try {
-            const res = await fetch((window.__ingress_path || "") + "/api/tasks?limit=1&offset=0");
+            const res = await fetch(
+              (window.__ingress_path || "") + "/api/tasks?limit=1&offset=0",
+            );
             if (!res.ok) return;
             const data = await res.json();
             const badge = document.getElementById("nav-count-tasks");
