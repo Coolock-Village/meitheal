@@ -156,6 +156,53 @@
   --border-focus-rgb: 5 150 105;
       }
     }
+/* --- HA Theme Passthrough ---
+   * When running inside Home Assistant ingress, the parent iframe may expose
+   * CSS custom properties from the user's HA theme. We cascade them into
+   * Meitheal's design tokens so the app visually blends with HA.
+   * Detection: body.ha-ingress class is set by Layout.astro when behind HA ingress.
+   */
+body.ha-ingress {
+  --accent: var(--primary-color, #10b981);
+  --accent-hover: var(--primary-color, #059669);
+  --border-focus: var(--primary-color, #10b981);
+}
+
+/* --- Page Transition Loading Bar --- */
+.page-loading-bar {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 0;
+  height: 3px;
+  background: linear-gradient(90deg, var(--accent), var(--info));
+  z-index: 9999;
+  transition: width 0.3s ease;
+  pointer-events: none;
+  opacity: 0;
+}
+
+.page-loading-bar.active {
+  opacity: 1;
+  animation: loading-progress 1.5s ease-in-out;
+}
+
+@keyframes loading-progress {
+  0% {
+    width: 0;
+    opacity: 1;
+  }
+
+  60% {
+    width: 70%;
+    opacity: 1;
+  }
+
+  100% {
+    width: 100%;
+    opacity: 0;
+  }
+}
   html {
     @apply text-base;
   }

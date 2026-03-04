@@ -199,6 +199,93 @@ Astro.response.headers.set("X-Content-Type-Options", "nosniff");
         // dark = default (no data-theme needed, :root vars apply)
       })();
     </script>
+
+    <!-- HA theme passthrough: bridge parent frame CSS vars into Meitheal -->
+    <script is:inline>
+      (function () {
+        if (!window.__ingress_path) return;
+        try {
+          var parent = window.parent;
+          if (!parent || parent === window) return;
+          var parentStyles = getComputedStyle(parent.document.documentElement);
+          // Map HA theme vars → Meitheal vars
+          var mapping = {
+            "--primary-color": "--accent",
+            "--accent-color": "--accent",
+            "--primary-text-color": "--text-primary",
+            "--primary-background-color": "--bg-primary",
+            "--secondary-background-color": "--bg-secondary",
+            "--divider-color": "--border",
+          };
+          var root = document.documentElement.style;
+          var applied = 0;
+          for (var haVar in mapping) {
+            var val = parentStyles.getPropertyValue(haVar).trim();
+            if (val) {
+              root.setProperty(mapping[haVar], val);
+              applied++;
+            }
+          }
+          if (applied > 0) {
+            document.documentElement.setAttribute("data-ha-theme", "inherited");
+          }
+        } catch (e) {
+          // Cross-origin restriction — can't read parent frame vars
+        }
+      })();
+    </script>
+
+    <!-- User accent color: restore from localStorage before paint -->
+    <script is:inline>
+      (function () {
+        var accent = localStorage.getItem("meitheal-accent-color");
+        if (!accent) return;
+        var root = document.documentElement.style;
+        root.setProperty("--accent", accent);
+        // Compute hover (darken 10%)
+        root.setProperty(
+          "--accent-hover",
+          "color-mix(in srgb, " + accent + " 85%, #000)",
+        );
+        root.setProperty(
+          "--accent-light",
+          "color-mix(in srgb, " + accent + " 12%, transparent)",
+        );
+        root.setProperty("--border-focus", accent);
+      })();
+    </script>
+
+    <!-- Page transition loading indicator (CSS-only) -->
+    <style is:inline>
+      @keyframes meitheal-loading-slide {
+        0% {
+          transform: translateX(-100%);
+        }
+        50% {
+          transform: translateX(0%);
+        }
+        100% {
+          transform: translateX(100%);
+        }
+      }
+      .meitheal-loading-bar {
+        position: fixed;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 3px;
+        z-index: 9999;
+        background: var(--accent, #10b981);
+        transform: translateX(-100%);
+        animation: meitheal-loading-slide 1.2s ease-in-out infinite;
+        pointer-events: none;
+        opacity: 0;
+        transition: opacity 0.2s;
+      }
+      html.is-loading .meitheal-loading-bar {
+        opacity: 1;
+      }
+    </style>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <title>{title}</title>
