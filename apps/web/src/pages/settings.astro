@@ -1641,6 +1641,15 @@ const locale: Locale = cookieLocale === "ga" ? "ga" : "en";
         if (s.caldav_url)
           (document.getElementById("caldav-url") as HTMLInputElement).value =
             String(s.caldav_url);
+        if (s.calendar_write_back) {
+          const wb = document.getElementById(
+            "cal-write-back",
+          ) as HTMLInputElement | null;
+          if (wb)
+            wb.checked =
+              s.calendar_write_back === true ||
+              s.calendar_write_back === "true";
+        }
 
         // Todo Sync
         // Todo — set value on both select and manual input of EntitySelector
