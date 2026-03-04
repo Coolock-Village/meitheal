@@ -655,9 +655,13 @@ const typeConfig: Record<
 
       const oldCol = card.closest(".kanban-column");
       if (oldCol !== col && wipLimit > 0 && currentCardCount >= wipLimit) {
-        alert(
-          `Cannot move task: WIP limit of ${wipLimit} reached for this lane.`,
-        );
+        const wipToast = document.createElement("div");
+        wipToast.className = "toast error kanban-contextual-toast";
+        wipToast.textContent = `WIP limit of ${wipLimit} reached for this lane`;
+        wipToast.style.cssText =
+          "position:fixed;top:16px;right:16px;z-index:100;pointer-events:none;";
+        document.body.appendChild(wipToast);
+        setTimeout(() => wipToast.remove(), 3000);
         return;
       }
 
@@ -1063,7 +1067,11 @@ const typeConfig: Record<
       const raw = newLaneInput.value.trim();
       const name = raw.replace(/<[^>]*>/g, "");
       if (!name || name.length < 1 || name.length > 50) {
-        alert("Lane name must be 1-50 characters");
+        const t = document.createElement("div");
+        t.className = "toast error";
+        t.textContent = "Lane name must be 1-50 characters";
+        document.getElementById("toast-container")?.appendChild(t);
+        setTimeout(() => t.remove(), 3000);
         return;
       }
       try {
@@ -1076,7 +1084,11 @@ const typeConfig: Record<
           window.location.reload();
         } else {
           const err = await res.json();
-          alert(err.error || "Failed to create lane");
+          const t = document.createElement("div");
+          t.className = "toast error";
+          t.textContent = err.error || "Failed to create lane";
+          document.getElementById("toast-container")?.appendChild(t);
+          setTimeout(() => t.remove(), 3000);
         }
       } catch {}
     });

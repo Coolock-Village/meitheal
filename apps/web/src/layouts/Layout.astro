@@ -438,9 +438,6 @@ Astro.response.headers.set("X-Content-Type-Options", "nosniff");
       })();
     </script>
 
-    <!-- Global New Task Modal -->
-    <NewTaskModal />
-
     <!-- Task Detail Slide-out Panel -->
     <div
       id="task-detail-overlay"
@@ -2259,8 +2256,10 @@ Astro.response.headers.set("X-Content-Type-Options", "nosniff");
                 loadAttachments(currentTaskId!);
               } catch (err) {
                 console.error("Failed to save attachment", err);
-                alert(
+                const { showToast } = await import("@lib/toast");
+                showToast(
                   "Failed to save attachment due to storage limits or error.",
+                  "error",
                 );
               }
             };
@@ -2279,9 +2278,7 @@ Astro.response.headers.set("X-Content-Type-Options", "nosniff");
             list.push({ text: "New Item", done: false });
             window.__currentChecklists = list;
             saveTD("checklists", JSON.stringify(list)).then(() => {
-              if (
-                typeof window.refreshChecklistsVisuals === "function"
-              ) {
+              if (typeof window.refreshChecklistsVisuals === "function") {
                 window.refreshChecklistsVisuals();
                 // focus the newly added input
                 const container = document.getElementById("td-checklists");
@@ -2761,7 +2758,8 @@ Astro.response.headers.set("X-Content-Type-Options", "nosniff");
               setTimeout(() => (btn.innerHTML = originalText), 2000);
             } catch (err) {
               console.error("AI Context error:", err);
-              alert("Failed to generate AI context.");
+              const { showToast: toast } = await import("@lib/toast");
+              toast("Failed to generate AI context.", "error");
             }
           });
 
@@ -2790,7 +2788,8 @@ Astro.response.headers.set("X-Content-Type-Options", "nosniff");
                 loadAttachments(currentTaskId!);
               } catch (err) {
                 console.error("Attachment failed:", err);
-                alert("Failed to save attachment.");
+                const { showToast: toast } = await import("@lib/toast");
+                toast("Failed to save attachment.", "error");
               } finally {
                 input.value = ""; // reset
               }
@@ -3116,8 +3115,7 @@ Astro.response.headers.set("X-Content-Type-Options", "nosniff");
         // (HTTPS or localhost). Most HA users have HTTPS via Nabu Casa or
         // DuckDNS+LetsEncrypt. For HTTP users, degrade gracefully.
         const isSecure = window.isSecureContext;
-        window.__pwa_supported =
-          isSecure && "serviceWorker" in navigator;
+        window.__pwa_supported = isSecure && "serviceWorker" in navigator;
 
         if (!isSecure) {
           console.info(
