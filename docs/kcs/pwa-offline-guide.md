@@ -125,9 +125,39 @@ PWA features (service worker, install prompt, push notifications) require a **se
 | Direct LAN HTTP | ❌ | ❌ |
 | localhost | ✅ implicit | ✅ |
 
-**Graceful degradation**: on insecure origins, Meitheal skips SW registration silently. The app works fully — you just won't get offline caching or the install prompt. Settings > General shows a PWA status card with actionable HTTPS guidance.
+**Graceful degradation**: on insecure origins, Meitheal skips SW registration silently. The app works fully — you just won't get offline caching or the install prompt. Settings > System shows a PWA status card with actionable HTTPS guidance.
+
+## Cache Strategy & Eviction
+
+As of v0.1.58, the service worker uses **4 scoped caches** with automatic eviction to prevent disk bloat:
+
+| Cache | Strategy | Max Entries | TTL | Purpose |
+|-------|----------|-------------|-----|--------|
+| `precache` | Version-bump only | ~11 | ∞ (cleared on deploy) | App shell pages + icons |
+| `static` | Cache-first | 100 | 7 days | CSS, JS, fonts, images |
+| `api` | Network-first | 50 | 1 hour | API responses |
+| `nav` | Network-first | 20 | 24 hours | Full page navigations |
+
+Eviction runs on SW activation and every 5 minutes during active use. Entries are timestamped via the `Date` response header.
+
+> **Dynamic IPs & multiple URLs**: Old versioned caches are fully deleted on version bump. Within a version, `maxEntries` caps prevent unbounded growth regardless of ingress token changes.
+
+## Install Flow
+
+Meitheal prompts for PWA installation through two paths:
+
+1. **Install Banner** — a fixed bottom banner appears for first-time users on secure contexts. Dismissable with a 7-day cooldown (`localStorage`). Located in `PwaInstallBanner.astro`.
+2. **Settings > System** — the PWA status card includes an Install button when the browser's install prompt is available, plus an Update button when a new SW is waiting.
+
+The `beforeinstallprompt` event is captured in `Layout.astro` and stored on `window.__pwa_install_prompt`.
+
+## Service Worker Update Flow
+
+1. SW checks for updates every **5 minutes** (reduced from 60s for addon context)
+2. When a new SW is found waiting, a toast appears: "Update available — Refresh"
+3. User clicks → sends `SKIP_WAITING` → page reloads
+4. `controllerchange` triggers `meitheal-sw-update` custom event for UI reactivity
 
 ---
 
-*Last updated: 2026-03-03 — PWA HTTPS graceful degradation*
-
+*Last updated: 2026-03-04 — Phase 59 cache eviction, install flow, update flow*

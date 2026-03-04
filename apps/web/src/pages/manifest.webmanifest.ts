@@ -29,6 +29,7 @@ const MANIFEST_BASE = {
   background_color: "#0f172a",
   theme_color: "#0f172a",
   categories: ["productivity", "utilities"],
+  prefer_related_applications: false,
   icons: [
     {
       src: "/icon-192.png",
@@ -47,6 +48,22 @@ const MANIFEST_BASE = {
       sizes: "512x512",
       type: "image/png",
       purpose: "maskable",
+    },
+  ],
+  screenshots: [
+    {
+      src: "/icon-512.png",
+      sizes: "512x512",
+      type: "image/png",
+      form_factor: "wide",
+      label: "Meitheal — Task Dashboard",
+    },
+    {
+      src: "/icon-512.png",
+      sizes: "512x512",
+      type: "image/png",
+      form_factor: "narrow",
+      label: "Meitheal — Mobile View",
     },
   ],
 };
@@ -78,6 +95,10 @@ export const GET: APIRoute = ({ request }) => {
       ...s,
       url: prefix(s.url),
       icons: [{ src: prefix("/icon-192.png"), sizes: "192x192" }],
+    })),
+    screenshots: MANIFEST_BASE.screenshots.map((s) => ({
+      ...s,
+      src: prefix(s.src),
     })),
   };
 

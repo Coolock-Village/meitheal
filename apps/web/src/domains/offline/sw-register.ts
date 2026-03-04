@@ -72,12 +72,15 @@ export async function registerServiceWorker(): Promise<ServiceWorkerRegistration
       })
     }
 
-    // Check for SW updates every 60s.
+    // Check for SW updates every 5 minutes.
+    // 60s was too aggressive for HA addon context where updates
+    // are infrequent. 5 min balances responsiveness with efficiency.
+    // @kcs Audit item #31 — update interval tuning.
     setInterval(() => {
       registration.update().catch(() => {
         // Silent fail — update check is best-effort
       })
-    }, 60_000)
+    }, 300_000)
 
     // Listen for new SW waiting (update available)
     registration.addEventListener("updatefound", () => {
