@@ -18,7 +18,11 @@ const cookieLocale = Astro.cookies.get("meitheal-locale")?.value;
 const locale: Locale = cookieLocale === "ga" ? "ga" : "en";
 ---
 
-<div id="ask-ha-overlay" class="modal-overlay z-[200]">
+<div
+  id="ask-ha-overlay"
+  class="modal-overlay z-[200]"
+  style="display:none;position:fixed;"
+>
   <div class="modal-content max-w-lg w-full p-0 animate-slide-in ask-modal">
     <!-- Header -->
     <div
@@ -181,6 +185,9 @@ const locale: Locale = cookieLocale === "ga" ? "ga" : "en";
   function closeAskHaModal() {
     isModalOpen = false;
     overlay?.classList.remove("open");
+    if (overlay) {
+      overlay.style.display = "none";
+    }
     form?.reset();
     input.value = "";
     submitBtn.disabled = true;
@@ -318,6 +325,10 @@ const locale: Locale = cookieLocale === "ga" ? "ga" : "en";
   window.openAskHaModal = () => {
     isModalOpen = true;
     overlay?.classList.add("open");
+    if (overlay) {
+      overlay.style.display = "flex";
+      overlay.style.position = "fixed";
+    }
     loadAgents();
     initHints();
     setTimeout(() => input?.focus(), 50);
@@ -347,11 +358,14 @@ const locale: Locale = cookieLocale === "ga" ? "ga" : "en";
       if (agentSelect?.value) body.agent_id = agentSelect.value;
       if (conversationId) body.conversation_id = conversationId;
 
-      const res = await fetch((window.__ingress_path || "") + "/api/ha/assist", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(body),
-      });
+      const res = await fetch(
+        (window.__ingress_path || "") + "/api/ha/assist",
+        {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(body),
+        },
+      );
 
       hideTyping();
 
