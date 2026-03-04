@@ -23,6 +23,7 @@ const MANIFEST_BASE = {
   name: "Meitheal",
   short_name: "Meitheal",
   description: "The cooperative task and life engine for your home.",
+  lang: "en",
   display: "standalone" as const,
   orientation: "any" as const,
   background_color: "#0f172a",
@@ -64,7 +65,9 @@ export const GET: APIRoute = ({ request }) => {
 
   const manifest = {
     ...MANIFEST_BASE,
-    id: prefix("/"),
+    // id is intentionally NOT prefixed: a stable ID prevents the browser
+    // from treating each ingress token as a different PWA installation.
+    id: "/",
     start_url: prefix("/"),
     scope: prefix("/"),
     icons: MANIFEST_BASE.icons.map((icon) => ({

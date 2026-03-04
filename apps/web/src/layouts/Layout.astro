@@ -8,6 +8,7 @@ import TopNavigation from "../components/layout/TopNavigation.astro";
 import StrategicEvaluator from "../components/tasks/StrategicEvaluator.astro";
 import NewTaskModal from "../components/tasks/NewTaskModal.astro";
 import AskAssistModal from "../components/ha/AskAssistModal.astro";
+import PwaInstallBanner from "../components/pwa/PwaInstallBanner.astro";
 
 import dtEn from "../i18n/en.json";
 import dtGa from "../i18n/ga.json";
@@ -300,7 +301,12 @@ Astro.response.headers.set("X-Content-Type-Options", "nosniff");
       crossorigin="use-credentials"
     />
     <link rel="apple-touch-icon" href="/icon-192.png" />
-    <meta name="theme-color" content="#1a1a2e" />
+    <meta name="theme-color" content="#0f172a" />
+    <meta name="apple-mobile-web-app-capable" content="yes" />
+    <meta
+      name="apple-mobile-web-app-status-bar-style"
+      content="black-translucent"
+    />
     <!-- Inter font self-hosted via @fontsource-variable/inter (imported in global.css) -->
     {!behindIngress && <ViewTransitions fallback="swap" />}
     <!-- Inject localization and settings maps into the window for client-scripts like toast.ts -->
@@ -3270,5 +3276,55 @@ Astro.response.headers.set("X-Content-Type-Options", "nosniff");
       role="status"
     >
     </div>
+    <!-- PWA Install Banner -->
+    <PwaInstallBanner />
+    <!-- PWA: Service Worker Registration + Install Prompt + Update Handler -->
+    <script>
+      import {
+        registerServiceWorker,
+        activateWaitingSw,
+      } from "@domains/offline/sw-register";
+
+      // Register service worker on page load
+      document.addEventListener("DOMContentLoaded", () => {
+        registerServiceWorker();
+      });
+
+      // Capture install prompt — store globally for install banner + settings
+      window.addEventListener("beforeinstallprompt", (e: Event) => {
+        e.preventDefault();
+        (window as any).__pwa_install_prompt = e;
+        window.dispatchEvent(new CustomEvent("meitheal-pwa-installable"));
+      });
+
+      // Track installation
+      window.addEventListener("appinstalled", () => {
+        (window as any).__pwa_install_prompt = null;
+        window.dispatchEvent(new CustomEvent("meitheal-pwa-installed"));
+      });
+
+      // SW update toast — show when new version available
+      window.addEventListener("meitheal-sw-update", ((e: CustomEvent) => {
+        if (e.detail?.type !== "update-available") return;
+        const tc = document.querySelector(".toast-container");
+        if (!tc) return;
+        const toast = document.createElement("div");
+        toast.className = "toast info";
+        toast.setAttribute("role", "alert");
+        toast.innerHTML = `
+          <span>🔄 A new version of Meitheal is available.</span>
+          <button type="button" id="sw-update-btn"
+            style="margin-left:12px;padding:4px 12px;font-size:12px;font-weight:600;color:#fff;background:var(--accent,#10b981);border:none;border-radius:6px;cursor:pointer;"
+          >Refresh</button>
+        `;
+        tc.appendChild(toast);
+        document
+          .getElementById("sw-update-btn")
+          ?.addEventListener("click", async () => {
+            await activateWaitingSw();
+            window.location.reload();
+          });
+      }) as EventListener);
+    </script>
   </body>
 </html>

@@ -56,17 +56,20 @@ export async function registerServiceWorker(): Promise<ServiceWorkerRegistration
 
     // Send ingress path to the SW so it can prefix precache URLs
     // and adjust fetch routing accordingly.
-    if (ip && registration.active) {
-      registration.active.postMessage({ type: "SET_INGRESS_PATH", path: ip })
-    }
-
-    // Also send to installing/waiting SW (covers first registration + updates)
+    // Use navigator.serviceWorker.ready to ensure SW is active before messaging.
     if (ip) {
       const sendIngressPath = (sw: ServiceWorker | null) => {
         if (sw) sw.postMessage({ type: "SET_INGRESS_PATH", path: ip })
       }
+
+      // Send to currently installing/waiting SW immediately (covers first registration)
       sendIngressPath(registration.installing)
       sendIngressPath(registration.waiting)
+
+      // Also send via .ready to guarantee delivery to the active SW
+      navigator.serviceWorker.ready.then((ready) => {
+        sendIngressPath(ready.active)
+      })
     }
 
     // Check for SW updates every 60s.

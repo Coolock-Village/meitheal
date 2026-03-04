@@ -1,0 +1,249 @@
+---
+/**
+ * PWA Install Banner — Dismissible bottom banner
+ *
+ * Appears when `beforeinstallprompt` fires (secure context only).
+ * Dismissal persists to localStorage for 7 days.
+ * Does not render server-side — all logic is client-only.
+ *
+ * Bounded context: pwa / offline domain
+ *
+ * @kcs PWA install requires HTTPS. Behind HA ingress over HTTP,
+ * this banner never appears (graceful degradation).
+ */
+---
+
+<div
+  id="pwa-install-banner"
+  class="pwa-banner"
+  role="complementary"
+  aria-label="Install app"
+  style="display: none;"
+>
+  <div class="pwa-banner__content">
+    <div class="pwa-banner__icon">📲</div>
+    <div class="pwa-banner__text">
+      <strong>Install Meitheal</strong>
+      <span>Get offline access, quick launch, and push notifications</span>
+    </div>
+  </div>
+  <div class="pwa-banner__actions">
+    <button
+      type="button"
+      id="pwa-install-btn"
+      class="pwa-banner__install"
+    >
+      Install
+    </button>
+    <button
+      type="button"
+      id="pwa-dismiss-btn"
+      class="pwa-banner__dismiss"
+      aria-label="Dismiss install banner"
+    >
+      ✕
+    </button>
+  </div>
+</div>
+
+<style>
+  .pwa-banner {
+    position: fixed;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    z-index: 1000;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 16px;
+    padding: 14px 24px;
+    background: rgba(15, 23, 42, 0.92);
+    backdrop-filter: blur(16px);
+    -webkit-backdrop-filter: blur(16px);
+    border-top: 1px solid rgba(255, 255, 255, 0.08);
+    box-shadow: 0 -4px 24px rgba(0, 0, 0, 0.3);
+    transform: translateY(100%);
+    opacity: 0;
+    transition: transform 0.35s cubic-bezier(0.4, 0, 0.2, 1),
+                opacity 0.35s cubic-bezier(0.4, 0, 0.2, 1);
+  }
+
+  .pwa-banner--visible {
+    transform: translateY(0);
+    opacity: 1;
+  }
+
+  .pwa-banner__content {
+    display: flex;
+    align-items: center;
+    gap: 14px;
+    flex: 1;
+    min-width: 0;
+  }
+
+  .pwa-banner__icon {
+    font-size: 28px;
+    flex-shrink: 0;
+  }
+
+  .pwa-banner__text {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+    min-width: 0;
+  }
+
+  .pwa-banner__text strong {
+    font-size: 14px;
+    font-weight: 600;
+    color: var(--text-primary, #f1f5f9);
+  }
+
+  .pwa-banner__text span {
+    font-size: 12px;
+    color: var(--text-secondary, #94a3b8);
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+
+  .pwa-banner__actions {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    flex-shrink: 0;
+  }
+
+  .pwa-banner__install {
+    padding: 8px 20px;
+    font-size: 13px;
+    font-weight: 600;
+    color: #fff;
+    background: var(--accent, #10b981);
+    border: none;
+    border-radius: 8px;
+    cursor: pointer;
+    transition: background 0.15s, transform 0.1s;
+    white-space: nowrap;
+  }
+
+  .pwa-banner__install:hover {
+    background: var(--accent-hover, #059669);
+    transform: scale(1.02);
+  }
+
+  .pwa-banner__install:active {
+    transform: scale(0.98);
+  }
+
+  .pwa-banner__dismiss {
+    padding: 6px 8px;
+    font-size: 14px;
+    color: var(--text-muted, #64748b);
+    background: transparent;
+    border: none;
+    border-radius: 6px;
+    cursor: pointer;
+    transition: color 0.15s, background 0.15s;
+    line-height: 1;
+  }
+
+  .pwa-banner__dismiss:hover {
+    color: var(--text-primary, #f1f5f9);
+    background: rgba(255, 255, 255, 0.06);
+  }
+
+  /* HA ingress: account for sidebar */
+  :global(body.ha-ingress) .pwa-banner {
+    left: 0;
+  }
+
+  /* Mobile: stack vertically */
+  @media (max-width: 480px) {
+    .pwa-banner {
+      flex-direction: column;
+      align-items: stretch;
+      padding: 16px;
+      gap: 12px;
+    }
+
+    .pwa-banner__actions {
+      justify-content: flex-end;
+    }
+
+    .pwa-banner__text span {
+      white-space: normal;
+    }
+  }
+</style>
+
+<script>
+  const DISMISS_KEY = "meitheal-pwa-dismiss";
+  const DISMISS_DAYS = 7;
+
+  function isDismissed(): boolean {
+    const raw = localStorage.getItem(DISMISS_KEY);
+    if (!raw) return false;
+    const ts = Number(raw);
+    if (isNaN(ts)) return false;
+    // Expired after DISMISS_DAYS
+    return Date.now() - ts < DISMISS_DAYS * 24 * 60 * 60 * 1000;
+  }
+
+  function showBanner() {
+    const banner = document.getElementById("pwa-install-banner");
+    if (!banner || isDismissed()) return;
+    banner.style.display = "flex";
+    // Trigger reflow for animation
+    void banner.offsetHeight;
+    banner.classList.add("pwa-banner--visible");
+  }
+
+  function hideBanner() {
+    const banner = document.getElementById("pwa-install-banner");
+    if (!banner) return;
+    banner.classList.remove("pwa-banner--visible");
+    setTimeout(() => {
+      banner.style.display = "none";
+    }, 350);
+  }
+
+  // Listen for installable event from Layout.astro
+  window.addEventListener("meitheal-pwa-installable", () => {
+    showBanner();
+  });
+
+  // Listen for installed event — hide permanently
+  window.addEventListener("meitheal-pwa-installed", () => {
+    hideBanner();
+  });
+
+  // Install button
+  document.getElementById("pwa-install-btn")?.addEventListener("click", async () => {
+    const prompt = (window as any).__pwa_install_prompt;
+    if (!prompt) return;
+    try {
+      await prompt.prompt();
+      const result = await prompt.userChoice;
+      if (result.outcome === "accepted") {
+        hideBanner();
+      }
+    } catch {
+      // prompt() can only be called once
+    }
+    (window as any).__pwa_install_prompt = null;
+  });
+
+  // Dismiss button
+  document.getElementById("pwa-dismiss-btn")?.addEventListener("click", () => {
+    localStorage.setItem(DISMISS_KEY, String(Date.now()));
+    hideBanner();
+  });
+
+  // If prompt already captured (race condition — page loaded before listener),
+  // show banner immediately
+  if ((window as any).__pwa_install_prompt && !isDismissed()) {
+    showBanner();
+  }
+</script>

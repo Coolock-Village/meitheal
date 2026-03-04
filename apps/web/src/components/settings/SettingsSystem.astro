@@ -12,7 +12,13 @@ const version =
   import.meta.env.MEITHEAL_VERSION || process.env.MEITHEAL_VERSION || "0.1.57";
 ---
 
-<div id="tab-system" class="tab-pane" style="display: none;">
+<div
+  id="tab-system"
+  class="tab-pane"
+  role="tabpanel"
+  aria-labelledby="tab-btn-system"
+  style="display: none;"
+>
   <div class="settings-grid">
     <!-- Keyboard Shortcuts -->
     <div class="card">
@@ -377,7 +383,9 @@ const version =
           class="pwa-compact-row"
           style="margin-top: 8px;"
         >
-          <div style="display: flex; align-items: center; gap: 8px;">
+          <div
+            style="display: flex; align-items: center; gap: 8px; flex-wrap: wrap;"
+          >
             <span
               class="pwa-compact-dot"
               id="pwa-compact-dot"
@@ -391,6 +399,29 @@ const version =
               class="badge badge-pending"
               id="pwa-compact-badge"
               style="font-size: 11px;">Checking</span
+            >
+            <span
+              id="pwa-compact-version"
+              style="font-size: 11px; color: var(--text-muted); font-family: 'JetBrains Mono', monospace; display: none;"
+            ></span>
+            <button
+              type="button"
+              id="pwa-install-settings-btn"
+              class="btn btn-primary"
+              style="font-size: 11px; padding: 3px 12px; display: none;"
+              >📲 Install</button
+            >
+            <button
+              type="button"
+              id="pwa-update-settings-btn"
+              class="btn btn-secondary"
+              style="font-size: 11px; padding: 3px 12px; display: none;"
+              >🔄 Update</button
+            >
+            <span
+              id="pwa-installed-badge"
+              class="badge badge-active"
+              style="font-size: 11px; display: none;">✓ Installed</span
             >
           </div>
           <details
@@ -668,6 +699,10 @@ const version =
     const label = document.getElementById("pwa-compact-label");
     const badge = document.getElementById("pwa-compact-badge");
     const details = document.getElementById("pwa-compact-details");
+    const versionEl = document.getElementById("pwa-compact-version");
+    const installBtn = document.getElementById("pwa-install-settings-btn");
+    const updateBtn = document.getElementById("pwa-update-settings-btn");
+    const installedBadge = document.getElementById("pwa-installed-badge");
     if (!dot || !label || !badge) return;
     if (dot.dataset.pwaInit) return;
     dot.dataset.pwaInit = "true";
@@ -681,6 +716,28 @@ const version =
       badge.textContent = "Active";
       badge.className = "badge badge-active";
       badge.style.fontSize = "11px";
+
+      // Query SW version
+      if (navigator.serviceWorker.controller && versionEl) {
+        navigator.serviceWorker.addEventListener("message", (e) => {
+          if (e.data?.type === "VERSION") {
+            versionEl.textContent = `SW v${e.data.version}`;
+            versionEl.style.display = "";
+          }
+        });
+        navigator.serviceWorker.controller.postMessage({ type: "GET_VERSION" });
+      }
+
+      // Check for waiting SW (update available)
+      navigator.serviceWorker.ready.then((reg) => {
+        if (reg.waiting && updateBtn) {
+          updateBtn.style.display = "";
+          updateBtn.addEventListener("click", () => {
+            reg.waiting?.postMessage({ type: "SKIP_WAITING" });
+            window.location.reload();
+          });
+        }
+      });
     } else {
       dot.className = "pwa-compact-dot pwa-compact-dot--unavailable";
       label.textContent = "PWA: Requires HTTPS";
@@ -689,6 +746,39 @@ const version =
       badge.style.fontSize = "11px";
       if (details) details.style.display = "block";
     }
+
+    // Install button — show when install prompt available
+    if (installBtn) {
+      const showInstallBtn = () => {
+        if ((window as any).__pwa_install_prompt) {
+          installBtn.style.display = "";
+        }
+      };
+      showInstallBtn();
+      window.addEventListener("meitheal-pwa-installable", showInstallBtn);
+
+      installBtn.addEventListener("click", async () => {
+        const prompt = (window as any).__pwa_install_prompt;
+        if (!prompt) return;
+        try {
+          await prompt.prompt();
+          const result = await prompt.userChoice;
+          if (result.outcome === "accepted") {
+            installBtn.style.display = "none";
+            if (installedBadge) installedBadge.style.display = "";
+          }
+        } catch {
+          /* prompt can only be called once */
+        }
+        (window as any).__pwa_install_prompt = null;
+      });
+    }
+
+    // Listen for installed event
+    window.addEventListener("meitheal-pwa-installed", () => {
+      if (installBtn) installBtn.style.display = "none";
+      if (installedBadge) installedBadge.style.display = "";
+    });
   }
 
   initPwaCompact();
