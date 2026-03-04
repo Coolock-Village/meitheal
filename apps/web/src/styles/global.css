@@ -2,28 +2,7 @@
  * Meitheal Design System — Domain-Scoped CSS
  * =============================================
  *
- * Entry point. All styles organized into domain-scoped
- * partials following DDD bounded context principles.
- *
- * Partial naming: _prefix = not standalone
- * Import order matters for cascade specificity.
- *
- * CLASS MAP (find styles by searching here first):
- *
- * _tokens    → :root vars, --bg-*, --text-*, --accent, themes, @font-face
- * _base      → *, body, h1-h6, a, code, scrollbar, ::selection
- * _layout    → .sidebar, .main-content, .topbar, .stat-card, .page-header, .sr-only
- * _forms     → .form-input, .form-select, .form-label, .form-group
- * _buttons   → .btn, .btn-ghost, .btn-danger, .btn-icon, .btn-sm
- * _cards     → .card, .card-title, .card-subtitle, .badge, .status-dot
- * _tasks     → .task-item, .bento-grid, .checklist-*, .task-detail, .priority-*
- * _kanban    → .kanban-board, .kanban-column, .kanban-card, .drag-over, .lane-*
- * _table     → .data-table, .inline-select, .editable-cell, .row-check, .table-filter-bar
- * _feedback  → .skeleton-pulse, .skeleton-row, .empty-*, .error-boundary, .shortcut-hint
- * _search    → .search-container, .search-input, .search-results, .search-item
- * _modal     → .shortcut-modal-overlay, .shortcut-modal-content
- * _responsive→ @media queries for mobile, print, touch, high-contrast
- * _utilities → .sr-only, .skip-to-content, @keyframes fade-in-up/fade-in, prefers-reduced-motion
+ * @import FIRST, @tailwind AFTER. * postcss-import (configured in postcss.config.mjs) inlines the * @import content before Tailwind processes @tailwind directives.
  * ============================================= */
 
 /* 1. Design tokens: fonts, CSS vars, themes */
@@ -48,9 +27,7 @@
 @import './_responsive.css';
 @import './_utilities.css';
 
-/* Tailwind layer directives — postcss-import inlines all @import
- * above before Tailwind runs, so @layer blocks in imported files
- * are correctly anchored by these directives. */
+/* Tailwind directives — after imports */
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
