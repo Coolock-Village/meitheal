@@ -35,6 +35,8 @@ meitheal/
 │           │   │   ├── compat-logger.ts
 │           │   │   ├── http.ts
 │           │   │   └── store.ts
+│           │   ├── offline/                 # PWA lifecycle
+│           │   │   └── sw-register.ts       # SW registration + update detection
 │           │   ├── todo/                   # HA todo list sync
 │           │   │   ├── todo-bridge.ts
 │           │   │   └── todo-status-mapper.ts
@@ -46,6 +48,8 @@ meitheal/
 │               ├── api/     # 42 API endpoint files
 │               └── index.astro
 │           ├── components/
+│           │   ├── pwa/           # PWA install banner
+│           │   │   └── PwaInstallBanner.astro
 │           │   └── settings/      # Tab components (SettingsGeneral, SettingsIntegrations, etc.)
 │           └── styles/
 │               ├── global.css     # Hub: @tailwind + @import for 14 partials
@@ -104,6 +108,9 @@ meitheal/
 | `apps/web/scripts/perf-budget-check.mjs` | CI performance enforcement |
 | `meitheal-hub/run.sh` | HA add-on startup (uses serve.mjs wrapper) |
 | `docs/decisions/0006-iteration-05-integrations-rfc.md` | Next iteration RFC |
+| `apps/web/public/sw.js` | Service worker (4 scoped caches + eviction) |
+| `apps/web/src/components/pwa/PwaInstallBanner.astro` | PWA install banner |
+| `docs/kcs/pwa-offline-guide.md` | PWA & offline-first guide (KCS) |
 
 ## Where to Add New Code
 
@@ -129,4 +136,4 @@ meitheal/
 
 ---
 
-*Structure analysis: 2026-03-04 — v0.1.59*
+*Structure analysis: 2026-03-04 — v0.1.59 Phase 59 PWA activation*

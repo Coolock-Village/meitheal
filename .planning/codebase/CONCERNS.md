@@ -1,7 +1,7 @@
 # Codebase Concerns
 
 **Analysis Date:** 2026-03-04
-**Version:** 0.1.57
+**Version:** 0.1.59
 
 ## Tech Debt
 
@@ -63,7 +63,14 @@ No bottlenecks detected.
 - ✅ `OA-416` — Keyboard shortcuts + command palette navigate to bare paths (`/tasks`, `/kanban`), causing 404 behind HA ingress — all 17 `window.location.href` calls now prepend `window.__ingress_path`
 - ✅ `OA-417` — n8n HA addon mode save handler wrongly required webhook URL — now saves `n8n_mode: ha_addon`, webhook URL optional
 - ✅ `OA-418` — Calendar settings `calendar_sync_enabled` and `calendar_write_back` not persisted — added to save handler + sync API call
+- ✅ `OA-419` — PWA service worker never registered — Phase 59: wired `registerServiceWorker()` in Layout.astro, added install banner, Settings install/update buttons
+- ✅ `OA-420` — SW `CACHE_VERSION` stuck at 0.1.25 — synced to 0.1.58, added `GET_VERSION` handler
+- ✅ `OA-421` — No cache eviction — unlimited growth risk with dynamic IPs/ingress tokens — 4 scoped caches with max-entries + TTL eviction
+- ✅ `OA-422` — Offline page Dashboard link not ingress-aware — now uses `x-ingress-path` header
+- ✅ `OA-423` — Offline page missing `role="alert"` + `aria-live` — added both
+- ✅ `OA-424` — KCS pwa-offline-guide.md stale — updated with cache eviction, install flow, update flow
+- ✅ `OA-425` — SW update check 60s too aggressive for addon — reduced to 300s (5 min)
 
 ---
 
-*Concerns audit: 2026-03-04 — v0.1.57*
+*Concerns audit: 2026-03-04 — v0.1.59 Phase 59 PWA activation*

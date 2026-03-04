@@ -32,6 +32,7 @@
 - `ha/` — HA WebSocket events, connection management
 - `todo/` — HA todo list sync, status mapping
 - `tasks/` — persistence, sync service
+- `offline/` — SW registration (`sw-register.ts`), PWA lifecycle
 - `integrations/vikunja-compat/` — Vikunja compatibility layer
 
 ### HA Custom Component (Python, `integrations/home-assistant/custom_components/meitheal/`)
@@ -123,4 +124,4 @@ POST /api/tasks/create
 
 ---
 
-*Architecture analysis: 2026-03-04 — v0.1.59*
+*Architecture analysis: 2026-03-04 — v0.1.59 Phase 59 PWA activation*

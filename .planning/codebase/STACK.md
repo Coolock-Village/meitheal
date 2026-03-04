@@ -162,6 +162,30 @@ Reference: https://developers.home-assistant.io/docs/apps/testing/
 | `repository.yaml` | HA addon repository metadata |
 | `.github/workflows/publish-addon-images.yml` | CI Docker build + push |
 
+## PWA Infrastructure
+
+**Phase 59** wired the previously-dead PWA lifecycle (service worker was exported but never called).
+
+| Component | File | Purpose |
+|-----------|------|---------|
+| SW Registration | `src/domains/offline/sw-register.ts` | Registers SW, sends ingress path, detects updates |
+| Service Worker | `public/sw.js` | 4 scoped caches with TTL eviction |
+| Install Banner | `src/components/pwa/PwaInstallBanner.astro` | Dismissible bottom banner (7-day cooldown) |
+| Settings PWA | `src/components/settings/SettingsSystem.astro` | Install/Update buttons, SW version display |
+| Manifest | `src/pages/manifest.webmanifest.ts` | Dynamic ingress-aware manifest with screenshots |
+| Offline Page | `src/pages/offline.astro` | Ingress-aware fallback with `role="alert"` |
+
+**Cache Eviction Strategy:**
+
+| Cache | Strategy | Max Entries | TTL |
+|-------|----------|-------------|-----|
+| `precache` | Version-bump | ~11 | ∞ |
+| `static` | Cache-first | 100 | 7 days |
+| `api` | Network-first | 50 | 1 hour |
+| `nav` | Network-first | 20 | 24 hours |
+
+Eviction runs on activate + throttled every 5 min during fetch. Update checks every 5 minutes (not 60s — appropriate for HA addon).
+
 ## Security & Hardening
 
 | Area | Implementation |
@@ -204,4 +228,4 @@ HA Supervisor can send requests with `//` paths. Astro's internal `collapseDupli
 
 ---
 
-*Stack analysis: 2026-03-04 — v0.1.59 CSS domain split*
+*Stack analysis: 2026-03-04 — v0.1.59 Phase 59 PWA activation + cache eviction*
