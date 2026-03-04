@@ -17,13 +17,39 @@
 /**
  * Cache version — bump on each release to invalidate stale precache.
  * The activate handler (below) automatically deletes old cache keys
- * that don't match CACHE_NAME, so incrementing this is sufficient.
+ * that don't match the current version prefix, so bumping is sufficient.
  *
  * @kcs Keep in sync with meitheal-hub/config.yaml version.
  */
 const CACHE_VERSION = "0.1.58";
-const CACHE_NAME = `meitheal-v${CACHE_VERSION}`;
 const SYNC_TAG = "meitheal-background-sync";
+
+/**
+ * Scoped cache names — separate caches prevent unbounded growth.
+ * Each has its own eviction policy (max entries + TTL).
+ *
+ * @kcs Dynamic IPs & multiple ingress tokens can create many unique
+ * URL entries. Without eviction, caches grow indefinitely.
+ * See: .planning/persona-loops/pwa-ingress-50-persona-audit.md #16
+ */
+const CACHES = {
+  /** App shell pages + icons. Evicted only on version bump. */
+  precache: `meitheal-precache-v${CACHE_VERSION}`,
+  /** CSS/JS/font assets. Cache-first, max 100 entries, 7-day TTL. */
+  static: `meitheal-static-v${CACHE_VERSION}`,
+  /** API responses. Network-first, max 50 entries, 1-hour TTL. */
+  api: `meitheal-api-v${CACHE_VERSION}`,
+  /** Full page navigations. Network-first, max 20 entries, 24-hour TTL. */
+  nav: `meitheal-nav-v${CACHE_VERSION}`,
+};
+
+/** Eviction limits per cache bucket. */
+const EVICTION_POLICY = {
+  [CACHES.static]:  { maxEntries: 100, maxAgeMs: 7  * 24 * 60 * 60 * 1000 },
+  [CACHES.api]:     { maxEntries: 50,  maxAgeMs: 1  * 60 * 60 * 1000 },
+  [CACHES.nav]:     { maxEntries: 20,  maxAgeMs: 24 * 60 * 60 * 1000 },
+  // precache: no eviction policy — cleaned entirely on version bump
+};
 
 /**
  * HA ingress path prefix, set via SET_INGRESS_PATH message
@@ -31,7 +57,7 @@ const SYNC_TAG = "meitheal-background-sync";
  */
 let ingressPath = "";
 
-// Static assets to precache (app shell + key pages)
+// Static assets to precache (app shell + key pages).
 // Paths are relative to root — ingressPath is prepended at install time.
 const PRECACHE_PATHS = [
   "/",
@@ -55,25 +81,103 @@ function getPrecacheUrls() {
   return PRECACHE_PATHS.map((p) => `${ingressPath}${p}`);
 }
 
+// --- Cache Eviction ---
+
+/**
+ * Trim a cache to its eviction limits (max entries + TTL).
+ * Entries are ordered oldest-first; over-limit entries are deleted.
+ * The `date` response header is used as the timestamp. If missing,
+ * the entry is treated as expired.
+ *
+ * @kcs This runs on activate + every 5 minutes during active use.
+ * Prevents disk bloat from dynamic IPs, stale ingress tokens,
+ * or long-running browser sessions accumulating responses.
+ */
+async function evictCache(cacheName) {
+  const policy = EVICTION_POLICY[cacheName];
+  if (!policy) return;
+
+  const cache = await caches.open(cacheName);
+  const requests = await cache.keys();
+  const now = Date.now();
+
+  // Build entries with timestamps, then sort oldest-first
+  const entries = [];
+  for (const request of requests) {
+    const response = await cache.match(request);
+    const dateHeader = response && response.headers.get("date");
+    const timestamp = dateHeader ? new Date(dateHeader).getTime() : 0;
+    entries.push({ request, timestamp });
+  }
+  entries.sort((a, b) => a.timestamp - b.timestamp);
+
+  // Delete expired entries (past TTL)
+  const expiry = now - policy.maxAgeMs;
+  const deletions = [];
+  for (const entry of entries) {
+    if (entry.timestamp < expiry) {
+      deletions.push(cache.delete(entry.request));
+    }
+  }
+
+  // Delete oldest entries beyond max count
+  const remaining = entries.filter((e) => e.timestamp >= expiry);
+  if (remaining.length > policy.maxEntries) {
+    const excess = remaining.slice(0, remaining.length - policy.maxEntries);
+    for (const entry of excess) {
+      deletions.push(cache.delete(entry.request));
+    }
+  }
+
+  await Promise.all(deletions);
+}
+
+/** Run eviction on all runtime caches. */
+async function evictAllCaches() {
+  await Promise.all([
+    evictCache(CACHES.static),
+    evictCache(CACHES.api),
+    evictCache(CACHES.nav),
+  ]);
+}
+
+/** Throttled eviction — runs at most once every 5 minutes. */
+let lastEvictionRun = 0;
+const EVICTION_INTERVAL_MS = 5 * 60 * 1000;
+
+function maybeEvict() {
+  const now = Date.now();
+  if (now - lastEvictionRun < EVICTION_INTERVAL_MS) return;
+  lastEvictionRun = now;
+  evictAllCaches().catch(() => {/* eviction is best-effort */});
+}
+
 // --- Install ---
 
 self.addEventListener("install", (event) => {
   event.waitUntil(
-    caches.open(CACHE_NAME).then((cache) => cache.addAll(getPrecacheUrls()))
+    caches.open(CACHES.precache).then((cache) => cache.addAll(getPrecacheUrls()))
   );
 });
 
 // --- Activate ---
 
 self.addEventListener("activate", (event) => {
+  // Delete all caches that don't belong to the current version.
+  // This covers: old precache, old static/api/nav, and any
+  // orphaned caches from previous ingress tokens or versions.
+  const currentCacheNames = new Set(Object.values(CACHES));
   event.waitUntil(
     caches
       .keys()
       .then((keys) =>
         Promise.all(
-          keys.filter((key) => key !== CACHE_NAME).map((key) => caches.delete(key))
+          keys
+            .filter((key) => !currentCacheNames.has(key))
+            .map((key) => caches.delete(key))
         )
       )
+      .then(() => evictAllCaches())
       .then(() => self.clients.claim())
   );
 });
@@ -89,6 +193,9 @@ self.addEventListener("fetch", (event) => {
   // Ignore non-http/https requests (e.g. chrome-extension://)
   if (!url.protocol.startsWith("http")) return;
 
+  // Trigger periodic eviction (non-blocking)
+  maybeEvict();
+
   // Normalize pathname: strip ingress prefix for routing decisions.
   // The actual fetch still uses the full URL including ingress path.
   const routePath = ingressPath && url.pathname.startsWith(ingressPath)
@@ -97,7 +204,7 @@ self.addEventListener("fetch", (event) => {
 
   // API routes: network-first with cache fallback
   if (routePath.startsWith("/api/")) {
-    event.respondWith(networkFirst(event.request));
+    event.respondWith(networkFirst(event.request, CACHES.api));
     return;
   }
 
@@ -111,14 +218,23 @@ self.addEventListener("fetch", (event) => {
   event.respondWith(cacheFirst(event.request));
 });
 
+/**
+ * Cache-first for static assets (CSS, JS, fonts, images).
+ * Tries precache first, then runtime static cache, then network.
+ */
 async function cacheFirst(request) {
-  const cached = await caches.match(request);
+  // Check precache (app shell) first
+  const precached = await caches.match(request, { cacheName: CACHES.precache });
+  if (precached) return precached;
+
+  // Check runtime static cache
+  const cached = await caches.match(request, { cacheName: CACHES.static });
   if (cached) return cached;
 
   try {
     const response = await fetch(request);
     if (response.ok) {
-      const cache = await caches.open(CACHE_NAME);
+      const cache = await caches.open(CACHES.static);
       cache.put(request, response.clone());
     }
     return response;
@@ -127,11 +243,15 @@ async function cacheFirst(request) {
   }
 }
 
-async function networkFirst(request) {
+/**
+ * Network-first for API routes.
+ * Falls back to cached response when offline.
+ */
+async function networkFirst(request, cacheName) {
   try {
     const response = await fetch(request);
     if (response.ok) {
-      const cache = await caches.open(CACHE_NAME);
+      const cache = await caches.open(cacheName);
       cache.put(request, response.clone());
     }
     return response;
@@ -145,20 +265,28 @@ async function networkFirst(request) {
   }
 }
 
+/**
+ * Network-first for navigation with offline fallback page.
+ */
 async function navigationHandler(request) {
   try {
     const response = await fetch(request);
     if (response.ok) {
-      const cache = await caches.open(CACHE_NAME);
+      const cache = await caches.open(CACHES.nav);
       cache.put(request, response.clone());
     }
     return response;
   } catch {
-    const cached = await caches.match(request);
+    // Try navigation cache
+    const cached = await caches.match(request, { cacheName: CACHES.nav });
     if (cached) return cached;
 
-    // Offline fallback — try the ingress-prefixed offline page first
-    const offlinePage = await caches.match(`${ingressPath}/offline`);
+    // Try precache (app shell pages)
+    const precached = await caches.match(request, { cacheName: CACHES.precache });
+    if (precached) return precached;
+
+    // Offline fallback page
+    const offlinePage = await caches.match(`${ingressPath}/offline`, { cacheName: CACHES.precache });
     if (offlinePage) return offlinePage;
 
     return new Response("Offline", { status: 503 });
