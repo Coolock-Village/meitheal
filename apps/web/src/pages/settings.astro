@@ -1262,13 +1262,54 @@ const locale: Locale = cookieLocale === "ga" ? "ga" : "en";
       const entity = readEntityValue("cal-entity");
       const caldav = (document.getElementById("caldav-url") as HTMLInputElement)
         .value;
+      const writeBack =
+        (document.getElementById("cal-write-back") as HTMLInputElement)
+          ?.checked ?? false;
 
       const btn = document.getElementById("save-cal") as HTMLButtonElement;
       btn.textContent = "Saving...";
       btn.disabled = true;
 
       await saveSetting("cal_entity", entity);
+      await saveSetting("calendar_sync_enabled", !!entity);
+      await saveSetting("calendar_write_back", writeBack);
       if (caldav) await saveSetting("caldav_url", caldav);
+
+      // Enable/disable calendar sync via API (mirrors todo sync pattern)
+      if (entity) {
+        try {
+          await fetch("/api/integrations/calendar/sync", {
+            method: "POST",
+            headers: { "content-type": "application/json" },
+            body: JSON.stringify({
+              action: "enable",
+              entity_id: entity,
+              write_back: writeBack,
+            }),
+          });
+        } catch {
+          /* logged server-side */
+        }
+      } else {
+        try {
+          await fetch("/api/integrations/calendar/sync", {
+            method: "POST",
+            headers: { "content-type": "application/json" },
+            body: JSON.stringify({ action: "disable" }),
+          });
+        } catch {
+          /* logged server-side */
+        }
+      }
+
+      // Update status badge
+      const statusEl = document.getElementById("cal-status");
+      if (statusEl) {
+        statusEl.textContent = entity ? "Syncing" : "Disabled";
+        statusEl.className = entity
+          ? "badge badge-active"
+          : "badge badge-pending";
+      }
 
       btn.textContent = "Save Calendar Settings";
       btn.disabled = false;
