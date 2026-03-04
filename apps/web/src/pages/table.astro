@@ -308,7 +308,7 @@ const priorityClasses: Record<number, string> = {
                     >
                       {task.due_date
                         ? formatRegionalDate(task.due_date, {
-                            format: dateFormat as any,
+                            format: dateFormat,
                             timezone,
                           })
                         : "—"}
@@ -683,7 +683,9 @@ const priorityClasses: Record<number, string> = {
         });
         if (!ok) return;
         try {
-          await fetch(`${window.__ingress_path || ""}/api/tasks/${id}`, { method: "DELETE" });
+          await fetch(`${window.__ingress_path || ""}/api/tasks/${id}`, {
+            method: "DELETE",
+          });
           showToast("common.task_deleted");
           (btn as HTMLElement).closest("tr")?.remove();
         } catch {
@@ -732,11 +734,14 @@ const priorityClasses: Record<number, string> = {
         const checked = document.querySelectorAll(".row-check:checked");
         try {
           const promises = Array.from(checked).map((cb) =>
-            fetch(`${window.__ingress_path || ""}/api/tasks/${(cb as HTMLElement).dataset.id}`, {
-              method: "PUT",
-              headers: { "content-type": "application/json" },
-              body: JSON.stringify({ status: newStatus }),
-            }),
+            fetch(
+              `${window.__ingress_path || ""}/api/tasks/${(cb as HTMLElement).dataset.id}`,
+              {
+                method: "PUT",
+                headers: { "content-type": "application/json" },
+                body: JSON.stringify({ status: newStatus }),
+              },
+            ),
           );
           await Promise.all(promises);
           showToast(`${checked.length} tasks updated`);
@@ -772,9 +777,12 @@ const priorityClasses: Record<number, string> = {
         if (!ok) return;
         try {
           const promises = Array.from(checked).map((cb) =>
-            fetch(`${window.__ingress_path || ""}/api/tasks/${(cb as HTMLElement).dataset.id}`, {
-              method: "DELETE",
-            }),
+            fetch(
+              `${window.__ingress_path || ""}/api/tasks/${(cb as HTMLElement).dataset.id}`,
+              {
+                method: "DELETE",
+              },
+            ),
           );
           await Promise.all(promises);
           showToast(`${checked.length} tasks deleted`);

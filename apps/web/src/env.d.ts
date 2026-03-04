@@ -9,6 +9,6 @@ declare namespace App {
     hassIsAdmin: boolean;
     timezone: string;
     weekStart: string;
-    dateFormat: string;
+    dateFormat: import("./lib/date").DateFormat;
   }
 }

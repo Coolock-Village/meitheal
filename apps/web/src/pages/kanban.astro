@@ -450,7 +450,7 @@ const typeConfig: Record<
                               ? "🟡"
                               : "📅"}{" "}
                           {formatRegionalDate(dueDate, {
-                            format: dateFormat as any,
+                            format: dateFormat,
                             timezone,
                           })}
                         </span>
@@ -783,22 +783,27 @@ const typeConfig: Record<
         const id = btn.dataset.id;
         if (!id) return;
         try {
-          const res = await fetch(`${window.__ingress_path || ""}/api/tasks/${id}`);
+          const res = await fetch(
+            `${window.__ingress_path || ""}/api/tasks/${id}`,
+          );
           if (!res.ok) return;
           const task = await res.json();
-          const dupRes = await fetch((window.__ingress_path || "") + "/api/tasks", {
-            method: "POST",
-            headers: { "content-type": "application/json" },
-            body: JSON.stringify({
-              title: `${task.title} (Copy)`,
-              description: task.description ?? "",
-              priority: task.priority ?? 3,
-              status: "pending",
-              due_date: task.due_date ?? null,
-              labels: task.labels ?? "[]",
-              framework_payload: task.framework_payload ?? "{}",
-            }),
-          });
+          const dupRes = await fetch(
+            (window.__ingress_path || "") + "/api/tasks",
+            {
+              method: "POST",
+              headers: { "content-type": "application/json" },
+              body: JSON.stringify({
+                title: `${task.title} (Copy)`,
+                description: task.description ?? "",
+                priority: task.priority ?? 3,
+                status: "pending",
+                due_date: task.due_date ?? null,
+                labels: task.labels ?? "[]",
+                framework_payload: task.framework_payload ?? "{}",
+              }),
+            },
+          );
           if (dupRes.ok) window.location.reload();
         } catch {}
       });
@@ -841,11 +846,14 @@ const typeConfig: Record<
           try {
             const payload = { title, status };
             if (taskType) payload.task_type = taskType;
-            const res = await fetch((window.__ingress_path || "") + "/api/tasks", {
-              method: "POST",
-              headers: { "content-type": "application/json" },
-              body: JSON.stringify(payload),
-            });
+            const res = await fetch(
+              (window.__ingress_path || "") + "/api/tasks",
+              {
+                method: "POST",
+                headers: { "content-type": "application/json" },
+                body: JSON.stringify(payload),
+              },
+            );
             if (res.ok) window.location.reload();
           } catch {
             /* ignore */
@@ -951,11 +959,14 @@ const typeConfig: Record<
           const newName = prompt("Rename lane:", currentLabel);
           if (newName?.trim()) {
             try {
-              await fetch(`${window.__ingress_path || ""}/api/lanes/${laneId}`, {
-                method: "PUT",
-                headers: { "content-type": "application/json" },
-                body: JSON.stringify({ label: newName.trim() }),
-              });
+              await fetch(
+                `${window.__ingress_path || ""}/api/lanes/${laneId}`,
+                {
+                  method: "PUT",
+                  headers: { "content-type": "application/json" },
+                  body: JSON.stringify({ label: newName.trim() }),
+                },
+              );
               window.location.reload();
             } catch {}
           }
@@ -974,7 +985,9 @@ const typeConfig: Record<
           });
           if (!ok) return;
           try {
-            await fetch(`${window.__ingress_path || ""}/api/lanes/${laneId}`, { method: "DELETE" });
+            await fetch(`${window.__ingress_path || ""}/api/lanes/${laneId}`, {
+              method: "DELETE",
+            });
             window.location.reload();
           } catch {}
         });
@@ -1008,11 +1021,14 @@ const typeConfig: Record<
           const updates = [];
           items.forEach((el, idx) => {
             updates.push(
-              fetch(`${window.__ingress_path || ""}/api/lanes/${el.dataset.id}`, {
-                method: "PUT",
-                headers: { "content-type": "application/json" },
-                body: JSON.stringify({ position: idx }),
-              }),
+              fetch(
+                `${window.__ingress_path || ""}/api/lanes/${el.dataset.id}`,
+                {
+                  method: "PUT",
+                  headers: { "content-type": "application/json" },
+                  body: JSON.stringify({ position: idx }),
+                },
+              ),
             );
           });
           await Promise.all(updates);

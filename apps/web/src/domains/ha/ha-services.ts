@@ -370,7 +370,7 @@ export async function askAssist(
     if (options?.agentId) msgData.agent_id = options.agentId;
     if (options?.conversationId) msgData.conversation_id = options.conversationId;
 
-    const result = await conn.sendMessagePromise<Record<string, unknown>>(msgData as any);
+    const result = await conn.sendMessagePromise<Record<string, unknown>>(msgData as { type: string; [key: string]: unknown });
 
     // Parse full conversation response shape
     const payload = result as {
