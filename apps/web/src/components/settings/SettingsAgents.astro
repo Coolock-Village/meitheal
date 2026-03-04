@@ -353,16 +353,13 @@ const { locale } = Astro.props;
     }, 5000);
   });
 
-  // ── External AI Provider ──
+  // ── External AI Provider — UI reactivity only ──
+  // Save/restore is handled by settings.astro's restoreIntegrationSettings()
   const extBadge = document.getElementById("ext-ai-badge");
   const aiProvider = document.getElementById(
     "ai-provider",
   ) as HTMLSelectElement;
   const customUrlGroup = document.getElementById("ai-custom-url-group");
-  const customUrlInput = document.getElementById(
-    "ai-custom-url",
-  ) as HTMLInputElement;
-  const saveAiBtn = document.getElementById("save-ai");
 
   const AI_NAMES: Record<string, string> = {
     chatgpt: "ChatGPT",
@@ -374,7 +371,7 @@ const { locale } = Astro.props;
   };
 
   function updateExtAiBadge() {
-    if (extBadge) {
+    if (extBadge && aiProvider) {
       extBadge.textContent = AI_NAMES[aiProvider.value] || aiProvider.value;
     }
   }
@@ -389,125 +386,8 @@ const { locale } = Astro.props;
     updateExtAiBadge();
   });
 
-  // Save External AI — persist to both localStorage + server
-  saveAiBtn?.addEventListener("click", async () => {
-    localStorage.setItem("meitheal-ai-provider", aiProvider.value);
-    if (customUrlInput?.value) {
-      localStorage.setItem("meitheal-ai-custom-url", customUrlInput.value);
-    }
-    try {
-      await fetch("/api/settings", {
-        method: "PUT",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          key: "ai-provider",
-          value: aiProvider.value,
-        }),
-      });
-      if (customUrlInput?.value) {
-        await fetch("/api/settings", {
-          method: "PUT",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({
-            key: "ai-custom-url",
-            value: customUrlInput.value,
-          }),
-        });
-      }
-      showToast("AI provider saved.", "success");
-    } catch {
-      showToast("Failed to save AI provider.", "error");
-    }
-    updateExtAiBadge();
-  });
-
-  // ── Agent Protocol Settings Save ──
-  const saveProtocolsBtn = document.getElementById("save-agent-protocols");
-  saveProtocolsBtn?.addEventListener("click", async () => {
-    const a2a = (
-      document.getElementById("agent-a2a-enabled") as HTMLInputElement
-    )?.checked;
-    const webmcp = (
-      document.getElementById("agent-webmcp-enabled") as HTMLInputElement
-    )?.checked;
-    const mcp = (
-      document.getElementById("agent-mcp-enabled") as HTMLInputElement
-    )?.checked;
-
-    try {
-      const settings = [
-        { key: "agent-protocols-a2a-enabled", value: a2a },
-        { key: "agent-protocols-webmcp-enabled", value: webmcp },
-        { key: "agent-protocols-mcp-enabled", value: mcp },
-      ];
-      for (const s of settings) {
-        await fetch("/api/settings", {
-          method: "PUT",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ key: s.key, value: JSON.stringify(s.value) }),
-        });
-      }
-      showToast("Agent protocol settings saved.", "success");
-    } catch {
-      showToast("Failed to save protocol settings.", "error");
-    }
-  });
-
-  // ── Restore saved state ──
-  async function restoreAgentSettings() {
-    // Restore AI provider
-    try {
-      const res = await fetch("/api/settings?key=ai-provider");
-      if (res.ok) {
-        const data = await res.json();
-        if (data?.value && aiProvider) {
-          aiProvider.value = data.value;
-          updateExtAiBadge();
-          if (customUrlGroup) {
-            customUrlGroup.style.display =
-              data.value === "custom" || data.value === "ollama" ? "" : "none";
-          }
-        }
-      }
-    } catch {
-      /* use defaults */
-    }
-
-    // Restore custom URL
-    try {
-      const res = await fetch("/api/settings?key=ai-custom-url");
-      if (res.ok) {
-        const data = await res.json();
-        if (data?.value && customUrlInput) {
-          customUrlInput.value = data.value;
-        }
-      }
-    } catch {
-      /* ignore */
-    }
-
-    // Restore protocol toggles
-    for (const { key, id } of [
-      { key: "agent-protocols-a2a-enabled", id: "agent-a2a-enabled" },
-      { key: "agent-protocols-webmcp-enabled", id: "agent-webmcp-enabled" },
-      { key: "agent-protocols-mcp-enabled", id: "agent-mcp-enabled" },
-    ]) {
-      try {
-        const res = await fetch(`/api/settings?key=${key}`);
-        if (res.ok) {
-          const data = await res.json();
-          if (data?.value != null) {
-            const el = document.getElementById(id) as HTMLInputElement;
-            if (el) el.checked = JSON.parse(data.value);
-          }
-        }
-      } catch {
-        /* use defaults */
-      }
-    }
-  }
-
   // ── Fix ingress-aware links ──
+  // Agent Card + MCP manifest links need the ingress base path prepended
   function fixProtocolLinks() {
     const base = (window as any).__meitheal_base || "";
     document.querySelectorAll(".protocol-link[data-path]").forEach((el) => {
@@ -516,14 +396,15 @@ const { locale } = Astro.props;
     });
   }
 
-  // Init: Load agents + restore settings when the tab is shown
+  // Init: Load agents + fix links when the tab is shown
+  // Save/restore is handled by settings.astro's restoreIntegrationSettings()
   const tabAgents = document.getElementById("tab-agents");
   if (tabAgents) {
     const observer = new MutationObserver(() => {
       if (tabAgents.style.display !== "none") {
         loadHAAgents();
-        restoreAgentSettings();
         fixProtocolLinks();
+        updateExtAiBadge();
         observer.disconnect();
       }
     });
