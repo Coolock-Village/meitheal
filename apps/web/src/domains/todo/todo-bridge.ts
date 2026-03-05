@@ -346,9 +346,26 @@ export async function pushTaskToTodoList(
     await ensureSchema();
     const client = getPersistenceClient();
 
+    // Ensure todo_sync_confirmations table exists (may not yet if outbound fires before inbound)
+    await client.execute({
+      sql: `CREATE TABLE IF NOT EXISTS todo_sync_confirmations (
+        confirmation_id TEXT PRIMARY KEY,
+        task_id TEXT NOT NULL,
+        request_id TEXT NOT NULL,
+        ha_entity_id TEXT NOT NULL,
+        ha_todo_uid TEXT NOT NULL,
+        source TEXT NOT NULL DEFAULT 'ha.todo_sync',
+        sync_direction TEXT NOT NULL DEFAULT 'inbound',
+        payload TEXT,
+        created_at INTEGER NOT NULL,
+        updated_at INTEGER NOT NULL
+      )`,
+      args: [],
+    });
+
     // Check if this task already has a sync confirmation (outbound already pushed)
     const existing = await client.execute({
-      sql: "SELECT ha_todo_uid FROM todo_sync_confirmations WHERE task_id = ? AND ha_entity_id = ?",
+      sql: "SELECT ha_todo_uid, payload FROM todo_sync_confirmations WHERE task_id = ? AND ha_entity_id = ?",
       args: [taskId, entityId],
     });
 
@@ -358,8 +375,19 @@ export async function pushTaskToTodoList(
       const haStatus = meithealStatusToHA(status as "todo" | "in_progress" | "done");
       const dueData = buildDueServiceData(dueDate);
 
+      // Use the stored summary (original title) as the item identifier for HA's
+      // todo.update_item service, which identifies items by summary text.
+      let itemIdentifier = title; // fallback to current title
+      const rawPayload = existing.rows[0]!.payload as string | null;
+      if (rawPayload) {
+        try {
+          const parsed = JSON.parse(rawPayload) as { summary?: string };
+          if (parsed.summary) itemIdentifier = parsed.summary;
+        } catch { /* use current title */ }
+      }
+
       const descWithAttribution = [description, "Added from Meitheal"].filter(Boolean).join("\n\n");
-      const success = await updateTodoItem(entityId, uid, {
+      const success = await updateTodoItem(entityId, itemIdentifier, {
         summary: title,
         status: haStatus,
         description: descWithAttribution,
