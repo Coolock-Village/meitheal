@@ -149,7 +149,11 @@ export async function pushToActiveSyncs(
   }
 
   // ── Grocy Sync: push completions to Grocy when task marked done ──
-  if (status === "done" && !syncedFromEntities.includes("grocy")) {
+  // NOTE: Unlike Todo/Calendar, Grocy completions SHOULD push back even for
+  // tasks that originated from Grocy. The inbound creates the task; the outbound
+  // completes it. That's the bidirectional contract — no loop because Grocy
+  // doesn't re-create completed chores/tasks.
+  if (status === "done") {
     try {
       const { getActiveGrocySyncConfig, pushCompletionToGrocy } = await import("@domains/grocy");
       const grocyConfig = getActiveGrocySyncConfig();
