@@ -139,6 +139,62 @@
     @apply flex items-center justify-between px-6 py-4 bg-bg-secondary/50 border-b border-border;
   }
 
+    /* --- Stats / Dashboard ---
+     * Restored from pre-split global.css (commit b0e2f1b^).
+     * These rules were lost during Phase 58 CSS split into domain partials. */
+    .stats-grid {
+      @apply grid grid-cols-2 md:grid-cols-4 gap-4 mb-6;
+    }
+  
+    .stat-card {
+      @apply bg-bg-card/80 backdrop-blur-md border border-border rounded-xl p-5 flex items-center shadow-sm;
+      gap: 14px;
+      min-height: 88px;
+      transition:
+        transform 0.2s cubic-bezier(0.175, 0.885, 0.32, 1.275),
+        box-shadow 0.2s ease,
+        border-color 0.2s ease,
+        background-color 0.2s ease;
+      cursor: default;
+    }
+  
+    .stat-card:hover {
+      @apply bg-bg-card/95;
+      transform: translateY(-2px) scale(1.02);
+      box-shadow:
+        0 4px 20px rgba(16, 185, 129, 0.12),
+        var(--shadow-md);
+      border-color: var(--accent);
+    }
+  
+    .stat-icon {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      width: 42px;
+      height: 42px;
+      border-radius: 10px;
+      background: var(--bg-hover);
+      font-size: 1.25rem;
+      flex-shrink: 0;
+    }
+  
+    .stat-value {
+      font-size: 1.5rem;
+      font-weight: 700;
+      line-height: 1.1;
+      letter-spacing: -0.02em;
+      color: var(--text-primary);
+    }
+  
+    .stat-label {
+      font-size: 0.75rem;
+      color: var(--text-muted);
+      margin-top: 2px;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+      font-weight: 500;
+    }
     /* --- Empty State --- */
     .empty-state {
       @apply flex flex-col items-center justify-center p-12 text-center rounded-xl border border-dashed border-border/60 bg-bg-secondary/30 my-8 mx-auto w-full max-w-2xl;
