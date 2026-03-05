@@ -145,7 +145,7 @@
     .stats-grid {
       @apply grid grid-cols-2 md:grid-cols-4 gap-4 mb-6;
     }
-  
+
     .stat-card {
       @apply bg-bg-card/80 backdrop-blur-md border border-border rounded-xl p-5 flex items-center shadow-sm;
       gap: 14px;
@@ -157,7 +157,7 @@
         background-color 0.2s ease;
       cursor: default;
     }
-  
+
     .stat-card:hover {
       @apply bg-bg-card/95;
       transform: translateY(-2px) scale(1.02);
@@ -166,7 +166,7 @@
         var(--shadow-md);
       border-color: var(--accent);
     }
-  
+
     .stat-icon {
       display: inline-flex;
       align-items: center;
@@ -178,7 +178,7 @@
       font-size: 1.25rem;
       flex-shrink: 0;
     }
-  
+
     .stat-value {
       font-size: 1.5rem;
       font-weight: 700;
@@ -186,7 +186,7 @@
       letter-spacing: -0.02em;
       color: var(--text-primary);
     }
-  
+
     .stat-label {
       font-size: 0.75rem;
       color: var(--text-muted);
@@ -253,4 +253,17 @@
   .search-item {
     @apply flex flex-col gap-0.5 px-4 py-2.5 text-sm text-text-primary no-underline transition-colors;
   }
+}
+
+/* HA Ingress compact mode — restored from pre-split global.css */
+body.ha-ingress .top-navigation .hamburger-btn {
+  display: none !important;
+}
+
+/* Priority indicator dot */
+.priority-dot {
+  width: 0.5rem;
+  height: 0.5rem;
+  border-radius: 9999px;
+  display: inline-block;
 }
