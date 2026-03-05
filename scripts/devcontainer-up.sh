@@ -34,17 +34,22 @@ PROJECT_ROOT="$(cd "$SCRIPT_DIR/.." && pwd)"
 COMPOSE_FILE="$PROJECT_ROOT/.devcontainer/docker-compose.yml"
 
 # ── Find compose command ──
-# Priority: docker compose > podman compose > podman-compose > flatpak-spawn (host fallback)
+# Distrobox containers have a path mismatch (/var/home vs /home) that breaks
+# local podman. When inside a distrobox, always delegate to the host.
 find_compose() {
+  # Inside distrobox? Delegate to host (avoids /var/home path mismatch)
+  if [[ -n "${DISTROBOX_ENTER_PATH:-}" ]] && command -v flatpak-spawn &>/dev/null; then
+    echo "flatpak-spawn --host podman-compose"
+    return
+  fi
+
+  # On bare host — try local compose tools
   if command -v docker &>/dev/null && docker compose version &>/dev/null 2>&1; then
     echo "docker compose"
   elif command -v podman-compose &>/dev/null; then
     echo "podman-compose"
   elif command -v podman &>/dev/null && podman compose version &>/dev/null 2>&1; then
     echo "podman compose"
-  elif command -v flatpak-spawn &>/dev/null; then
-    # Inside distrobox — delegate to host podman-compose
-    echo "flatpak-spawn --host podman-compose"
   else
     err "No compose tool found. Install podman-compose:"
     err "  pip install podman-compose"
