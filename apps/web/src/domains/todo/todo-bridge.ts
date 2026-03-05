@@ -476,3 +476,13 @@ export function getTodoSyncStatus(entityId?: string) {
     itemCount: state.itemCount,
   }));
 }
+
+/**
+ * Get active todo sync configs for outbound dispatching.
+ * Returns only syncs that support outbound/bidirectional push.
+ */
+export function getActiveTodoSyncConfigs(): TodoSyncConfig[] {
+  return Array.from(activeSyncs.values())
+    .filter((s) => s.config.syncDirection !== "inbound")
+    .map((s) => s.config);
+}

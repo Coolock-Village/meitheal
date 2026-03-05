@@ -1427,9 +1427,16 @@ const locale: Locale = cookieLocale === "ga" ? "ga" : "en";
             const s = settingsData.settings ?? ({} as Record<string, unknown>);
             const raw =
               s.calendar_entities ?? s.calendar_entity ?? s.cal_entity;
-            if (typeof raw === "string") {
+            if (Array.isArray(raw)) {
+              savedEntities = raw as string[];
+            } else if (typeof raw === "string") {
               try {
-                savedEntities = JSON.parse(raw);
+                const parsed = JSON.parse(raw);
+                savedEntities = Array.isArray(parsed)
+                  ? parsed
+                  : parsed
+                    ? [parsed]
+                    : [];
               } catch {
                 savedEntities = raw ? [raw] : [];
               }
