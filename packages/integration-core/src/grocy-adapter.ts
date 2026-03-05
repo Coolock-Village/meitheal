@@ -306,6 +306,41 @@ export class GrocyAdapter {
   }
 
   /**
+   * POST /api/stock/shoppinglist/clear — remove all items from a shopping list.
+   * Called when the "Go Shopping" task is marked done in Meitheal.
+   */
+  async clearShoppingList(listId = 1): Promise<GrocyResult<void>> {
+    return this.request("POST", "/api/stock/shoppinglist/clear", {
+      list_id: listId,
+    }) as Promise<GrocyResult<void>>
+  }
+
+  /**
+   * POST /api/objects/tasks — create a new task in Grocy.
+   * Used for outbound sync when a new task is created in Meitheal (bidirectional mode).
+   */
+  async createTask(
+    name: string,
+    options?: { description?: string; dueDate?: string; categoryId?: number }
+  ): Promise<GrocyResult<{ taskId: number }>> {
+    return this.request(
+      "POST",
+      "/api/objects/tasks",
+      {
+        name,
+        description: options?.description ?? "",
+        due_date: options?.dueDate ?? null,
+        category_id: options?.categoryId ?? null,
+        done: 0,
+      },
+      (raw) => {
+        const r = raw as Record<string, unknown>
+        return { taskId: Number(r.created_object_id ?? r.id ?? 0) }
+      }
+    )
+  }
+
+  /**
    * Add items to Grocy shopping list.
    * POST /api/stock/shoppinglist/add-product — one per item.
    */

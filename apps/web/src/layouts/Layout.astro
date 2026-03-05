@@ -2834,23 +2834,54 @@ Astro.response.headers.set("X-Content-Type-Options", "nosniff");
             }
           });
 
-        // Ask AI
+        // Ask AI — inline HA Assist response
         document
           .getElementById("td-ask-ai")
           ?.addEventListener("click", async () => {
             if (!currentTaskId) return;
+            const btn = document.getElementById("td-ask-ai") as HTMLElement;
+            const originalText = btn.innerHTML;
+            btn.innerHTML = "⚙️ Thinking…";
+            btn.classList.add("opacity-60", "pointer-events-none");
+
+            // Remove previous AI response
+            document.getElementById("td-ai-response")?.remove();
+
             try {
-              const btn = document.getElementById("td-ask-ai") as HTMLElement;
-              const originalText = btn.innerHTML;
-              btn.innerHTML = "⏳ Generating...";
-              await askAIForTask(currentTaskId);
-              btn.innerHTML = "✅ Copied!";
-              setTimeout(() => (btn.innerHTML = originalText), 2000);
+              const result = await askAIForTask(currentTaskId);
+
+              const responseEl = document.createElement("div");
+              responseEl.id = "td-ai-response";
+              responseEl.style.cssText = "margin-top:8px;";
+
+              if (result.source === "ha-assist" && result.response) {
+                responseEl.className =
+                  "p-3 bg-accent/10 border border-accent/20 rounded-md text-xs text-text-secondary leading-relaxed";
+                responseEl.innerHTML = `<div class="flex justify-between items-center mb-1.5"><strong class="text-accent text-[11px]">✨ AI Response</strong><button id="td-ai-dismiss" class="text-text-muted hover:text-text-primary text-xs px-1">&times;</button></div><div class="whitespace-pre-wrap">${result.response}</div>`;
+                btn.innerHTML = "✨ AI Responded";
+              } else {
+                responseEl.className =
+                  "p-3 bg-warning/10 border border-warning/20 rounded-md text-xs text-text-secondary leading-relaxed";
+                responseEl.innerHTML = `<div class="flex justify-between items-center mb-1.5"><strong class="text-warning text-[11px]">📋 Prompt Copied</strong><button id="td-ai-dismiss" class="text-text-muted hover:text-text-primary text-xs px-1">&times;</button></div><div>HA Assist unavailable. Prompt copied to clipboard — paste into your AI provider.</div>`;
+                btn.innerHTML = "📋 Copied!";
+              }
+
+              // Insert after the Ask AI button
+              btn.parentElement?.after(responseEl);
+              responseEl
+                .querySelector("#td-ai-dismiss")
+                ?.addEventListener("click", () => {
+                  responseEl.remove();
+                });
             } catch (err) {
               console.error("AI Context error:", err);
               const { showToast: toast } = await import("@lib/toast");
               toast("Failed to generate AI context.", "error");
+              btn.innerHTML = "❌ Failed";
             }
+
+            btn.classList.remove("opacity-60", "pointer-events-none");
+            setTimeout(() => (btn.innerHTML = originalText), 4000);
           });
 
         // Attach Image

@@ -25,7 +25,7 @@ export interface AIResult {
   /** Whether we used HA Assist or fell back to external provider */
   source: "ha-assist" | "clipboard-fallback";
   /** Conversation ID for multi-turn follow-ups */
-  conversationId?: string;
+  conversationId?: string | undefined;
 }
 
 /**
@@ -327,7 +327,7 @@ function extractJSON(
   const fenceMatch = text.match(/```(?:json)?\s*([\s\S]*?)```/);
   if (fenceMatch) {
     try {
-      return JSON.parse(fenceMatch[1].trim());
+      return JSON.parse(fenceMatch[1]!.trim());
     } catch {
       /* malformed */
     }
