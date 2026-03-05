@@ -64,6 +64,31 @@ class MeithealCoordinator(DataUpdateCoordinator[MeithealCoordinatorData]):
         )
         self._base_url = f"http://{host}:{port}"
         self._session: aiohttp.ClientSession | None = None
+        self._previous_data: MeithealCoordinatorData | None = None
+
+    # ── Event Bus Helpers ─────────────────────────────────────────────
+
+    def _fire_event(self, event_type: str, data: dict[str, Any]) -> None:
+        """Fire a Meitheal event on the HA event bus.
+
+        Source is 'component' to distinguish from addon-fired events
+        (which use source='meitheal'). This prevents circular re-fires.
+        """
+        self.hass.bus.async_fire(
+            event_type,
+            {**data, "source": "component", "domain": DOMAIN},
+        )
+
+    def _fire_logbook(self, name: str, message: str, entity_id: str | None = None) -> None:
+        """Fire a logbook entry so Meitheal actions appear in HA history."""
+        logbook_data: dict[str, Any] = {
+            "name": name,
+            "message": message,
+            "domain": DOMAIN,
+        }
+        if entity_id:
+            logbook_data["entity_id"] = entity_id
+        self.hass.bus.async_fire("logbook_entry", logbook_data)
 
     async def _ensure_session(self) -> aiohttp.ClientSession:
         """Get or create aiohttp session."""
@@ -89,7 +114,24 @@ class MeithealCoordinator(DataUpdateCoordinator[MeithealCoordinatorData]):
                 # API may return { tasks: [...] } or [...] directly
                 raw_tasks = data if isinstance(data, list) else data.get("tasks", [])
                 tasks = [MeithealTask(t) for t in raw_tasks]
-                return MeithealCoordinatorData(tasks)
+                new_data = MeithealCoordinatorData(tasks)
+
+                # Fire event on data change (count or overdue difference)
+                if self._previous_data is not None:
+                    prev = self._previous_data
+                    if (
+                        prev.total_count != new_data.total_count
+                        or prev.overdue_count != new_data.overdue_count
+                        or prev.active_count != new_data.active_count
+                    ):
+                        self._fire_event("meitheal_board_updated", {
+                            "total": new_data.total_count,
+                            "active": new_data.active_count,
+                            "overdue": new_data.overdue_count,
+                            "previous_total": prev.total_count,
+                        })
+                self._previous_data = new_data
+                return new_data
 
         except aiohttp.ClientError as err:
             raise UpdateFailed(f"Cannot reach Meitheal: {err}") from err
@@ -110,6 +152,9 @@ class MeithealCoordinator(DataUpdateCoordinator[MeithealCoordinatorData]):
             if response.status >= 300:
                 text = await response.text()
                 raise UpdateFailed(f"Create task failed ({response.status}): {text}")
+
+        self._fire_event("meitheal_task_created", {"title": title})
+        self._fire_logbook("Meitheal", f"created task: {title}")
         await self.async_request_refresh()
 
     async def async_complete_task(
@@ -117,10 +162,12 @@ class MeithealCoordinator(DataUpdateCoordinator[MeithealCoordinatorData]):
     ) -> None:
         """Mark a task as done."""
         # Find task by ID or title
+        resolved_title = title
         if not task_id and title and self.data:
             for task in self.data.tasks:
                 if task.title.lower() == title.lower():
                     task_id = task.id
+                    resolved_title = task.title
                     break
         if not task_id:
             raise UpdateFailed("Task not found")
@@ -134,10 +181,24 @@ class MeithealCoordinator(DataUpdateCoordinator[MeithealCoordinatorData]):
             if response.status >= 300:
                 text = await response.text()
                 raise UpdateFailed(f"Complete task failed ({response.status}): {text}")
+
+        label = resolved_title or task_id
+        self._fire_event("meitheal_task_completed", {
+            "task_id": task_id, "title": label,
+        })
+        self._fire_logbook("Meitheal", f"completed task: {label}")
         await self.async_request_refresh()
 
     async def async_delete_task(self, task_id: str) -> None:
         """Delete a task."""
+        # Try to resolve title before deletion for logbook
+        task_title = task_id
+        if self.data:
+            for task in self.data.tasks:
+                if task.id == task_id:
+                    task_title = task.title
+                    break
+
         session = await self._ensure_session()
         async with session.delete(
             f"{self._base_url}/api/tasks/{task_id}",
@@ -146,6 +207,11 @@ class MeithealCoordinator(DataUpdateCoordinator[MeithealCoordinatorData]):
             if response.status >= 300:
                 text = await response.text()
                 raise UpdateFailed(f"Delete task failed ({response.status}): {text}")
+
+        self._fire_event("meitheal_task_deleted", {
+            "task_id": task_id, "title": task_title,
+        })
+        self._fire_logbook("Meitheal", f"deleted task: {task_title}")
         await self.async_request_refresh()
 
     async def async_update_task(self, task_id: str, updates: dict[str, Any]) -> None:
@@ -159,6 +225,21 @@ class MeithealCoordinator(DataUpdateCoordinator[MeithealCoordinatorData]):
             if response.status >= 300:
                 text = await response.text()
                 raise UpdateFailed(f"Update task failed ({response.status}): {text}")
+
+        # Resolve title for logbook
+        task_title = task_id
+        if self.data:
+            for task in self.data.tasks:
+                if task.id == task_id:
+                    task_title = task.title
+                    break
+
+        changed_fields = ", ".join(updates.keys())
+        self._fire_event("meitheal_task_updated", {
+            "task_id": task_id, "title": task_title,
+            "fields": changed_fields,
+        })
+        self._fire_logbook("Meitheal", f"updated task: {task_title} ({changed_fields})")
         await self.async_request_refresh()
 
     async def async_check_health(self) -> bool:

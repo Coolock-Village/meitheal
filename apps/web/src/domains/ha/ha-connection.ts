@@ -101,9 +101,8 @@ export async function getHAConnection(): Promise<Connection | null> {
           event: "ha.notification.action", domain: "ha", component: "ha-connection",
           request_id: SYS_REQ, message: `Received actionable notification to mark task done: ${taskId}`,
         });
-        
+
         // Dispatch to internal API
-        // Use native fetch (Node 22+) — node-fetch is no longer needed
         fetch(`http://127.0.0.1:${process.env.PORT || 3000}/api/tasks/${taskId}`, {
           method: "PUT",
           headers: { "Content-Type": "application/json" },
@@ -116,6 +115,58 @@ export async function getHAConnection(): Promise<Connection | null> {
         });
       }
     }, "mobile_app_notification_action");
+
+    // Phase 62b: Subscribe to state_changed for Meitheal sensor entities
+    // When sensor states change (e.g. active task count), we know the
+    // coordinator refreshed — useful for triggering UI updates.
+    connection.subscribeEvents((event: unknown) => {
+      const ev = event as { data?: { entity_id?: string; new_state?: { state?: string }; old_state?: { state?: string } } };
+      const entityId = ev?.data?.entity_id;
+      if (!entityId?.startsWith("sensor.meitheal_") && entityId !== "todo.meitheal_tasks") return;
+      const newState = ev?.data?.new_state?.state;
+      const oldState = ev?.data?.old_state?.state;
+      if (newState === oldState) return; // No actual change
+      logger.log("info", {
+        event: "ha.state_changed.meitheal", domain: "ha", component: "ha-connection",
+        request_id: SYS_REQ,
+        message: `Meitheal entity ${entityId} changed: ${oldState} → ${newState}`,
+      });
+    }, "state_changed");
+
+    // Phase 62b: Subscribe to call_service for meitheal domain
+    // Logs when services are invoked (from automations, voice, or dev tools).
+    connection.subscribeEvents((event: unknown) => {
+      const ev = event as { data?: { domain?: string; service?: string; service_data?: Record<string, unknown> } };
+      if (ev?.data?.domain !== "meitheal") return;
+      const svc = ev?.data?.service ?? "unknown";
+      const svcData = ev?.data?.service_data ?? {};
+      logger.log("info", {
+        event: "ha.service_called.meitheal", domain: "ha", component: "ha-connection",
+        request_id: SYS_REQ,
+        message: `HA service meitheal.${svc} called with ${JSON.stringify(svcData)}`,
+      });
+    }, "call_service");
+
+    // Phase 62b: Subscribe to component-fired meitheal events
+    // The custom component fires these on hass.bus with source='component'.
+    // We skip events where source='meitheal' (fired by this addon) to prevent loops.
+    for (const eventType of [
+      "meitheal_task_created", "meitheal_task_completed",
+      "meitheal_task_updated", "meitheal_task_deleted",
+      "meitheal_board_updated",
+    ]) {
+      connection.subscribeEvents((event: unknown) => {
+        const ev = event as { data?: { source?: string; title?: string; task_id?: string } };
+        // Dedup: skip events fired by this addon (source='meitheal')
+        if (ev?.data?.source === "meitheal") return;
+        const title = ev?.data?.title ?? ev?.data?.task_id ?? "";
+        logger.log("info", {
+          event: `ha.bus.${eventType}`, domain: "ha", component: "ha-connection",
+          request_id: SYS_REQ,
+          message: `HA bus event ${eventType} (source: ${ev?.data?.source ?? "unknown"}): ${title}`,
+        });
+      }, eventType);
+    }
 
     return connection;
   } catch (err) {
