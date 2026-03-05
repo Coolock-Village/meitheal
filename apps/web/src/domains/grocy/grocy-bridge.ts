@@ -586,15 +586,17 @@ async function cleanStaleTasks(seenEntityKeys: Set<string>): Promise<void> {
 
   for (const row of allConfirmations.rows) {
     const key = `${row.grocy_entity_type}:${row.grocy_entity_id}`;
+    const taskId = String(row.task_id);
+    const confirmationId = String(row.confirmation_id);
     if (!seenEntityKeys.has(key)) {
       // This entity no longer exists in Grocy — archive the task
       await client.execute({
         sql: `UPDATE tasks SET status = 'done', updated_at = ? WHERE id = ? AND status != 'done'`,
-        args: [nowMs, row.task_id],
+        args: [nowMs, taskId],
       });
       await client.execute({
         sql: "DELETE FROM grocy_sync_confirmations WHERE confirmation_id = ?",
-        args: [row.confirmation_id],
+        args: [confirmationId],
       });
       logger.log("info", {
         event: "grocy.sync.stale_archived",
