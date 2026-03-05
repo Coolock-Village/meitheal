@@ -10,6 +10,7 @@ export {
   startTodoSync,
   stopTodoSync,
   getTodoSyncStatus,
+  getActiveTodoSyncConfigs,
   pushTaskToTodoList,
   syncTodoFromHA,
 } from "./todo-bridge";

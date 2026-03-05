@@ -169,6 +169,13 @@ export async function dispatchTaskEvent(eventType: string, payload: Record<strin
           });
         })
     );
+
+    // ── 3. Outbound Sync (Todo + Calendar push) ──
+    // Push task mutations to active sync targets (fire-and-forget).
+    // Handles loop prevention and no-sync labels internally.
+    import("./sync-outbound").then(({ pushToActiveSyncs }) => {
+      pushToActiveSyncs(eventType, payload).catch(() => {});
+    }).catch(() => {});
   } catch (err) {
     logger.log("error", {
       event: "integration.webhook.failed",

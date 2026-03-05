@@ -404,19 +404,17 @@ const version =
               id="pwa-compact-version"
               style="font-size: 11px; color: var(--text-muted); font-family: 'JetBrains Mono', monospace; display: none;"
             ></span>
-            <button
-              type="button"
+            <a
+              href="#"
               id="pwa-install-settings-btn"
-              class="btn btn-primary"
-              style="font-size: 11px; padding: 3px 12px; display: none;"
-              >📲 Install</button
+              class="pwa-subtle-link"
+              style="display: none;">install</a
             >
-            <button
-              type="button"
+            <a
+              href="#"
               id="pwa-update-settings-btn"
-              class="btn btn-secondary"
-              style="font-size: 11px; padding: 3px 12px; display: none;"
-              >🔄 Update</button
+              class="pwa-subtle-link"
+              style="display: none;">update available</a
             >
             <span
               id="pwa-installed-badge"
@@ -442,6 +440,47 @@ const version =
                 >DuckDNS + Let's Encrypt</strong
               > (free), or a <strong>reverse proxy</strong>. The app works fully
               without HTTPS.
+            </div>
+          </details>
+          <!-- PWA Troubleshooting -->
+          <details id="pwa-troubleshoot" style="margin-top: 6px;">
+            <summary
+              class="pwa-subtle-link"
+              style="list-style: none; cursor: pointer; display: inline;"
+              >troubleshooting</summary
+            >
+            <div class="pwa-troubleshoot-panel">
+              <p
+                style="margin: 0 0 8px; font-size: 12px; color: var(--text-muted);"
+              >
+                If the app is behaving unexpectedly, these self-help actions may
+                resolve it.
+              </p>
+              <div style="display: flex; gap: 6px; flex-wrap: wrap;">
+                <button
+                  type="button"
+                  id="pwa-clear-cache-btn"
+                  class="btn btn-ghost pwa-troubleshoot-btn"
+                  >🗑 Clear Cache</button
+                >
+                <button
+                  type="button"
+                  id="pwa-force-update-btn"
+                  class="btn btn-ghost pwa-troubleshoot-btn"
+                  >🔄 Force SW Update</button
+                >
+                <button
+                  type="button"
+                  id="pwa-clear-offline-btn"
+                  class="btn btn-ghost pwa-troubleshoot-btn"
+                  >📴 Clear Offline Data</button
+                >
+              </div>
+              <div
+                id="pwa-troubleshoot-result"
+                style="display: none; margin-top: 6px; font-size: 11px; padding: 6px 10px; border-radius: 6px; background: var(--bg-secondary); border: 1px solid var(--border);"
+              >
+              </div>
             </div>
           </details>
         </div>
@@ -670,6 +709,32 @@ const version =
   }
   .pwa-compact-dot--unavailable {
     background: #f59e0b;
+  }
+  .pwa-subtle-link {
+    font-size: 11px;
+    color: var(--text-muted);
+    text-decoration: underline;
+    text-underline-offset: 2px;
+    cursor: pointer;
+    transition: color 0.15s ease;
+    background: none;
+    border: none;
+    padding: 0;
+    font-family: inherit;
+  }
+  .pwa-subtle-link:hover {
+    color: var(--accent);
+  }
+  .pwa-troubleshoot-panel {
+    margin-top: 8px;
+    padding: 10px 12px;
+    background: var(--bg-secondary);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+  }
+  .pwa-troubleshoot-btn {
+    font-size: 11px !important;
+    padding: 4px 10px !important;
   }
 
   /* Accent color swatches */
