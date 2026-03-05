@@ -15,13 +15,13 @@
       /* override 'hidden' from HTML class */
       position: fixed;
       z-index: 50;
-      transform: translateX(-100%);
+      transform: translateX(-100%) !important;
       transition: transform 250ms ease;
   }
 
                 /* Mobile: slide sidebar in when .open is toggled */
   .sidebar.open {
-    transform: translateX(0);
+    transform: translateX(0) !important;
       box-shadow: 4px 0 24px rgba(0, 0, 0, 0.4);
   }
 
