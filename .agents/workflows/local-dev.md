@@ -11,7 +11,7 @@ Meitheal has **three environment tiers**. Always use the right one for what you'
 | Tier | URL | What It Is | When to Use |
 |------|-----|------------|-------------|
 | 🔧 **Local Astro Dev** | `http://localhost:4321/` | Raw Astro SSR dev server (`npm run dev`) | UI changes, CSS, component work, JS logic. No HA Supervisor context. |
-| 🏠 **HA Devcontainer** | `http://localhost:7123/` | Full HA Supervisor + Home Assistant via VS Code devcontainer | Ingress testing, HA API integration, addon lifecycle, config.yaml validation. |
+| 🏠 **HA Devcontainer** | `http://localhost:7123/` | Full HA Supervisor + Home Assistant via Antigravity devcontainer | Ingress testing, HA API integration, addon lifecycle, config.yaml validation. |
 | 🌐 **Live HA Production** | `http://ha.home.arpa:8123/` | Real Home Assistant OS with full functionality (real devices, automations, entities) | Final verification of deployed addon image. **This is NOT a dev environment** — it runs released Docker images only. |
 
 > **⚠️ IMPORTANT**: `ha.home.arpa` is a **live production system** with real data, real automations, and real device integrations. Do NOT treat it as a development server. Changes here require a tagged release, CI Docker image build, and addon restart.
@@ -37,20 +37,20 @@ Per the [official HA app testing guide](https://developers.home-assistant.io/doc
 
 ### Setup (one-time)
 
-1. Install [Remote Containers](https://marketplace.visualstudio.com/items?itemName=ms-vscode-remote.remote-containers) VS Code extension
+1. Install [Remote Containers](https://marketplace.visualstudio.com/items?itemName=ms-vscode-remote.remote-containers) Antigravity extension
 2. Copy devcontainer config:
    ```bash
    mkdir -p .devcontainer
    curl -o .devcontainer/devcontainer.json \
      https://github.com/home-assistant/devcontainer/raw/main/addons/devcontainer.json
    ```
-3. Copy VS Code tasks:
+3. Copy Antigravity tasks:
    ```bash
    mkdir -p .vscode
    curl -o .vscode/tasks.json \
      https://github.com/home-assistant/devcontainer/raw/main/addons/tasks.json
    ```
-4. Open folder in VS Code → **"Reopen in Container"**
+4. Open folder in Antigravity → **"Reopen in Container"**
 5. Run task **"Start Home Assistant"** (Terminal → Run Task)
 6. Access HA at `http://localhost:7123/`
 7. Addon auto-detected in **Local Apps** repository

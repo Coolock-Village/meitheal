@@ -41,7 +41,7 @@
     }
   },
   "customizations": {
-    "vscode": {
+    "antigravity": {
       "extensions": [
         "timonwong.shellcheck",
         "esbenp.prettier-vscode",
