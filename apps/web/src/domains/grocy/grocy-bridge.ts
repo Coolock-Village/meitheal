@@ -366,6 +366,26 @@ export async function pushCompletionToGrocy(taskId: string): Promise<boolean> {
         request_id: SYS_REQ,
         message: `Failed to mark task ${entityId} done: ${result.message}`,
       });
+    } else if (entityType === "shopping") {
+      // Fix #7: Clear shopping list when "Go Shopping" task is marked done
+      const result = await adapter.clearShoppingList();
+      if (result.ok) {
+        logger.log("info", {
+          event: "grocy.sync.shopping_cleared",
+          domain: "integrations",
+          component: "grocy-bridge",
+          request_id: SYS_REQ,
+          message: "Cleared Grocy shopping list (task marked done)",
+        });
+        return true;
+      }
+      logger.log("error", {
+        event: "grocy.sync.shopping_clear_failed",
+        domain: "integrations",
+        component: "grocy-bridge",
+        request_id: SYS_REQ,
+        message: `Failed to clear shopping list: ${result.message}`,
+      });
     }
 
     return false;
@@ -376,6 +396,76 @@ export async function pushCompletionToGrocy(taskId: string): Promise<boolean> {
       component: "grocy-bridge",
       request_id: SYS_REQ,
       message: `Failed to push completion for task ${taskId}: ${err}`,
+    });
+    return false;
+  }
+}
+
+/**
+ * Fix #10: Push a new task to Grocy when created in Meitheal (bidirectional mode).
+ * Only pushes tasks that don't already have a grocy sync confirmation
+ * and don't have the "synced from grocy" label (loop prevention).
+ */
+export async function pushNewTaskToGrocy(
+  taskId: string,
+  title: string,
+  options?: { description?: string; dueDate?: string },
+): Promise<boolean> {
+  const adapter = state.adapter;
+  if (!adapter) return false;
+
+  // Only push in bidirectional mode (export-only doesn't make sense for task creation)
+  if (state.config.syncMode !== "bidirectional") return false;
+
+  try {
+    const client = (await getClient());
+
+    // Check if this task already has a grocy confirmation (was synced FROM grocy)
+    const existing = await client.execute({
+      sql: "SELECT 1 FROM grocy_sync_confirmations WHERE task_id = ? LIMIT 1",
+      args: [taskId],
+    });
+    if (existing.rows.length > 0) return false; // Already synced — don't duplicate
+
+    const createOpts: { description?: string; dueDate?: string } = {};
+    if (options?.description) createOpts.description = options.description;
+    if (options?.dueDate) createOpts.dueDate = options.dueDate;
+    const result = await adapter.createTask(title, createOpts);
+
+    if (!result.ok) {
+      logger.log("error", {
+        event: "grocy.sync.create_task_failed",
+        domain: "integrations",
+        component: "grocy-bridge",
+        request_id: SYS_REQ,
+        message: `Failed to create task in Grocy: ${result.message}`,
+      });
+      return false;
+    }
+
+    // Record the confirmation so future syncs don't duplicate
+    const nowMs = Date.now();
+    await client.execute({
+      sql: `INSERT INTO grocy_sync_confirmations (confirmation_id, task_id, grocy_entity_type, grocy_entity_id, sync_direction, payload, created_at, updated_at)
+            VALUES (?, ?, 'task', ?, 'outbound', ?, ?, ?)`,
+      args: [crypto.randomUUID(), taskId, String(result.data.taskId), JSON.stringify({ title }), nowMs, nowMs],
+    });
+
+    logger.log("info", {
+      event: "grocy.sync.task_created",
+      domain: "integrations",
+      component: "grocy-bridge",
+      request_id: SYS_REQ,
+      message: `Created task "${title}" in Grocy (id: ${result.data.taskId})`,
+    });
+    return true;
+  } catch (err) {
+    logger.log("error", {
+      event: "grocy.sync.create_task_error",
+      domain: "integrations",
+      component: "grocy-bridge",
+      request_id: SYS_REQ,
+      message: `Failed to push new task to Grocy: ${err}`,
     });
     return false;
   }

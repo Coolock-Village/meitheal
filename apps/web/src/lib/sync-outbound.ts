@@ -175,4 +175,29 @@ export async function pushToActiveSyncs(
       });
     }
   }
+
+  // ── Grocy Sync: push new task creation to Grocy (bidirectional) ──
+  // Only fires on task.created and only if the task didn't originate from Grocy
+  if (eventType === "task.created" && !syncedFromEntities.includes("grocy")) {
+    try {
+      const { getActiveGrocySyncConfig, pushNewTaskToGrocy } = await import("@domains/grocy");
+      const grocyConfig = getActiveGrocySyncConfig();
+
+      if (grocyConfig && grocyConfig.syncMode === "bidirectional") {
+        pushNewTaskToGrocy(taskId, title, { description, dueDate }).catch((err) => {
+          logger.log("error", {
+            event: "sync.outbound.grocy.create_failed", domain: "integrations",
+            component: "sync-outbound", request_id: "system",
+            message: `Failed to push new task to Grocy: ${err}`,
+          });
+        });
+      }
+    } catch (err) {
+      logger.log("error", {
+        event: "sync.outbound.grocy.create_import_failed", domain: "integrations",
+        component: "sync-outbound", request_id: "system",
+        message: `Failed to import grocy bridge for task creation: ${err}`,
+      });
+    }
+  }
 }

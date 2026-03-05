@@ -8,6 +8,7 @@ export {
   stopGrocySync,
   syncFromGrocy,
   pushCompletionToGrocy,
+  pushNewTaskToGrocy,
   getGrocySyncStatus,
   getActiveGrocySyncConfig,
   type GrocySyncConfig,

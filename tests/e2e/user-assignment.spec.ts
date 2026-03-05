@@ -412,7 +412,7 @@ test("multiple custom users can exist simultaneously", async () => {
   const client = getPersistenceClient();
   const now = Date.now();
 
-  for (const [id, name] of [["cu-1", "Alice"], ["cu-2", "Bob"], ["cu-3", "Charlie"]]) {
+  for (const [id, name] of [["cu-1", "Alice"], ["cu-2", "Bob"], ["cu-3", "Charlie"]] as const) {
     await client.execute({
       sql: "INSERT INTO custom_users (id, name, created_at, updated_at) VALUES (?, ?, ?, ?)",
       args: [id, name, now, now],
