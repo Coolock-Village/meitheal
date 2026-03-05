@@ -361,14 +361,18 @@ const typeIcons: Record<string, string> = {
     item.addEventListener("click", (e) => {
       if ((e.target as HTMLElement).tagName === "INPUT") return;
       const id = item.dataset.id;
-      if (id) window.location.href = `/tasks#task-${id}`;
+      if (id)
+        window.location.href =
+          (window.__ingress_path || "") + `/tasks#task-${id}`;
     });
     // Keyboard: Enter/Space to activate
     item.addEventListener("keydown", (e) => {
       if (e.key === "Enter" || e.key === " ") {
         e.preventDefault();
         const id = (e.target as HTMLElement).dataset?.id;
-        if (id) window.location.href = `/tasks#task-${id}`;
+        if (id)
+          window.location.href =
+            (window.__ingress_path || "") + `/tasks#task-${id}`;
       }
     });
   });

@@ -57,24 +57,24 @@ for (let d = new Date(startDate); d < endDate; d.setDate(d.getDate() + 1)) {
 const ganttTasks = tasks.map(task => {
   const start = task.start_date ? new Date(String(task.start_date)) : (task.due_date ? new Date(String(task.due_date)) : today);
   const end = task.due_date ? new Date(String(task.due_date)) : new Date(start);
-  
+
   // Normalize times for grid placement
   start.setHours(0,0,0,0);
   end.setHours(0,0,0,0);
-  
+
   // Avoid negative widths by ensuring end >= start
   if (end < start) end.setTime(start.getTime());
 
   // Calculate grid columns
   const diffStart = Math.round((start.getTime() - startDate.getTime()) / (1000 * 60 * 60 * 24));
   const diffEnd = Math.round((end.getTime() - startDate.getTime()) / (1000 * 60 * 60 * 24));
-  
+
   // Grid column index is 1-based, plus we have a label column (so add 2 to the difference)
   // Assuming grid-template-columns: 250px repeat(35, 1fr)
   // Day 0 (startDate) is column 2
   const colStart = Math.max(2, diffStart + 2);
   const colEnd = Math.min(days.length + 2, diffEnd + 3); // +3 because CSS grid columns are exclusive ending
-  
+
   return {
     ...task,
     colStart,
@@ -99,7 +99,7 @@ const epics = ganttTasks.filter(t => String(t.task_type) === 'epic');
 
   <div class="gantt-container">
     <div class="gantt-grid" style={`grid-template-columns: 250px repeat(${days.length}, 1fr);`}>
-      
+
       <!-- HEADER ROW -->
       <div class="gantt-header-cell task-list-header">Task</div>
       {days.map(d => {
@@ -119,9 +119,9 @@ const epics = ganttTasks.filter(t => String(t.task_type) === 'epic');
         const isWeekend = d.getDay() === 0 || d.getDay() === 6;
         const isToday = d.getTime() === today.getTime();
         return (
-          <div 
-            class={`gantt-bg-line ${isWeekend ? 'bg-weekend' : ''} ${isToday ? 'bg-today' : ''}`} 
-            style={`grid-column: ${index + 2}; grid-row: 2 / 1000;`} 
+          <div
+            class={`gantt-bg-line ${isWeekend ? 'bg-weekend' : ''} ${isToday ? 'bg-today' : ''}`}
+            style={`grid-column: ${index + 2}; grid-row: 2 / 1000;`}
           />
         )
       })}
@@ -129,7 +129,7 @@ const epics = ganttTasks.filter(t => String(t.task_type) === 'epic');
       <!-- TASKS (Grouped by Epic mapping) -->
       {(() => {
         let currentRow = 2; // +2 offset for the header row
-        
+
         // Helper to render a task row
         const renderTaskRow = (task: typeof ganttTasks[0], indent = 0) => {
           const isDone = String(task.status) === 'complete' || String(task.status) === 'done';
@@ -147,8 +147,8 @@ const epics = ganttTasks.filter(t => String(t.task_type) === 'epic');
 
               <!-- Task Bar -->
               {task.colStart < task.colEnd && (
-                  <div 
-                    class={`gantt-bar ${isDone ? 'is-done' : ''} type-${String(task.task_type)}`} 
+                  <div
+                    class={`gantt-bar ${isDone ? 'is-done' : ''} type-${String(task.task_type)}`}
                     style={`grid-row: ${r}; grid-column: ${task.colStart} / ${task.colEnd}; background-color: ${task.color || 'var(--accent)'};`}
                     title={`${task.title} (${task.start_date || '?'} to ${task.due_date || '?'})`}
                     data-id={String(task.id)}
@@ -161,11 +161,11 @@ const epics = ganttTasks.filter(t => String(t.task_type) === 'epic');
         };
 
         const rows = [];
-        
+
         // 1. Render Epics and their children
         epics.forEach(epic => {
           rows.push(renderTaskRow(epic, 0));
-          
+
           // Find children of this epic
           const children = ganttTasks.filter(t => t.parent_id === epic.id && t.id !== epic.id);
           children.forEach(child => {
@@ -265,7 +265,7 @@ const epics = ganttTasks.filter(t => String(t.task_type) === 'epic');
     color: var(--accent);
     background: rgba(16, 185, 129, 0.1);
   }
-  
+
   .day-header.is-weekend {
     background: var(--bg-primary);
     opacity: 0.7;
@@ -281,7 +281,7 @@ const epics = ganttTasks.filter(t => String(t.task_type) === 'epic');
     border-right: 1px solid color-mix(in srgb, var(--border) 40%, transparent);
     z-index: 1;
   }
-  
+
   .gantt-bg-line.bg-weekend {
     background-color: rgba(0,0,0,0.1);
   }
@@ -385,7 +385,7 @@ const epics = ganttTasks.filter(t => String(t.task_type) === 'epic');
       if (id && typeof window.openTaskDetail === "function") {
          window.openTaskDetail(id);
       } else if (id) {
-         window.location.href = `/tasks#edit-${id}`;
+         window.location.href = (window.__ingress_path || "") + `/tasks#edit-${id}`;
       }
     });
   });

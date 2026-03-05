@@ -433,7 +433,9 @@ for (let week = 0; week < 6; week++) {
     .forEach((cell) => {
       const handler = () => {
         const date = cell.dataset.date;
-        if (date) window.location.href = `/tasks#due=${date}`;
+        if (date)
+          window.location.href =
+            (window.__ingress_path || "") + `/tasks#due=${date}`;
       };
       cell.addEventListener("click", handler);
       cell.addEventListener("keydown", (e) => {

@@ -256,13 +256,17 @@ const totalTasks = days.reduce((sum, d) => sum + d.tasks.length, 0);
     item.addEventListener("click", (e) => {
       if ((e.target as HTMLElement).tagName === "INPUT") return;
       const id = item.dataset.id;
-      if (id) window.location.href = `/tasks#task-${id}`;
+      if (id)
+        window.location.href =
+          (window.__ingress_path || "") + `/tasks#task-${id}`;
     });
     item.addEventListener("keydown", (e) => {
       if (e.key === "Enter" || e.key === " ") {
         e.preventDefault();
         const id = (e.target as HTMLElement).dataset?.id;
-        if (id) window.location.href = `/tasks#task-${id}`;
+        if (id)
+          window.location.href =
+            (window.__ingress_path || "") + `/tasks#task-${id}`;
       }
     });
   });

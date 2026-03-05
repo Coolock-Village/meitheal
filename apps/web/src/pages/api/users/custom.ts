@@ -60,8 +60,9 @@ export const POST: APIRoute = async ({ request }) => {
 
 export const DELETE: APIRoute = async ({ request }) => {
   await ensureSchema();
-  const body = (await request.json().catch(() => ({}))) as Record<string, unknown>;
-  const id = typeof body.id === "string" ? body.id.trim() : "";
+  // Read id from URL search params (client sends ?id=xxx)
+  const url = new URL(request.url);
+  const id = url.searchParams.get("id")?.trim() ?? "";
 
   if (!id) {
     return new Response(JSON.stringify({ error: "id is required" }), {

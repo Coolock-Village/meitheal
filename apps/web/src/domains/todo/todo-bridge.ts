@@ -186,6 +186,30 @@ async function mergeHATodoItems(entityId: string, items: HATodoItem[]): Promise<
     let updated = 0;
     let skipped = 0;
 
+    // Backfill: assign ticket_number to any existing tasks missing one
+    // (e.g. synced tasks created before ticket_number was added to this path)
+    const orphans = await client.execute(
+      "SELECT id FROM tasks WHERE ticket_number IS NULL ORDER BY created_at ASC",
+    );
+    if (orphans.rows.length > 0) {
+      const baseResult = await client.execute(
+        "SELECT COALESCE(MAX(ticket_number), 0) AS max_num FROM tasks",
+      );
+      let nextNum = Number((baseResult.rows[0] as Record<string, unknown>)?.max_num ?? 0) + 1;
+      for (const row of orphans.rows) {
+        await client.execute({
+          sql: "UPDATE tasks SET ticket_number = ? WHERE id = ?",
+          args: [nextNum, row.id as string],
+        });
+        nextNum++;
+      }
+      logger.log("info", {
+        event: "todo.sync.backfill_tickets", domain: "todo", component: "todo-bridge",
+        request_id: SYS_REQ,
+        message: `Backfilled ticket_number for ${orphans.rows.length} tasks`,
+      });
+    }
+
     for (const item of items) {
       const uid = item.uid ?? `ha-todo-${entityId}-${item.summary}`;
       const meithealStatus = haStatusToMeitheal(item.status ?? "needs_action");
@@ -258,13 +282,22 @@ async function mergeHATodoItems(entityId: string, items: HATodoItem[]): Promise<
         const nowMs = Date.now();
 
         const syncLabel = `synced from ${entityId}`;
+
+        // Assign next sequential ticket_number for clean MTH-N display key
+        const nextNumResult = await client.execute(
+          "SELECT COALESCE(MAX(ticket_number), 0) + 1 AS next_num FROM tasks",
+        );
+        const ticketNumber = Number(
+          (nextNumResult.rows[0] as Record<string, unknown>)?.next_num ?? 1,
+        );
+
         await client.execute({
           sql: `INSERT INTO tasks (id, title, description, status, priority, due_date,
                   labels, framework_payload, calendar_sync_state, board_id,
-                  custom_fields, task_type, idempotency_key, request_id,
+                  custom_fields, task_type, ticket_number, idempotency_key, request_id,
                   created_at, updated_at)
                 VALUES (?, ?, ?, ?, 3, ?, ?, '{}', 'synced', 'default',
-                  '{}', 'task', ?, ?, ?, ?)`,
+                  '{}', 'task', ?, ?, ?, ?, ?)`,
           args: [
             taskId,
             item.summary,
@@ -272,6 +305,7 @@ async function mergeHATodoItems(entityId: string, items: HATodoItem[]): Promise<
             meithealStatus,
             item.due ?? null,
             JSON.stringify([syncLabel]),
+            ticketNumber,
             `todo-sync-${uid}`,
             reqId,
             nowMs,

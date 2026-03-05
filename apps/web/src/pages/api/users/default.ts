@@ -43,6 +43,18 @@ export const PUT: APIRoute = async ({ request }) => {
     });
   }
 
+  if (userId.length > 255) {
+    return new Response(JSON.stringify({ error: "user_id exceeds max length (255)" }), {
+      status: 400, headers: { "content-type": "application/json" },
+    });
+  }
+
+  if (!/^(ha_|custom_)/.test(userId)) {
+    return new Response(JSON.stringify({ error: "user_id must start with 'ha_' or 'custom_'" }), {
+      status: 400, headers: { "content-type": "application/json" },
+    });
+  }
+
   await client.execute({
     sql: `INSERT INTO app_settings (key, value, updated_at) VALUES ('default_assignee', ?, ?)
           ON CONFLICT(key) DO UPDATE SET value = excluded.value, updated_at = excluded.updated_at`,
