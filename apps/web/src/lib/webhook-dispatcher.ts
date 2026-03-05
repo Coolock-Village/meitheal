@@ -144,31 +144,31 @@ export async function dispatchTaskEvent(eventType: string, payload: Record<strin
       });
     }
 
-    if (subscribers.length === 0) return;
+    if (subscribers.length > 0) {
+      const event: DomainEvent = {
+        eventId: crypto.randomUUID(),
+        eventType,
+        occurredAt: new Date().toISOString(),
+        requestId: requestId ?? crypto.randomUUID(),
+        payload,
+      };
 
-    const event: DomainEvent = {
-      eventId: crypto.randomUUID(),
-      eventType,
-      occurredAt: new Date().toISOString(),
-      requestId: requestId ?? crypto.randomUUID(),
-      payload,
-    };
-
-    // Dispatch background webhook requests without blocking
-    Promise.allSettled(
-      subscribers
-        .filter(s => s.events.includes("*") || s.events.includes(eventType))
-        .map(async (s) => {
-          const res = await emitWebhook(event, s);
-          logger.log(res.ok ? "info" : "warn", {
-            event: "integration.webhook.dispatched",
-            domain: "integrations",
-            component: "webhook-dispatcher",
-            request_id: event.requestId,
-            message: `Dispatched to ${s.id}. Status: ${res.statusCode}. Attempts: ${res.attempts}. Error: ${res.finalError ?? "none"}`
-          });
-        })
-    );
+      // Dispatch background webhook requests without blocking
+      Promise.allSettled(
+        subscribers
+          .filter(s => s.events.includes("*") || s.events.includes(eventType))
+          .map(async (s) => {
+            const res = await emitWebhook(event, s);
+            logger.log(res.ok ? "info" : "warn", {
+              event: "integration.webhook.dispatched",
+              domain: "integrations",
+              component: "webhook-dispatcher",
+              request_id: event.requestId,
+              message: `Dispatched to ${s.id}. Status: ${res.statusCode}. Attempts: ${res.attempts}. Error: ${res.finalError ?? "none"}`
+            });
+          })
+      );
+    }
 
     // ── 3. Outbound Sync (Todo + Calendar push) ──
     // Push task mutations to active sync targets (fire-and-forget).
