@@ -206,7 +206,7 @@ async function autoStartCalendarSync(): Promise<void> {
     await ensureSchema();
     const client = getPersistenceClient();
 
-    // Calendar entity can be stored under multiple key variants
+    // Calendar entity can be stored under multiple key variants (legacy: cal_entity, calendar-entity)
     const res = await client.execute({
       sql: "SELECT key, value FROM settings WHERE key IN ('calendar_entity', 'cal_entity', 'calendar-entity', 'calendar_sync_enabled', 'calendar_write_back')",
       args: [],
@@ -223,11 +223,27 @@ async function autoStartCalendarSync(): Promise<void> {
       }
     }
 
-    // Resolve entity ID from any key variant
+    // Resolve entity ID: canonical key first, then legacy fallbacks
     const entityId =
       settings.calendar_entity ?? settings.cal_entity ?? settings["calendar-entity"];
     const enabled = settings.calendar_sync_enabled !== "false"; // default enabled if entity exists
     const writeBack = settings.calendar_write_back === "true";
+
+    // Backward-compat migration: copy legacy key to canonical
+    if (entityId && !settings.calendar_entity && (settings.cal_entity || settings["calendar-entity"])) {
+      try {
+        await client.execute({
+          sql: `INSERT INTO settings (key, value, updated_at) VALUES ('calendar_entity', ?, ?)
+                ON CONFLICT(key) DO UPDATE SET value = excluded.value, updated_at = excluded.updated_at`,
+          args: [JSON.stringify(entityId), Date.now()],
+        });
+        logger.log("info", {
+          event: "ha.startup.calendar_sync.key_migrated",
+          domain: "calendar", component: "ha-startup",
+          request_id: SYS_REQ, message: `Migrated legacy calendar key to calendar_entity: ${entityId}`,
+        });
+      } catch { /* non-critical */ }
+    }
 
     if (!entityId) {
       logger.log("info", {

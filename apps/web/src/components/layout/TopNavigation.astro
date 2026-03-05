@@ -11,11 +11,11 @@ const { locale } = Astro.props;
 ---
 
 <header
-  class="topbar sticky top-0 z-30 flex items-center justify-between px-6 py-4 bg-bg-primary/80 backdrop-blur-md border-b border-border/50"
+  class="topbar sticky top-0 z-30 flex flex-wrap items-center justify-between px-6 py-4 bg-bg-primary/80 backdrop-blur-md border-b border-border/50"
 >
   <div class="flex items-center gap-4">
     <button
-      class="menu-toggle md:hidden p-2 rounded-md hover:bg-bg-hover text-text-secondary transition-colors"
+      class="menu-toggle flex md:hidden p-2 rounded-md hover:bg-bg-hover text-text-secondary transition-colors"
       id="menu-toggle"
       aria-label={t("topbar.toggle_menu", locale)}
     >

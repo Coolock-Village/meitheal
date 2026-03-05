@@ -14,6 +14,8 @@ Tools:
 - GetOverdueTasks: List overdue tasks
 - GetTodaysTasks: List tasks due today
 - GetTaskSummary: Get summary counts (active, overdue, total)
+- GetCalendarEvents: Get events synced from HA calendar
+- GetUpcomingEvents: Get upcoming events for today/this week
 
 @see https://developers.home-assistant.io/docs/core/llm/
 """
@@ -21,7 +23,7 @@ Tools:
 from __future__ import annotations
 
 import logging
-from datetime import datetime, timezone
+from datetime import datetime, timedelta, timezone
 from typing import Any
 
 import voluptuous as vol
@@ -435,12 +437,135 @@ class GetTaskSummaryTool(Tool):
         }
 
 
+class GetCalendarEventsTool(Tool):
+    """Get events synced from HA calendar into Meitheal."""
+
+    name = "meitheal_get_calendar_events"
+    description = (
+        "Get events from the user's Home Assistant calendar that have been "
+        "synced into Meitheal. These are calendar appointments and events, "
+        "not tasks. Use this when the user asks 'what's on my calendar?', "
+        "'any events this week?', or 'show my calendar events'."
+    )
+    parameters = vol.Schema(
+        {
+            vol.Optional(
+                "days_ahead",
+                description="How many days ahead to look (default: 7, max: 30)",
+            ): vol.All(int, vol.Range(min=1, max=30)),
+        }
+    )
+
+    async def async_call(
+        self,
+        hass: HomeAssistant,
+        tool_input: ToolInput,
+        llm_context: LLMContext,
+    ) -> JsonObjectType:
+        """Fetch calendar events."""
+        coordinator = _get_coordinator(hass)
+        if not coordinator or not coordinator.data:
+            return {"events": [], "count": 0, "message": "No calendar data available"}
+
+        days_ahead = tool_input.tool_args.get("days_ahead", 7)
+        now = datetime.now(timezone.utc)
+        cutoff = now + timedelta(days=days_ahead)
+        today_str = now.strftime("%Y-%m-%d")
+        cutoff_str = cutoff.strftime("%Y-%m-%d")
+
+        events = []
+        for t in coordinator.data.tasks:
+            if not getattr(t, "calendar_sync_state", None):
+                continue
+            if t.calendar_sync_state not in ("synced", "confirmed"):
+                continue
+            if t.due_date and today_str <= t.due_date[:10] <= cutoff_str:
+                events.append(
+                    {
+                        "title": t.title,
+                        "date": t.due_date,
+                        "description": t.description or "",
+                        "source": "ha_calendar",
+                    }
+                )
+
+        events.sort(key=lambda e: e["date"])
+        return {"events": events, "count": len(events)}
+
+
+class GetUpcomingEventsTool(Tool):
+    """Get upcoming events and tasks for today or this week."""
+
+    name = "meitheal_get_upcoming"
+    description = (
+        "Get everything coming up — both calendar events and tasks with due dates. "
+        "Combines calendar events synced from Home Assistant with Meitheal tasks. "
+        "Use this when the user asks 'what's coming up?', 'what's on my schedule?', "
+        "'what do I have this week?', or 'any appointments?'."
+    )
+    parameters = vol.Schema(
+        {
+            vol.Optional(
+                "days_ahead",
+                description="How many days ahead to look (default: 7, max: 30)",
+            ): vol.All(int, vol.Range(min=1, max=30)),
+        }
+    )
+
+    async def async_call(
+        self,
+        hass: HomeAssistant,
+        tool_input: ToolInput,
+        llm_context: LLMContext,
+    ) -> JsonObjectType:
+        """Fetch upcoming events and tasks."""
+        coordinator = _get_coordinator(hass)
+        if not coordinator or not coordinator.data:
+            return {"items": [], "count": 0}
+
+        days_ahead = tool_input.tool_args.get("days_ahead", 7)
+        now = datetime.now(timezone.utc)
+        cutoff = now + timedelta(days=days_ahead)
+        today_str = now.strftime("%Y-%m-%d")
+        cutoff_str = cutoff.strftime("%Y-%m-%d")
+
+        items = []
+        for t in coordinator.data.tasks:
+            if t.status == "done":
+                continue
+            if not t.due_date:
+                continue
+            due_date_str = t.due_date[:10]
+            if due_date_str < today_str or due_date_str > cutoff_str:
+                continue
+
+            sync_state = getattr(t, "calendar_sync_state", None)
+            is_calendar = sync_state in ("synced", "confirmed")
+            items.append(
+                {
+                    "title": t.title,
+                    "date": t.due_date,
+                    "type": "calendar_event" if is_calendar else "task",
+                    "priority": t.priority,
+                    "is_overdue": t.is_overdue,
+                }
+            )
+
+        items.sort(key=lambda e: e["date"])
+        return {
+            "items": items,
+            "count": len(items),
+            "calendar_events": sum(1 for i in items if i["type"] == "calendar_event"),
+            "tasks": sum(1 for i in items if i["type"] == "task"),
+        }
+
+
 # ── LLM API Registration ──
 
 API_PROMPT = (
     "You have access to Meitheal, a cooperative task and life management engine "
     "running as a Home Assistant addon. Meitheal manages the household's tasks, "
-    "to-do lists, and projects.\n\n"
+    "to-do lists, projects, and calendar events synced from Home Assistant.\n\n"
     "## What You Can Do\n"
     "- **Search tasks** by keyword, status (todo/in_progress/done), or priority (1-5)\n"
     "- **Create tasks** with a title and optional description\n"
@@ -448,13 +573,17 @@ API_PROMPT = (
     "- **Update tasks** — change priority, due date, status, title, or description\n"
     "- **Check overdue tasks** — what's past due\n"
     "- **Get today's tasks** — what's on the agenda right now\n"
-    "- **Get a summary** — counts of active, overdue, and completed tasks\n\n"
+    "- **Get a summary** — counts of active, overdue, and completed tasks\n"
+    "- **View calendar events** — events synced from HA calendars\n"
+    "- **See what's coming up** — combined view of tasks and calendar events\n\n"
     "## How to Respond\n"
     "- When the user asks about their tasks, search first, then summarize results naturally.\n"
     "- When they say 'add', 'create', 'remind me to', or 'I need to' — create a task.\n"
     "- When they say 'done', 'complete', or 'finished' — complete the task.\n"
     "- When they ask 'what's overdue?' or 'what did I miss?' — check overdue tasks.\n"
     "- When they ask 'what's on my plate?' or 'today's tasks' — get today's tasks.\n"
+    "- When they ask 'what's on my calendar?' or 'any events?' — get calendar events.\n"
+    "- When they ask 'what's coming up?' or 'what's my schedule?' — get upcoming items.\n"
     "- Priority levels: 1=urgent, 2=high, 3=medium (default), 4=low, 5=lowest.\n"
     "- Always confirm actions back to the user.\n"
     "- Keep responses concise and conversational.\n"
@@ -481,6 +610,8 @@ class MeithealLLMAPI(API):
                 GetOverdueTasksTool(),
                 GetTodaysTasksTool(),
                 GetTaskSummaryTool(),
+                GetCalendarEventsTool(),
+                GetUpcomingEventsTool(),
             ],
         )
 

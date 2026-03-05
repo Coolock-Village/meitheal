@@ -37,7 +37,7 @@
   }
 
   .menu-toggle {
-    @apply md:hidden flex items-center justify-center w-9 h-9 bg-transparent border border-border rounded-md text-text-secondary cursor-pointer text-lg transition-colors;
+    @apply items-center justify-center w-9 h-9 bg-transparent border border-border rounded-md text-text-secondary cursor-pointer text-lg transition-colors;
   }
 
   .menu-toggle:hover {

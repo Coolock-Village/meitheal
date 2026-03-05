@@ -10,7 +10,7 @@ import { apiJson, apiError } from "../../lib/api-response";
  * Supports:
  * - "initialize" — handshake
  * - "tools/list" — enumerate available tools
- * - "tools/call" — execute a tool (createTask, searchTasks, completeTask, etc.)
+ * - "tools/call" — execute a tool (createTask, searchTasks, completeTask, getCalendarEvents, etc.)
  *
  * The handler uses the same task database as all other Meitheal endpoints.
  * Any MCP-compatible client (Claude, Antigravity, Codex) can connect here.
@@ -93,6 +93,36 @@ const MCP_TOOLS = [
       required: ["id"],
       properties: {
         id: { type: "string", description: "Task UUID" },
+      },
+    },
+  },
+  {
+    name: "getCalendarEvents",
+    description: "Get events from the user's HA calendar synced into Meitheal",
+    inputSchema: {
+      type: "object" as const,
+      properties: {
+        days_ahead: { type: "integer", minimum: 1, maximum: 30, description: "Days ahead to look (default: 7)" },
+      },
+    },
+  },
+  {
+    name: "getUpcoming",
+    description: "Get all upcoming tasks and calendar events combined",
+    inputSchema: {
+      type: "object" as const,
+      properties: {
+        days_ahead: { type: "integer", minimum: 1, maximum: 30, description: "Days ahead to look (default: 7)" },
+      },
+    },
+  },
+  {
+    name: "syncCalendar",
+    description: "Trigger a manual calendar sync from Home Assistant",
+    inputSchema: {
+      type: "object" as const,
+      properties: {
+        entity_id: { type: "string", description: "Calendar entity ID (optional, uses configured entity if omitted)" },
       },
     },
   },
@@ -248,6 +278,76 @@ async function executeTool(
     case "getTask": {
       const res = await fetch(`${baseUrl}/api/tasks/${args.id}`);
       return await res.json().catch(() => ({ error: "Task not found" }));
+    }
+
+    case "getCalendarEvents": {
+      // Fetch tasks that were synced from HA calendar
+      const res = await fetch(`${baseUrl}/api/tasks?calendar_synced=true`);
+      const data = (await res.json().catch(() => ({ tasks: [] }))) as {
+        tasks: Array<{ title: string; due_date: string; calendar_sync_state: string; description: string }>
+      };
+      const daysAhead = typeof args.days_ahead === "number" ? args.days_ahead : 7;
+      const now = new Date();
+      const cutoff = new Date(now.getTime() + daysAhead * 24 * 60 * 60 * 1000);
+      const today = now.toISOString().slice(0, 10);
+      const cutoffStr = cutoff.toISOString().slice(0, 10);
+
+      const events = (data.tasks ?? []).filter(
+        (t) =>
+          t.calendar_sync_state === "synced" &&
+          t.due_date &&
+          t.due_date.slice(0, 10) >= today &&
+          t.due_date.slice(0, 10) <= cutoffStr
+      ).map((t) => ({
+        title: t.title,
+        date: t.due_date,
+        description: t.description || "",
+        source: "ha_calendar",
+      }));
+      return { events, count: events.length };
+    }
+
+    case "getUpcoming": {
+      const res = await fetch(`${baseUrl}/api/tasks`);
+      const data = (await res.json().catch(() => ({ tasks: [] }))) as {
+        tasks: Array<{ title: string; status: string; due_date: string; priority: number; calendar_sync_state: string }>
+      };
+      const daysAhead = typeof args.days_ahead === "number" ? args.days_ahead : 7;
+      const now = new Date();
+      const cutoff = new Date(now.getTime() + daysAhead * 24 * 60 * 60 * 1000);
+      const today = now.toISOString().slice(0, 10);
+      const cutoffStr = cutoff.toISOString().slice(0, 10);
+
+      const items = (data.tasks ?? []).filter(
+        (t) =>
+          t.status !== "done" &&
+          t.due_date &&
+          t.due_date.slice(0, 10) >= today &&
+          t.due_date.slice(0, 10) <= cutoffStr
+      ).map((t) => ({
+        title: t.title,
+        date: t.due_date,
+        type: t.calendar_sync_state === "synced" ? "calendar_event" : "task",
+        priority: t.priority,
+      }));
+      return {
+        items,
+        count: items.length,
+        calendar_events: items.filter((i) => i.type === "calendar_event").length,
+        tasks: items.filter((i) => i.type === "task").length,
+      };
+    }
+
+    case "syncCalendar": {
+      const res = await fetch(`${baseUrl}/api/integrations/calendar/sync`, {
+        method: "POST",
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify({
+          action: "sync",
+          entity_id: args.entity_id,
+        }),
+      });
+      return await res.json().catch(() => ({ error: "Calendar sync failed" }));
     }
 
     default:

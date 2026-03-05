@@ -62,11 +62,33 @@ export const POST: APIRoute = async ({ request }) => {
 
     switch (action) {
       case "sync": {
-        // Trigger an immediate sync (uses existing config if active)
+        // Trigger an immediate sync — resolve entity from body, active config, or settings DB
         try {
-          await syncFromHA();
+          let entityId = body.entity_id;
+
+          // Fall back to settings DB if no entity provided and no active config
+          if (!entityId) {
+            try {
+              const { ensureSchema, getPersistenceClient } = await import("@domains/tasks/persistence/store");
+              await ensureSchema();
+              const client = getPersistenceClient();
+              const res = await client.execute({
+                sql: "SELECT value FROM settings WHERE key IN ('calendar_entity', 'cal_entity') ORDER BY key LIMIT 1",
+                args: [],
+              });
+              if (res.rows.length > 0) {
+                try { entityId = JSON.parse(String(res.rows[0]!.value)); } catch { entityId = String(res.rows[0]!.value); }
+              }
+            } catch { /* DB not available */ }
+          }
+
+          const result = await syncFromHA(entityId);
           return new Response(
-            JSON.stringify({ ok: true, message: "Calendar sync triggered" }),
+            JSON.stringify({
+              ok: true,
+              message: `Calendar sync complete: ${result.created} created, ${result.updated} updated from ${result.total} events`,
+              ...result,
+            }),
             { status: 200, headers: { "Content-Type": "application/json" } },
           );
         } catch (err) {

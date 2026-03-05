@@ -29,6 +29,11 @@ let syncConfig: CalendarSyncConfig | null = null;
 let syncTimer: ReturnType<typeof setInterval> | null = null;
 const unsubscribers: (() => void)[] = [];
 
+// Sync metadata for status reporting
+let lastSyncAt: number | null = null;
+let lastSyncEventCount: number | null = null;
+let lastSyncError: string | null = null;
+
 /**
  * Initialize calendar sync with a specific HA calendar entity.
  */
@@ -73,21 +78,31 @@ export function startCalendarSync(config: CalendarSyncConfig): void {
  * Merges calendar events into the tasks table with deduplication
  * via the calendar_confirmations table (keyed by provider_event_id).
  */
-export async function syncFromHA(): Promise<void> {
-  if (!syncConfig) return;
+export async function syncFromHA(overrideEntityId?: string): Promise<{ created: number; updated: number; total: number }> {
+  const entityId = overrideEntityId ?? syncConfig?.entityId;
+  if (!entityId) {
+    logger.log("warn", {
+      event: "calendar.sync.no_entity", domain: "calendar", component: "calendar-bridge",
+      request_id: SYS_REQ, message: "syncFromHA called with no entity configured — pass entity_id or call startCalendarSync first",
+    });
+    return { created: 0, updated: 0, total: 0 };
+  }
 
   const now = new Date();
   const start = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000).toISOString();
   const end = new Date(now.getTime() + 30 * 24 * 60 * 60 * 1000).toISOString();
 
-  const events = await listCalendarEvents(syncConfig.entityId, start, end);
+  const events = await listCalendarEvents(entityId, start, end);
 
   if (events.length === 0) {
     logger.log("debug", {
       event: "calendar.sync.from_ha", domain: "calendar", component: "calendar-bridge",
       request_id: SYS_REQ, message: "No events to sync from HA calendar",
     });
-    return;
+    lastSyncAt = Date.now();
+    lastSyncEventCount = 0;
+    lastSyncError = null;
+    return { created: 0, updated: 0, total: 0 };
   }
 
   try {
@@ -100,7 +115,7 @@ export async function syncFromHA(): Promise<void> {
     let skipped = 0;
 
     for (const evt of events) {
-      const uid = evt.uid ?? `ha-cal-${syncConfig.entityId}-${evt.summary}-${evt.start}`;
+      const uid = evt.uid ?? `ha-cal-${entityId}-${evt.summary}-${evt.start}`;
 
       // Check if we already have a confirmation for this event
       const existing = await client.execute({
@@ -159,17 +174,26 @@ export async function syncFromHA(): Promise<void> {
       }
     }
 
+    lastSyncAt = Date.now();
+    lastSyncEventCount = events.length;
+    lastSyncError = null;
+
     logger.log("info", {
       event: "calendar.sync.from_ha", domain: "calendar", component: "calendar-bridge",
       request_id: SYS_REQ,
       message: `Calendar sync complete: ${created} created, ${updated} updated, ${skipped} skipped from ${events.length} events`,
-      metadata: { entity_id: syncConfig.entityId, event_count: events.length, created, updated, skipped },
+      metadata: { entity_id: entityId, event_count: events.length, created, updated, skipped },
     });
+
+    return { created, updated, total: events.length };
   } catch (err) {
+    lastSyncError = String(err);
+    lastSyncAt = Date.now();
     logger.log("error", {
       event: "calendar.sync.merge_failed", domain: "calendar", component: "calendar-bridge",
       request_id: SYS_REQ, message: `Failed to merge calendar events: ${err}`,
     });
+    return { created: 0, updated: 0, total: 0 };
   }
 }
 
@@ -221,5 +245,15 @@ export function getCalendarSyncStatus() {
     active: syncConfig !== null,
     entityId: syncConfig?.entityId ?? null,
     writeBack: syncConfig?.writeBack ?? false,
+    lastSyncAt,
+    lastSyncEventCount,
+    lastSyncError,
   };
+}
+
+/**
+ * Get current sync config (for introspection by API routes).
+ */
+export function getCalendarSyncConfig(): CalendarSyncConfig | null {
+  return syncConfig;
 }

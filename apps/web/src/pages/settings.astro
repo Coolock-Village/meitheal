@@ -214,11 +214,14 @@ const locale: Locale = cookieLocale === "ga" ? "ga" : "en";
           const text = await file.text();
           const payload = JSON.parse(text);
 
-          const response = await fetch((window.__ingress_path || "") + "/api/import/settings", {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify(payload),
-          });
+          const response = await fetch(
+            (window.__ingress_path || "") + "/api/import/settings",
+            {
+              method: "POST",
+              headers: { "Content-Type": "application/json" },
+              body: JSON.stringify(payload),
+            },
+          );
 
           if (!response.ok) {
             throw new Error(await response.text());
@@ -305,7 +308,9 @@ const locale: Locale = cookieLocale === "ga" ? "ga" : "en";
     async function loadSettings() {
       let settings: Record<string, any> = {};
       try {
-        const res = await fetch((window.__ingress_path || "") + "/api/settings");
+        const res = await fetch(
+          (window.__ingress_path || "") + "/api/settings",
+        );
         settings = await res.json();
       } catch (e) {
         console.error("[Settings] Failed to load settings from API:", e);
@@ -636,7 +641,9 @@ const locale: Locale = cookieLocale === "ga" ? "ga" : "en";
                   .querySelector("button")
                   ?.addEventListener("click", async () => {
                     try {
-                      const curRes = await fetch((window.__ingress_path || "") + "/api/settings");
+                      const curRes = await fetch(
+                        (window.__ingress_path || "") + "/api/settings",
+                      );
                       const curSettings = curRes.ok ? await curRes.json() : {};
                       const curFields = curSettings.custom_fields
                         ? JSON.parse(curSettings.custom_fields)
@@ -644,14 +651,17 @@ const locale: Locale = cookieLocale === "ga" ? "ga" : "en";
                       const updated = curFields.filter(
                         (f: { name: string }) => f.name !== field.name,
                       );
-                      await fetch((window.__ingress_path || "") + "/api/settings", {
-                        method: "PUT",
-                        headers: { "content-type": "application/json" },
-                        body: JSON.stringify({
-                          key: "custom_fields",
-                          value: JSON.stringify(updated),
-                        }),
-                      });
+                      await fetch(
+                        (window.__ingress_path || "") + "/api/settings",
+                        {
+                          method: "PUT",
+                          headers: { "content-type": "application/json" },
+                          body: JSON.stringify({
+                            key: "custom_fields",
+                            value: JSON.stringify(updated),
+                          }),
+                        },
+                      );
                       row.remove();
                       showToast("settings.field_removed");
                     } catch {
@@ -697,7 +707,9 @@ const locale: Locale = cookieLocale === "ga" ? "ga" : "en";
           statusEl.innerHTML =
             '<span style="color: var(--accent);">Testing HA connection...</span>';
         try {
-          const res = await fetch((window.__ingress_path || "") + "/api/ha/connection");
+          const res = await fetch(
+            (window.__ingress_path || "") + "/api/ha/connection",
+          );
           const data = (await res.json()) as Record<string, unknown>;
           if (statusEl) {
             if (data.connected) {
@@ -856,9 +868,12 @@ const locale: Locale = cookieLocale === "ga" ? "ga" : "en";
           variant: "warning",
         });
         if (!confirmed) return;
-        await fetch((window.__ingress_path || "") + "/api/settings?key=sidebar_config", {
-          method: "DELETE",
-        }).catch(() => {});
+        await fetch(
+          (window.__ingress_path || "") + "/api/settings?key=sidebar_config",
+          {
+            method: "DELETE",
+          },
+        ).catch(() => {});
         await saveSetting("sidebar_config", null);
         showToast("Sidebar reset to defaults");
         setTimeout(() => window.location.reload(), 500);
@@ -902,7 +917,9 @@ const locale: Locale = cookieLocale === "ga" ? "ga" : "en";
             }
 
             try {
-              const settingsRes = await fetch((window.__ingress_path || "") + "/api/settings");
+              const settingsRes = await fetch(
+                (window.__ingress_path || "") + "/api/settings",
+              );
               const settings = settingsRes.ok ? await settingsRes.json() : {};
               const existing = settings.custom_fields
                 ? JSON.parse(settings.custom_fields)
@@ -1245,12 +1262,11 @@ const locale: Locale = cookieLocale === "ga" ? "ga" : "en";
       const entitiesContainer = document.getElementById(
         "cal-entities-container",
       );
-      const entityInput = document.getElementById(
-        "cal-entity",
-      ) as HTMLInputElement | null;
 
       try {
-        const res = await fetch((window.__ingress_path || "") + "/api/ha/calendars");
+        const res = await fetch(
+          (window.__ingress_path || "") + "/api/ha/calendars",
+        );
         if (!res.ok) throw new Error("API error");
         const data = (await res.json()) as {
           calendars?: {
@@ -1262,6 +1278,9 @@ const locale: Locale = cookieLocale === "ga" ? "ga" : "en";
             active: boolean;
             entityId: string | null;
             writeBack: boolean;
+            lastSyncAt: number | null;
+            lastSyncEventCount: number | null;
+            lastSyncError: string | null;
           };
         };
 
@@ -1270,6 +1289,9 @@ const locale: Locale = cookieLocale === "ga" ? "ga" : "en";
           active: false,
           entityId: null,
           writeBack: false,
+          lastSyncAt: null,
+          lastSyncEventCount: null,
+          lastSyncError: null,
         };
 
         // Update badge
@@ -1286,6 +1308,20 @@ const locale: Locale = cookieLocale === "ga" ? "ga" : "en";
           }
         }
 
+        // Show last sync info
+        const lastSynced = document.getElementById("cal-last-synced");
+        if (lastSynced && sync.lastSyncAt) {
+          const ts = new Date(sync.lastSyncAt).toLocaleTimeString();
+          const evtCount = sync.lastSyncEventCount ?? 0;
+          if (sync.lastSyncError) {
+            lastSynced.textContent = `Last sync: ${ts} — ⚠ ${sync.lastSyncError}`;
+            lastSynced.style.color = "var(--amber-500, #f59e0b)";
+          } else {
+            lastSynced.textContent = `Last synced: ${ts} — ${evtCount} event${evtCount !== 1 ? "s" : ""}`;
+            lastSynced.style.color = "var(--text-muted)";
+          }
+        }
+
         // Show auto-sync callout if sync is active
         if (sync.active && autoInfo) {
           autoInfo.style.display = "block";
@@ -1294,26 +1330,82 @@ const locale: Locale = cookieLocale === "ga" ? "ga" : "en";
           }
         }
 
-        // Show detected entities
+        // Show detected entities as toggle cards
         if (calendars.length > 0 && entitiesList && entitiesContainer) {
           entitiesList.style.display = "block";
+
+          // Get previously saved entities to pre-check
+          let savedEntities: string[] = [];
+          try {
+            const settingsRes = await fetch(
+              (window.__ingress_path || "") + "/api/settings",
+            );
+            const settingsData = (await settingsRes.json()) as {
+              settings: Record<string, unknown>;
+            };
+            const s = settingsData.settings ?? ({} as Record<string, unknown>);
+            const raw =
+              s.calendar_entities ?? s.calendar_entity ?? s.cal_entity;
+            if (typeof raw === "string") {
+              try {
+                savedEntities = JSON.parse(raw);
+              } catch {
+                savedEntities = raw ? [raw] : [];
+              }
+            }
+          } catch {
+            /* ignore */
+          }
+
           entitiesContainer.innerHTML = calendars
             .map(
               (c: {
                 entity_id: string;
                 friendly_name: string;
                 state: string;
-              }) =>
-                `<div style="display: flex; justify-content: space-between; align-items: center; padding: 6px 10px; background: var(--bg-secondary); border-radius: 6px; font-size: 12px;">
-              <span style="font-family: 'JetBrains Mono', monospace;">${c.entity_id}</span>
-              <span style="color: var(--text-muted);">${c.friendly_name} · ${c.state}</span>
-            </div>`,
+              }) => {
+                const isEnabled = savedEntities.includes(c.entity_id);
+                const stateLabel =
+                  c.state === "off" ? "no active event" : c.state;
+                return `<label class="cal-toggle-card${isEnabled ? " cal-toggle-card--active" : ""}" data-entity="${c.entity_id}">
+                  <div class="cal-toggle-card__info">
+                    <span class="cal-toggle-card__name">${c.friendly_name}</span>
+                    <span class="cal-toggle-card__entity">${c.entity_id}</span>
+                    <span class="cal-toggle-card__state">${stateLabel}</span>
+                  </div>
+                  <label class="toggle-label">
+                    <input type="checkbox" class="cal-entity-toggle" value="${c.entity_id}" ${isEnabled ? "checked" : ""} />
+                    <span class="toggle-slider"></span>
+                  </label>
+                </label>`;
+              },
             )
             .join("");
 
-          // Auto-fill entity input if empty and there's exactly one calendar
-          if (entityInput && !entityInput.value && calendars.length === 1) {
-            entityInput.value = calendars[0]!.entity_id;
+          // Toggle card active state on change
+          entitiesContainer
+            .querySelectorAll<HTMLInputElement>(".cal-entity-toggle")
+            .forEach((cb) => {
+              cb.addEventListener("change", () => {
+                const card = cb.closest(".cal-toggle-card");
+                if (card) {
+                  card.classList.toggle("cal-toggle-card--active", cb.checked);
+                }
+              });
+            });
+
+          // Auto-enable all if none are saved and there's only one calendar
+          if (savedEntities.length === 0 && calendars.length === 1) {
+            const firstToggle =
+              entitiesContainer.querySelector<HTMLInputElement>(
+                ".cal-entity-toggle",
+              );
+            if (firstToggle) {
+              firstToggle.checked = true;
+              firstToggle
+                .closest(".cal-toggle-card")
+                ?.classList.add("cal-toggle-card--active");
+            }
           }
         }
       } catch {
@@ -1324,6 +1416,52 @@ const locale: Locale = cookieLocale === "ga" ? "ga" : "en";
       }
     }
     hydrateCalendarStatus();
+
+    // Manual "Add Calendar" button handler
+    document.getElementById("cal-add-manual")?.addEventListener("click", () => {
+      const input = document.getElementById(
+        "cal-entity-manual",
+      ) as HTMLInputElement | null;
+      const container = document.getElementById("cal-entities-container");
+      const entitiesList = document.getElementById("cal-entities-list");
+      if (!input || !container) return;
+      const entityId = input.value.trim();
+      if (!entityId || !entityId.startsWith("calendar.")) {
+        input.style.borderColor = "var(--red-500, #ef4444)";
+        setTimeout(() => {
+          input.style.borderColor = "";
+        }, 1500);
+        return;
+      }
+      // Check for duplicates
+      if (container.querySelector(`[data-entity="${entityId}"]`)) {
+        input.value = "";
+        return;
+      }
+      // Ensure the list container is visible
+      if (entitiesList) entitiesList.style.display = "block";
+      // Add new toggle card
+      const card = document.createElement("label");
+      card.className = "cal-toggle-card cal-toggle-card--active";
+      card.dataset.entity = entityId;
+      card.innerHTML = `
+        <div class="cal-toggle-card__info">
+          <span class="cal-toggle-card__name">${entityId}</span>
+          <span class="cal-toggle-card__entity">${entityId}</span>
+          <span class="cal-toggle-card__state">manually added</span>
+        </div>
+        <label class="toggle-label">
+          <input type="checkbox" class="cal-entity-toggle" value="${entityId}" checked />
+          <span class="toggle-slider"></span>
+        </label>`;
+      card
+        .querySelector<HTMLInputElement>(".cal-entity-toggle")
+        ?.addEventListener("change", function () {
+          card.classList.toggle("cal-toggle-card--active", this.checked);
+        });
+      container.appendChild(card);
+      input.value = "";
+    });
 
     /** Read entity value from EntitySelector (handles select OR manual input) */
     function readEntityValue(id: string): string {
@@ -1341,7 +1479,14 @@ const locale: Locale = cookieLocale === "ga" ? "ga" : "en";
     }
 
     document.getElementById("save-cal")?.addEventListener("click", async () => {
-      const entity = readEntityValue("cal-entity");
+      // Collect enabled calendar entities from toggle cards
+      const enabledEntities: string[] = [];
+      document
+        .querySelectorAll<HTMLInputElement>(".cal-entity-toggle:checked")
+        .forEach((cb) => {
+          enabledEntities.push(cb.value);
+        });
+
       const caldav = (document.getElementById("caldav-url") as HTMLInputElement)
         .value;
       const writeBack =
@@ -1352,33 +1497,46 @@ const locale: Locale = cookieLocale === "ga" ? "ga" : "en";
       btn.textContent = "Saving...";
       btn.disabled = true;
 
-      await saveSetting("cal_entity", entity);
-      await saveSetting("calendar_sync_enabled", !!entity);
+      // Save as JSON array for multi-calendar support
+      await saveSetting("calendar_entities", JSON.stringify(enabledEntities));
+      // Keep legacy key for backward compat (first enabled entity)
+      await saveSetting("calendar_entity", enabledEntities[0] ?? "");
+      await saveSetting(
+        "calendar_sync_enabled",
+        enabledEntities.length > 0 ? "true" : "false",
+      );
       await saveSetting("calendar_write_back", writeBack);
       if (caldav) await saveSetting("caldav_url", caldav);
 
-      // Enable/disable calendar sync via API (mirrors todo sync pattern)
-      if (entity) {
+      // Enable/disable calendar sync via API
+      if (enabledEntities.length > 0) {
         try {
-          await fetch((window.__ingress_path || "") + "/api/integrations/calendar/sync", {
-            method: "POST",
-            headers: { "content-type": "application/json" },
-            body: JSON.stringify({
-              action: "enable",
-              entity_id: entity,
-              write_back: writeBack,
-            }),
-          });
+          await fetch(
+            (window.__ingress_path || "") + "/api/integrations/calendar/sync",
+            {
+              method: "POST",
+              headers: { "content-type": "application/json" },
+              body: JSON.stringify({
+                action: "enable",
+                entity_id: enabledEntities[0],
+                entities: enabledEntities,
+                write_back: writeBack,
+              }),
+            },
+          );
         } catch {
           /* logged server-side */
         }
       } else {
         try {
-          await fetch((window.__ingress_path || "") + "/api/integrations/calendar/sync", {
-            method: "POST",
-            headers: { "content-type": "application/json" },
-            body: JSON.stringify({ action: "disable" }),
-          });
+          await fetch(
+            (window.__ingress_path || "") + "/api/integrations/calendar/sync",
+            {
+              method: "POST",
+              headers: { "content-type": "application/json" },
+              body: JSON.stringify({ action: "disable" }),
+            },
+          );
         } catch {
           /* logged server-side */
         }
@@ -1387,10 +1545,14 @@ const locale: Locale = cookieLocale === "ga" ? "ga" : "en";
       // Update status badge
       const statusEl = document.getElementById("cal-status");
       if (statusEl) {
-        statusEl.textContent = entity ? "Syncing" : "Disabled";
-        statusEl.className = entity
-          ? "badge badge-active"
-          : "badge badge-pending";
+        statusEl.textContent =
+          enabledEntities.length > 0
+            ? `${enabledEntities.length} syncing`
+            : "Disabled";
+        statusEl.className =
+          enabledEntities.length > 0
+            ? "badge badge-active"
+            : "badge badge-pending";
       }
 
       btn.textContent = "Save Calendar Settings";
@@ -1407,22 +1569,36 @@ const locale: Locale = cookieLocale === "ga" ? "ga" : "en";
       btn.disabled = true;
 
       try {
-        const res = await fetch((window.__ingress_path || "") + "/api/integrations/calendar/sync", {
-          method: "POST",
-          headers: { "content-type": "application/json" },
-          body: JSON.stringify({ action: "sync" }),
-        });
-        const data = (await res.json()) as { ok: boolean; message?: string };
+        const res = await fetch(
+          (window.__ingress_path || "") + "/api/integrations/calendar/sync",
+          {
+            method: "POST",
+            headers: { "content-type": "application/json" },
+            body: JSON.stringify({ action: "sync" }),
+          },
+        );
+        const data = (await res.json()) as {
+          ok: boolean;
+          message?: string;
+          created?: number;
+          updated?: number;
+          total?: number;
+        };
         if (resultEl) resultEl.textContent = data.message ?? "Sync triggered";
         showToast(
-          data.ok ? "✅ Calendar sync triggered" : "❌ Calendar sync failed",
+          data.ok
+            ? `✅ ${data.message ?? "Calendar sync triggered"}`
+            : "❌ Calendar sync failed",
           data.ok ? "success" : "error",
         );
         // Update last-synced timestamp
         if (data.ok) {
           const lastSynced = document.getElementById("cal-last-synced");
-          if (lastSynced)
-            lastSynced.textContent = `Last synced: ${new Date().toLocaleTimeString()}`;
+          if (lastSynced) {
+            const evtCount = data.total ?? 0;
+            lastSynced.textContent = `Last synced: ${new Date().toLocaleTimeString()} — ${evtCount} event${evtCount !== 1 ? "s" : ""}`;
+            lastSynced.style.color = "var(--text-muted)";
+          }
         }
       } catch {
         if (resultEl) resultEl.textContent = "Sync failed";
@@ -1617,14 +1793,17 @@ const locale: Locale = cookieLocale === "ga" ? "ga" : "en";
 
         try {
           const entity = readEntityValue("todo-entity");
-          const res = await fetch((window.__ingress_path || "") + "/api/todo/sync", {
-            method: "POST",
-            headers: { "content-type": "application/json" },
-            body: JSON.stringify({
-              action: "sync",
-              entity_id: entity || undefined,
-            }),
-          });
+          const res = await fetch(
+            (window.__ingress_path || "") + "/api/todo/sync",
+            {
+              method: "POST",
+              headers: { "content-type": "application/json" },
+              body: JSON.stringify({
+                action: "sync",
+                entity_id: entity || undefined,
+              }),
+            },
+          );
           const data = (await res.json()) as { ok: boolean; status?: unknown };
           if (resultEl)
             resultEl.textContent = data.ok ? "Sync triggered" : "Sync failed";
@@ -1653,7 +1832,9 @@ const locale: Locale = cookieLocale === "ga" ? "ga" : "en";
     // ───── Restore Integration Settings ─────
     (async function restoreIntegrationSettings() {
       try {
-        const res = await fetch((window.__ingress_path || "") + "/api/settings");
+        const res = await fetch(
+          (window.__ingress_path || "") + "/api/settings",
+        );
         if (!res.ok) return;
         const s = (await res.json()) as Record<string, unknown>;
 
@@ -1675,16 +1856,11 @@ const locale: Locale = cookieLocale === "ga" ? "ga" : "en";
           window.expandIntegrationCard?.("integration-grocy-body");
         }
 
-        // Calendar — set value on both select and manual input of EntitySelector
-        if (s.cal_entity) {
-          const calSelect = document.getElementById(
-            "cal-entity",
-          ) as HTMLSelectElement | null;
-          const calManual = document.getElementById(
-            "cal-entity-manual",
-          ) as HTMLInputElement | null;
-          if (calSelect) calSelect.value = String(s.cal_entity);
-          if (calManual) calManual.value = String(s.cal_entity);
+        // Calendar — pre-check saved entities in toggle cards
+        const calEntityVal =
+          s.calendar_entities ?? s.calendar_entity ?? s.cal_entity;
+        if (calEntityVal) {
+          // Toggle cards are pre-checked during hydrateCalendarStatus fetch
           // Auto-expand configured card
           window.expandIntegrationCard?.("integration-calendar-body");
         }
@@ -1867,7 +2043,10 @@ const locale: Locale = cookieLocale === "ga" ? "ga" : "en";
           return;
         }
         try {
-          const res = await fetch((window.__ingress_path || "") + "/api/tasks?purge=all", { method: "DELETE" });
+          const res = await fetch(
+            (window.__ingress_path || "") + "/api/tasks?purge=all",
+            { method: "DELETE" },
+          );
           if (res.ok) {
             showToast("settings.purge_success");
             setTimeout(() => window.location.reload(), 1000);
@@ -1888,9 +2067,12 @@ const locale: Locale = cookieLocale === "ga" ? "ga" : "en";
         });
         if (!ok) return;
         try {
-          const res = await fetch((window.__ingress_path || "") + "/api/settings?reset=all", {
-            method: "DELETE",
-          });
+          const res = await fetch(
+            (window.__ingress_path || "") + "/api/settings?reset=all",
+            {
+              method: "DELETE",
+            },
+          );
           if (res.ok) {
             showToast("settings.reset_success");
             setTimeout(() => window.location.reload(), 1000);

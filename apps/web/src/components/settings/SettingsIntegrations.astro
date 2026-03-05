@@ -207,36 +207,52 @@ const { locale } = Astro.props;
           </div>
         </div>
 
-        <!-- Detected HA calendar entities -->
+        <!-- Detected HA calendar entities — interactive toggle cards -->
         <div id="cal-entities-list" style="display: none; margin-bottom: 12px;">
           <label class="form-label" style="font-size: 12px; margin-bottom: 6px;"
-            >Detected Calendar Entities</label
+            >Your Calendars</label
           >
-          <div id="cal-entities-container" class="entity-list-container"></div>
+          <p
+            style="font-size: 11px; color: var(--text-muted); margin: 0 0 8px;"
+          >
+            Toggle calendars on or off to control which ones sync with Meitheal.
+          </p>
+          <div id="cal-entities-container" class="cal-toggle-list"></div>
         </div>
 
         <div class="integration-card__config">
-          <div class="form-group">
-            <div class="form-label-row">
-              <label class="form-label" for="cal-entity">Calendar Entity</label>
-              <HelpTooltip
-                text="The HA calendar entity Meitheal syncs tasks with. Calendar events become tasks, and tasks with due dates appear as calendar events. Meitheal creates this entity automatically when running as an addon."
-                href="https://www.home-assistant.io/integrations/calendar/"
-                id="help-cal-entity"
+          <!-- Manual entity input for advanced users -->
+          <details class="caldav-section" style="margin-bottom: 10px;">
+            <summary class="caldav-toggle">
+              <span>⌨ Manual Entity ID</span>
+              <small>For calendars not auto-detected</small>
+            </summary>
+            <div class="form-group" style="margin-top: 10px;">
+              <div class="form-label-row">
+                <label class="form-label" for="cal-entity"
+                  >Calendar Entity ID</label
+                >
+                <HelpTooltip
+                  text="Manually enter a calendar entity ID if it's not showing in the auto-detected list above. This is rarely needed."
+                  id="help-cal-entity"
+                />
+              </div>
+              <input
+                type="text"
+                class="form-input"
+                id="cal-entity-manual"
+                placeholder="calendar.my_calendar"
               />
+              <button
+                type="button"
+                class="btn btn-ghost"
+                id="cal-add-manual"
+                style="margin-top: 6px; font-size: 12px;"
+              >
+                + Add Calendar
+              </button>
             </div>
-            <!-- Dropdown populated by JS from detected entities -->
-            <select class="form-select" id="cal-entity">
-              <option value="" disabled selected>Loading entities…</option>
-            </select>
-            <input
-              type="text"
-              class="form-input"
-              id="cal-entity-manual"
-              placeholder="calendar.meitheal_tasks"
-              style="display: none; margin-top: 6px;"
-            />
-          </div>
+          </details>
 
           <!-- External CalDAV — collapsible -->
           <details class="caldav-section">
@@ -1129,6 +1145,67 @@ const { locale } = Astro.props;
     gap: 4px;
   }
 
+  /* ═══════ Calendar Toggle Cards ═══════ */
+  .cal-toggle-list {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+  }
+
+  .cal-toggle-card {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 10px 14px;
+    background: var(--bg-secondary);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    cursor: pointer;
+    transition:
+      border-color 200ms ease,
+      background 200ms ease,
+      box-shadow 200ms ease;
+  }
+
+  .cal-toggle-card:hover {
+    border-color: color-mix(in srgb, var(--border) 50%, var(--accent));
+    background: color-mix(in srgb, var(--bg-secondary) 95%, var(--accent));
+  }
+
+  .cal-toggle-card--active {
+    border-color: color-mix(in srgb, var(--accent) 40%, transparent);
+    background: color-mix(in srgb, var(--accent) 8%, var(--bg-secondary));
+    box-shadow: 0 0 0 1px color-mix(in srgb, var(--accent) 15%, transparent);
+  }
+
+  .cal-toggle-card__info {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+    min-width: 0;
+  }
+
+  .cal-toggle-card__name {
+    font-size: 13px;
+    font-weight: 600;
+    color: var(--text-primary);
+  }
+
+  .cal-toggle-card__entity {
+    font-size: 11px;
+    font-family: "JetBrains Mono", monospace;
+    color: var(--text-muted);
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+
+  .cal-toggle-card__state {
+    font-size: 10px;
+    color: var(--text-muted);
+    opacity: 0.8;
+  }
+
   /* ═══════ Event Checkboxes ═══════ */
   .event-checkbox-grid {
     display: flex;
@@ -1710,7 +1787,9 @@ const { locale } = Astro.props;
     indicator.dataset.haInit = "true";
 
     try {
-      const res = await fetch((window.__ingress_path || "") + "/api/ha/connection");
+      const res = await fetch(
+        (window.__ingress_path || "") + "/api/ha/connection",
+      );
       const data = (await res.json()) as Record<string, unknown>;
 
       if (data.connected) {
@@ -1914,7 +1993,9 @@ const { locale } = Astro.props;
     // Populate from API
     (async () => {
       try {
-        const res = await fetch((window.__ingress_path || "") + "/api/ha/calendars");
+        const res = await fetch(
+          (window.__ingress_path || "") + "/api/ha/calendars",
+        );
         if (!res.ok) throw new Error("API error");
         const data = (await res.json()) as {
           calendars?: { entity_id: string; friendly_name: string }[];
@@ -1990,12 +2071,16 @@ const { locale } = Astro.props;
 
     try {
       // Check HA connection first
-      const haRes = await fetch((window.__ingress_path || "") + "/api/ha/connection");
+      const haRes = await fetch(
+        (window.__ingress_path || "") + "/api/ha/connection",
+      );
       const haData = (await haRes.json()) as { connected?: boolean };
       if (!haData.connected) return; // Not connected to HA, skip auto-detect
 
       // Check if Grocy addon is installed via addons API
-      const addonsRes = await fetch((window.__ingress_path || "") + "/api/ha/addons");
+      const addonsRes = await fetch(
+        (window.__ingress_path || "") + "/api/ha/addons",
+      );
       if (!addonsRes.ok) return;
       const addonsData = (await addonsRes.json()) as {
         addons?: {
@@ -2055,11 +2140,15 @@ const { locale } = Astro.props;
     callout.dataset.nrInit = "true";
 
     try {
-      const haRes = await fetch((window.__ingress_path || "") + "/api/ha/connection");
+      const haRes = await fetch(
+        (window.__ingress_path || "") + "/api/ha/connection",
+      );
       const haData = (await haRes.json()) as { connected?: boolean };
       if (!haData.connected) return;
 
-      const addonsRes = await fetch((window.__ingress_path || "") + "/api/ha/addons");
+      const addonsRes = await fetch(
+        (window.__ingress_path || "") + "/api/ha/addons",
+      );
       if (!addonsRes.ok) return;
       const addonsData = (await addonsRes.json()) as {
         addons?: { slug: string; name: string; state: string }[];

@@ -17,6 +17,14 @@
     @apply translate-x-0;
   }
 
+    /* Mobile: dark overlay behind open sidebar */
+    .sidebar.open::after {
+      content: '';
+      position: fixed;
+      inset: 0;
+      background: rgba(0, 0, 0, 0.5);
+      z-index: -1;
+    }
   .main-content {
     width: 100%;
   }
@@ -126,10 +134,22 @@
   .page-title {
     font-size: 16px !important;
   }
-/* Mobile: compact topbar */
+/* Mobile: compact topbar — allow wrapping */
 .topbar {
   padding: 8px 12px !important;
   gap: 8px;
+  flex-wrap: wrap;
+  }
+  
+  /* Mobile: action buttons wrap to next row */
+  .topbar-actions {
+    flex-wrap: wrap;
+    gap: 4px;
+  }
+  
+  /* Mobile: hide secondary calendar nav actions (Today/Upcoming/Sync) — only keep + New Task */
+  .topbar-actions .btn-ghost {
+    display: none !important;
 }
 
 /* Mobile: shrink search container */

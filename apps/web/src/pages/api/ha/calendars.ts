@@ -10,7 +10,7 @@
  */
 import type { APIRoute } from "astro";
 import { getCalendarEntities, listCalendarEvents } from "../../../domains/ha";
-import { getCalendarSyncStatus } from "../../../domains/calendar/calendar-bridge";
+import { getCalendarSyncStatus, syncFromHA } from "../../../domains/calendar/calendar-bridge";
 
 export const GET: APIRoute = async ({ url }) => {
   try {
@@ -46,9 +46,42 @@ export const GET: APIRoute = async ({ url }) => {
   }
 };
 
-export const POST: APIRoute = async () => {
-  // Manual sync trigger — placeholder for now
-  return new Response(JSON.stringify({ message: "Calendar sync triggered" }), {
-    status: 200, headers: { "content-type": "application/json" },
-  });
+export const POST: APIRoute = async ({ request }) => {
+  try {
+    let entityId: string | undefined;
+    try {
+      const body = await request.json() as { entity_id?: string };
+      entityId = body.entity_id;
+    } catch { /* no body or invalid JSON — will resolve from settings */ }
+
+    // Fall back to settings DB if no entity provided
+    if (!entityId) {
+      try {
+        const { ensureSchema, getPersistenceClient } = await import("@domains/tasks/persistence/store");
+        await ensureSchema();
+        const client = getPersistenceClient();
+        const res = await client.execute({
+          sql: "SELECT value FROM settings WHERE key IN ('calendar_entity', 'cal_entity') ORDER BY key LIMIT 1",
+          args: [],
+        });
+        if (res.rows.length > 0) {
+          try { entityId = JSON.parse(String(res.rows[0]!.value)); } catch { entityId = String(res.rows[0]!.value); }
+        }
+      } catch { /* DB not available */ }
+    }
+
+    const result = await syncFromHA(entityId);
+    return new Response(JSON.stringify({
+      ok: true,
+      message: `Synced ${result.total} events (${result.created} new, ${result.updated} updated)`,
+      ...result,
+    }), {
+      status: 200, headers: { "content-type": "application/json" },
+    });
+  } catch (err) {
+    const message = err instanceof Error ? err.message : "Calendar sync failed";
+    return new Response(JSON.stringify({ ok: false, error: message }), {
+      status: 500, headers: { "content-type": "application/json" },
+    });
+  }
 };
