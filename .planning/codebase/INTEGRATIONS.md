@@ -1,7 +1,7 @@
 # External Integrations
 
-**Analysis Date:** 2026-03-04
-**Version:** 0.1.55
+**Analysis Date:** 2026-03-05
+**Version:** 0.1.63
 
 ## Home Assistant Calendar
 
@@ -11,13 +11,15 @@
 | Bridge | `calendar-bridge.ts` — bidirectional sync (HA→tasks, tasks→HA) |
 | Auth | `SUPERVISOR_TOKEN` (auto) or `HA_BASE_URL` + `HA_TOKEN` |
 | Endpoint | `POST /api/services/calendar/create_event` |
-| API Routes | `GET/POST /api/ha/calendars` |
+| API Routes | `GET/POST /api/ha/calendars`, `GET/POST /api/integrations/calendar/sync` |
 | Sync Range | Past 7 days → next 30 days |
 | Dedup | `calendar_confirmations` table (keyed by `provider_event_id`) |
 | Write-back | Pushes task due dates as HA events prefixed `[Meitheal]` |
+| Multi-select | Toggle cards per calendar entity; saved as `calendar_entities` JSON array |
 | Timeout | 8s, retryable on 429/5xx |
 | Idempotency | `x-meitheal-idempotency-key` header |
-| Settings UI | Settings → Integrations → Calendar Sync (dynamic status badge) |
+| Settings UI | Settings → Integrations → Calendar Sync (enable/disable all, count badge, empty state) |
+| Sync metadata | Tracks `lastSyncAt`, `lastSyncEventCount`, `lastSyncError` |
 
 ## Home Assistant Todo Sync
 
@@ -44,6 +46,8 @@
 | Device | All entities grouped under "Meitheal" device (manufacturer: Coolock Village, model: Task Engine) |
 | Entities | `todo.meitheal_tasks`, `sensor.meitheal_active_tasks`, `sensor.meitheal_overdue_tasks`, `sensor.meitheal_total_tasks` |
 | Services | `meitheal.create_task`, `meitheal.complete_task`, `meitheal.sync_todo`, `meitheal.search_tasks`, `meitheal.get_overdue_tasks` |
+| LLM Tools | 10: `search_tasks`, `create_task`, `complete_task`, `delete_task`, `update_task`, `get_overdue_tasks`, `get_todays_tasks`, `get_task_summary`, `get_upcoming_events`, `daily_briefing` + `batch_complete` |
+| MCP Tools | 8: `searchTasks`, `createTask`, `completeTask`, `updateTask`, `getCalendarEvents`, `getUpcoming`, `syncCalendar` |
 | Communication | REST API to addon at `http://{host}:{port}/api/tasks` |
 | Polling | 30s via `DataUpdateCoordinator` |
 | Auto-install | Addon copies component to `/homeassistant/custom_components/` at boot |

@@ -196,7 +196,9 @@ async function autoStartTodoSync(): Promise<void> {
 
 /**
  * Read persisted calendar sync settings from SQLite and auto-start sync.
- * Mirrors autoStartTodoSync pattern using calendar-bridge.
+ * Supports multi-calendar: reads `calendar_entities` JSON array first,
+ * falls back to legacy `calendar_entity` single key.
+ * Reads configurable interval from `calendar_sync_interval_ms`.
  */
 async function autoStartCalendarSync(): Promise<void> {
   try {
@@ -206,9 +208,11 @@ async function autoStartCalendarSync(): Promise<void> {
     await ensureSchema();
     const client = getPersistenceClient();
 
-    // Calendar entity can be stored under multiple key variants (legacy: cal_entity, calendar-entity)
     const res = await client.execute({
-      sql: "SELECT key, value FROM settings WHERE key IN ('calendar_entity', 'cal_entity', 'calendar-entity', 'calendar_sync_enabled', 'calendar_write_back')",
+      sql: `SELECT key, value FROM settings WHERE key IN (
+        'calendar_entities', 'calendar_entity', 'cal_entity', 'calendar-entity',
+        'calendar_sync_enabled', 'calendar_write_back', 'calendar_sync_interval_ms'
+      )`,
       args: [],
     });
 
@@ -223,35 +227,54 @@ async function autoStartCalendarSync(): Promise<void> {
       }
     }
 
-    // Resolve entity ID: canonical key first, then legacy fallbacks
-    const entityId =
-      settings.calendar_entity ?? settings.cal_entity ?? settings["calendar-entity"];
-    const enabled = settings.calendar_sync_enabled !== "false"; // default enabled if entity exists
+    const enabled = settings.calendar_sync_enabled !== "false";
     const writeBack = settings.calendar_write_back === "true";
+    const syncIntervalMs = Number(settings.calendar_sync_interval_ms) || 5 * 60 * 1000;
+
+    // Resolve entity list: prefer multi-calendar array, then legacy single key
+    let entityIds: string[] = [];
+
+    // Try calendar_entities (JSON array from multi-select UI)
+    const entitiesRaw = settings.calendar_entities;
+    if (entitiesRaw) {
+      try {
+        const parsed = typeof entitiesRaw === "string" ? JSON.parse(entitiesRaw) : entitiesRaw;
+        if (Array.isArray(parsed)) {
+          entityIds = parsed.filter((id: unknown) => typeof id === "string" && id.length > 0);
+        }
+      } catch { /* invalid JSON — fall through to legacy */ }
+    }
+
+    // Fallback: legacy single entity key
+    if (entityIds.length === 0) {
+      const legacyId =
+        settings.calendar_entity ?? settings.cal_entity ?? settings["calendar-entity"];
+      if (legacyId) entityIds = [legacyId];
+    }
 
     // Backward-compat migration: copy legacy key to canonical
-    if (entityId && !settings.calendar_entity && (settings.cal_entity || settings["calendar-entity"])) {
+    if (entityIds.length > 0 && !settings.calendar_entity && (settings.cal_entity || settings["calendar-entity"])) {
       try {
         await client.execute({
           sql: `INSERT INTO settings (key, value, updated_at) VALUES ('calendar_entity', ?, ?)
                 ON CONFLICT(key) DO UPDATE SET value = excluded.value, updated_at = excluded.updated_at`,
-          args: [JSON.stringify(entityId), Date.now()],
+          args: [JSON.stringify(entityIds[0]), Date.now()],
         });
         logger.log("info", {
           event: "ha.startup.calendar_sync.key_migrated",
           domain: "calendar", component: "ha-startup",
-          request_id: SYS_REQ, message: `Migrated legacy calendar key to calendar_entity: ${entityId}`,
+          request_id: SYS_REQ, message: `Migrated legacy calendar key to calendar_entity: ${entityIds[0]}`,
         });
       } catch { /* non-critical */ }
     }
 
-    if (!entityId) {
+    if (entityIds.length === 0) {
       logger.log("info", {
         event: "ha.startup.calendar_sync.skipped",
         domain: "calendar",
         component: "ha-startup",
         request_id: SYS_REQ,
-        message: "Calendar sync not configured (no entity set)",
+        message: "Calendar sync not configured (no entities set)",
       });
       return;
     }
@@ -262,25 +285,27 @@ async function autoStartCalendarSync(): Promise<void> {
         domain: "calendar",
         component: "ha-startup",
         request_id: SYS_REQ,
-        message: `Calendar sync disabled for ${entityId}`,
+        message: `Calendar sync disabled for ${entityIds.length} entities`,
       });
       return;
     }
 
-    const { startCalendarSync } = await import("@domains/calendar/calendar-bridge");
-    startCalendarSync({
+    const { startMultiCalendarSync } = await import("@domains/calendar/calendar-bridge");
+    const configs = entityIds.map((entityId) => ({
       entityId,
       syncEnabled: true,
       writeBack,
-      syncIntervalMs: 5 * 60 * 1000, // 5 min default
-    });
+      syncIntervalMs,
+    }));
+    startMultiCalendarSync(configs);
 
     logger.log("info", {
       event: "ha.startup.calendar_sync.started",
       domain: "calendar",
       component: "ha-startup",
       request_id: SYS_REQ,
-      message: `Auto-started calendar sync for ${entityId} (writeBack: ${writeBack})`,
+      message: `Auto-started multi-calendar sync for ${entityIds.length} entities (interval: ${syncIntervalMs}ms, writeBack: ${writeBack})`,
+      metadata: { entities: entityIds, interval_ms: syncIntervalMs },
     });
   } catch (err) {
     logger.log("error", {

@@ -9,7 +9,7 @@ const ALLOWED_KEYS = new Set([
     // ── Home Assistant / Connectivity ──
     "ha-url", "ha-token", "ha_url", "ha_token",
     "vikunja-url", "vikunja-token",
-    "calendar-entity", "calendar_entity", "cal_entity", "caldav_url", "calendar_sync_enabled", "calendar_write_back",
+    "calendar-entity", "calendar_entity", "cal_entity", "calendar_entities", "caldav_url", "calendar_sync_enabled", "calendar_write_back", "calendar_sync_interval_ms",
     // ── UI Preferences ──
     "default-board", "theme", "default-view", "wip-limit",
     "show-description", "column-order", "locale",

@@ -209,15 +209,49 @@ const { locale } = Astro.props;
 
         <!-- Detected HA calendar entities — interactive toggle cards -->
         <div id="cal-entities-list" style="display: none; margin-bottom: 12px;">
-          <label class="form-label" style="font-size: 12px; margin-bottom: 6px;"
-            >Your Calendars</label
-          >
+          <div class="cal-entities-header">
+            <div>
+              <label
+                class="form-label"
+                style="font-size: 12px; margin-bottom: 0;">Your Calendars</label
+              >
+              <span id="cal-count-badge" class="cal-count-badge"
+                >0 of 0 enabled</span
+              >
+            </div>
+            <div class="cal-bulk-actions">
+              <button
+                type="button"
+                class="btn btn-ghost btn-xs"
+                id="cal-enable-all"
+                title="Enable all calendars">Enable All</button
+              >
+              <button
+                type="button"
+                class="btn btn-ghost btn-xs"
+                id="cal-disable-all"
+                title="Disable all calendars">Disable All</button
+              >
+            </div>
+          </div>
           <p
-            style="font-size: 11px; color: var(--text-muted); margin: 0 0 8px;"
+            style="font-size: 11px; color: var(--text-muted); margin: 4px 0 8px;"
           >
-            Toggle calendars on or off to control which ones sync with Meitheal.
+            Toggle each calendar on or off. Only enabled calendars sync events
+            with Meitheal.
           </p>
           <div id="cal-entities-container" class="cal-toggle-list"></div>
+          <div
+            id="cal-no-entities"
+            class="cal-empty-state"
+            style="display: none;"
+          >
+            <span class="cal-empty-icon">📭</span>
+            <span
+              >No calendars detected. Make sure your Home Assistant integration
+              is connected and has calendar entities.</span
+            >
+          </div>
         </div>
 
         <div class="integration-card__config">
@@ -291,6 +325,25 @@ const { locale } = Astro.props;
             <small class="form-hint"
               >When enabled, task completions update the corresponding calendar
               event.</small
+            >
+          </div>
+
+          <!-- Sync interval selector -->
+          <div class="form-group" style="margin-top: 10px;">
+            <label class="form-label" for="cal-sync-interval"
+              >Sync Interval</label
+            >
+            <select id="cal-sync-interval" class="form-select">
+              <option value="60000">Every 1 minute</option>
+              <option value="300000" selected>Every 5 minutes (default)</option>
+              <option value="900000">Every 15 minutes</option>
+              <option value="1800000">Every 30 minutes</option>
+              <option value="3600000">Every 1 hour</option>
+              <option value="0">Manual only</option>
+            </select>
+            <small class="form-hint"
+              >How often Meitheal auto-syncs events from enabled calendars.
+              "Manual only" syncs only when you click Sync Now.</small
             >
           </div>
 
@@ -705,12 +758,49 @@ const { locale } = Astro.props;
               <label class="event-checkbox">
                 <input type="checkbox" class="n8n-event" value="task.deleted" /> Deleted
               </label>
+              <label class="event-checkbox">
+                <input
+                  type="checkbox"
+                  class="n8n-event"
+                  value="task.overdue"
+                  checked
+                /> Overdue
+              </label>
             </div>
           </div>
-          <div class="integration-card__actions">
+          <div class="integration-card__actions" style="gap: 8px;">
             <button type="button" class="btn btn-primary" id="save-n8n"
               >Save n8n Settings</button
             >
+            <button type="button" class="btn btn-ghost" id="test-event-bus"
+              >🔌 Test Event Bus</button
+            >
+          </div>
+          <div
+            id="test-event-result"
+            class="integration-callout integration-callout--info"
+            style="display: none; margin-top: 8px;"
+            aria-live="polite"
+          >
+            <span id="test-event-message"></span>
+          </div>
+          <div
+            class="integration-callout integration-callout--info"
+            style="margin-top: 12px;"
+          >
+            <strong>📦 Node-RED Example Flows</strong>
+            <div class="integration-callout__detail">
+              Import pre-built flows for task notifications, overdue alerts, and
+              more.
+            </div>
+            <button
+              type="button"
+              class="btn btn-ghost"
+              id="copy-nodered-flows"
+              style="margin-top: 8px;"
+            >
+              📋 Copy Flow JSON
+            </button>
           </div>
         </div>
 
@@ -1204,6 +1294,48 @@ const { locale } = Astro.props;
     font-size: 10px;
     color: var(--text-muted);
     opacity: 0.8;
+  }
+
+  /* Calendar entities header — title + bulk actions */
+  .cal-entities-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 4px;
+  }
+  .cal-count-badge {
+    font-size: 10px;
+    color: var(--text-muted);
+    background: var(--bg-secondary);
+    border: 1px solid var(--border);
+    padding: 1px 8px;
+    border-radius: 10px;
+    margin-left: 6px;
+    vertical-align: middle;
+  }
+  .cal-bulk-actions {
+    display: flex;
+    gap: 4px;
+  }
+  .btn-xs {
+    font-size: 11px !important;
+    padding: 2px 8px !important;
+    min-height: unset !important;
+    border-radius: 6px;
+  }
+  .cal-empty-state {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 14px;
+    background: var(--bg-secondary);
+    border: 1px dashed var(--border);
+    border-radius: 8px;
+    font-size: 12px;
+    color: var(--text-muted);
+  }
+  .cal-empty-icon {
+    font-size: 20px;
   }
 
   /* ═══════ Event Checkboxes ═══════ */

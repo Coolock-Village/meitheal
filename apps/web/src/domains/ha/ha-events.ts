@@ -19,11 +19,24 @@ const SYS_REQ = "ha-system";
 export type MeithealEventType =
   | "meitheal_task_created" | "meitheal_task_updated"
   | "meitheal_task_completed" | "meitheal_task_deleted"
-  | "meitheal_task_overdue" | "meitheal_board_updated";
+  | "meitheal_task_overdue" | "meitheal_board_updated"
+  | "meitheal_test";
 
 export interface MeithealTaskEventData {
-  task_id: string; title: string; board_id?: string; board_name?: string;
-  priority?: string; due_date?: string; assigned_to?: string; completed_at?: string;
+  task_id: string;
+  title: string;
+  board_id?: string;
+  board_name?: string;
+  priority?: string;
+  due_date?: string;
+  assigned_to?: string;
+  completed_at?: string;
+  // Phase 61: Enriched fields for Node-RED/n8n
+  status?: string;
+  labels?: string;
+  ticket_key?: string;
+  task_type?: string;
+  description?: string;
 }
 
 export interface MeithealBoardEventData {

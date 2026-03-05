@@ -12,8 +12,10 @@ Local-first task orchestration with HA calendar sync and Vikunja compatibility.
 - **Extension Track:** 15 of 15 phases complete (`15-24, 27-30 complete`)
 - **Overall phase count:** 21+ phases complete (including global track + security + UX)
 - **Phase 56:** Settings IA Overhaul — complete
+- **Phase 65:** Calendar Sync Fix & AI Integration — complete (sync bugs, multi-select UX, LLM tools)
 - **Phase 70:** Integration Auto-Discovery — complete (all 3 high-sev already implemented)
 - **Current version:** `0.1.63`
+- **Active work:** Deferred calendar features (multi-calendar sync, CalDAV, configurable interval, write-back)
 
 ## Phase Status Snapshot
 
@@ -56,7 +58,10 @@ Local-first task orchestration with HA calendar sync and Vikunja compatibility.
 
 | Date | Decision | Context |
 |------|----------|---------|
-| 2026-03-05 | **v0.1.63** — Mobile responsive UX fix: sidebar, hamburger, topbar | Sidebar scoped CSS in Sidebar.astro; `flex md:hidden` on hamburger; `flex-wrap` on topbar; calendar actions hidden mobile; click-to-close overlay |
+| 2026-03-05 | **Phase 65** — Calendar sync fix + AI integration: 6 bugs fixed, multi-select toggle UX, 3 LLM tools, 3 MCP tools | Settings key fragmentation, sync stub, LLM calendar access, toggle cards per calendar |
+| 2026-03-05 | **LLM API expansion** — DailyBriefingTool, DeleteTaskTool, BatchCompleteTasksTool | Weather + presence + tasks in briefing; voice-delete; batch complete by label/priority |
+| 2026-03-05 | **n8n integration** — Test Event Bus button, Node-RED example flow copy | Overdue event type added; `test-event` API; clipboard flow JSON |
+| 2026-03-05 | **v0.1.63** — Mobile responsive UX fix: sidebar, hamburger, topbar | Sidebar scoped CSS in Sidebar.astro; `flex md:hidden` on hamburger; `flex-wrap` on topbar; calendar `.btn-ghost` hidden mobile |
 | 2026-03-04 | **Phase 59** — Broad quality audit: ~82 ingress fetch fixes, type safety, UX anti-patterns | All fetch() calls now use window.__ingress_path for HA Supervisor safety; 30→8 `as any`; 6→0 `alert()`; try/catch on ha/calendars |
 | 2026-03-04 | **v0.1.59** — CSS domain split: 14 partials, lean `global.css` hub | `global.css` was 2316 lines; split into `_tokens`, `_base`, `_layout`, `_forms`, etc. |
 | 2026-03-04 | n8n auto-mode save no longer requires webhook URL | HA addon mode uses WebSocket, not HTTP; save handler now persists `n8n_mode: ha_addon` |
@@ -88,23 +93,26 @@ Local-first task orchestration with HA calendar sync and Vikunja compatibility.
 5. ~~PWA service worker scope validation under ingress.~~ *(Phase 59: SW registered, manifest valid, install prompt wired)*
 6. Test calendar + todo entity selection in HA ingress after v0.1.57 restart.
 
-## Codebase Health (as of v0.1.57)
+## Codebase Health (as of Phase 65)
 
 | Metric | Value |
 |--------|-------|
 | E2E test specs | 38 |
+| E2E test cases | 170 passed, 57 skipped |
 | ADRs | 12 |
 | KCS docs | 11 |
 | API endpoint files | 43 |
 | DB migrations | 3 |
+| LLM tools | 10 (search, create, complete, delete, update, overdue, today, summary, calendar, briefing) |
+| MCP tools | 8 (tasks CRUD + calendar events + sync) |
 | Build time | ~3.7s |
 
 ## Session Continuity
 
-Last session: 2026-03-05T15:52:00Z
-Stopped at: Mobile responsive UX fix complete (v0.1.63, 2 commits). Sidebar slide-in via scoped CSS in Sidebar.astro, hamburger `flex md:hidden` in TopNavigation.astro, topbar `flex-wrap`, calendar `.btn-ghost` hidden on mobile, dark overlay + click-to-close.
+Last session: 2026-03-05T17:52:00Z
+Stopped at: Executing deferred calendar features — multi-calendar simultaneous sync, CalDAV, configurable interval, write-back improvements.
 
-Resume hint: Run GSD persona loop on remaining mobile polish. Kanban topbar is crowded ("Lanes" text squeezes search). HA WebSocket reconnection logic is missing (deferred). 8 remaining `as any` casts are structural.
+Resume hint: Implementation plan at `.gemini/antigravity/brain/6b49a5b0-71c2-408d-8341-a4bd74eb6110/implementation_plan.md`. Wave 1 (multi-calendar sync) priority. User also added DailyBriefingTool, DeleteTaskTool, BatchCompleteTasksTool to `llm_api.py` and n8n test event bus.
 
 ---
-*Last updated: 2026-03-05 — v0.1.63 mobile responsive fixes*
+*Last updated: 2026-03-05 — Phase 65 calendar sync + deferred features in progress*

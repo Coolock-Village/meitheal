@@ -35,6 +35,8 @@ const HA_EVENT_MAP: Record<string, MeithealEventType> = {
   "task.updated": "meitheal_task_updated",
   "task.completed": "meitheal_task_completed",
   "task.deleted": "meitheal_task_deleted",
+  "task.overdue": "meitheal_task_overdue",
+  "board.updated": "meitheal_board_updated",
 };
 
 /**
@@ -74,6 +76,12 @@ export async function dispatchTaskEvent(eventType: string, payload: Record<strin
           ...(payload.priority != null ? { priority: String(payload.priority) } : {}),
           ...(payload.due_date ? { due_date: String(payload.due_date) } : {}),
           ...(payload.assigned_to ? { assigned_to: String(payload.assigned_to) } : {}),
+          // Phase 61: Enriched fields for richer Node-RED/n8n automations
+          ...(payload.status ? { status: String(payload.status) } : {}),
+          ...(payload.labels ? { labels: String(payload.labels) } : {}),
+          ...(payload.ticket_key ? { ticket_key: String(payload.ticket_key) } : {}),
+          ...(payload.task_type ? { task_type: String(payload.task_type) } : {}),
+          ...(payload.description ? { description: String(payload.description).slice(0, 200) } : {}),
         };
 
         // Fire the mapped event type

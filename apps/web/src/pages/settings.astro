@@ -1141,6 +1141,87 @@ const locale: Locale = cookieLocale === "ga" ? "ga" : "en";
       showToast("settings.n8n_saved");
     });
 
+    // ───── Test Event Bus (fires meitheal_test on HA event bus) ─────
+    document
+      .getElementById("test-event-bus")
+      ?.addEventListener("click", async () => {
+        const btn = document.getElementById(
+          "test-event-bus",
+        ) as HTMLButtonElement;
+        const resultDiv = document.getElementById("test-event-result");
+        const msgSpan = document.getElementById("test-event-message");
+        if (!btn) return;
+
+        btn.textContent = "🔌 Sending...";
+        btn.disabled = true;
+
+        try {
+          const res = await fetch(
+            (window.__ingress_path || "") + "/api/integrations/test-event",
+            { method: "POST", headers: { "content-type": "application/json" } },
+          );
+          const data = await res.json();
+
+          if (resultDiv && msgSpan) {
+            resultDiv.style.display = "block";
+            if (data.success) {
+              resultDiv.className =
+                "integration-callout integration-callout--success";
+              msgSpan.textContent = `✅ ${data.hint}`;
+            } else {
+              resultDiv.className =
+                "integration-callout integration-callout--warning";
+              msgSpan.textContent = `⚠ ${data.error || data.hint || "Failed to send test event"}`;
+            }
+          }
+        } catch (err) {
+          if (resultDiv && msgSpan) {
+            resultDiv.style.display = "block";
+            resultDiv.className =
+              "integration-callout integration-callout--warning";
+            msgSpan.textContent = `❌ Network error: ${err instanceof Error ? err.message : "unknown"}`;
+          }
+        }
+
+        btn.textContent = "🔌 Test Event Bus";
+        btn.disabled = false;
+      });
+
+    // ───── Copy Node-RED example flows to clipboard ─────
+    document
+      .getElementById("copy-nodered-flows")
+      ?.addEventListener("click", async () => {
+        const btn = document.getElementById(
+          "copy-nodered-flows",
+        ) as HTMLButtonElement;
+        if (!btn) return;
+
+        try {
+          const res = await fetch(
+            (window.__ingress_path || "") + "/api/integrations/nodered/flows",
+          );
+          if (!res.ok) throw new Error(`HTTP ${res.status}`);
+          const flowJson = await res.text();
+          await navigator.clipboard.writeText(flowJson);
+          btn.textContent = "✅ Copied!";
+          showToast(
+            "Node-RED flows copied to clipboard — paste in Node-RED → Import",
+          );
+          setTimeout(() => {
+            btn.textContent = "📋 Copy Flow JSON";
+          }, 2000);
+        } catch (err) {
+          btn.textContent = "❌ Failed";
+          showToast(
+            `Failed to copy: ${err instanceof Error ? err.message : "error"}`,
+            "error",
+          );
+          setTimeout(() => {
+            btn.textContent = "📋 Copy Flow JSON";
+          }, 2000);
+        }
+      });
+
     // ───── n8n Standalone Save ─────
     document
       .getElementById("save-n8n-standalone")
@@ -1382,6 +1463,27 @@ const locale: Locale = cookieLocale === "ga" ? "ga" : "en";
             )
             .join("");
 
+          // Count badge updater — reflects X of Y enabled
+          function updateCalCountBadge() {
+            const badge = document.getElementById("cal-count-badge");
+            const toggles =
+              document.querySelectorAll<HTMLInputElement>(".cal-entity-toggle");
+            const total = toggles.length;
+            const enabled = Array.from(toggles).filter((t) => t.checked).length;
+            if (badge) {
+              badge.textContent = `${enabled} of ${total} enabled`;
+              badge.style.color =
+                enabled > 0 ? "var(--accent)" : "var(--text-muted)";
+              badge.style.borderColor =
+                enabled > 0
+                  ? "color-mix(in srgb, var(--accent) 30%, transparent)"
+                  : "var(--border)";
+            }
+          }
+          // Expose for manual add handler
+          (window as unknown as Record<string, unknown>).__updateCalCount =
+            updateCalCountBadge;
+
           // Toggle card active state on change
           entitiesContainer
             .querySelectorAll<HTMLInputElement>(".cal-entity-toggle")
@@ -1391,7 +1493,36 @@ const locale: Locale = cookieLocale === "ga" ? "ga" : "en";
                 if (card) {
                   card.classList.toggle("cal-toggle-card--active", cb.checked);
                 }
+                updateCalCountBadge();
               });
+            });
+
+          // Enable All / Disable All handlers
+          document
+            .getElementById("cal-enable-all")
+            ?.addEventListener("click", () => {
+              entitiesContainer
+                .querySelectorAll<HTMLInputElement>(".cal-entity-toggle")
+                .forEach((cb) => {
+                  cb.checked = true;
+                  cb.closest(".cal-toggle-card")?.classList.add(
+                    "cal-toggle-card--active",
+                  );
+                });
+              updateCalCountBadge();
+            });
+          document
+            .getElementById("cal-disable-all")
+            ?.addEventListener("click", () => {
+              entitiesContainer
+                .querySelectorAll<HTMLInputElement>(".cal-entity-toggle")
+                .forEach((cb) => {
+                  cb.checked = false;
+                  cb.closest(".cal-toggle-card")?.classList.remove(
+                    "cal-toggle-card--active",
+                  );
+                });
+              updateCalCountBadge();
             });
 
           // Auto-enable all if none are saved and there's only one calendar
@@ -1406,6 +1537,16 @@ const locale: Locale = cookieLocale === "ga" ? "ga" : "en";
                 .closest(".cal-toggle-card")
                 ?.classList.add("cal-toggle-card--active");
             }
+          }
+
+          // Update count badge after initial render
+          updateCalCountBadge();
+        } else {
+          // No calendars detected — show empty state
+          if (entitiesList) {
+            entitiesList.style.display = "block";
+            const emptyState = document.getElementById("cal-no-entities");
+            if (emptyState) emptyState.style.display = "flex";
           }
         }
       } catch {
@@ -1458,8 +1599,19 @@ const locale: Locale = cookieLocale === "ga" ? "ga" : "en";
         .querySelector<HTMLInputElement>(".cal-entity-toggle")
         ?.addEventListener("change", function () {
           card.classList.toggle("cal-toggle-card--active", this.checked);
+          // Update count badge
+          const updater = (window as unknown as Record<string, unknown>)
+            .__updateCalCount;
+          if (typeof updater === "function") (updater as () => void)();
         });
       container.appendChild(card);
+      // Hide empty state if visible
+      const emptyState = document.getElementById("cal-no-entities");
+      if (emptyState) emptyState.style.display = "none";
+      // Update count badge
+      const updater = (window as unknown as Record<string, unknown>)
+        .__updateCalCount;
+      if (typeof updater === "function") (updater as () => void)();
       input.value = "";
     });
 
@@ -1492,6 +1644,10 @@ const locale: Locale = cookieLocale === "ga" ? "ga" : "en";
       const writeBack =
         (document.getElementById("cal-write-back") as HTMLInputElement)
           ?.checked ?? false;
+      const intervalMs = Number(
+        (document.getElementById("cal-sync-interval") as HTMLSelectElement)
+          ?.value ?? "300000",
+      );
 
       const btn = document.getElementById("save-cal") as HTMLButtonElement;
       btn.textContent = "Saving...";
@@ -1506,6 +1662,7 @@ const locale: Locale = cookieLocale === "ga" ? "ga" : "en";
         enabledEntities.length > 0 ? "true" : "false",
       );
       await saveSetting("calendar_write_back", writeBack);
+      await saveSetting("calendar_sync_interval_ms", String(intervalMs));
       if (caldav) await saveSetting("caldav_url", caldav);
 
       // Enable/disable calendar sync via API
@@ -1521,6 +1678,7 @@ const locale: Locale = cookieLocale === "ga" ? "ga" : "en";
                 entity_id: enabledEntities[0],
                 entities: enabledEntities,
                 write_back: writeBack,
+                interval_ms: intervalMs,
               }),
             },
           );
@@ -1882,6 +2040,14 @@ const locale: Locale = cookieLocale === "ga" ? "ga" : "en";
             wb.checked =
               s.calendar_write_back === true ||
               s.calendar_write_back === "true";
+        }
+        // Restore sync interval
+        if (s.calendar_sync_interval_ms) {
+          const intervalSel = document.getElementById(
+            "cal-sync-interval",
+          ) as HTMLSelectElement | null;
+          if (intervalSel)
+            intervalSel.value = String(s.calendar_sync_interval_ms);
         }
 
         // Todo Sync
