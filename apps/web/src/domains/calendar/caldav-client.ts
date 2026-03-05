@@ -330,6 +330,7 @@ export async function discoverCalendars(config: CalDAVConfig): Promise<CalDAVCal
     }
 
     logger.log("info", {
+      event: "caldav.discovery.success",
       domain: "caldav", component: "caldav-client",
       request_id: SYS_REQ, message: `Discovered ${calendars.length} calendar(s)`,
     });
@@ -405,6 +406,7 @@ export async function listCalDAVEvents(
     }
 
     logger.log("info", {
+      event: "caldav.sync.success",
       domain: "caldav", component: "caldav-client",
       request_id: SYS_REQ,
       message: `Fetched ${events.length} events from CalDAV (${startStr} to ${endStr})`,

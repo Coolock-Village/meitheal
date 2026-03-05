@@ -2028,16 +2028,18 @@ Astro.response.headers.set("X-Content-Type-Options", "nosniff");
                     "input[type=checkbox]",
                   ) as HTMLInputElement;
                   cb.addEventListener("change", () => {
-                    list[index].done = cb.checked;
-                    saveTD("checklists", JSON.stringify(list));
-                    window.refreshChecklistsVisuals();
+                    if (list[index]) {
+                      list[index].done = cb.checked;
+                      saveTD("checklists", JSON.stringify(list));
+                      window.refreshChecklistsVisuals?.();
+                    }
                   });
                   // Edit text
                   const txt = row.querySelector(
                     "input[type=text]",
                   ) as HTMLInputElement;
                   txt.addEventListener("blur", () => {
-                    if (txt.value.trim() !== list[index].text) {
+                    if (list[index] && txt.value.trim() !== list[index].text) {
                       list[index].text = txt.value.trim();
                       saveTD("checklists", JSON.stringify(list));
                     }
@@ -2050,7 +2052,7 @@ Astro.response.headers.set("X-Content-Type-Options", "nosniff");
                   del.addEventListener("click", () => {
                     list.splice(index, 1);
                     saveTD("checklists", JSON.stringify(list));
-                    window.refreshChecklistsVisuals();
+                    window.refreshChecklistsVisuals?.();
                   });
                   checklistsContainer.appendChild(row);
                 });
@@ -2303,7 +2305,11 @@ Astro.response.headers.set("X-Content-Type-Options", "nosniff");
           ?.addEventListener("click", () => {
             if (!currentTaskId) return;
             const list = window.__currentChecklists || [];
-            list.push({ text: "New Item", done: false });
+            list.push({
+              id: crypto.randomUUID(),
+              text: "New Item",
+              done: false,
+            });
             window.__currentChecklists = list;
             saveTD("checklists", JSON.stringify(list)).then(() => {
               if (typeof window.refreshChecklistsVisuals === "function") {
@@ -3328,7 +3334,7 @@ Astro.response.headers.set("X-Content-Type-Options", "nosniff");
       });
 
       // Capture install prompt — store globally for install banner + settings
-      window.addEventListener("beforeinstallprompt", (e: Event) => {
+      window.addEventListener("beforeinstallprompt", (e: any) => {
         e.preventDefault();
         window.__pwa_install_prompt = e;
         window.dispatchEvent(new CustomEvent("meitheal-pwa-installable"));

@@ -338,7 +338,7 @@ const locale: Locale = cookieLocale === "ga" ? "ga" : "en";
     const target = (e.target as HTMLElement).closest("#ask-ha-btn");
     if (target) {
       e.preventDefault();
-      window.openAskHaModal();
+      window.openAskHaModal?.();
     }
   });
 

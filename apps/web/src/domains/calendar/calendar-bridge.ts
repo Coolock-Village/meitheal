@@ -31,6 +31,16 @@ export interface CalendarSyncConfig {
   syncIntervalMs: number;
 }
 
+export interface CalendarSyncStatusEntity {
+  entityId: string;
+  source: "ha" | "caldav";
+  writeBack: boolean;
+  syncIntervalMs: number;
+  lastSyncAt: number | null;
+  lastSyncEventCount: number | null;
+  lastSyncError: string | null;
+}
+
 /** Per-entity sync state — tracks timer, unsubscribers, and metadata */
 interface EntitySyncState {
   config: CalendarSyncConfig;
@@ -405,7 +415,7 @@ export function stopCalendarSync(): void {
 export function getCalendarSyncStatus() {
   const haActive = activeSyncs.size > 0;
 
-  const entities = Array.from(activeSyncs.entries()).map(([entityId, state]) => ({
+  const entities: CalendarSyncStatusEntity[] = Array.from(activeSyncs.entries()).map(([entityId, state]) => ({
     entityId,
     source: "ha" as const,
     writeBack: state.config.writeBack,

@@ -16,13 +16,13 @@ export function formatRegionalDate(
   }
 ): string {
   if (!dateInput) return "";
-  
+
   // Resolve settings (Favor explicit options, then client-side window global, then defaults)
   let df: DateFormat = "relative";
   let tz = "Europe/Dublin";
 
   if (typeof window !== "undefined" && window.mSettings) {
-    df = window.mSettings.dateFormat || "relative";
+    df = (window.mSettings.dateFormat as DateFormat) || "relative";
     tz = window.mSettings.timezone || "Europe/Dublin";
   }
 

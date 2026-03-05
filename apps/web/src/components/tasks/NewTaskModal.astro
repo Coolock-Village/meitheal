@@ -152,7 +152,7 @@ const locale: Locale = cookieLocale === "ga" ? "ga" : "en";
     const target = (e.target as HTMLElement).closest("#create-task-btn");
     if (target) {
       e.preventDefault();
-      window.openNewTaskModal();
+      window.openNewTaskModal?.();
     }
   });
 
