@@ -23,7 +23,7 @@ export const GET: APIRoute = async ({ params }) => {
     sql: `SELECT t.id, t.title, t.description, t.status, t.priority, t.due_date, t.labels,
                  t.framework_payload, t.calendar_sync_state, t.board_id, t.custom_fields,
                  t.parent_id, t.time_tracked, t.start_date, t.end_date, t.progress, t.color,
-                 t.is_favorite, t.task_type, t.ticket_number, t.checklists, t.created_at, t.updated_at,
+                 t.is_favorite, t.task_type, t.ticket_number, t.assigned_to, t.checklists, t.created_at, t.updated_at,
                  p.title as parent_title, p.task_type as parent_task_type, p.ticket_number as parent_ticket_number
           FROM tasks t
           LEFT JOIN tasks p ON t.parent_id = p.id
@@ -197,6 +197,11 @@ export const PUT: APIRoute = async ({ params, request }) => {
       sanitized.task_type = tt;
     }
   }
+  // Assignments: assigned_to user ID (nullable)
+  if (body.assigned_to !== undefined) {
+    sanitized.assigned_to = typeof body.assigned_to === "string" && body.assigned_to.trim().length > 0 && body.assigned_to.length <= 255
+      ? body.assigned_to.trim() : null;
+  }
   // Phase 31: Checklists — JSON array of {text: string, done: boolean}
   if (body.checklists !== undefined) {
     if (typeof body.checklists !== "string") {
@@ -242,7 +247,7 @@ export const PUT: APIRoute = async ({ params, request }) => {
   const oldRow = await client.execute({
     sql: `SELECT title, description, status, priority, due_date, labels,
                  framework_payload, board_id, custom_fields, parent_id,
-                 task_type, start_date, end_date, progress, color, is_favorite
+                 task_type, start_date, end_date, progress, color, is_favorite, assigned_to
           FROM tasks WHERE id = ? LIMIT 1`,
     args: [resolvedId],
   });
@@ -277,7 +282,7 @@ export const PUT: APIRoute = async ({ params, request }) => {
     sql: `SELECT id, title, description, status, priority, due_date, labels,
                  framework_payload, calendar_sync_state, board_id, custom_fields,
                  parent_id, time_tracked, start_date, end_date, progress, color,
-                 is_favorite, task_type, ticket_number, checklists, created_at, updated_at
+                 is_favorite, task_type, ticket_number, assigned_to, checklists, created_at, updated_at
           FROM tasks WHERE id = ? LIMIT 1`,
     args: [resolvedId],
   });
@@ -301,6 +306,20 @@ export const PUT: APIRoute = async ({ params, request }) => {
           { action: `MEITHEAL_TASK_VIEW_${resolvedId}`, title: "View details", uri: `/meitheal/task/${taskPayload.ticket_key}` }
         ]
       }).catch(err => logApiError("ha-notify", "Failed to send urgent update push", err));
+    }).catch(() => {});
+  }
+
+  // Assignment-change push notification
+  if (sanitized.assigned_to !== undefined && String(sanitized.assigned_to) !== String(oldTask?.assigned_to ?? "")) {
+    import("../../../domains/ha/ha-services").then(({ sendNotification }) => {
+      const titleStr = typeof sanitized.title === "string" ? sanitized.title : String(oldTask?.title ?? "Task");
+      sendNotification("notify", `📋 Task assigned to you: ${titleStr}`, `You've been assigned to ${taskPayload.ticket_key ?? "a task"}.`, {
+        push: { category: "TASK_ASSIGNED" },
+        action_data: { task_id: resolvedId, ticket_key: taskPayload.ticket_key, assigned_to: sanitized.assigned_to },
+        actions: [
+          { action: `MEITHEAL_TASK_VIEW_${resolvedId}`, title: "View task", uri: `/meitheal/task/${taskPayload.ticket_key}` }
+        ]
+      }).catch(err => logApiError("ha-notify", "Failed to send assignment push", err));
     }).catch(() => {});
   }
 

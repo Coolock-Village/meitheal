@@ -47,11 +47,31 @@
   "services": {
     "create_task": {
       "name": "Create Task",
-      "description": "Create a new task in Meitheal."
+      "description": "Create a new task in Meitheal.",
+      "fields": {
+        "title": {
+          "name": "Title",
+          "description": "The title of the task to create"
+        },
+        "description": {
+          "name": "Description",
+          "description": "Optional description or notes for the task"
+        }
+      }
     },
     "complete_task": {
       "name": "Complete Task",
-      "description": "Mark a task as done by ID or title."
+      "description": "Mark a task as done by ID or title.",
+      "fields": {
+        "task_id": {
+          "name": "Task ID",
+          "description": "The task ID to complete (use either this or title)"
+        },
+        "title": {
+          "name": "Title",
+          "description": "Find and complete a task by title (use either this or task_id)"
+        }
+      }
     },
     "sync_todo": {
       "name": "Sync Tasks",
@@ -59,15 +79,45 @@
     },
     "search_tasks": {
       "name": "Search Tasks",
-      "description": "Search tasks by keyword in Meitheal."
+      "description": "Search tasks by keyword. Returns matching tasks from Meitheal.",
+      "fields": {
+        "query": {
+          "name": "Search Query",
+          "description": "Keyword to search in task titles and descriptions"
+        },
+        "status": {
+          "name": "Status Filter",
+          "description": "Filter by task status (todo, in_progress, or done)"
+        }
+      }
     },
     "get_overdue_tasks": {
       "name": "Get Overdue Tasks",
-      "description": "Get all tasks past their due date."
+      "description": "Get a list of all tasks that are past their due date and not yet completed."
     },
     "notify_overdue": {
       "name": "Notify Overdue",
       "description": "Push a notification about overdue tasks to HA persistent notifications."
+    }
+  },
+  "exceptions": {
+    "task_not_found": {
+      "message": "Task not found. Make sure the task ID or title is correct."
+    },
+    "addon_unavailable": {
+      "message": "Cannot reach the Meitheal addon. Make sure it is running."
+    },
+    "create_failed": {
+      "message": "Failed to create task: {error}"
+    },
+    "complete_failed": {
+      "message": "Failed to complete task: {error}"
+    },
+    "update_failed": {
+      "message": "Failed to update task: {error}"
+    },
+    "delete_failed": {
+      "message": "Failed to delete task: {error}"
     }
   },
   "device_automation": {

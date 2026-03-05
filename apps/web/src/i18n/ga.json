@@ -115,7 +115,10 @@
         "cannot_undo": "Ní féidir an gníomh seo a chealú.",
         "delete": "Scrios",
         "duplicate_task": "Dúblaigh tasc",
-        "ask_ai": "Fiafraigh den II"
+        "ask_ai": "Fiafraigh den II",
+        "assigned_to": "Sann Chuig",
+        "unassigned": "Gan Sannta",
+        "assign_hint": "Leid: Úsáid @ainm sa teideal le huathshannú"
     },
     "kanban": {
         "title": "Clár Kanban",
@@ -350,7 +353,20 @@
         "purge_success": "Gach tasc glanta",
         "purge_failed": "Theip ar ghlanadh",
         "reset_success": "Socruithe athshocraithe go réamhshocruithe",
-        "reset_failed": "Theip ar athshocrú"
+        "reset_failed": "Theip ar athshocrú",
+        "users_title": "👥 Úsáideoirí & Sannadh",
+        "users_subtitle": "Bainistigh cé ar féidir tascanna a shannadh dóibh",
+        "default_assignee": "Sannta Réamhshocraithe",
+        "no_default": "Gan cheann (gan uathshannú)",
+        "custom_users": "Úsáideoirí Saincheaptha",
+        "add_custom_user": "+ Cuir Úsáideoir Saincheaptha Leis",
+        "custom_user_name": "Ainm",
+        "custom_user_color": "Dath",
+        "custom_user_added": "Úsáideoir saincheaptha curtha leis",
+        "custom_user_removed": "Úsáideoir saincheaptha bainte",
+        "default_assignee_saved": "Sannta réamhshocraithe sábháilte",
+        "ha_users_discovered": "Úsáideoirí Home Assistant uath-aimsithe",
+        "no_users_found": "Níor aimsíodh úsáideoirí. Cuir úsáideoirí saincheaptha leis nó nasc le Home Assistant."
     },
     "command_palette": {
         "placeholder": "Clóscríobh ordú nó cuardaigh...",

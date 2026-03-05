@@ -119,7 +119,10 @@
         "clear_filters": "Clear All",
         "task_summary": "{total} tasks · {active} active · {overdue} overdue",
         "overdue": "Overdue",
-        "due_prefix": "Due"
+        "due_prefix": "Due",
+        "assigned_to": "Assign To",
+        "unassigned": "Unassigned",
+        "assign_hint": "Tip: Use @name in the title to auto-assign"
     },
     "kanban": {
         "title": "Kanban Board",
@@ -354,7 +357,20 @@
         "purge_success": "All tasks purged",
         "purge_failed": "Purge failed",
         "reset_success": "Settings reset to defaults",
-        "reset_failed": "Reset failed"
+        "reset_failed": "Reset failed",
+        "users_title": "👥 Users & Assignments",
+        "users_subtitle": "Manage who can be assigned to tasks",
+        "default_assignee": "Default Assignee",
+        "no_default": "None (no auto-assign)",
+        "custom_users": "Custom Users",
+        "add_custom_user": "+ Add Custom User",
+        "custom_user_name": "Name",
+        "custom_user_color": "Color",
+        "custom_user_added": "Custom user added",
+        "custom_user_removed": "Custom user removed",
+        "default_assignee_saved": "Default assignee saved",
+        "ha_users_discovered": "Home Assistant users auto-discovered",
+        "no_users_found": "No users found. Add custom users or connect to Home Assistant."
     },
     "command_palette": {
         "placeholder": "Type a command or search...",

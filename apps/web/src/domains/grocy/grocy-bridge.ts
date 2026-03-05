@@ -145,8 +145,24 @@ export function getActiveGrocySyncConfig(): GrocySyncConfig | null {
 
 // ═══════ Inbound: Grocy → Meitheal ═══════
 
+const MAX_RETRIES = 2;
+const RETRY_DELAY_MS = 2000;
+
+/** Retry a Grocy API call if the error is retryable. */
+async function withRetry<T>(fn: () => Promise<import("@meitheal/integration-core").GrocyResult<T>>): Promise<import("@meitheal/integration-core").GrocyResult<T>> {
+  let lastResult: import("@meitheal/integration-core").GrocyResult<T> | null = null;
+  for (let attempt = 0; attempt <= MAX_RETRIES; attempt++) {
+    lastResult = await fn();
+    if (lastResult.ok) return lastResult;
+    if (!lastResult.retryable || attempt === MAX_RETRIES) return lastResult;
+    await new Promise((r) => setTimeout(r, RETRY_DELAY_MS * (attempt + 1)));
+  }
+  return lastResult!;
+}
+
 /**
  * Pull chores, tasks, and shopping list from Grocy → create/update Meitheal tasks.
+ * Includes: retry on retryable errors, product name resolution, stale task cleanup.
  */
 export async function syncFromGrocy(): Promise<{
   chores: number;
@@ -166,10 +182,21 @@ export async function syncFromGrocy(): Promise<{
     return result;
   }
 
-  // 1. Sync chores
+  // Pre-fetch product name map for shopping list (Fix #2)
+  let productNames = new Map<number, string>();
   try {
-    const choresResult = await adapter.getChores();
+    const productsResult = await adapter.getProducts();
+    if (productsResult.ok) productNames = productsResult.data;
+  } catch { /* product names are best-effort */ }
+
+  // Track all Grocy entity keys seen this sync for stale detection (Fix #3)
+  const seenEntityKeys = new Set<string>();
+
+  // 1. Sync chores (with retry — Fix #5)
+  try {
+    const choresResult = await withRetry(() => adapter.getChores());
     if (choresResult.ok) {
+      for (const c of choresResult.data) seenEntityKeys.add(`chore:${c.choreId}`);
       result.chores = await mergeGrocyChores(choresResult.data);
     } else {
       result.errors++;
@@ -192,10 +219,11 @@ export async function syncFromGrocy(): Promise<{
     });
   }
 
-  // 2. Sync tasks
+  // 2. Sync tasks — fetch ALL (including completed) to detect status drift (Fix #6)
   try {
-    const tasksResult = await adapter.getTasks(false);
+    const tasksResult = await withRetry(() => adapter.getTasks(true));
     if (tasksResult.ok) {
+      for (const t of tasksResult.data) seenEntityKeys.add(`task:${t.taskId}`);
       result.tasks = await mergeGrocyTasks(tasksResult.data);
     } else {
       result.errors++;
@@ -218,11 +246,15 @@ export async function syncFromGrocy(): Promise<{
     });
   }
 
-  // 3. Consolidate shopping list
+  // 3. Consolidate shopping list (with product names — Fix #2)
   try {
     const shoppingResult = await adapter.getShoppingList();
     if (shoppingResult.ok && shoppingResult.data.length > 0) {
-      result.shopping = await mergeShoppingList(shoppingResult.data as { id?: number; productId: number; amount: number; note?: string }[]);
+      seenEntityKeys.add("shopping:list-1");
+      result.shopping = await mergeShoppingList(
+        shoppingResult.data as { id?: number; productId: number; amount: number; note?: string }[],
+        productNames,
+      );
     }
   } catch (err) {
     result.errors++;
@@ -233,6 +265,21 @@ export async function syncFromGrocy(): Promise<{
       request_id: SYS_REQ,
       message: `Shopping list sync error: ${err}`,
     });
+  }
+
+  // 4. Clean stale tasks — archive Meitheal tasks whose Grocy source was deleted (Fix #3)
+  if (result.errors === 0) {
+    try {
+      await cleanStaleTasks(seenEntityKeys);
+    } catch (err) {
+      logger.log("warn", {
+        event: "grocy.sync.stale_cleanup_failed",
+        domain: "integrations",
+        component: "grocy-bridge",
+        request_id: SYS_REQ,
+        message: `Stale cleanup failed: ${err}`,
+      });
+    }
   }
 
   // Update state
@@ -336,60 +383,72 @@ export async function pushCompletionToGrocy(taskId: string): Promise<boolean> {
 
 // ═══════ Merge Helpers ═══════
 
-async function mergeGrocyChores(chores: GrocyChore[]): Promise<number> {
+/** Helper: get persistence client + ensure tables exist. */
+async function getClient() {
   const { ensureSchema, getPersistenceClient } = await import("@domains/tasks/persistence/store");
   await ensureSchema();
   const client = getPersistenceClient();
-
   await ensureGrocySyncTable(client);
+  return client;
+}
 
+/** Fix #4: Batch-load existing confirmations for a set of entity IDs. */
+async function batchLoadConfirmations(
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  client: any,
+  entityType: string,
+  entityIds: string[],
+): Promise<Map<string, { taskId: string; syncUpdatedAt: number; taskUpdatedAt: number }>> {
+  const map = new Map<string, { taskId: string; syncUpdatedAt: number; taskUpdatedAt: number }>();
+  if (entityIds.length === 0) return map;
+
+  // SQLite doesn't support array params — build a parameterized IN clause
+  const placeholders = entityIds.map(() => "?").join(",");
+  const rows = await client.execute({
+    sql: `SELECT c.grocy_entity_id, c.task_id, c.updated_at AS sync_updated_at,
+                 COALESCE(t.updated_at, 0) AS task_updated_at
+          FROM grocy_sync_confirmations c
+          LEFT JOIN tasks t ON t.id = c.task_id
+          WHERE c.grocy_entity_type = ? AND c.grocy_entity_id IN (${placeholders})`,
+    args: [entityType, ...entityIds],
+  });
+
+  for (const row of rows.rows) {
+    map.set(String(row.grocy_entity_id), {
+      taskId: String(row.task_id),
+      syncUpdatedAt: Number(row.sync_updated_at ?? 0),
+      taskUpdatedAt: Number(row.task_updated_at ?? 0),
+    });
+  }
+  return map;
+}
+
+async function mergeGrocyChores(chores: GrocyChore[]): Promise<number> {
+  const client = await getClient();
+  const entityIds = chores.map((c) => String(c.choreId));
+  const existing = await batchLoadConfirmations(client, "chore", entityIds);
   let synced = 0;
+  const nowMs = Date.now();
 
   for (const chore of chores) {
-    const entityKey = `chore:${chore.choreId}`;
     const taskData = choreToTask(chore);
+    const match = existing.get(String(chore.choreId));
 
-    const existing = await client.execute({
-      sql: "SELECT task_id FROM grocy_sync_confirmations WHERE grocy_entity_type = 'chore' AND grocy_entity_id = ?",
-      args: [String(chore.choreId)],
-    });
-
-    const nowMs = Date.now();
-
-    if (existing.rows.length > 0) {
-      const taskId = existing.rows[0]!.task_id as string;
-
-      // Check if locally modified
-      const taskRow = await client.execute({
-        sql: "SELECT updated_at FROM tasks WHERE id = ?",
-        args: [taskId],
-      });
-      const syncRow = await client.execute({
-        sql: "SELECT updated_at FROM grocy_sync_confirmations WHERE grocy_entity_type = 'chore' AND grocy_entity_id = ?",
-        args: [String(chore.choreId)],
-      });
-
-      const taskUpdatedAt = (taskRow.rows[0]?.updated_at as number) ?? 0;
-      const lastSyncAt = (syncRow.rows[0]?.updated_at as number) ?? 0;
-
-      if (taskUpdatedAt > lastSyncAt) continue; // Skip — locally modified
+    if (match) {
+      // Skip if locally modified after last sync
+      if (match.taskUpdatedAt > match.syncUpdatedAt) continue;
 
       await client.execute({
         sql: `UPDATE tasks SET title = ?, status = ?, due_date = ?, description = COALESCE(?, description), updated_at = ? WHERE id = ?`,
-        args: [taskData.title, taskData.status, taskData.dueDate, taskData.description, nowMs, taskId],
+        args: [taskData.title, taskData.status, taskData.dueDate, taskData.description, nowMs, match.taskId],
       });
-
       await client.execute({
         sql: "UPDATE grocy_sync_confirmations SET payload = ?, updated_at = ? WHERE grocy_entity_type = 'chore' AND grocy_entity_id = ?",
         args: [JSON.stringify(chore), nowMs, String(chore.choreId)],
       });
-
       synced++;
     } else {
-      // Create new task
       const taskId = crypto.randomUUID();
-      const reqId = crypto.randomUUID();
-
       await client.execute({
         sql: `INSERT INTO tasks (id, title, description, status, priority, due_date,
                 labels, framework_payload, calendar_sync_state, board_id,
@@ -400,75 +459,46 @@ async function mergeGrocyChores(chores: GrocyChore[]): Promise<number> {
           taskId, taskData.title, taskData.description ?? "", taskData.status,
           taskData.priority, taskData.dueDate,
           JSON.stringify(taskData.labels),
-          `grocy-chore-${chore.choreId}`, reqId, nowMs, nowMs,
+          `grocy-chore-${chore.choreId}`, crypto.randomUUID(), nowMs, nowMs,
         ],
       });
-
       await client.execute({
         sql: `INSERT INTO grocy_sync_confirmations (confirmation_id, task_id, grocy_entity_type, grocy_entity_id, sync_direction, payload, created_at, updated_at)
               VALUES (?, ?, 'chore', ?, 'inbound', ?, ?, ?)`,
         args: [crypto.randomUUID(), taskId, String(chore.choreId), JSON.stringify(chore), nowMs, nowMs],
       });
-
       synced++;
     }
   }
-
   return synced;
 }
 
 async function mergeGrocyTasks(tasks: GrocyTask[]): Promise<number> {
-  const { ensureSchema, getPersistenceClient } = await import("@domains/tasks/persistence/store");
-  await ensureSchema();
-  const client = getPersistenceClient();
-
-  await ensureGrocySyncTable(client);
-
+  const client = await getClient();
+  const entityIds = tasks.map((t) => String(t.taskId));
+  const existing = await batchLoadConfirmations(client, "task", entityIds);
   let synced = 0;
+  const nowMs = Date.now();
 
   for (const task of tasks) {
     const taskData = taskToTask(task);
+    const match = existing.get(String(task.taskId));
 
-    const existing = await client.execute({
-      sql: "SELECT task_id FROM grocy_sync_confirmations WHERE grocy_entity_type = 'task' AND grocy_entity_id = ?",
-      args: [String(task.taskId)],
-    });
-
-    const nowMs = Date.now();
-
-    if (existing.rows.length > 0) {
-      const meithealTaskId = existing.rows[0]!.task_id as string;
-
-      // Check if locally modified
-      const taskRow = await client.execute({
-        sql: "SELECT updated_at FROM tasks WHERE id = ?",
-        args: [meithealTaskId],
-      });
-      const syncRow = await client.execute({
-        sql: "SELECT updated_at FROM grocy_sync_confirmations WHERE grocy_entity_type = 'task' AND grocy_entity_id = ?",
-        args: [String(task.taskId)],
-      });
-
-      const taskUpdatedAt = (taskRow.rows[0]?.updated_at as number) ?? 0;
-      const lastSyncAt = (syncRow.rows[0]?.updated_at as number) ?? 0;
-
-      if (taskUpdatedAt > lastSyncAt) continue;
+    if (match) {
+      // Fix #6: If locally modified, only allow Grocy-side completion to override
+      if (match.taskUpdatedAt > match.syncUpdatedAt && !task.done) continue;
 
       await client.execute({
         sql: `UPDATE tasks SET title = ?, status = ?, due_date = ?, description = COALESCE(?, description), updated_at = ? WHERE id = ?`,
-        args: [taskData.title, taskData.status, taskData.dueDate, taskData.description, nowMs, meithealTaskId],
+        args: [taskData.title, taskData.status, taskData.dueDate, taskData.description, nowMs, match.taskId],
       });
-
       await client.execute({
         sql: "UPDATE grocy_sync_confirmations SET payload = ?, updated_at = ? WHERE grocy_entity_type = 'task' AND grocy_entity_id = ?",
         args: [JSON.stringify(task), nowMs, String(task.taskId)],
       });
-
       synced++;
     } else {
       const meithealTaskId = crypto.randomUUID();
-      const reqId = crypto.randomUUID();
-
       await client.execute({
         sql: `INSERT INTO tasks (id, title, description, status, priority, due_date,
                 labels, framework_payload, calendar_sync_state, board_id,
@@ -479,34 +509,29 @@ async function mergeGrocyTasks(tasks: GrocyTask[]): Promise<number> {
           meithealTaskId, taskData.title, taskData.description ?? "", taskData.status,
           taskData.priority, taskData.dueDate,
           JSON.stringify(taskData.labels),
-          `grocy-task-${task.taskId}`, reqId, nowMs, nowMs,
+          `grocy-task-${task.taskId}`, crypto.randomUUID(), nowMs, nowMs,
         ],
       });
-
       await client.execute({
         sql: `INSERT INTO grocy_sync_confirmations (confirmation_id, task_id, grocy_entity_type, grocy_entity_id, sync_direction, payload, created_at, updated_at)
               VALUES (?, ?, 'task', ?, 'inbound', ?, ?, ?)`,
         args: [crypto.randomUUID(), meithealTaskId, String(task.taskId), JSON.stringify(task), nowMs, nowMs],
       });
-
       synced++;
     }
   }
-
   return synced;
 }
 
-async function mergeShoppingList(items: { id?: number; productId: number; amount: number; note?: string }[]): Promise<number> {
-  const { ensureSchema, getPersistenceClient } = await import("@domains/tasks/persistence/store");
-  await ensureSchema();
-  const client = getPersistenceClient();
-
-  await ensureGrocySyncTable(client);
-
-  const taskData = shoppingListToTask(items);
+/** Fix #2: Shopping list now accepts product name map for human-readable descriptions. */
+async function mergeShoppingList(
+  items: { id?: number; productId: number; amount: number; note?: string }[],
+  productNames?: Map<number, string>,
+): Promise<number> {
+  const client = await getClient();
+  const taskData = shoppingListToTask(items, productNames);
   const nowMs = Date.now();
 
-  // Check for existing shopping task
   const existing = await client.execute({
     sql: "SELECT task_id FROM grocy_sync_confirmations WHERE grocy_entity_type = 'shopping' AND grocy_entity_id = 'list-1'",
     args: [],
@@ -514,25 +539,18 @@ async function mergeShoppingList(items: { id?: number; productId: number; amount
 
   if (existing.rows.length > 0) {
     const taskId = existing.rows[0]!.task_id as string;
-
-    // Always update shopping task with latest count
     await client.execute({
       sql: `UPDATE tasks SET title = ?, description = ?, status = 'todo', updated_at = ? WHERE id = ?`,
       args: [taskData.title, taskData.description, nowMs, taskId],
     });
-
     await client.execute({
       sql: "UPDATE grocy_sync_confirmations SET payload = ?, updated_at = ? WHERE grocy_entity_type = 'shopping' AND grocy_entity_id = 'list-1'",
       args: [JSON.stringify({ itemCount: items.length }), nowMs],
     });
-
     return 1;
   }
 
-  // Create new shopping task
   const taskId = crypto.randomUUID();
-  const reqId = crypto.randomUUID();
-
   await client.execute({
     sql: `INSERT INTO tasks (id, title, description, status, priority, due_date,
             labels, framework_payload, calendar_sync_state, board_id,
@@ -542,17 +560,51 @@ async function mergeShoppingList(items: { id?: number; productId: number; amount
     args: [
       taskId, taskData.title, taskData.description,
       JSON.stringify(taskData.labels),
-      `grocy-shopping-list-1`, reqId, nowMs, nowMs,
+      `grocy-shopping-list-1`, crypto.randomUUID(), nowMs, nowMs,
     ],
   });
-
   await client.execute({
     sql: `INSERT INTO grocy_sync_confirmations (confirmation_id, task_id, grocy_entity_type, grocy_entity_id, sync_direction, payload, created_at, updated_at)
           VALUES (?, ?, 'shopping', 'list-1', 'inbound', ?, ?, ?)`,
     args: [crypto.randomUUID(), taskId, JSON.stringify({ itemCount: items.length }), nowMs, nowMs],
   });
-
   return 1;
+}
+
+/**
+ * Fix #3: Archive orphaned tasks — Grocy items deleted since last sync.
+ * Only runs when all API calls succeeded (no partial data).
+ */
+async function cleanStaleTasks(seenEntityKeys: Set<string>): Promise<void> {
+  const client = await getClient();
+  const nowMs = Date.now();
+
+  const allConfirmations = await client.execute({
+    sql: "SELECT confirmation_id, task_id, grocy_entity_type, grocy_entity_id FROM grocy_sync_confirmations",
+    args: [],
+  });
+
+  for (const row of allConfirmations.rows) {
+    const key = `${row.grocy_entity_type}:${row.grocy_entity_id}`;
+    if (!seenEntityKeys.has(key)) {
+      // This entity no longer exists in Grocy — archive the task
+      await client.execute({
+        sql: `UPDATE tasks SET status = 'done', updated_at = ? WHERE id = ? AND status != 'done'`,
+        args: [nowMs, row.task_id],
+      });
+      await client.execute({
+        sql: "DELETE FROM grocy_sync_confirmations WHERE confirmation_id = ?",
+        args: [row.confirmation_id],
+      });
+      logger.log("info", {
+        event: "grocy.sync.stale_archived",
+        domain: "integrations",
+        component: "grocy-bridge",
+        request_id: SYS_REQ,
+        message: `Archived stale task ${row.task_id} (Grocy ${key} no longer exists)`,
+      });
+    }
+  }
 }
 
 // ═══════ Table Bootstrap ═══════

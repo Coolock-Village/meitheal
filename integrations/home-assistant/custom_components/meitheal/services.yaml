@@ -1,55 +1,35 @@
 create_task:
-  name: Create Task
-  description: Create a new task in Meitheal.
   fields:
     title:
-      name: Title
-      description: Task title
       required: true
       selector:
         text:
     description:
-      name: Description
-      description: Optional task description
       required: false
       selector:
         text:
           multiline: true
 
 complete_task:
-  name: Complete Task
-  description: Mark a task as done by ID or title.
   fields:
     task_id:
-      name: Task ID
-      description: The task ID to complete (use either this or title)
       required: false
       selector:
         text:
     title:
-      name: Title
-      description: Find and complete a task by title (use either this or task_id)
       required: false
       selector:
         text:
 
 sync_todo:
-  name: Sync Tasks
-  description: Trigger a manual refresh of task data from Meitheal.
 
 search_tasks:
-  name: Search Tasks
-  description: Search tasks by keyword. Returns matching tasks from Meitheal.
   fields:
     query:
-      name: Search Query
-      description: Keyword to search in task titles and descriptions
       required: true
       selector:
         text:
     status:
-      name: Status Filter
-      description: Filter by task status
       required: false
       selector:
         select:
@@ -59,5 +39,5 @@ search_tasks:
             - done
 
 get_overdue_tasks:
-  name: Get Overdue Tasks
-  description: Get a list of all tasks that are past their due date and not yet completed.
+
+notify_overdue:

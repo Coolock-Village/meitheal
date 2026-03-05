@@ -13,6 +13,7 @@ export interface PersistedTask {
   calendarSyncState: CalendarSyncState;
   idempotencyKey: string;
   requestId: string;
+  assignedTo: string | null;
   createdAt: number;
   updatedAt: number;
 }
@@ -81,6 +82,7 @@ function toTask(row: Record<string, unknown>): PersistedTask {
     calendarSyncState: String(row.calendar_sync_state) as CalendarSyncState,
     idempotencyKey: String(row.idempotency_key),
     requestId: String(row.request_id),
+    assignedTo: typeof row.assigned_to === "string" ? row.assigned_to : null,
     createdAt: Number(row.created_at),
     updatedAt: Number(row.updated_at)
   };
@@ -428,6 +430,32 @@ export async function ensureSchema(): Promise<void> {
   await client.execute("CREATE INDEX IF NOT EXISTS tasks_reminder_at_idx ON tasks(reminder_at)");
   await client.execute("CREATE UNIQUE INDEX IF NOT EXISTS tasks_ticket_number_idx ON tasks(ticket_number)");
   await client.execute("CREATE INDEX IF NOT EXISTS comments_task_id_idx ON comments(task_id)");
+
+  // Assignments & Users domain — assigned_to column on tasks
+  if (!(await hasColumn(client, "tasks", "assigned_to"))) {
+    await client.execute("ALTER TABLE tasks ADD COLUMN assigned_to TEXT");
+  }
+  await client.execute("CREATE INDEX IF NOT EXISTS tasks_assigned_to_idx ON tasks(assigned_to)");
+
+  // Custom (non-HA) users — for families sharing one HA instance
+  await client.execute(`
+    CREATE TABLE IF NOT EXISTS custom_users (
+      id TEXT PRIMARY KEY,
+      name TEXT NOT NULL,
+      color TEXT NOT NULL DEFAULT '#6366f1',
+      created_at INTEGER NOT NULL,
+      updated_at INTEGER NOT NULL
+    )
+  `);
+
+  // App-level settings (key/value store for defaults like default_assignee)
+  await client.execute(`
+    CREATE TABLE IF NOT EXISTS app_settings (
+      key TEXT PRIMARY KEY,
+      value TEXT NOT NULL,
+      updated_at INTEGER NOT NULL
+    )
+  `);
 
   ensured = true;
 

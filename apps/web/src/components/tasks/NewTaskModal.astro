@@ -83,6 +83,20 @@ const locale: Locale = cookieLocale === "ga" ? "ga" : "en";
         />
       </div>
 
+      <div class="form-group">
+        <label for="new-task-assigned-to" class="form-label">Assign To</label>
+        <select class="form-select bg-bg-input" id="new-task-assigned-to">
+          <option value="">Unassigned</option>
+        </select>
+        <p
+          class="text-xs text-text-muted mt-1"
+          id="new-task-assignee-hint"
+          style="display:none"
+        >
+          Tip: Use @name in the title to auto-assign
+        </p>
+      </div>
+
       <div
         class="modal-actions pt-4 border-t border-border flex justify-end gap-3 mt-6"
       >
@@ -141,10 +155,63 @@ const locale: Locale = cookieLocale === "ga" ? "ga" : "en";
       overlay.style.display = "flex";
       overlay.style.position = "fixed";
     }
+    // Load user list for assignment dropdown
+    loadAssigneeDropdown();
     setTimeout(() => {
       document.getElementById("new-task-title-input")?.focus();
     }, 50);
   };
+
+  // Fetch users and populate the Assign To dropdown
+  async function loadAssigneeDropdown() {
+    const select = document.getElementById(
+      "new-task-assigned-to",
+    ) as HTMLSelectElement;
+    const hint = document.getElementById("new-task-assignee-hint");
+    if (!select) return;
+
+    // Reset to just "Unassigned"
+    select.innerHTML = '<option value="">Unassigned</option>';
+
+    try {
+      const res = await fetch((window.__ingress_path || "") + "/api/users");
+      if (!res.ok) return;
+      const data = await res.json();
+      const users = data.users || [];
+
+      if (users.length === 0) {
+        // No users discovered — hide dropdown, show link to settings
+        select.parentElement!.style.display = "none";
+        return;
+      }
+
+      select.parentElement!.style.display = "";
+      if (hint) hint.style.display = users.length > 1 ? "" : "none";
+
+      for (const user of users) {
+        const opt = document.createElement("option");
+        opt.value = user.id;
+        opt.textContent =
+          user.name + (user.source === "home_assistant" ? " (HA)" : "");
+        select.appendChild(opt);
+      }
+
+      // Auto-select default assignee if set
+      if (data.default_assignee) {
+        select.value = data.default_assignee;
+      }
+
+      // Single-user auto-select
+      if (users.length === 1 && !data.default_assignee) {
+        select.value = users[0].id;
+      }
+
+      // Store users for @mention matching
+      (window as any).__meitheal_users = users;
+    } catch {
+      // Standalone/offline — leave just "Unassigned"
+    }
+  }
 
   // Use event delegation on document.body to catch all create-task-btn clicks
   // without cloning DOM nodes (which breaks other scripts' references).
@@ -221,7 +288,25 @@ const locale: Locale = cookieLocale === "ga" ? "ga" : "en";
         .filter((l) => l.length > 0);
 
       const allLabels = [...new Set([...manualLabels, ...extractedLabels])];
-      const finalTitle = title || titleInput.value.trim();
+      let finalTitle = title || titleInput.value.trim();
+
+      // Extract @mentions for assignment
+      let assignedTo =
+        (document.getElementById("new-task-assigned-to") as HTMLSelectElement)
+          ?.value || "";
+      const users = (window as any).__meitheal_users || [];
+      finalTitle = finalTitle
+        .replace(/@(\w+)/g, (_match: string, mention: string) => {
+          if (!assignedTo) {
+            const found = users.find((u: any) =>
+              u.name.toLowerCase().startsWith(mention.toLowerCase()),
+            );
+            if (found) assignedTo = found.id;
+          }
+          return "";
+        })
+        .trim();
+      if (!finalTitle) finalTitle = titleInput.value.trim();
 
       const body = {
         title: finalTitle,
@@ -238,6 +323,7 @@ const locale: Locale = cookieLocale === "ga" ? "ga" : "en";
         ).value,
         labels: JSON.stringify(allLabels),
         due_date: extractedDue,
+        assigned_to: assignedTo || null,
       };
 
       const res = await fetch((window.__ingress_path || "") + "/api/tasks", {

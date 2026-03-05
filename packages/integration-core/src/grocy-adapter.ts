@@ -348,6 +348,27 @@ export class GrocyAdapter {
   }
 
   /**
+   * GET /api/objects/products — returns a Map of productId → product name.
+   * Used to resolve productId references in shopping list to human-readable names.
+   */
+  async getProducts(): Promise<GrocyResult<Map<number, string>>> {
+    return this.request<Map<number, string>>(
+      "GET",
+      "/api/objects/products",
+      undefined,
+      (raw) => {
+        const items = Array.isArray(raw) ? raw : []
+        const map = new Map<number, string>()
+        for (const item of items) {
+          const r = item as Record<string, unknown>
+          map.set(Number(r.id ?? 0), String(r.name ?? `Product #${r.id}`))
+        }
+        return map
+      }
+    )
+  }
+
+  /**
    * Get current shopping list contents.
    * GET /api/objects/shopping_list
    */

@@ -77,18 +77,23 @@ export function taskToTask(task: GrocyTask): MeithealTaskData {
  * Creates one "🛒 Go Shopping (N items)" task with item summary in description.
  * Per persona audit: don't import individual items — Meitheal tells you WHEN
  * to go shopping, Grocy tells you WHAT to buy.
+ *
+ * @param items - Shopping list items from Grocy API
+ * @param productNames - Optional Map<productId, name> from adapter.getProducts()
  */
 export function shoppingListToTask(
-  items: { id?: number; productId: number; amount: number; note?: string }[]
+  items: { id?: number; productId: number; amount: number; note?: string }[],
+  productNames?: Map<number, string>,
 ): MeithealTaskData {
   const itemCount = items.length;
 
   const description = items
     .slice(0, 20)
     .map((item) => {
+      const name = productNames?.get(item.productId) ?? `Item #${item.productId}`;
       const qty = item.amount > 1 ? ` ×${item.amount}` : "";
       const note = item.note ? ` — ${item.note}` : "";
-      return `• Item #${item.productId}${qty}${note}`;
+      return `• ${name}${qty}${note}`;
     })
     .join("\n")
     + (itemCount > 20 ? `\n… and ${itemCount - 20} more items` : "");

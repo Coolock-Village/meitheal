@@ -28,7 +28,7 @@ export const GET: APIRoute = async ({ url }) => {
   let sql = `SELECT id, title, description, status, priority, due_date, labels,
                     framework_payload, calendar_sync_state, parent_id, time_tracked,
                     board_id, custom_fields, start_date, end_date, progress, color,
-                    is_favorite, task_type, ticket_number, created_at, updated_at
+                    is_favorite, task_type, ticket_number, assigned_to, created_at, updated_at
              FROM tasks`;
   let countSql = "SELECT COUNT(*) as cnt FROM tasks";
   const conditions: string[] = [];
@@ -60,6 +60,12 @@ export const GET: APIRoute = async ({ url }) => {
   if (search) {
     conditions.push("(title LIKE ? OR description LIKE ?)");
     args.push(`%${search}%`, `%${search}%`);
+  }
+
+  const assignedTo = url.searchParams.get("assigned_to");
+  if (assignedTo) {
+    conditions.push("assigned_to = ?");
+    args.push(assignedTo);
   }
 
   if (conditions.length > 0) {
@@ -99,6 +105,7 @@ export const GET: APIRoute = async ({ url }) => {
       color: r.color ?? null,
       is_favorite: Number(r.is_favorite ?? 0),
       task_type: r.task_type ?? "task",
+      assigned_to: r.assigned_to ?? null,
       created_at: r.created_at,
       updated_at: r.updated_at,
     };
@@ -222,20 +229,36 @@ export const POST: APIRoute = async ({ request }) => {
   const rawTaskType = typeof body.task_type === "string" ? body.task_type.trim().toLowerCase() : "task";
   const task_type: TaskType = VALID_TASK_TYPES.includes(rawTaskType as TaskType) ? (rawTaskType as TaskType) : "task";
 
+  // Assignments: assigned_to user ID (nullable)
+  let assigned_to: string | null = typeof body.assigned_to === "string" ? body.assigned_to.trim() : null;
+  if (assigned_to && assigned_to.length > 255) assigned_to = null;
+
+  // Auto-assign from default if not specified
+  if (!assigned_to) {
+    try {
+      const defaultResult = await client.execute(
+        "SELECT value FROM app_settings WHERE key = 'default_assignee' LIMIT 1"
+      );
+      if (defaultResult.rows.length > 0) {
+        assigned_to = String((defaultResult.rows[0] as Record<string, unknown>).value);
+      }
+    } catch { /* ignore — default is optional */ }
+  }
+
   await client.execute({
     sql: `INSERT INTO tasks (id, title, description, status, priority, due_date, labels,
                              framework_payload, calendar_sync_state, parent_id, time_tracked,
                              board_id, custom_fields, start_date, end_date, progress, color, is_favorite,
-                             task_type, ticket_number, idempotency_key, request_id, created_at, updated_at)
-          VALUES (?, ?, ?, ?, ?, ?, ?, ?, 'pending', ?, 0, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+                             task_type, ticket_number, assigned_to, idempotency_key, request_id, created_at, updated_at)
+          VALUES (?, ?, ?, ?, ?, ?, ?, ?, 'pending', ?, 0, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
     args: [id, title, description, status, priority, due_date, labels, framework_payload,
       parent_id, board_id, custom_fields, start_date, end_date, progress, color, is_favorite,
-      task_type, ticket_number, crypto.randomUUID(), crypto.randomUUID(), now, now] as InValue[],
+      task_type, ticket_number, assigned_to, crypto.randomUUID(), crypto.randomUUID(), now, now] as InValue[],
   });
 
   const ticket_key = formatTicketKey(ticket_number);
-  const taskPayload = { id, ticket_number, ticket_key, title, description, status, priority, due_date, labels, parent_id, board_id, custom_fields, time_tracked: 0, start_date, end_date, progress, color, is_favorite, task_type, created_at: now, updated_at: now };
-  
+  const taskPayload = { id, ticket_number, ticket_key, title, description, status, priority, due_date, labels, parent_id, board_id, custom_fields, time_tracked: 0, start_date, end_date, progress, color, is_favorite, task_type, assigned_to, created_at: now, updated_at: now };
+
   dispatchTaskEvent("task.created", taskPayload, typeof body.request_id === "string" ? body.request_id : undefined).catch(() => {});
 
   // Phase 52: Native Push Notification for Urgent (P1) tasks

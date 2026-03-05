@@ -90,8 +90,8 @@ export async function initHAIntegrations(): Promise<void> {
     // Step 4: Read saved calendar sync settings and auto-start
     await autoStartCalendarSync();
 
-    // Step 5: Validate Grocy connectivity (non-blocking)
-    await validateGrocyConnection();
+    // Step 5: Auto-start Grocy sync from persisted settings
+    await autoStartGrocySync();
 
     // Step 6: Validate webhook/n8n endpoints (non-blocking)
     await validateWebhookEndpoints();
@@ -327,52 +327,81 @@ async function autoStartCalendarSync(): Promise<void> {
 }
 
 /**
- * Validate Grocy connectivity on boot.
- * Grocy adapter is stateless (created per-request), but validating the
- * connection early lets us surface config issues in logs immediately.
+ * Read persisted Grocy sync settings from SQLite and auto-start sync.
+ * Replaces the old validateGrocyConnection — now actually starts the sync
+ * bridge instead of just pinging the API.
  */
-async function validateGrocyConnection(): Promise<void> {
+async function autoStartGrocySync(): Promise<void> {
   try {
-    const { createGrocyClient } = await import("../../lib/grocy-client");
-    const client = await createGrocyClient();
+    const { ensureSchema, getPersistenceClient } = await import(
+      "@domains/tasks/persistence/store"
+    );
+    await ensureSchema();
+    const client = getPersistenceClient();
 
-    if (!client) {
+    // Read grocy sync settings
+    const res = await client.execute({
+      sql: "SELECT key, value FROM settings WHERE key IN ('grocy_url', 'grocy_api_key', 'grocy_sync_enabled', 'grocy_sync_mode', 'grocy_sync_interval')",
+      args: [],
+    });
+
+    const settings: Record<string, string> = {};
+    for (const row of res.rows) {
+      if (typeof row.key === "string" && typeof row.value === "string") {
+        try {
+          settings[row.key] = JSON.parse(row.value);
+        } catch {
+          settings[row.key] = row.value;
+        }
+      }
+    }
+
+    const enabled =
+      settings.grocy_sync_enabled === "true" || settings.grocy_sync_enabled === "1";
+    const url = settings.grocy_url;
+    const apiKey = settings.grocy_api_key;
+    const syncMode = (settings.grocy_sync_mode ?? "bidirectional") as
+      | "import"
+      | "export"
+      | "bidirectional";
+    const intervalMs = Number(settings.grocy_sync_interval) || 15 * 60 * 1000;
+
+    if (!enabled || !url || !apiKey) {
       logger.log("info", {
         event: "ha.startup.grocy.skipped",
         domain: "integrations",
         component: "ha-startup",
         request_id: SYS_REQ,
-        message: "Grocy not configured (missing URL or API key)",
+        message: `Grocy sync not configured (enabled: ${enabled}, url: ${url ? "set" : "missing"}, key: ${apiKey ? "set" : "missing"})`,
       });
       return;
     }
 
-    // Attempt a lightweight API call to validate the connection
-    try {
-      await client.checkStock([]);
-      logger.log("info", {
-        event: "ha.startup.grocy.connected",
-        domain: "integrations",
-        component: "ha-startup",
-        request_id: SYS_REQ,
-        message: "Grocy connection validated successfully",
-      });
-    } catch (apiErr) {
-      logger.log("warn", {
-        event: "ha.startup.grocy.unreachable",
-        domain: "integrations",
-        component: "ha-startup",
-        request_id: SYS_REQ,
-        message: `Grocy API unreachable: ${apiErr}`,
-      });
-    }
+    // Import and start Grocy sync bridge
+    const { GrocyAdapter } = await import("@meitheal/integration-core");
+    const { startGrocySync } = await import("@domains/grocy");
+
+    const adapter = new GrocyAdapter({ baseUrl: url, apiKey });
+
+    startGrocySync(
+      { syncEnabled: true, syncMode, intervalMs },
+      adapter,
+    );
+
+    logger.log("info", {
+      event: "ha.startup.grocy.started",
+      domain: "integrations",
+      component: "ha-startup",
+      request_id: SYS_REQ,
+      message: `Auto-started Grocy sync (mode: ${syncMode}, interval: ${intervalMs}ms)`,
+    });
   } catch (err) {
     logger.log("error", {
       event: "ha.startup.grocy.failed",
       domain: "integrations",
       component: "ha-startup",
       request_id: SYS_REQ,
-      message: `Grocy validation failed: ${err}`,
+      message: `Failed to auto-start Grocy sync: ${err}`,
     });
   }
 }
