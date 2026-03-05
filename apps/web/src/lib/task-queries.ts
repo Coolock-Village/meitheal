@@ -36,6 +36,7 @@ export interface TaskViewItem {
   task_type: string;
   parent_id: string | null;
   ticket_number: number | null;
+  assigned_to: string | null;
   checklists: string | null;
   created_at: string;
   updated_at: string;
@@ -111,7 +112,7 @@ const TASK_VIEW_SQL = `
   SELECT id, title, description, status, priority, due_date, labels,
          framework_payload, calendar_sync_state, board_id, custom_fields,
          start_date, end_date, progress, color, is_favorite, task_type,
-         parent_id, ticket_number, checklists, created_at, updated_at
+         parent_id, ticket_number, assigned_to, checklists, created_at, updated_at
   FROM tasks
   ORDER BY created_at DESC
 `;
@@ -184,6 +185,7 @@ export async function getTasksForView(): Promise<TaskViewResult> {
         task_type: String(row.task_type ?? "task"),
         parent_id: row.parent_id ? String(row.parent_id) : null,
         ticket_number: row.ticket_number ? Number(row.ticket_number) : null,
+        assigned_to: row.assigned_to ? String(row.assigned_to) : null,
         checklists: row.checklists ? String(row.checklists) : null,
         created_at: String(row.created_at),
         updated_at: String(row.updated_at),

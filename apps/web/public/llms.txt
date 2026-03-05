@@ -1,3 +1,31 @@
-Meitheal is an Astro-first, Home Assistant-native task management engine.
-Primary docs: README.md, AGENTS.md, WEBMCP.md, docs/decisions.
-Detailed API reference: llms-full.txt
+# Meitheal
+
+> Meitheal (pronounced "meh-hal") is a cooperative task and life management engine running as a Home Assistant addon. It manages household tasks, to-do lists, projects, and calendar events with voice control, AI agent integration (LLM API, MCP, A2A), and deep Home Assistant event bus integration.
+
+Important notes:
+- Meitheal runs inside the Home Assistant Supervisor as an addon, not a standalone app
+- Authentication is handled by HA Supervisor ingress — no separate auth required
+- All 13 tools are exposed across 3 surfaces: LLM API, MCP, and A2A
+- Voice commands work with HA's built-in Assist without any LLM configured
+- Tasks sync bidirectionally with HA todo entities and calendar entities
+
+## API Reference
+
+- [Full API and tool reference](/llms-full.txt): Complete REST API, MCP tools, LLM tools, voice commands, services, data model, and event bus reference
+
+## Agent Protocols
+
+- [MCP Discovery](/.well-known/mcp.json): MCP server discovery with 13 tools
+- [A2A Agent Card](/api/a2a/agent-card): Dynamic A2A agent card per Google A2A spec §8
+- [MCP Endpoint](/api/mcp): POST endpoint for MCP JSON-RPC tool calls
+
+## HA Integration
+
+- [HA Services](/llms-full.txt): 6 callable services (create_task, complete_task, sync_todo, search_tasks, get_overdue_tasks, notify_overdue)
+- [Device Triggers](/llms-full.txt): 6 automation triggers (task_created, task_completed, task_updated, task_deleted, task_overdue, board_updated)
+- [Sensors](/llms-full.txt): 3 sensors with rich attributes (active_tasks, overdue_tasks, total_tasks)
+
+## Optional
+
+- [GitHub Repository](https://github.com/Coolock-Village/meitheal): Source code, issues, and documentation
+- [Home Assistant Addon Config](https://github.com/Coolock-Village/meitheal/blob/main/addon/config.yaml): Addon configuration reference

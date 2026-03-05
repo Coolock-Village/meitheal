@@ -52,13 +52,29 @@ All endpoints accept and return JSON.
 
 ### Agent Protocol (A2A)
 
-- `GET /.well-known/agent-card.json` — Agent capability card
+- `GET /.well-known/agent-card.json` — Agent capability card (dynamic, per A2A spec §8)
 - `POST /api/a2a/message` — Send A2A message
 
 ### MCP (Model Context Protocol)
 
-- `GET /.well-known/mcp.json` — MCP server discovery
-- `POST /api/mcp` — MCP tool execution endpoint
+- `GET /.well-known/mcp.json` — MCP server discovery (13 tools)
+- `POST /api/mcp` — MCP tool execution endpoint (JSON-RPC 2.0)
+
+## MCP Tools (13 tools, same across Astro + Python servers)
+
+- `createTask` — Create task (title, description?, priority?, due_date?)
+- `searchTasks` — Search by keyword, status, priority
+- `completeTask` — Mark done by ID or title
+- `updateTask` — Update fields (title, status, priority, due_date, description)
+- `deleteTask` — Delete by ID
+- `getTask` — Full details by ID (includes is_overdue, labels, timestamps)
+- `getOverdueTasks` — All overdue tasks
+- `getTodaysTasks` — Today's tasks + overdue
+- `getTaskSummary` — Counts: total, active, overdue, done
+- `dailyBriefing` — Full briefing with tasks, calendar, weather, who's home
+- `getCalendarEvents` — HA calendar events synced into Meitheal
+- `getUpcoming` — Combined tasks + calendar view (configurable days_ahead)
+- `batchComplete` — Batch complete by label, priority, or title list
 
 ## Home Assistant Services
 
@@ -100,13 +116,59 @@ These work with HA's built-in Assist without any LLM:
 - "what's late" / "what's overdue" — shows overdue tasks
 - "today's tasks" / "what's due today" — today's agenda
 - "how many tasks" / "task count" — summary counts
-- "good morning" / "brief me" / "start my day" — daily briefing (weather, tasks, urgent)
+- "good morning" / "brief me" / "start my day" — daily briefing
 
 Also responds to "meitheal", "me hall", "may hall", "meh hall", or "MH":
 - "MH add buy groceries"
 - "meitheal today"
 - "me hall what's overdue"
-- "meh hall brief me"
+
+## Event Bus Integration
+
+Meitheal fires and listens to HA events on hass.bus:
+
+### Outbound Events (fired by Meitheal, available for HA automations)
+- `meitheal_task_created` — { task_id, title, source }
+- `meitheal_task_completed` — { task_id, title, source }
+- `meitheal_task_updated` — { task_id, title, changed_fields, source }
+- `meitheal_task_deleted` — { task_id, title, source }
+- `meitheal_task_overdue` — { task_id, title, due_date }
+- `meitheal_board_updated` — { total, active, overdue, source }
+
+### Dedup
+- Addon fires with `source: 'meitheal'`, component fires with `source: 'component'`
+- Each side filters its own events to prevent circular loops
+
+### Logbook Integration
+All task mutations appear in HA's history/logbook as `logbook_entry` events.
+
+## Device Automation Triggers
+
+6 triggers available in HA's Automation UI:
+- "Task was created in Meitheal"
+- "Task was completed in Meitheal"
+- "Task was updated in Meitheal"
+- "Task was deleted from Meitheal"
+- "Task became overdue in Meitheal"
+- "Meitheal board data changed"
+
+## Sensor Entities (with rich attributes for AI)
+
+### sensor.meitheal_active_tasks
+- State: count of non-done tasks
+- Attributes: task_titles (top 10), priority_breakdown, has_urgent, with_due_date
+
+### sensor.meitheal_overdue_tasks
+- State: count of overdue tasks
+- Attributes: task_titles (top 10), due_dates, oldest_due
+
+### sensor.meitheal_total_tasks
+- State: total task count
+- Attributes: status_breakdown, label_summary (top 10), done_count, in_progress_count
+
+### todo.meitheal_tasks
+- Full TodoListEntity with CRUD, move, due_date, description support
+- Exposed to Assist for voice commands
 
 ## Data Model
 
@@ -142,3 +204,8 @@ todo → cancelled
 When running as an HA addon, requests through ingress are authenticated by
 the Supervisor. Direct API access requires the `SUPERVISOR_TOKEN` or
 HA long-lived access token in the Authorization header.
+
+## Diagnostics
+
+Settings → Integrations → Meitheal → Download Diagnostics exports:
+task stats, connection info, registered services, entity summary (no PII).

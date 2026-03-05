@@ -32,6 +32,7 @@ const MCP_TOOLS = [
         description: { type: "string", description: "Task description" },
         priority: { type: "integer", minimum: 1, maximum: 5, description: "Priority 1-5 (1=urgent)" },
         due_date: { type: "string", format: "date", description: "Due date YYYY-MM-DD" },
+        assigned_to: { type: "string", description: "User ID to assign the task to" },
       },
     },
   },
@@ -44,6 +45,7 @@ const MCP_TOOLS = [
         query: { type: "string", description: "Search keyword" },
         status: { type: "string", enum: ["todo", "in_progress", "done", "cancelled"] },
         priority: { type: "integer", minimum: 1, maximum: 5 },
+        assigned_to: { type: "string", description: "Filter by assigned user ID" },
       },
     },
   },
@@ -153,6 +155,23 @@ const MCP_TOOLS = [
       },
     },
   },
+  {
+    name: "assignTask",
+    description: "Assign a task to a user (HA user or custom user) by task ID and user ID",
+    inputSchema: {
+      type: "object" as const,
+      required: ["id"],
+      properties: {
+        id: { type: "string", description: "Task UUID" },
+        assigned_to: { type: "string", description: "User ID to assign to (omit or null to unassign)" },
+      },
+    },
+  },
+  {
+    name: "listUsers",
+    description: "List all available users (Home Assistant auto-discovered + custom users)",
+    inputSchema: { type: "object" as const, properties: {} },
+  },
 ];
 
 export const POST: APIRoute = async ({ request }) => {
@@ -245,6 +264,7 @@ async function executeTool(
           frameworkPayload: args.description ? { description: args.description } : undefined,
           priority: args.priority,
           dueDate: args.due_date,
+          assigned_to: args.assigned_to,
         }),
       });
       return { status: "created", ...(await res.json().catch(() => ({}))) };
@@ -254,6 +274,7 @@ async function executeTool(
       const params = new URLSearchParams();
       if (args.query) params.set("q", String(args.query));
       if (args.status) params.set("status", String(args.status));
+      if (args.assigned_to) params.set("assigned_to", String(args.assigned_to));
       const res = await fetch(`${baseUrl}/api/tasks?${params}`);
       return await res.json().catch(() => ({ tasks: [] }));
     }
@@ -448,6 +469,20 @@ async function executeTool(
         } catch { /* skip */ }
       }
       return { completed, count: completed.length };
+    }
+
+    case "assignTask": {
+      const res = await fetch(`${baseUrl}/api/tasks/${args.id}`, {
+        method: "PUT",
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify({ assigned_to: args.assigned_to ?? null }),
+      });
+      return { status: "assigned", ...(await res.json().catch(() => ({}))) };
+    }
+
+    case "listUsers": {
+      const res = await fetch(`${baseUrl}/api/users`);
+      return await res.json().catch(() => ({ users: [] }));
     }
 
     default:

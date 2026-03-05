@@ -1900,6 +1900,33 @@ Astro.response.headers.set("X-Content-Type-Options", "nosniff");
               document.getElementById("td-task-type") as HTMLSelectElement
             ).value = String(t.task_type ?? "task");
 
+            // Assigned To — populate from /api/users
+            const assignSelect = document.getElementById(
+              "td-assigned-to",
+            ) as HTMLSelectElement | null;
+            if (assignSelect) {
+              try {
+                const usersRes = await fetch(
+                  (window.__ingress_path || "") + "/api/users",
+                );
+                if (usersRes.ok) {
+                  const usersData = await usersRes.json();
+                  const users = usersData.users ?? [];
+                  assignSelect.innerHTML =
+                    '<option value="">Unassigned</option>';
+                  for (const u of users) {
+                    const opt = document.createElement("option");
+                    opt.value = u.id;
+                    opt.textContent = u.display_name ?? u.name ?? u.id;
+                    assignSelect.appendChild(opt);
+                  }
+                }
+              } catch {
+                /* keep default unassigned option */
+              }
+              assignSelect.value = String(t.assigned_to ?? "");
+            }
+
             const isFav = Number(t.is_favorite ?? 0);
             const favBtn = document.getElementById("td-fav-btn");
             if (favBtn)
@@ -2370,6 +2397,15 @@ Astro.response.headers.set("X-Content-Type-Options", "nosniff");
         document.getElementById("td-board")?.addEventListener("change", (e) => {
           saveTD("board_id", (e.target as HTMLSelectElement).value);
         });
+        // Assigned To: auto-save on change
+        document
+          .getElementById("td-assigned-to")
+          ?.addEventListener("change", (e) =>
+            saveTD(
+              "assigned_to",
+              (e.target as HTMLSelectElement).value || null,
+            ),
+          );
         document
           .getElementById("td-progress")
           ?.addEventListener("input", (e) => {
