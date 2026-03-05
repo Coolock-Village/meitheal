@@ -13,7 +13,7 @@ Local-first task orchestration with HA calendar sync and Vikunja compatibility.
 - **Overall phase count:** 21+ phases complete (including global track + security + UX)
 - **Phase 56:** Settings IA Overhaul — complete
 - **Phase 70:** Integration Auto-Discovery — complete (all 3 high-sev already implemented)
-- **Current version:** `0.1.59`
+- **Current version:** `0.1.63`
 
 ## Phase Status Snapshot
 
@@ -56,6 +56,7 @@ Local-first task orchestration with HA calendar sync and Vikunja compatibility.
 
 | Date | Decision | Context |
 |------|----------|---------|
+| 2026-03-05 | **v0.1.63** — Mobile responsive UX fix: sidebar, hamburger, topbar | Sidebar scoped CSS in Sidebar.astro; `flex md:hidden` on hamburger; `flex-wrap` on topbar; calendar actions hidden mobile; click-to-close overlay |
 | 2026-03-04 | **Phase 59** — Broad quality audit: ~82 ingress fetch fixes, type safety, UX anti-patterns | All fetch() calls now use window.__ingress_path for HA Supervisor safety; 30→8 `as any`; 6→0 `alert()`; try/catch on ha/calendars |
 | 2026-03-04 | **v0.1.59** — CSS domain split: 14 partials, lean `global.css` hub | `global.css` was 2316 lines; split into `_tokens`, `_base`, `_layout`, `_forms`, etc. |
 | 2026-03-04 | n8n auto-mode save no longer requires webhook URL | HA addon mode uses WebSocket, not HTTP; save handler now persists `n8n_mode: ha_addon` |
@@ -100,10 +101,10 @@ Local-first task orchestration with HA calendar sync and Vikunja compatibility.
 
 ## Session Continuity
 
-Last session: 2026-03-04T19:41:00Z
-Stopped at: Phase 59 — Broad quality audit complete (6 commits). ~82 ingress fetch fixes, type safety improvements (window.d.ts), UX anti-patterns (alert→toast), API error handling. Build time: 3.69s.
+Last session: 2026-03-05T15:52:00Z
+Stopped at: Mobile responsive UX fix complete (v0.1.63, 2 commits). Sidebar slide-in via scoped CSS in Sidebar.astro, hamburger `flex md:hidden` in TopNavigation.astro, topbar `flex-wrap`, calendar `.btn-ghost` hidden on mobile, dark overlay + click-to-close.
 
-Resume hint: Run GSD persona loop on audit findings. HA WebSocket reconnection logic is missing (deferred). 8 remaining `as any` casts are structural (dateFormat enum, Icon name, msgData). SQL template literals are safe (DDL/DML, not user-interpolated).
+Resume hint: Run GSD persona loop on remaining mobile polish. Kanban topbar is crowded ("Lanes" text squeezes search). HA WebSocket reconnection logic is missing (deferred). 8 remaining `as any` casts are structural.
 
 ---
-*Last updated: 2026-03-04 — Phase 59 broad quality audit complete*
+*Last updated: 2026-03-05 — v0.1.63 mobile responsive fixes*

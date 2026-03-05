@@ -1,7 +1,7 @@
 # Architecture
 
 **Analysis Date:** 2026-03-04
-**Version:** 0.1.59
+**Version:** 0.1.63
 
 ## Pattern
 
@@ -109,7 +109,8 @@ POST /api/tasks/create
 - **Partials:** `_tokens.css`, `_base.css`, `_layout.css`, `_forms.css`, `_buttons.css`, `_cards.css`, `_tasks.css`, `_kanban.css`, `_table.css`, `_feedback.css`, `_search.css`, `_modal.css`, `_responsive.css`, `_utilities.css`
 - **Convention:** `_` prefix = not standalone. Domain-scoped by DDD bounded context
 - **Tailwind:** `@layer base/components/utilities` within partials. `@tailwind` directives in entry file only
-- **No Astro scoping:** Shared classes (`.btn`, `.card`, `.form-input`) span all pages
+- **Mostly no Astro scoping:** Shared classes (`.btn`, `.card`, `.form-input`) span all pages
+- **Exception:** `Sidebar.astro` has scoped mobile responsive CSS (`@media max-width:768px`) to override its own scoped base styles at matching specificity. Global CSS cannot reliably override Astro scoped styles due to `[data-astro-cid-xxx]` attribute selector specificity.
 
 ## Settings Architecture
 
@@ -124,4 +125,4 @@ POST /api/tasks/create
 
 ---
 
-*Architecture analysis: 2026-03-04 — v0.1.59 Phase 59 PWA activation*
+*Architecture analysis: 2026-03-05 — v0.1.63 mobile responsive fixes*
