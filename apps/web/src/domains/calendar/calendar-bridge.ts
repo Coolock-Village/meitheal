@@ -355,11 +355,12 @@ export async function pushTaskToCalendar(
     end = new Date(new Date(dueDate).getTime() + 60 * 60 * 1000).toISOString();
   }
 
+  const descParts = [description, `Added from Meitheal`].filter(Boolean);
   const success = await createCalendarEvent(writeBackEntity.entityId, {
     summary: title,
     start,
     end,
-    description: description ? `Task: ${taskId}\n${description}` : `Task: ${taskId}`,
+    description: descParts.join("\n\n"),
   });
 
   if (success) {

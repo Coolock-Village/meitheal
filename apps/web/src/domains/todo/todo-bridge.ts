@@ -358,10 +358,11 @@ export async function pushTaskToTodoList(
       const haStatus = meithealStatusToHA(status as "todo" | "in_progress" | "done");
       const dueData = buildDueServiceData(dueDate);
 
+      const descWithAttribution = [description, "Added from Meitheal"].filter(Boolean).join("\n\n");
       const success = await updateTodoItem(entityId, uid, {
         summary: title,
         status: haStatus,
-        description: description ?? undefined,
+        description: descWithAttribution,
         ...dueData,
       });
 
@@ -387,10 +388,11 @@ export async function pushTaskToTodoList(
       return success;
     } else {
       // Create new HA todo item
+      const descWithAttribution = [description, "Added from Meitheal"].filter(Boolean).join("\n\n");
       const success = await addTodoItem(entityId, {
         summary: title,
         due: dueDate ?? undefined,
-        description: description ?? undefined,
+        description: descWithAttribution,
       });
 
       if (success) {
