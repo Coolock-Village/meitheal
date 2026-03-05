@@ -409,7 +409,7 @@ export async function pushCompletionToGrocy(taskId: string): Promise<boolean> {
 export async function pushNewTaskToGrocy(
   taskId: string,
   title: string,
-  options?: { description?: string; dueDate?: string },
+  options?: { description?: string | undefined; dueDate?: string | undefined },
 ): Promise<boolean> {
   const adapter = state.adapter;
   if (!adapter) return false;

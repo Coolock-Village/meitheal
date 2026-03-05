@@ -1551,6 +1551,15 @@ const locale: Locale = cookieLocale === "ga" ? "ga" : "en";
           // Show sync now button
           const syncBtn = document.getElementById("sync-grocy-now");
           if (syncBtn) syncBtn.style.display = "";
+
+          // Show Open Grocy link with the configured URL
+          const openLink = document.getElementById(
+            "open-grocy-link",
+          ) as HTMLAnchorElement | null;
+          if (openLink && s.grocy_url) {
+            openLink.href = String(s.grocy_url);
+            openLink.style.display = "";
+          }
         }
 
         // Hydrate sync status
