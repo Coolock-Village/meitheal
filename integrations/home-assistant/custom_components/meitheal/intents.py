@@ -30,6 +30,7 @@ from typing import Any
 
 from homeassistant.core import HomeAssistant
 from homeassistant.helpers import intent
+import voluptuous as vol
 
 from .coordinator import MeithealCoordinator
 
@@ -37,6 +38,7 @@ _LOGGER = logging.getLogger(__name__)
 
 # ── Intent names ──
 INTENT_ADD_TASK = "MeithealAddTask"
+INTENT_ADD_TASK_PROMPT = "MeithealAddTaskPrompt"
 INTENT_DONE_TASK = "MeithealDoneTask"
 INTENT_SHOW_TASKS = "MeithealShowTasks"
 INTENT_OVERDUE = "MeithealOverdue"
@@ -377,13 +379,33 @@ class MeithealBriefingHandler(intent.IntentHandler):
         return response
 
 
-# Need vol for slot_schema
-import voluptuous as vol  # noqa: E402
+# Need vol for slot_schema — imported at top of file
+
+
+class MeithealAddTaskPromptHandler(intent.IntentHandler):
+    """Handle bare 'add a task' / 'create a task' — no item slot.
+
+    Responds asking what task to add, since user didn't specify one.
+    This catches the common case where someone says 'add a task'
+    without saying what the task is.
+    """
+
+    intent_type = INTENT_ADD_TASK_PROMPT
+    platforms = set()
+
+    async def async_handle(self, intent_obj: intent.Intent) -> intent.IntentResponse:
+        """Prompt user for task name."""
+        response = intent_obj.create_response()
+        response.async_set_speech(
+            "Sure! What task would you like to add?"
+        )
+        return response
 
 
 def async_register_intents(hass: HomeAssistant) -> None:
     """Register all Meitheal custom intents with HA."""
     intent.async_register(hass, MeithealAddTaskHandler())
+    intent.async_register(hass, MeithealAddTaskPromptHandler())
     intent.async_register(hass, MeithealDoneTaskHandler())
     intent.async_register(hass, MeithealShowTasksHandler())
     intent.async_register(hass, MeithealOverdueHandler())
@@ -391,4 +413,4 @@ def async_register_intents(hass: HomeAssistant) -> None:
     intent.async_register(hass, MeithealSummaryHandler())
     intent.async_register(hass, MeithealDeleteTaskHandler())
     intent.async_register(hass, MeithealBriefingHandler())
-    _LOGGER.info("Registered 8 Meitheal custom intents for voice control")
+    _LOGGER.info("Registered 9 Meitheal custom intents for voice control")

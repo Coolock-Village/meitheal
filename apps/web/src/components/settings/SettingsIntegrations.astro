@@ -482,16 +482,89 @@ const { locale } = Astro.props;
           </div>
         </div>
 
-        <!-- Detected HA todo entities -->
+        <!-- Detected HA todo entities — interactive toggle cards -->
         <div
           id="todo-entities-list"
           style="display: none; margin-bottom: 12px;"
         >
-          <label class="form-label" style="font-size: 12px; margin-bottom: 6px;"
-            >Detected Todo Entities</label
+          <div class="cal-entities-header">
+            <div>
+              <label
+                class="form-label"
+                style="font-size: 12px; margin-bottom: 0;"
+                >Your Todo Lists</label
+              >
+              <span id="todo-count-badge" class="cal-count-badge"
+                >0 of 0 enabled</span
+              >
+            </div>
+            <div class="cal-bulk-actions">
+              <button
+                type="button"
+                class="btn btn-ghost btn-xs"
+                id="todo-enable-all"
+                title="Enable all todo lists">Enable All</button
+              >
+              <button
+                type="button"
+                class="btn btn-ghost btn-xs"
+                id="todo-disable-all"
+                title="Disable all todo lists">Disable All</button
+              >
+            </div>
+          </div>
+          <p
+            style="font-size: 11px; color: var(--text-muted); margin: 4px 0 8px;"
           >
-          <div id="todo-entities-container" class="entity-list-container"></div>
+            Toggle each todo list on or off. Only enabled lists sync tasks with
+            Meitheal.
+          </p>
+          <div id="todo-entities-container" class="cal-toggle-list"></div>
+          <div
+            id="todo-no-entities"
+            class="cal-empty-state"
+            style="display: none;"
+          >
+            <span class="cal-empty-icon">📭</span>
+            <span
+              >No todo lists detected. Make sure Home Assistant has todo
+              entities (e.g. Shopping List).</span
+            >
+          </div>
         </div>
+
+        <!-- Manual entity input for advanced users -->
+        <details class="caldav-section" style="margin-bottom: 10px;">
+          <summary class="caldav-toggle">
+            <span>⌨ Manual Entity ID</span>
+            <small>For todo lists not auto-detected</small>
+          </summary>
+          <div class="form-group" style="margin-top: 10px;">
+            <div class="form-label-row">
+              <label class="form-label" for="todo-entity-manual"
+                >Todo Entity ID</label
+              >
+              <HelpTooltip
+                text="Manually enter a todo entity ID if it's not showing in the auto-detected list above."
+                id="help-todo-entity-manual"
+              />
+            </div>
+            <input
+              type="text"
+              class="form-input"
+              id="todo-entity-manual"
+              placeholder="todo.shopping_list"
+            />
+            <button
+              type="button"
+              class="btn btn-ghost"
+              id="todo-add-manual"
+              style="margin-top: 6px; font-size: 12px;"
+            >
+              + Add Todo List
+            </button>
+          </div>
+        </details>
 
         <div class="integration-card__config">
           <div class="form-group">
@@ -519,23 +592,6 @@ const { locale } = Astro.props;
                 >Off — sync disabled to save power</span
               >
             </div>
-          </div>
-
-          <div class="form-group">
-            <div class="form-label-row">
-              <label class="form-label" for="todo-entity">Todo Entity</label>
-              <HelpTooltip
-                text="The HA todo list entity to sync with. Each todo entity represents a list (e.g., shopping_list, chores). Meitheal will keep this list in sync bidirectionally."
-                href="https://www.home-assistant.io/integrations/todo/"
-                id="help-todo-entity"
-              />
-            </div>
-            <EntitySelector
-              domain="todo"
-              id="todo-entity"
-              placeholder="todo.shopping_list"
-              helpText="Select from detected entities, or enter a custom entity ID."
-            />
           </div>
 
           <div class="form-group">

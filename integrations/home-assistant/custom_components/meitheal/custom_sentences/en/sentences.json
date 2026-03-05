@@ -42,6 +42,70 @@
           "sentences": [
             "[meitheal|me hall|may hall|meh hall|MH] add {item}"
           ]
+        },
+        {
+          "sentences": [
+            "[can you|could you|please] add {item} [to] [my] [tasks|list]"
+          ]
+        },
+        {
+          "sentences": [
+            "schedule {item}"
+          ]
+        },
+        {
+          "sentences": [
+            "create [a] task [called|named] {item}"
+          ]
+        },
+        {
+          "sentences": [
+            "[add|put] {item} [on] [the|my] [to do|todo] [list]"
+          ]
+        }
+      ]
+    },
+    "MeithealAddTaskPrompt": {
+      "data": [
+        {
+          "sentences": [
+            "add [a] task"
+          ]
+        },
+        {
+          "sentences": [
+            "create [a] [new] task"
+          ]
+        },
+        {
+          "sentences": [
+            "new task"
+          ]
+        },
+        {
+          "sentences": [
+            "add [a] [new] [task] [to] [meitheal|me hall|may hall|meh hall|MH]"
+          ]
+        },
+        {
+          "sentences": [
+            "[I] [want to|need to] add [a] task"
+          ]
+        },
+        {
+          "sentences": [
+            "[can you|could you] add [a] task [for me]"
+          ]
+        },
+        {
+          "sentences": [
+            "add [to] [my] [task] list"
+          ]
+        },
+        {
+          "sentences": [
+            "[meitheal|me hall|may hall|meh hall|MH] [add|create|new] [a] [task]"
+          ]
         }
       ]
     },
@@ -81,6 +145,16 @@
           "sentences": [
             "[meitheal|me hall|may hall|meh hall|MH] done [with] {item}"
           ]
+        },
+        {
+          "sentences": [
+            "[I] [have] finished {item}"
+          ]
+        },
+        {
+          "sentences": [
+            "complete {item}"
+          ]
         }
       ]
     },
@@ -114,6 +188,11 @@
         {
           "sentences": [
             "[meitheal|me hall|may hall|meh hall|MH] remove {item}"
+          ]
+        },
+        {
+          "sentences": [
+            "cancel {item}"
           ]
         }
       ]
@@ -154,6 +233,21 @@
           "sentences": [
             "[meitheal|me hall|may hall|meh hall|MH] tasks"
           ]
+        },
+        {
+          "sentences": [
+            "[can you] show [me] [my] tasks"
+          ]
+        },
+        {
+          "sentences": [
+            "open [my] tasks"
+          ]
+        },
+        {
+          "sentences": [
+            "[what] [do I] [have to|need to] do"
+          ]
         }
       ]
     },
@@ -188,6 +282,11 @@
           "sentences": [
             "[meitheal|me hall|may hall|meh hall|MH] [what's|what is] overdue"
           ]
+        },
+        {
+          "sentences": [
+            "[am I] behind [on anything]"
+          ]
         }
       ]
     },
@@ -221,6 +320,11 @@
         {
           "sentences": [
             "[meitheal|me hall|may hall|meh hall|MH] today"
+          ]
+        },
+        {
+          "sentences": [
+            "[what's|what is] [happening|planned] today"
           ]
         }
       ]

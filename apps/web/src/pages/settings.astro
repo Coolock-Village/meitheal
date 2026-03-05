@@ -2155,6 +2155,20 @@ const locale: Locale = cookieLocale === "ga" ? "ga" : "en";
     });
 
     // ───── Todo Sync Save + Hydrate + Sync ─────
+
+    /** Update the todo count badge */
+    function updateTodoCount() {
+      const badge = document.getElementById("todo-count-badge");
+      if (!badge) return;
+      const all = document.querySelectorAll<HTMLInputElement>(
+        "#todo-entities-container .todo-entity-toggle",
+      );
+      const enabled = Array.from(all).filter((cb) => cb.checked).length;
+      badge.textContent = `${enabled} of ${all.length} enabled`;
+    }
+    (window as unknown as Record<string, unknown>).__updateTodoCount =
+      updateTodoCount;
+
     async function hydrateTodoStatus() {
       const statusEl = document.getElementById("todo-status");
       const autoInfo = document.getElementById("todo-auto-info");
@@ -2163,9 +2177,7 @@ const locale: Locale = cookieLocale === "ga" ? "ga" : "en";
       const entitiesContainer = document.getElementById(
         "todo-entities-container",
       );
-      const entityInput = document.getElementById(
-        "todo-entity",
-      ) as HTMLInputElement | null;
+      const noEntities = document.getElementById("todo-no-entities");
       const enabledCb = document.getElementById(
         "todo-enabled",
       ) as HTMLInputElement | null;
@@ -2191,6 +2203,24 @@ const locale: Locale = cookieLocale === "ga" ? "ga" : "en";
 
         const entities = data.entities ?? [];
 
+        // Load saved enabled entities from settings
+        let savedEnabled: string[] = [];
+        try {
+          const settingsRes = await fetch(
+            (window.__ingress_path || "") + "/api/settings",
+          );
+          const settings = await settingsRes.json();
+          if (settings.todo_entities) {
+            savedEnabled = Array.isArray(settings.todo_entities)
+              ? settings.todo_entities
+              : [settings.todo_entities];
+          } else if (settings.todo_entity) {
+            savedEnabled = [settings.todo_entity];
+          }
+        } catch {
+          /* use defaults */
+        }
+
         // Show detected entities callout
         if (entities.length > 0 && autoInfo && autoEntities) {
           autoInfo.style.display = "block";
@@ -2202,23 +2232,80 @@ const locale: Locale = cookieLocale === "ga" ? "ga" : "en";
             .join("<br>");
         }
 
-        // Show entity list
-        if (entities.length > 0 && entitiesList && entitiesContainer) {
+        // Render toggle cards
+        if (entitiesList && entitiesContainer) {
           entitiesList.style.display = "block";
-          entitiesContainer.innerHTML = entities
-            .map(
-              (e) =>
-                `<div style="display: flex; justify-content: space-between; align-items: center; padding: 6px 10px; background: var(--bg-secondary); border-radius: 6px; font-size: 12px;">
-              <span style="font-family: 'JetBrains Mono', monospace;">${e.entity_id}</span>
-              <span style="color: var(--text-muted);">${e.friendly_name} · ${e.state}${e.sync?.active ? " · syncing" : ""}</span>
-            </div>`,
-            )
-            .join("");
 
-          // Auto-fill entity input if empty and exactly one entity
-          if (entityInput && !entityInput.value && entities.length === 1) {
-            entityInput.value = entities[0]!.entity_id;
+          if (entities.length === 0) {
+            entitiesContainer.innerHTML = "";
+            if (noEntities) noEntities.style.display = "flex";
+          } else {
+            if (noEntities) noEntities.style.display = "none";
+            // Auto-enable first entity if nothing is saved
+            const autoSelect = savedEnabled.length === 0 && entities.length > 0;
+
+            entitiesContainer.innerHTML = entities
+              .map((e) => {
+                const isEnabled = autoSelect
+                  ? e === entities[0]
+                  : savedEnabled.includes(e.entity_id);
+                const stateLabel = e.sync?.active
+                  ? `${e.state} · syncing${e.sync.itemCount ? ` · ${e.sync.itemCount} items` : ""}`
+                  : e.state;
+                return `<div class="cal-toggle-card${isEnabled ? " cal-toggle-card--active" : ""}" data-entity="${e.entity_id}">
+                  <div class="cal-toggle-card__info">
+                    <span class="cal-toggle-card__name">${e.friendly_name}</span>
+                    <span class="cal-toggle-card__entity">${e.entity_id}</span>
+                    <span class="cal-toggle-card__state">${stateLabel}</span>
+                  </div>
+                  <label class="toggle-label">
+                    <input type="checkbox" class="todo-entity-toggle" value="${e.entity_id}" ${isEnabled ? "checked" : ""} />
+                    <span class="toggle-slider"></span>
+                  </label>
+                </div>`;
+              })
+              .join("");
+
+            // Wire toggle card click + checkbox change
+            entitiesContainer
+              .querySelectorAll<HTMLInputElement>(".todo-entity-toggle")
+              .forEach((cb) => {
+                cb.addEventListener("change", () => {
+                  const card = cb.closest(".cal-toggle-card");
+                  if (card) {
+                    card.classList.toggle(
+                      "cal-toggle-card--active",
+                      cb.checked,
+                    );
+                  }
+                  updateTodoCount();
+                });
+              });
+
+            entitiesContainer
+              .querySelectorAll<HTMLElement>(".cal-toggle-card")
+              .forEach((card) => {
+                card.addEventListener("click", (e) => {
+                  if ((e.target as HTMLElement).closest(".toggle-label"))
+                    return;
+                  const cb = card.querySelector<HTMLInputElement>(
+                    ".todo-entity-toggle",
+                  );
+                  if (cb) {
+                    cb.checked = !cb.checked;
+                    cb.dispatchEvent(new Event("change", { bubbles: true }));
+                  }
+                });
+              });
+
+            // Auto-enable sync toggle if entities found and auto-selected
+            if (autoSelect && enabledCb && !enabledCb.checked) {
+              enabledCb.checked = true;
+              if (enabledLabel)
+                enabledLabel.textContent = "On — syncing with HA";
+            }
           }
+          updateTodoCount();
         }
 
         // Update badge based on sync status
@@ -2244,6 +2331,101 @@ const locale: Locale = cookieLocale === "ga" ? "ga" : "en";
     }
     hydrateTodoStatus();
 
+    // Bulk enable/disable all todo entities
+    document
+      .getElementById("todo-enable-all")
+      ?.addEventListener("click", () => {
+        document
+          .querySelectorAll<HTMLInputElement>(
+            "#todo-entities-container .todo-entity-toggle",
+          )
+          .forEach((cb) => {
+            if (!cb.checked) {
+              cb.checked = true;
+              cb.closest(".cal-toggle-card")?.classList.add(
+                "cal-toggle-card--active",
+              );
+            }
+          });
+        updateTodoCount();
+      });
+
+    document
+      .getElementById("todo-disable-all")
+      ?.addEventListener("click", () => {
+        document
+          .querySelectorAll<HTMLInputElement>(
+            "#todo-entities-container .todo-entity-toggle",
+          )
+          .forEach((cb) => {
+            if (cb.checked) {
+              cb.checked = false;
+              cb.closest(".cal-toggle-card")?.classList.remove(
+                "cal-toggle-card--active",
+              );
+            }
+          });
+        updateTodoCount();
+      });
+
+    // Manual entity add button
+    document
+      .getElementById("todo-add-manual")
+      ?.addEventListener("click", () => {
+        const input = document.getElementById(
+          "todo-entity-manual",
+        ) as HTMLInputElement;
+        const entityId = input?.value?.trim();
+        if (!entityId || !entityId.startsWith("todo.")) {
+          showToast(
+            "Enter a valid entity ID (e.g. todo.shopping_list)",
+            "error",
+          );
+          return;
+        }
+        const container = document.getElementById("todo-entities-container");
+        if (!container) return;
+        // Check if already exists
+        if (container.querySelector(`[data-entity="${entityId}"]`)) {
+          showToast("Entity already in the list", "error");
+          return;
+        }
+        const card = document.createElement("div");
+        card.className = "cal-toggle-card cal-toggle-card--active";
+        card.dataset.entity = entityId;
+        card.innerHTML = `
+          <div class="cal-toggle-card__info">
+            <span class="cal-toggle-card__name">${entityId}</span>
+            <span class="cal-toggle-card__entity">${entityId}</span>
+            <span class="cal-toggle-card__state">manually added</span>
+          </div>
+          <label class="toggle-label">
+            <input type="checkbox" class="todo-entity-toggle" value="${entityId}" checked />
+            <span class="toggle-slider"></span>
+          </label>`;
+        card
+          .querySelector<HTMLInputElement>(".todo-entity-toggle")
+          ?.addEventListener("change", function () {
+            card.classList.toggle("cal-toggle-card--active", this.checked);
+            updateTodoCount();
+          });
+        card.addEventListener("click", (e) => {
+          if ((e.target as HTMLElement).closest(".toggle-label")) return;
+          const cb = card.querySelector<HTMLInputElement>(
+            ".todo-entity-toggle",
+          );
+          if (cb) {
+            cb.checked = !cb.checked;
+            cb.dispatchEvent(new Event("change", { bubbles: true }));
+          }
+        });
+        container.appendChild(card);
+        const noEntities = document.getElementById("todo-no-entities");
+        if (noEntities) noEntities.style.display = "none";
+        updateTodoCount();
+        input.value = "";
+      });
+
     // Enable/disable toggle label update
     document
       .getElementById("todo-enabled")
@@ -2264,13 +2446,18 @@ const locale: Locale = cookieLocale === "ga" ? "ga" : "en";
         const enabled = (
           document.getElementById("todo-enabled") as HTMLInputElement
         ).checked;
-        const entity = readEntityValue("todo-entity");
+        // Collect enabled entities from toggle cards
+        const enabledEntities = Array.from(
+          document.querySelectorAll<HTMLInputElement>(
+            "#todo-entities-container .todo-entity-toggle:checked",
+          ),
+        ).map((cb) => cb.value);
         const direction = (
           document.getElementById("todo-sync-direction") as HTMLSelectElement
         ).value;
 
-        if (enabled && !entity) {
-          showToast("Please enter a todo entity ID", "error");
+        if (enabled && enabledEntities.length === 0) {
+          showToast("Enable at least one todo list, or disable sync", "error");
           return;
         }
 
@@ -2279,18 +2466,20 @@ const locale: Locale = cookieLocale === "ga" ? "ga" : "en";
         btn.disabled = true;
 
         await saveSetting("todo_sync_enabled", enabled);
-        await saveSetting("todo_entity", entity);
+        await saveSetting("todo_entities", enabledEntities);
+        await saveSetting("todo_entity", enabledEntities[0] || "");
         await saveSetting("todo_sync_direction", direction);
 
         // Enable/disable sync via API
-        if (enabled && entity) {
+        if (enabled && enabledEntities.length > 0) {
           try {
             await fetch((window.__ingress_path || "") + "/api/todo/sync", {
               method: "POST",
               headers: { "content-type": "application/json" },
               body: JSON.stringify({
                 action: "enable",
-                entity_id: entity,
+                entity_id: enabledEntities[0],
+                entities: enabledEntities,
                 direction,
               }),
             });
@@ -2302,7 +2491,7 @@ const locale: Locale = cookieLocale === "ga" ? "ga" : "en";
             await fetch((window.__ingress_path || "") + "/api/todo/sync", {
               method: "POST",
               headers: { "content-type": "application/json" },
-              body: JSON.stringify({ action: "disable", entity_id: entity }),
+              body: JSON.stringify({ action: "disable" }),
             });
           } catch {
             /* logged server-side */
@@ -2312,7 +2501,9 @@ const locale: Locale = cookieLocale === "ga" ? "ga" : "en";
         // Update status badge
         const statusEl = document.getElementById("todo-status");
         if (statusEl) {
-          statusEl.textContent = enabled ? "Active" : "Disabled";
+          statusEl.textContent = enabled
+            ? `${enabledEntities.length} syncing`
+            : "Disabled";
           statusEl.className = enabled
             ? "badge badge-active"
             : "badge badge-pending";
@@ -2333,7 +2524,12 @@ const locale: Locale = cookieLocale === "ga" ? "ga" : "en";
         btn.disabled = true;
 
         try {
-          const entity = readEntityValue("todo-entity");
+          const enabledTodos = Array.from(
+            document.querySelectorAll<HTMLInputElement>(
+              "#todo-entities-container .todo-entity-toggle:checked",
+            ),
+          ).map((cb) => cb.value);
+          const entity = enabledTodos[0] || undefined;
           const res = await fetch(
             (window.__ingress_path || "") + "/api/todo/sync",
             {

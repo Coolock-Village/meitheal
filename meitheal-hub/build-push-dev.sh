@@ -30,7 +30,7 @@ docker buildx create --name meitheal-builder --use 2>/dev/null || docker buildx 
 
 for ARCH in amd64 aarch64; do
   PLATFORM="linux/amd64"
-  BUILD_FROM="ghcr.io/home-assistant/${ARCH}-base:3.20"
+  BUILD_FROM="ghcr.io/home-assistant/${ARCH}-base:3.23"
 
   if [ "${ARCH}" = "aarch64" ]; then
     PLATFORM="linux/arm64"
