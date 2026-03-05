@@ -1499,7 +1499,7 @@ Astro.response.headers.set("X-Content-Type-Options", "nosniff");
         } from "@domains/offline/offline-store";
         import { confirmDialog } from "@lib/confirm-dialog";
         import { marked } from "marked";
-        import DOMPurify from "dompurify";
+        import { sanitize } from "@lib/sanitize";
 
         // === Task Detail Panel ===
         const tdOverlay = document.getElementById(
@@ -2239,7 +2239,7 @@ Astro.response.headers.set("X-Content-Type-Options", "nosniff");
               const dirtyHtml = marked.parse(
                 rawMarkdown || "*No description provided.*",
               ) as string;
-              descPreview.innerHTML = DOMPurify.sanitize(dirtyHtml);
+              descPreview.innerHTML = sanitize(dirtyHtml);
             } catch (e: any) {
               console.error("Markdown render error:", e);
               descPreview.innerHTML = `<div class="text-red-500">Error rendering markdown: ${e.message}</div>`;

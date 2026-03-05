@@ -145,3 +145,22 @@
     scroll-behavior: auto !important;
   }
 }
+
+/* Skeleton loading — restored from pre-split global.css */
+.skeleton {
+  background: var(--bg-hover);
+  border-radius: 0.25rem;
+  animation: pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+}
+
+.skeleton-text {
+  height: 1rem;
+  border-radius: 0.25rem;
+  width: 75%;
+  margin-bottom: 0.5rem;
+}
+
+.skeleton-card {
+  height: 5rem;
+  border-radius: 0.5rem;
+}

@@ -43,4 +43,13 @@
   .menu-toggle:hover {
     @apply bg-bg-hover text-text-primary;
   }
+/* Search results metadata + empty state
+   * Restored from pre-split global.css */
+.search-meta {
+  @apply text-xs text-text-muted;
+}
+
+.search-empty {
+  @apply px-4 py-3 text-sm text-text-muted text-center;
+}
 }
