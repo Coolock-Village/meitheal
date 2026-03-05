@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import logging
+from typing import Any
 
 from homeassistant.components.sensor import SensorEntity, SensorStateClass
 from homeassistant.config_entries import ConfigEntry
@@ -70,6 +71,24 @@ class MeithealActiveTasksSensor(
             return None
         return self.coordinator.data.active_count
 
+    @property
+    def extra_state_attributes(self) -> dict[str, Any] | None:
+        """Expose active task details for AI agents and automations."""
+        if not self.coordinator.data:
+            return None
+        active = [t for t in self.coordinator.data.tasks if t.status != "done"]
+        # Priority breakdown for automations
+        priorities: dict[str, int] = {}
+        for t in active:
+            key = f"p{t.priority}"
+            priorities[key] = priorities.get(key, 0) + 1
+        return {
+            "task_titles": [t.title for t in active[:10]],
+            "priority_breakdown": priorities,
+            "has_urgent": any(t.priority <= 2 for t in active),
+            "with_due_date": sum(1 for t in active if t.due_date),
+        }
+
 
 class MeithealOverdueTasksSensor(
     CoordinatorEntity[MeithealCoordinator], SensorEntity
@@ -94,6 +113,18 @@ class MeithealOverdueTasksSensor(
             return None
         return self.coordinator.data.overdue_count
 
+    @property
+    def extra_state_attributes(self) -> dict[str, Any] | None:
+        """Expose overdue task details for AI agents and automations."""
+        if not self.coordinator.data:
+            return None
+        overdue = [t for t in self.coordinator.data.tasks if t.is_overdue]
+        return {
+            "task_titles": [t.title for t in overdue[:10]],
+            "due_dates": [t.due_date for t in overdue[:10] if t.due_date],
+            "oldest_due": min((t.due_date for t in overdue if t.due_date), default=None),
+        }
+
 
 class MeithealTotalTasksSensor(
     CoordinatorEntity[MeithealCoordinator], SensorEntity
@@ -117,3 +148,22 @@ class MeithealTotalTasksSensor(
         if not self.coordinator.data:
             return None
         return self.coordinator.data.total_count
+
+    @property
+    def extra_state_attributes(self) -> dict[str, Any] | None:
+        """Expose task summary for AI agents and automations."""
+        if not self.coordinator.data:
+            return None
+        tasks = self.coordinator.data.tasks
+        statuses: dict[str, int] = {}
+        all_labels: dict[str, int] = {}
+        for t in tasks:
+            statuses[t.status] = statuses.get(t.status, 0) + 1
+            for label in t.labels:
+                all_labels[label] = all_labels.get(label, 0) + 1
+        return {
+            "status_breakdown": statuses,
+            "label_summary": dict(sorted(all_labels.items(), key=lambda x: -x[1])[:10]),
+            "done_count": statuses.get("done", 0),
+            "in_progress_count": statuses.get("in_progress", 0),
+        }

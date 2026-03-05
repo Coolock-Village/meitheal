@@ -69,5 +69,15 @@
       "name": "Notify Overdue",
       "description": "Push a notification about overdue tasks to HA persistent notifications."
     }
+  },
+  "device_automation": {
+    "trigger_type": {
+      "task_created": "Task was created in Meitheal",
+      "task_completed": "Task was completed in Meitheal",
+      "task_updated": "Task was updated in Meitheal",
+      "task_deleted": "Task was deleted from Meitheal",
+      "task_overdue": "Task became overdue in Meitheal",
+      "board_updated": "Meitheal board data changed"
+    }
   }
 }
