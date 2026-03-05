@@ -3,14 +3,16 @@
 Registers Meitheal as an LLM API provider, making task management tools
 available to any HA conversation agent (Google Generative AI, OpenAI, Ollama).
 
-Phase 58: HA LLM API Integration.
+Phase 60: HA Assist & Voice Integration.
 
 Tools:
 - SearchTasks: Search tasks by keyword, status, or priority
 - GetTaskDetails: Get full task details by ID
 - CreateTask: Create a new task
 - CompleteTask: Mark a task as done
+- UpdateTask: Update task fields (priority, due date, description, status)
 - GetOverdueTasks: List overdue tasks
+- GetTodaysTasks: List tasks due today
 - GetTaskSummary: Get summary counts (active, overdue, total)
 
 @see https://developers.home-assistant.io/docs/core/llm/
@@ -19,6 +21,7 @@ Tools:
 from __future__ import annotations
 
 import logging
+from datetime import datetime, timezone
 from typing import Any
 
 import voluptuous as vol
@@ -58,8 +61,10 @@ class SearchTasksTool(Tool):
 
     name = "meitheal_search_tasks"
     description = (
-        "Search tasks in the Meitheal task manager. "
-        "Returns matching tasks filtered by keyword, status, or priority."
+        "Search tasks in Meitheal, the household task manager. "
+        "You can filter by keyword (matches title and description), "
+        "status (todo, in_progress, or done), or priority (1=urgent, 5=low). "
+        "Use this when the user asks about their tasks, to-do list, or task list."
     )
     parameters = vol.Schema(
         {
@@ -70,7 +75,7 @@ class SearchTasksTool(Tool):
             ): vol.In(["todo", "in_progress", "done"]),
             vol.Optional(
                 "priority",
-                description="Filter by priority (1 = highest, 5 = lowest)",
+                description="Filter by priority (1 = highest/urgent, 5 = lowest)",
             ): vol.All(int, vol.Range(min=1, max=5)),
         }
     )
@@ -119,7 +124,8 @@ class GetTaskDetailsTool(Tool):
     name = "meitheal_get_task"
     description = (
         "Get detailed information about a specific task including "
-        "its title, status, description, priority, due date, and labels."
+        "its title, status, description, priority, due date, and labels. "
+        "You need the task ID — use meitheal_search_tasks first to find it."
     )
     parameters = vol.Schema(
         {
@@ -162,13 +168,15 @@ class CreateTaskTool(Tool):
 
     name = "meitheal_create_task"
     description = (
-        "Create a new task in the Meitheal task manager. "
-        "Provide at minimum a title. Optionally include a description."
+        "Create a new task in Meitheal, the household task manager. "
+        "Provide at minimum a title. Optionally include a description. "
+        "Use this when the user says things like 'add a task', 'remind me to', "
+        "'create a todo', or 'I need to'."
     )
     parameters = vol.Schema(
         {
             vol.Required("title", description="Task title"): str,
-            vol.Optional("description", description="Task description"): str,
+            vol.Optional("description", description="Task description or notes"): str,
         }
     )
 
@@ -203,7 +211,8 @@ class CompleteTaskTool(Tool):
     name = "meitheal_complete_task"
     description = (
         "Mark a task as done/completed in Meitheal. "
-        "You can specify the task by ID or by title."
+        "You can specify the task by ID or by title. "
+        "Use this when the user says 'done', 'complete', 'finished', or 'mark as done'."
     )
     parameters = vol.Schema(
         {
@@ -237,13 +246,75 @@ class CompleteTaskTool(Tool):
         return {"success": True, "message": "Task marked as done"}
 
 
+class UpdateTaskTool(Tool):
+    """Update a Meitheal task's fields."""
+
+    name = "meitheal_update_task"
+    description = (
+        "Update a task in Meitheal. You can change the priority, due date, "
+        "description, status, or title. You need the task ID — use "
+        "meitheal_search_tasks first to find it. "
+        "Use this when the user says 'change', 'update', 'set priority', "
+        "'reschedule', or 'modify'."
+    )
+    parameters = vol.Schema(
+        {
+            vol.Required("task_id", description="Task ID to update"): str,
+            vol.Optional("title", description="New title"): str,
+            vol.Optional("description", description="New description"): str,
+            vol.Optional(
+                "priority",
+                description="New priority (1=urgent, 2=high, 3=medium, 4=low, 5=lowest)",
+            ): vol.All(int, vol.Range(min=1, max=5)),
+            vol.Optional(
+                "status",
+                description="New status: todo, in_progress, or done",
+            ): vol.In(["todo", "in_progress", "done"]),
+            vol.Optional("due_date", description="New due date in ISO 8601 format (YYYY-MM-DD)"): str,
+        }
+    )
+
+    async def async_call(
+        self,
+        hass: HomeAssistant,
+        tool_input: ToolInput,
+        llm_context: LLMContext,
+    ) -> JsonObjectType:
+        """Update task fields."""
+        coordinator = _get_coordinator(hass)
+        if not coordinator:
+            raise HomeAssistantError("Meitheal is not available")
+
+        task_id = tool_input.tool_args["task_id"]
+        updates: dict[str, Any] = {}
+        for field in ("title", "description", "priority", "status", "due_date"):
+            if field in tool_input.tool_args:
+                updates[field] = tool_input.tool_args[field]
+
+        if not updates:
+            raise HomeAssistantError("No fields to update — provide at least one field")
+
+        try:
+            await coordinator.async_update_task(task_id, updates)
+        except Exception as err:
+            raise HomeAssistantError(f"Failed to update task: {err}") from err
+
+        return {
+            "success": True,
+            "message": f"Task {task_id} updated",
+            "updated_fields": list(updates.keys()),
+        }
+
+
 class GetOverdueTasksTool(Tool):
     """List overdue tasks from Meitheal."""
 
     name = "meitheal_get_overdue"
     description = (
         "Get a list of all overdue tasks — tasks with a due date "
-        "in the past that haven't been completed yet."
+        "in the past that haven't been completed yet. "
+        "Use this when the user asks 'what's overdue?', 'any late tasks?', "
+        "or 'what did I miss?'."
     )
     parameters = vol.Schema({})
 
@@ -271,13 +342,70 @@ class GetOverdueTasksTool(Tool):
         return {"tasks": overdue, "count": len(overdue)}
 
 
+class GetTodaysTasksTool(Tool):
+    """Get tasks due today from Meitheal."""
+
+    name = "meitheal_get_todays_tasks"
+    description = (
+        "Get a list of tasks due today — what's on the agenda right now. "
+        "Also includes any overdue tasks. "
+        "Use this when the user asks 'what's on my plate?', 'what do I need to do today?', "
+        "'today's tasks', or 'what's due today?'."
+    )
+    parameters = vol.Schema({})
+
+    async def async_call(
+        self,
+        hass: HomeAssistant,
+        tool_input: ToolInput,
+        llm_context: LLMContext,
+    ) -> JsonObjectType:
+        """Fetch today's tasks."""
+        coordinator = _get_coordinator(hass)
+        if not coordinator or not coordinator.data:
+            return {"tasks": [], "count": 0, "overdue_count": 0}
+
+        today_str = datetime.now(timezone.utc).strftime("%Y-%m-%d")
+        todays = []
+        overdue = []
+        for t in coordinator.data.tasks:
+            if t.status == "done":
+                continue
+            if t.is_overdue:
+                overdue.append({
+                    "id": t.id,
+                    "title": t.title,
+                    "due_date": t.due_date,
+                    "priority": t.priority,
+                    "is_overdue": True,
+                })
+            elif t.due_date and t.due_date.startswith(today_str):
+                todays.append({
+                    "id": t.id,
+                    "title": t.title,
+                    "due_date": t.due_date,
+                    "priority": t.priority,
+                    "is_overdue": False,
+                })
+
+        combined = overdue + todays
+        return {
+            "tasks": combined,
+            "count": len(combined),
+            "overdue_count": len(overdue),
+            "today_count": len(todays),
+        }
+
+
 class GetTaskSummaryTool(Tool):
     """Get a summary of Meitheal task counts."""
 
     name = "meitheal_task_summary"
     description = (
         "Get a summary of task counts: total tasks, active (not done), "
-        "overdue, and completed."
+        "overdue, and completed. "
+        "Use this when the user asks 'how many tasks?', 'task status', "
+        "'give me an overview', or 'how am I doing?'."
     )
     parameters = vol.Schema({})
 
@@ -310,14 +438,26 @@ class GetTaskSummaryTool(Tool):
 # ── LLM API Registration ──
 
 API_PROMPT = (
-    "Use the Meitheal task management tools to help the user manage their tasks. "
-    "You can search tasks, create new ones, mark them as done, check for overdue items, "
-    "and get a summary of their task status. Meitheal is a cooperative task and life engine "
-    "for the home, running as a Home Assistant addon. "
-    "Tasks have titles, descriptions, priorities (1=urgent to 5=low), due dates, and labels. "
-    "When the user asks about their tasks, search first. When they say 'add' or 'create', "
-    "create a task. When they say 'done' or 'complete', complete a task. "
-    "Always confirm actions back to the user."
+    "You have access to Meitheal, a cooperative task and life management engine "
+    "running as a Home Assistant addon. Meitheal manages the household's tasks, "
+    "to-do lists, and projects.\n\n"
+    "## What You Can Do\n"
+    "- **Search tasks** by keyword, status (todo/in_progress/done), or priority (1-5)\n"
+    "- **Create tasks** with a title and optional description\n"
+    "- **Complete tasks** by ID or title\n"
+    "- **Update tasks** — change priority, due date, status, title, or description\n"
+    "- **Check overdue tasks** — what's past due\n"
+    "- **Get today's tasks** — what's on the agenda right now\n"
+    "- **Get a summary** — counts of active, overdue, and completed tasks\n\n"
+    "## How to Respond\n"
+    "- When the user asks about their tasks, search first, then summarize results naturally.\n"
+    "- When they say 'add', 'create', 'remind me to', or 'I need to' — create a task.\n"
+    "- When they say 'done', 'complete', or 'finished' — complete the task.\n"
+    "- When they ask 'what's overdue?' or 'what did I miss?' — check overdue tasks.\n"
+    "- When they ask 'what's on my plate?' or 'today's tasks' — get today's tasks.\n"
+    "- Priority levels: 1=urgent, 2=high, 3=medium (default), 4=low, 5=lowest.\n"
+    "- Always confirm actions back to the user.\n"
+    "- Keep responses concise and conversational.\n"
 )
 
 
@@ -337,7 +477,9 @@ class MeithealLLMAPI(API):
                 GetTaskDetailsTool(),
                 CreateTaskTool(),
                 CompleteTaskTool(),
+                UpdateTaskTool(),
                 GetOverdueTasksTool(),
+                GetTodaysTasksTool(),
                 GetTaskSummaryTool(),
             ],
         )

@@ -82,6 +82,76 @@ Configure in **Settings → Integrations → Calendar Sync**:
 
 The `/calendar` page renders a monthly grid showing tasks by due date. Click any day to filter tasks for that date. The calendar respects your configured week start day (Monday, Sunday, or Saturday).
 
+## Voice & Assist Integration
+
+Meitheal integrates with Home Assistant's Assist (voice control) and LLM-based conversation agents (Google Generative AI, OpenAI, Ollama). This lets you manage tasks by voice or through any HA conversation agent.
+
+### Quick Setup (2 steps)
+
+**Step 1: Confirm the integration is loaded**
+
+After installing the addon, HA should auto-discover the Meitheal integration. Check:
+- **Settings → Devices & Services** — "Meitheal" should appear
+- If not, click **+ Add Integration** → search "Meitheal" → Submit
+
+**Step 2: Enable Meitheal in your conversation agent**
+
+1. Go to **Settings → Voice Assistants**
+2. Click your conversation agent (e.g. "Gemini")
+3. Click **Configure** (or the gear icon)
+4. Under **LLM APIs**, select **"Meitheal Tasks"**
+5. Click **Submit**
+
+You should also expose the Meitheal todo entity to Assist:
+1. Go to **Settings → Voice Assistants → Expose** tab
+2. Find **todo.meitheal_tasks** and toggle it **ON**
+
+### Example Voice Commands
+
+Once configured, you can say things like:
+
+| Command | What Happens |
+|---------|-------------|
+| "What are my tasks?" | Lists active tasks via search |
+| "Add buy groceries to my tasks" | Creates a new task |
+| "Mark buy groceries as done" | Completes the task by title |
+| "What's overdue?" | Lists all overdue tasks |
+| "What's on my plate today?" | Shows today's tasks + overdue |
+| "How many tasks do I have?" | Returns task summary counts |
+| "Set priority of task X to urgent" | Updates task priority |
+
+### Available LLM Tools
+
+When "Meitheal Tasks" is selected as an LLM API, these tools are available to the conversation agent:
+
+| Tool | Description |
+|------|------------|
+| `meitheal_search_tasks` | Search by keyword, status, or priority |
+| `meitheal_get_task` | Get full details for a specific task |
+| `meitheal_create_task` | Create a new task |
+| `meitheal_complete_task` | Mark a task as done (by ID or title) |
+| `meitheal_update_task` | Update priority, due date, status, or description |
+| `meitheal_get_overdue` | List all overdue tasks |
+| `meitheal_get_todays_tasks` | Tasks due today + overdue |
+| `meitheal_task_summary` | Active, overdue, done, and total counts |
+
+### Built-in Assist API (no LLM required)
+
+Even without an LLM agent, the basic **Assist API** supports:
+- **"Add X to Meitheal Tasks"** → uses `HassListAddItem` intent
+- **"Complete X in Meitheal Tasks"** → uses `HassListCompleteItem` intent
+
+This works through the `todo.meitheal_tasks` entity when it's exposed to Assist.
+
+### Troubleshooting
+
+| Issue | Solution |
+|-------|---------|
+| "I cannot find meitheal" | Expose the entity (Step 2 above) and select Meitheal Tasks LLM API |
+| LLM API not in list | Check addon logs for "Registered Meitheal LLM API" message |
+| Integration not found | Restart the addon — it auto-discovers on each boot |
+| Tasks not syncing | Call `meitheal.sync_todo` service or restart addon |
+
 ## Security
 
 ### AppArmor

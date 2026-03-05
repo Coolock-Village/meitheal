@@ -61,10 +61,18 @@ async def async_setup_entry(
 
 
 class MeithealTodoListEntity(CoordinatorEntity[MeithealCoordinator], TodoListEntity):
-    """Meitheal task list exposed as HA todo entity."""
+    """Meitheal task list exposed as HA todo entity.
+
+    Exposed to HA Assist/Voice by default so users can manage tasks via
+    voice commands (e.g. "add buy groceries to Meitheal tasks").
+    The built-in HassListAddItem / HassListCompleteItem intents route
+    to this entity when it is exposed.
+    """
 
     _attr_has_entity_name = True
     _attr_translation_key = "task_list"
+    _attr_entity_registry_enabled_default = True
+    _attr_entity_registry_visible_default = True
     _attr_supported_features = (
         TodoListEntityFeature.CREATE_TODO_ITEM
         | TodoListEntityFeature.DELETE_TODO_ITEM
@@ -82,6 +90,8 @@ class MeithealTodoListEntity(CoordinatorEntity[MeithealCoordinator], TodoListEnt
         super().__init__(coordinator)
         self._attr_unique_id = f"{entry.entry_id}_todo"
         self._attr_device_info = _device_info(entry)
+        # Predictable entity ID so voice commands can target "Meitheal tasks"
+        self._attr_suggested_object_id = "meitheal_tasks"
 
     @property
     def todo_items(self) -> list[TodoItem] | None:

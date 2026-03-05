@@ -45,6 +45,7 @@ Primary Delivery drives completion math and release readiness.
 | 53 | HA Connection & PWA Polish | ✅ Complete | GSD sweep |
 | 54 | Settings & Integrations UX Overhaul | ✅ Complete | `54-CONTEXT.md`, `54-01-PLAN.md` |
 | 55 | Tasks & Table UX Overhaul | 🔄 In Progress | 50-persona review complete, context gathered |
+| 60 | HA Assist & Voice Integration | 🔄 In Progress | LLM API + entity exposure + docs |
 
 ## Primary Delivery Details
 
@@ -259,6 +260,17 @@ Current state:
 Current state:
 
 - Complete. Typography, spacing, and micro-interactions verified across all viewports.
+
+## Phase 60: HA Assist & Voice Integration 🔄
+
+Current state:
+- [x] Enhanced `llm_api.py` — 8 tools (added `UpdateTask`, `GetTodaysTasks`), richer API prompt
+- [x] Auto-expose `todo.meitheal_tasks` entity to Assist on setup
+- [x] Entity registry defaults for voice discoverability
+- [x] `strings.json` services section for Dev Tools
+- [x] `run.sh` discovery improvements with LLM API guidance
+- [x] DOCS.md Voice & Assist setup guide with examples
+- [ ] Verify on live HA after deploy
 
 ## Open Blockers (Roadmap-Level)
 

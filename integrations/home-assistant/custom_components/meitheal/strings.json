@@ -15,7 +15,7 @@
       },
       "hassio_confirm": {
         "title": "Meitheal Discovered",
-        "description": "The Meitheal addon was automatically detected. Click Submit to finish setup."
+        "description": "The Meitheal addon was automatically detected. Click Submit to finish setup.\n\nAfter setup, select \"Meitheal Tasks\" in your conversation agent settings (Settings → Voice Assistants → [Agent] → LLM APIs) to enable voice task management."
       }
     },
     "abort": {
@@ -42,6 +42,28 @@
       "total_tasks": {
         "name": "Total Tasks"
       }
+    }
+  },
+  "services": {
+    "create_task": {
+      "name": "Create Task",
+      "description": "Create a new task in Meitheal."
+    },
+    "complete_task": {
+      "name": "Complete Task",
+      "description": "Mark a task as done by ID or title."
+    },
+    "sync_todo": {
+      "name": "Sync Tasks",
+      "description": "Trigger a manual refresh of task data from Meitheal."
+    },
+    "search_tasks": {
+      "name": "Search Tasks",
+      "description": "Search tasks by keyword in Meitheal."
+    },
+    "get_overdue_tasks": {
+      "name": "Get Overdue Tasks",
+      "description": "Get all tasks past their due date."
     }
   }
 }

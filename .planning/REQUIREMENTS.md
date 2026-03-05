@@ -41,6 +41,7 @@
 | R-511 | CSV/JSON task export capability | 21 | P0 | `autonomous.md` |
 | R-512 | SQLite direct DB download backup | 21 | P0 | `autonomous.md` |
 | R-513 | Import/Export user preferences/settings | 21 | P1 | `autonomous.md` |
+| R-601 | HA Assist/Voice: LLM API + entity exposure for conversation agents | 60 | P0 | Phase 60 |
 
 ## Out of Scope
 

@@ -10,6 +10,9 @@ Registers Meitheal as a first-class HA integration with:
 - meitheal.sync_todo: Service to trigger manual sync
 - meitheal.search_tasks: Service to search tasks by keyword
 - meitheal.get_overdue_tasks: Service to retrieve overdue tasks
+- LLM API: Meitheal Tasks — 8 tools for Assist/conversation agents
+
+Phase 60: HA Assist & Voice Integration.
 """
 
 from __future__ import annotations
@@ -188,10 +191,33 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
         try:
             unreg_llm = async_register_llm_api(hass, entry.entry_id)
             entry.async_on_unload(unreg_llm)
+            _LOGGER.info(
+                "Meitheal LLM API registered — select 'Meitheal Tasks' in your "
+                "conversation agent settings (Settings → Voice Assistants → "
+                "[Agent] → Configure → LLM APIs) to enable voice control"
+            )
         except Exception:
             _LOGGER.warning("Could not register Meitheal LLM API — feature disabled")
     else:
         _LOGGER.info("Meitheal LLM API not available (requires HA 2026.3+)")
+
+    # Auto-expose Meitheal entities to Assist voice assistants
+    # This makes the todo entity visible to the built-in Assist API
+    # so voice commands like "add X to Meitheal tasks" work immediately.
+    try:
+        from homeassistant.components.homeassistant.exposed_entities import (
+            async_expose_entity,
+        )
+
+        # Expose todo entity to all conversation agents
+        entity_id = f"todo.meitheal_tasks"
+        async_expose_entity(hass, "conversation", entity_id, True)
+        _LOGGER.debug("Auto-exposed %s to Assist", entity_id)
+    except (ImportError, Exception):
+        _LOGGER.debug(
+            "Could not auto-expose entities to Assist — "
+            "manually expose via Settings → Voice Assistants → Expose"
+        )
 
     return True
 

@@ -100,6 +100,14 @@ if [ -f /opt/meitheal/apps/web/package.json ]; then
   # config_flow, giving the user a simple "Discovered — click Submit"
   # dialog instead of manual host/port entry.
   # The Supervisor deduplicates these calls, so it's safe every boot.
+  #
+  # After discovery, the custom component registers:
+  # - TodoListEntity (todo.meitheal_tasks) for built-in Assist intents
+  # - MeithealLLMAPI (8 tools) for advanced conversation agents
+  # - 3 sensors (active, overdue, total task counts)
+  # - 5 services (create, complete, sync, search, get_overdue)
+  #
+  # To enable voice/Assist: Settings → Voice Assistants → [Agent] → LLM APIs → select "Meitheal Tasks"
   if [ -n "${SUPERVISOR_TOKEN:-}" ]; then
     DISCOVERY_PAYLOAD="{\"service\":\"meitheal\",\"config\":{\"host\":\"local_meitheal\",\"port\":${PORT}}}"
     DISC_RESULT=$(curl -fsS -X POST \
@@ -108,7 +116,7 @@ if [ -f /opt/meitheal/apps/web/package.json ]; then
       -d "${DISCOVERY_PAYLOAD}" \
       http://supervisor/discovery 2>/dev/null || true)
     if [ -n "${DISC_RESULT}" ]; then
-      echo "{\"event\":\"discovery.registered\",\"time\":\"$(date -u +\"%Y-%m-%dT%H:%M:%SZ\")\"}"
+      echo "{\"event\":\"discovery.registered\",\"note\":\"Select 'Meitheal Tasks' in Voice Assistant LLM APIs for Assist integration\",\"time\":\"$(date -u +\"%Y-%m-%dT%H:%M:%SZ\")\"}"
     else
       echo "{\"event\":\"discovery.registration.failed\",\"time\":\"$(date -u +\"%Y-%m-%dT%H:%M:%SZ\")\"}" >&2
     fi
