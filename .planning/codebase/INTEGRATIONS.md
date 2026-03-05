@@ -1,7 +1,7 @@
 # External Integrations
 
-**Analysis Date:** 2026-03-05
-**Version:** 0.1.63
+**Analysis Date:** 2026-03-06
+**Version:** 0.1.68
 
 ## Home Assistant Calendar
 
@@ -14,7 +14,7 @@
 | API Routes | `GET/POST /api/ha/calendars`, `GET/POST /api/integrations/calendar/sync` |
 | Sync Range | Past 7 days → next 30 days |
 | Dedup | `calendar_confirmations` table (keyed by `provider_event_id`) |
-| Write-back | Pushes task due dates as HA events prefixed `[Meitheal]` |
+| Write-back | Pushes task due dates as HA events prefixed `[Meitheal]`, description includes "Added from Meitheal" attribution |
 | Multi-select | Toggle cards per calendar entity; saved as `calendar_entities` JSON array |
 | Timeout | 8s, retryable on 429/5xx |
 | Idempotency | `x-meitheal-idempotency-key` header |
@@ -32,7 +32,9 @@
 | Real-time | `todo/item/subscribe` WebSocket subscription |
 | Services | `getTodoItems`, `addTodoItem`, `updateTodoItem`, `removeTodoItem`, `removeTodoCompletedItems`, `moveTodoItem`, `subscribeTodoItems` |
 | API Routes | `GET/POST/PUT/DELETE /api/todo/items`, `GET/POST /api/todo/sync`, `GET /api/todo` |
-| Sync Control | Opt-in via Settings → Integrations → Todo Sync toggle |
+| Sync Control | Opt-in via Settings → Integrations → Todo Sync toggle cards (multi-entity) |
+| Multi-entity | Toggle cards per todo entity; saved as `todo_entities` JSON array |
+| Attribution | Outbound pushes include "Added from Meitheal" in description |
 | DB | `todo_sync_confirmations` table (migration `0002_todo_sync.sql`) |
 | Status Mapping | `needs_action` ↔ `todo`/`in_progress`, `completed` ↔ `done` |
 
@@ -47,7 +49,7 @@
 | Entities | `todo.meitheal_tasks`, `sensor.meitheal_active_tasks`, `sensor.meitheal_overdue_tasks`, `sensor.meitheal_total_tasks` |
 | Services | `meitheal.create_task`, `meitheal.complete_task`, `meitheal.sync_todo`, `meitheal.search_tasks`, `meitheal.get_overdue_tasks` |
 | LLM Tools | 10: `search_tasks`, `create_task`, `complete_task`, `delete_task`, `update_task`, `get_overdue_tasks`, `get_todays_tasks`, `get_task_summary`, `get_upcoming_events`, `daily_briefing` + `batch_complete` |
-| MCP Tools | 8: `searchTasks`, `createTask`, `completeTask`, `updateTask`, `getCalendarEvents`, `getUpcoming`, `syncCalendar` |
+| MCP Tools | 13: `searchTasks`, `createTask`, `completeTask`, `updateTask`, `getCalendarEvents`, `getUpcoming`, `syncCalendar`, `assignTask`, `listUsers` + more |
 | Communication | REST API to addon at `http://{host}:{port}/api/tasks` |
 | Polling | 30s via `DataUpdateCoordinator` |
 | Auto-install | Addon copies component to `/homeassistant/custom_components/` at boot |
@@ -77,6 +79,35 @@
 | PUT | `/api/v1/tasks/:id/assignees` | Assign user |
 | GET | `/api/v1/users` | Search users |
 
+## Grocy Integration
+
+| Property | Value |
+|----------|-------|
+| Domain | `domains/grocy/` bounded context |
+| Bridge | `grocy-bridge.ts` — bidirectional sync |
+| Adapter | `GrocyAdapter` in `packages/integration-core/` |
+| Mapper | `grocy-mapper.ts` — maps Grocy chores/tasks/shopping → Meitheal tasks |
+| Auth | `grocy_api_key` stored in settings (encrypted) |
+| API Routes | `GET/PUT /api/grocy/settings`, `POST /api/grocy/test`, `POST /api/grocy/sync` |
+| Sync modes | `import`, `export`, `bidirectional` |
+| Auto-start | `autoStartGrocySync()` in `ha-startup.ts` reads settings on boot |
+| Settings UI | Settings → Integrations → Grocy (URL, API key, mode, interval) |
+
+## User Assignment System
+
+| Property | Value |
+|----------|-------|
+| Users API | `GET /api/users` — merges HA-discovered + custom users |
+| Custom Users | `POST/PUT/DELETE /api/users/custom` — CRUD for custom users |
+| Default Assignee | `GET/PUT /api/users/default` — auto-assign setting |
+| HA Discovery | `listHAUsers()` in `ha-users.ts` via Supervisor API (cached 60s) |
+| DB Tables | `custom_users`, `app_settings` |
+| Task Schema | `assigned_to TEXT` column with index |
+| UI | Assign To dropdown in New Task Modal + Task Detail sidebar |
+| MCP | `assignTask`, `listUsers` tools |
+| Auto-assign | POST `/api/tasks` reads `default_assignee` from `app_settings` if not specified |
+| @mention | `@name` patterns in title auto-resolve against user list |
+
 ## Database
 
 | Property | Value |
@@ -84,7 +115,7 @@
 | Engine | SQLite via libSQL |
 | ORM | Drizzle ORM 0.45 |
 | Connection | `MEITHEAL_DB_URL` (default: `file:/data/meitheal.db`) |
-| Tables | `tasks`, `boards`, `lanes`, `saved_filters`, `reminders`, `domain_events`, `integration_attempts`, `calendar_confirmations`, `todo_sync_confirmations`, `audit_trail` |
+| Tables | `tasks`, `boards`, `lanes`, `saved_filters`, `reminders`, `domain_events`, `integration_attempts`, `calendar_confirmations`, `todo_sync_confirmations`, `custom_users`, `app_settings`, `settings`, `audit_trail` |
 | Migrations | `apps/web/drizzle/migrations/` (0001-0003) |
 
 ## Observability Pipeline
