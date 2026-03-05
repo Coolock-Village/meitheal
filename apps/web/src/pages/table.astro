@@ -165,6 +165,9 @@ const priorityClasses: Record<number, string> = {
                 <th scope="col" class="col-custom-fields">
                   {t("table.col_custom_fields", locale)}
                 </th>
+                <th scope="col" class="col-assigned" title="Assigned To">
+                  👤
+                </th>
                 <th scope="col" class="col-actions">
                   {t("table.col_actions", locale)}
                 </th>
@@ -344,6 +347,22 @@ const priorityClasses: Record<number, string> = {
                       {cfEntries.length > 0
                         ? cfEntries.map(([k, v]) => `${k}: ${v}`).join(", ")
                         : "—"}
+                    </td>
+                    <td class="cell-center col-assigned">
+                      {task.assigned_to ? (
+                        <span
+                          class="table-assignee-badge"
+                          title={`Assigned: ${String(task.assigned_to).replace(/^(ha_|custom_)/, "")}`}
+                          aria-label={`Assigned to ${String(task.assigned_to).replace(/^(ha_|custom_)/, "")}`}
+                        >
+                          {String(task.assigned_to)
+                            .replace(/^(ha_|custom_)/, "")
+                            .slice(0, 2)
+                            .toUpperCase()}
+                        </span>
+                      ) : (
+                        <span class="text-muted">—</span>
+                      )}
                     </td>
                     <td class="cell-center">
                       <button

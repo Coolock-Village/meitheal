@@ -1,0 +1,71 @@
+{
+  "name": "meitheal",
+  "version": "0.3.0",
+  "description": "Meitheal — Cooperative task and life management engine for Home Assistant",
+  "protocol": "mcp",
+  "protocolVersion": "2024-11-05",
+  "endpoint": "/api/mcp",
+  "capabilities": {
+    "tools": {
+      "listChanged": false
+    }
+  },
+  "tools": [
+    {
+      "name": "createTask",
+      "description": "Create a new task with title, description, priority, labels, and due date"
+    },
+    {
+      "name": "searchTasks",
+      "description": "Search tasks by keyword, status, or priority"
+    },
+    {
+      "name": "completeTask",
+      "description": "Mark a task as done by ID or title"
+    },
+    {
+      "name": "updateTask",
+      "description": "Update task fields (title, status, priority, due_date, description)"
+    },
+    {
+      "name": "deleteTask",
+      "description": "Delete a task by ID"
+    },
+    {
+      "name": "getTask",
+      "description": "Get full details of a specific task by ID"
+    },
+    {
+      "name": "getCalendarEvents",
+      "description": "Get events from HA calendar synced into Meitheal"
+    },
+    {
+      "name": "getUpcoming",
+      "description": "Get all upcoming tasks and calendar events combined"
+    },
+    {
+      "name": "syncCalendar",
+      "description": "Trigger a manual calendar sync from Home Assistant"
+    },
+    {
+      "name": "getOverdueTasks",
+      "description": "Get all overdue tasks past their due date"
+    },
+    {
+      "name": "getTodaysTasks",
+      "description": "Get tasks due today plus any overdue tasks"
+    },
+    {
+      "name": "getTaskSummary",
+      "description": "Get summary counts: total, active, overdue, done"
+    },
+    {
+      "name": "batchComplete",
+      "description": "Complete multiple tasks at once by label or priority filter"
+    }
+  ],
+  "authentication": {
+    "type": "none",
+    "note": "Authentication handled by Home Assistant Supervisor ingress"
+  }
+}

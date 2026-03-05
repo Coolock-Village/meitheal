@@ -126,6 +126,33 @@ const MCP_TOOLS = [
       },
     },
   },
+  {
+    name: "getOverdueTasks",
+    description: "Get all overdue tasks — tasks past their due date that aren't done",
+    inputSchema: { type: "object" as const, properties: {} },
+  },
+  {
+    name: "getTodaysTasks",
+    description: "Get tasks due today plus any overdue tasks",
+    inputSchema: { type: "object" as const, properties: {} },
+  },
+  {
+    name: "getTaskSummary",
+    description: "Get summary counts: total, active, overdue, done",
+    inputSchema: { type: "object" as const, properties: {} },
+  },
+  {
+    name: "batchComplete",
+    description: "Complete multiple tasks at once by label or priority filter",
+    inputSchema: {
+      type: "object" as const,
+      properties: {
+        label: { type: "string", description: "Only affect tasks with this label" },
+        max_priority: { type: "integer", description: "Only affect tasks with priority <= this" },
+        titles: { type: "array", items: { type: "string" }, description: "Specific task titles to complete" },
+      },
+    },
+  },
 ];
 
 export const POST: APIRoute = async ({ request }) => {
@@ -348,6 +375,79 @@ async function executeTool(
         }),
       });
       return await res.json().catch(() => ({ error: "Calendar sync failed" }));
+    }
+
+    case "getOverdueTasks": {
+      const res = await fetch(`${baseUrl}/api/tasks?status=todo`);
+      const data = (await res.json().catch(() => ({ tasks: [] }))) as {
+        tasks: Array<{ id: string; title: string; status: string; due_date: string; priority: number }>
+      };
+      const now = new Date().toISOString().slice(0, 10);
+      const overdue = (data.tasks ?? []).filter(
+        (t) => t.status !== "done" && t.due_date && t.due_date.slice(0, 10) < now
+      ).map((t) => ({ id: t.id, title: t.title, due_date: t.due_date, priority: t.priority }));
+      return { tasks: overdue, count: overdue.length };
+    }
+
+    case "getTodaysTasks": {
+      const res = await fetch(`${baseUrl}/api/tasks`);
+      const data = (await res.json().catch(() => ({ tasks: [] }))) as {
+        tasks: Array<{ id: string; title: string; status: string; due_date: string; priority: number }>
+      };
+      const today = new Date().toISOString().slice(0, 10);
+      const tasks = (data.tasks ?? []).filter(
+        (t) => t.status !== "done" && t.due_date && (
+          t.due_date.slice(0, 10) === today || t.due_date.slice(0, 10) < today
+        )
+      ).map((t) => ({
+        id: t.id, title: t.title, due_date: t.due_date,
+        priority: t.priority, is_overdue: t.due_date.slice(0, 10) < today,
+      }));
+      return { tasks, count: tasks.length };
+    }
+
+    case "getTaskSummary": {
+      const res = await fetch(`${baseUrl}/api/tasks`);
+      const data = (await res.json().catch(() => ({ tasks: [] }))) as {
+        tasks: Array<{ status: string; due_date: string }>
+      };
+      const all = data.tasks ?? [];
+      const now = new Date().toISOString().slice(0, 10);
+      const done = all.filter((t) => t.status === "done").length;
+      const overdue = all.filter((t) => t.status !== "done" && t.due_date && t.due_date.slice(0, 10) < now).length;
+      return { total: all.length, active: all.length - done, overdue, done };
+    }
+
+    case "batchComplete": {
+      const res = await fetch(`${baseUrl}/api/tasks`);
+      const data = (await res.json().catch(() => ({ tasks: [] }))) as {
+        tasks: Array<{ id: string; title: string; status: string; priority: number; labels: string[] }>
+      };
+      const label = args.label ? String(args.label).toLowerCase() : null;
+      const maxPri = typeof args.max_priority === "number" ? args.max_priority : null;
+      const titles = Array.isArray(args.titles) ? args.titles.map((t: unknown) => String(t).toLowerCase()) : null;
+
+      const targets = (data.tasks ?? []).filter((t) => {
+        if (t.status === "done") return false;
+        if (titles && !titles.includes(t.title.toLowerCase())) return false;
+        if (label && !(t.labels ?? []).some((l) => l.toLowerCase() === label)) return false;
+        if (maxPri !== null && t.priority > maxPri) return false;
+        if (!titles && !label && maxPri === null) return false; // Safety
+        return true;
+      });
+
+      const completed: string[] = [];
+      for (const t of targets) {
+        try {
+          await fetch(`${baseUrl}/api/tasks/${t.id}`, {
+            method: "PUT",
+            headers: { "content-type": "application/json" },
+            body: JSON.stringify({ status: "done" }),
+          });
+          completed.push(t.title);
+        } catch { /* skip */ }
+      }
+      return { completed, count: completed.length };
     }
 
     default:
