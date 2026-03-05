@@ -415,6 +415,98 @@ const { locale } = Astro.props;
         </div>
       </div>
     </div>
+
+    <!-- Users & Assignment -->
+    <div class="card">
+      <div class="card-header">
+        <div>
+          <div class="card-title">👤 Users & Assignment</div>
+          <div class="card-subtitle">
+            Manage task assignees. Home Assistant users are discovered
+            automatically. Add custom users for non-HA household members.
+          </div>
+        </div>
+      </div>
+      <div
+        style="padding: 16px; display: flex; flex-direction: column; gap: 16px;"
+      >
+        <!-- Default Assignee -->
+        <div>
+          <label
+            for="default-assignee-select"
+            style="font-weight: 600; font-size: 13px; display: block; margin-bottom: 6px;"
+            >Default Assignee</label
+          >
+          <div style="display: flex; gap: 8px; align-items: center;">
+            <select
+              id="default-assignee-select"
+              class="form-select"
+              style="flex: 1; max-width: 300px;"
+              aria-label="Default task assignee"
+            >
+              <option value="">None (unassigned)</option>
+            </select>
+            <button
+              type="button"
+              class="btn btn-primary"
+              id="save-default-assignee"
+              style="font-size: 13px;">Save</button
+            >
+          </div>
+          <p
+            style="font-size: 11px; color: var(--text-muted); margin-top: 4px;"
+          >
+            New tasks will be assigned to this user by default.
+          </p>
+        </div>
+
+        <!-- Discovered Users -->
+        <div>
+          <div style="font-weight: 600; font-size: 13px; margin-bottom: 6px;">
+            Discovered Users
+          </div>
+          <div
+            id="discovered-users-list"
+            style="display: flex; flex-direction: column; gap: 4px;"
+          >
+            <span
+              style="color: var(--text-muted); font-size: 12px; font-style: italic;"
+              >Loading…</span
+            >
+          </div>
+        </div>
+
+        <!-- Custom Users -->
+        <div style="border-top: 1px solid var(--border); padding-top: 16px;">
+          <div
+            style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;"
+          >
+            <div style="font-weight: 600; font-size: 13px;">Custom Users</div>
+          </div>
+          <div
+            id="custom-users-list"
+            style="display: flex; flex-direction: column; gap: 6px;"
+          >
+          </div>
+          <div style="display: flex; gap: 8px; margin-top: 10px;">
+            <input
+              type="text"
+              id="new-custom-user-name"
+              class="form-input"
+              placeholder="Name (e.g. Emma)"
+              style="flex: 1; max-width: 200px;"
+              aria-label="New custom user name"
+            />
+            <button
+              type="button"
+              class="btn btn-ghost"
+              id="add-custom-user-btn"
+              style="font-size: 13px;">+ Add User</button
+            >
+          </div>
+        </div>
+      </div>
+    </div>
   </div>
 </div>
 
@@ -467,5 +559,196 @@ const { locale } = Astro.props;
         closePopup();
       }
     });
+  })();
+</script>
+
+<script is:inline>
+  (function () {
+    var bp = window.__ingress_path || "";
+
+    function initUsersCard() {
+      var select = document.getElementById("default-assignee-select");
+      var discoveredList = document.getElementById("discovered-users-list");
+      var customList = document.getElementById("custom-users-list");
+      if (!select) return;
+
+      // Fetch all users + default
+      Promise.all([
+        fetch(bp + "/api/users").then(function (r) {
+          return r.ok ? r.json() : { users: [] };
+        }),
+        fetch(bp + "/api/users/default")
+          .then(function (r) {
+            return r.ok ? r.json() : {};
+          })
+          .catch(function () {
+            return {};
+          }),
+        fetch(bp + "/api/users/custom")
+          .then(function (r) {
+            return r.ok ? r.json() : { users: [] };
+          })
+          .catch(function () {
+            return { users: [] };
+          }),
+      ])
+        .then(function (results) {
+          var allUsers = results[0].users || [];
+          var defaultData = results[1];
+          var customUsers = results[2].users || [];
+
+          // Populate default-assignee dropdown
+          select.innerHTML = '<option value="">None (unassigned)</option>';
+          allUsers.forEach(function (u) {
+            var opt = document.createElement("option");
+            opt.value = u.id;
+            opt.textContent =
+              (u.display_name || u.name || u.id) +
+              (u.source === "ha" ? " (HA)" : " (Custom)");
+            select.appendChild(opt);
+          });
+          if (defaultData.user_id) {
+            select.value = defaultData.user_id;
+          }
+
+          // Discovered (HA) users list
+          var haUsers = allUsers.filter(function (u) {
+            return u.source === "ha";
+          });
+          if (discoveredList) {
+            if (haUsers.length === 0) {
+              discoveredList.innerHTML =
+                '<span style="color: var(--text-muted); font-size: 12px; font-style: italic;">No HA users found (standalone mode?)</span>';
+            } else {
+              discoveredList.innerHTML = "";
+              haUsers.forEach(function (u) {
+                var row = document.createElement("div");
+                row.style.cssText =
+                  "display: flex; align-items: center; gap: 8px; padding: 6px 10px; background: var(--bg-secondary); border: 1px solid var(--border); border-radius: 6px;";
+                var initials = (u.display_name || u.name || "??")
+                  .slice(0, 2)
+                  .toUpperCase();
+                row.innerHTML =
+                  '<span style="display: inline-flex; align-items: center; justify-content: center; width: 28px; height: 28px; border-radius: 50%; background: var(--accent); color: #fff; font-size: 11px; font-weight: 700;">' +
+                  initials +
+                  "</span>" +
+                  '<span style="font-size: 13px; font-weight: 500;">' +
+                  (u.display_name || u.name || u.id) +
+                  "</span>" +
+                  '<span style="font-size: 11px; color: var(--text-muted); font-family: monospace;">' +
+                  u.id +
+                  "</span>";
+                discoveredList.appendChild(row);
+              });
+            }
+          }
+
+          // Custom users list
+          renderCustomUsers(customUsers);
+        })
+        .catch(function (err) {
+          console.error("[Settings] Users load error:", err);
+          if (discoveredList)
+            discoveredList.innerHTML =
+              '<span style="color: var(--danger); font-size: 12px;">Failed to load users</span>';
+        });
+
+      function renderCustomUsers(users) {
+        if (!customList) return;
+        customList.innerHTML = "";
+        if (users.length === 0) {
+          customList.innerHTML =
+            '<span style="color: var(--text-muted); font-size: 12px; font-style: italic;">No custom users added yet</span>';
+          return;
+        }
+        users.forEach(function (u) {
+          var row = document.createElement("div");
+          row.style.cssText =
+            "display: flex; align-items: center; gap: 8px; padding: 6px 10px; background: var(--bg-secondary); border: 1px solid var(--border); border-radius: 6px;";
+          var initials = (u.display_name || u.name || "??")
+            .slice(0, 2)
+            .toUpperCase();
+          row.innerHTML =
+            '<span style="display: inline-flex; align-items: center; justify-content: center; width: 28px; height: 28px; border-radius: 50%; background: var(--warning, #f59e0b); color: #fff; font-size: 11px; font-weight: 700;">' +
+            initials +
+            "</span>" +
+            '<span style="font-size: 13px; font-weight: 500; flex: 1;">' +
+            (u.display_name || u.name || u.id) +
+            "</span>" +
+            '<button type="button" class="btn-icon text-danger custom-user-delete-btn" data-user-id="' +
+            u.id +
+            '" style="font-size: 16px; cursor: pointer;" title="Remove user" aria-label="Remove ' +
+            (u.display_name || u.name) +
+            '">×</button>';
+          customList.appendChild(row);
+        });
+        customList
+          .querySelectorAll(".custom-user-delete-btn")
+          .forEach(function (btn) {
+            btn.addEventListener("click", function () {
+              var userId = btn.getAttribute("data-user-id");
+              fetch(bp + "/api/users/custom?id=" + encodeURIComponent(userId), {
+                method: "DELETE",
+              })
+                .then(function () {
+                  initUsersCard();
+                })
+                .catch(function (err) {
+                  console.error("Delete custom user error:", err);
+                });
+            });
+          });
+      }
+
+      // Save default assignee
+      document
+        .getElementById("save-default-assignee")
+        ?.addEventListener("click", function () {
+          var val = select.value;
+          fetch(bp + "/api/users/default", {
+            method: "PUT",
+            headers: { "content-type": "application/json" },
+            body: JSON.stringify({ user_id: val || null }),
+          })
+            .then(function () {
+              // Toast
+              if (typeof window.showToast === "function")
+                window.showToast("Default assignee saved");
+            })
+            .catch(function (err) {
+              console.error("Save default assignee error:", err);
+            });
+        });
+
+      // Add custom user
+      document
+        .getElementById("add-custom-user-btn")
+        ?.addEventListener("click", function () {
+          var input = document.getElementById("new-custom-user-name");
+          var name = (input?.value || "").trim();
+          if (!name) {
+            input?.focus();
+            return;
+          }
+          fetch(bp + "/api/users/custom", {
+            method: "POST",
+            headers: { "content-type": "application/json" },
+            body: JSON.stringify({ name: name }),
+          })
+            .then(function (res) {
+              if (res.ok) {
+                input.value = "";
+                initUsersCard();
+              }
+            })
+            .catch(function (err) {
+              console.error("Add custom user error:", err);
+            });
+        });
+    }
+
+    // Init immediately + on astro nav
+    initUsersCard();
+    document.addEventListener("astro:page-load", initUsersCard);
   })();
 </script>

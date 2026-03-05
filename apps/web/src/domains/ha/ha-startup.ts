@@ -129,7 +129,7 @@ async function autoStartTodoSync(): Promise<void> {
 
     // Read todo sync settings
     const res = await client.execute({
-      sql: "SELECT key, value FROM settings WHERE key IN ('todo_sync_enabled', 'todo_entity', 'todo_sync_direction')",
+      sql: "SELECT key, value FROM settings WHERE key IN ('todo_sync_enabled', 'todo_entity', 'todo_entities', 'todo_sync_direction')",
       args: [],
     });
 
@@ -148,40 +148,56 @@ async function autoStartTodoSync(): Promise<void> {
     const enabled =
       settings.todo_sync_enabled === true ||
       settings.todo_sync_enabled === "true";
-    const entityId = typeof settings.todo_entity === "string" ? settings.todo_entity : undefined;
     const direction =
       (typeof settings.todo_sync_direction === "string" ? settings.todo_sync_direction : "bidirectional") as
         | "inbound"
         | "outbound"
         | "bidirectional";
+    // Resolve entity IDs: prefer todo_entities array, fall back to todo_entity single key
+    let entityIds: string[] = [];
+    if (settings.todo_entities) {
+      const raw = settings.todo_entities;
+      if (Array.isArray(raw)) {
+        entityIds = raw.filter((e): e is string => typeof e === "string" && e.length > 0);
+      } else if (typeof raw === "string") {
+        try {
+          const parsed = JSON.parse(raw);
+          if (Array.isArray(parsed)) entityIds = parsed.filter((e: unknown): e is string => typeof e === "string");
+        } catch { /* fall through */ }
+      }
+    }
+    if (entityIds.length === 0 && typeof settings.todo_entity === "string" && settings.todo_entity) {
+      entityIds = [settings.todo_entity];
+    }
 
-    if (!enabled || !entityId) {
+    if (!enabled || entityIds.length === 0) {
       logger.log("info", {
         event: "ha.startup.todo_sync.skipped",
         domain: "todo",
         component: "ha-startup",
         request_id: SYS_REQ,
-        message: `Todo sync not configured (enabled: ${enabled}, entity: ${entityId ?? "none"})`,
+        message: `Todo sync not configured (enabled: ${enabled}, entities: ${entityIds.length})`,
       });
       return;
     }
 
-    // Import and start todo sync
+    // Import and start todo sync for ALL enabled entities
     const { startTodoSync } = await import("@domains/todo");
-    startTodoSync({
-      entityId,
-      syncEnabled: true,
-      writeBack:
-        direction === "outbound" || direction === "bidirectional",
-      syncDirection: direction,
-    });
+    startTodoSync(
+      entityIds.map((entityId) => ({
+        entityId,
+        syncEnabled: true,
+        writeBack: direction === "outbound" || direction === "bidirectional",
+        syncDirection: direction,
+      })),
+    );
 
     logger.log("info", {
       event: "ha.startup.todo_sync.started",
       domain: "todo",
       component: "ha-startup",
       request_id: SYS_REQ,
-      message: `Auto-started todo sync for ${entityId} (direction: ${direction})`,
+      message: `Auto-started todo sync for ${entityIds.length} entity/entities: ${entityIds.join(", ")} (direction: ${direction})`,
     });
   } catch (err) {
     logger.log("error", {

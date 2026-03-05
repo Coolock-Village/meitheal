@@ -1,116 +1,347 @@
 /**
  * AI Context Service
  *
- * Generates deterministic LLM prompts from task payloads and routes the user
- * to their configured AI provider (ChatGPT, Claude, Gemini, or Custom).
+ * Sends task-context prompts to HA Assist (conversation.process) for inline
+ * AI responses. Falls back to clipboard + external provider when HA is
+ * disconnected.
  *
  * Bounded Context: ai / tasks
+ * @domain ai
  */
 
 import { getTask, type OfflineTask } from "../offline/offline-store";
 
 /** Extended task interface with optional fields from persistence layer */
 interface TaskWithExtras extends OfflineTask {
-    taskType?: string;
-    task_type?: string;
-    priority?: number;
+  taskType?: string;
+  task_type?: string;
+  priority?: number;
 }
 
-export async function askAIForTask(taskId: string): Promise<void> {
-    let raw = await getTask(taskId);
+/** Result from an AI call — either inline response or fallback */
+export interface AIResult {
+  /** The AI's response text, or null if we fell back to clipboard */
+  response: string | null;
+  /** Whether we used HA Assist or fell back to external provider */
+  source: "ha-assist" | "clipboard-fallback";
+  /** Conversation ID for multi-turn follow-ups */
+  conversationId?: string;
+}
 
-    // Fallback: fetch from server API if not in offline store
-    if (!raw) {
-        try {
-            const res = await fetch(`${window.__ingress_path || ""}/api/v1/tasks/${taskId}`);
-            if (res.ok) {
-                const data = await res.json();
-                if (data) {
-                    raw = {
-                        id: data.id ?? taskId,
-                        title: data.title ?? "Untitled",
-                        description: data.description ?? "",
-                        status: data.status ?? "todo",
-                        dueDate: data.due_date ?? null,
-                        labels: data.labels ?? "",
-                        createdAt: data.created_at ?? new Date().toISOString(),
-                        updatedAt: data.updated_at ?? new Date().toISOString(),
-                        syncedAt: new Date().toISOString(),
-                        synced: true,
-                        taskType: data.task_type,
-                        priority: data.priority,
-                    } as unknown as TaskWithExtras;
-                }
-            }
-        } catch (err) {
-            console.warn("Failed to fetch task from server:", err);
-        }
+/**
+ * Get the configured HA conversation agent ID from settings.
+ * Falls back to undefined (HA's default agent).
+ */
+async function getAgentId(): Promise<string | undefined> {
+  try {
+    const res = await fetch(
+      (window.__ingress_path || "") + "/api/settings?key=ha-agent-id"
+    );
+    if (res.ok) {
+      const data = await res.json();
+      if (data?.value && typeof data.value === "string") return data.value;
     }
+  } catch {
+    /* use default */
+  }
+  return undefined;
+}
 
-    if (!raw) {
-        throw new Error(`Task ${taskId} not found in local store or server.`);
-    }
-    const task = raw as TaskWithExtras;
+/**
+ * Fetch full task data from offline store or API.
+ */
+async function resolveTask(taskId: string): Promise<TaskWithExtras> {
+  let raw = await getTask(taskId);
 
-    // 1. Fetch configured provider
-    let provider = "chatgpt";
-    let customUrl = "";
+  if (!raw) {
     try {
-        const res = await fetch((window.__ingress_path || "") + "/api/settings?key=ai-provider");
-        if (res.ok) {
-            const data = await res.json();
-            if (data && data.value) provider = data.value;
+      const res = await fetch(
+        `${window.__ingress_path || ""}/api/tasks/${taskId}`
+      );
+      if (res.ok) {
+        const data = await res.json();
+        // Handle both { task: {...} } and flat {...} response shapes
+        const t = data?.task ?? data;
+        if (t) {
+          raw = {
+            id: t.id ?? taskId,
+            title: t.title ?? "Untitled",
+            description: t.description ?? "",
+            status: t.status ?? "todo",
+            dueDate: t.due_date ?? null,
+            labels: t.labels ?? "",
+            createdAt: t.created_at ?? new Date().toISOString(),
+            updatedAt: t.updated_at ?? new Date().toISOString(),
+            syncedAt: new Date().toISOString(),
+            synced: true,
+            taskType: t.task_type,
+            priority: t.priority,
+          } as unknown as TaskWithExtras;
         }
-        const resUrl = await fetch((window.__ingress_path || "") + "/api/settings?key=ai-custom-url");
-        if (resUrl.ok) {
-            const dataUrl = await resUrl.json();
-            if (dataUrl && dataUrl.value) customUrl = dataUrl.value;
-        }
+      }
     } catch (err) {
-        console.warn("Failed to fetch AI provider settings, defaulting to ChatGPT", err);
+      console.warn("[ai] Failed to fetch task from server:", err);
     }
+  }
 
-    // 2. Construct deterministic prompt
-    const type = task.taskType ?? task.task_type ?? "Task";
-    const prompt = `I am working on the following ${type} in my local Meitheal system. I need help planning, debugging, or decomposing this piece of work.
+  if (!raw) throw new Error(`Task ${taskId} not found.`);
+  return raw as TaskWithExtras;
+}
 
-## 📋 Context
-**Title**: ${task.title}
-**Status**: ${task.status}
-**Priority**: ${task.priority ?? "None"}
-**Due Date**: ${task.dueDate ?? "No due date"}
+/**
+ * Send a prompt to HA Assist and return the response.
+ * Returns null if HA is not connected (503).
+ */
+async function callAssist(
+  prompt: string,
+  conversationId?: string
+): Promise<{ speech: string; conversationId?: string } | null> {
+  const agentId = await getAgentId();
 
-## 📝 Description
+  const body: Record<string, string> = { text: prompt };
+  if (agentId) body.agent_id = agentId;
+  if (conversationId) body.conversation_id = conversationId;
+
+  const res = await fetch(
+    (window.__ingress_path || "") + "/api/ha/assist",
+    {
+      method: "POST",
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify(body),
+    }
+  );
+
+  // HA not connected — signal to fall back
+  if (res.status === 503) return null;
+
+  if (!res.ok) {
+    const err = await res.json().catch(() => ({ error: "Unknown error" }));
+    throw new Error(err.error || `Assist returned ${res.status}`);
+  }
+
+  const data = await res.json();
+  return {
+    speech: data.speech ?? "Done.",
+    conversationId: data.conversation_id,
+  };
+}
+
+/**
+ * Fall back to clipboard + external provider when HA is unavailable.
+ */
+async function fallbackToClipboard(prompt: string): Promise<void> {
+  // Copy to clipboard
+  if (navigator.clipboard && window.isSecureContext) {
+    try {
+      await navigator.clipboard.writeText(prompt);
+    } catch {
+      /* clipboard denied */
+    }
+  }
+
+  // Open external provider
+  let provider = "chatgpt";
+  try {
+    const res = await fetch(
+      (window.__ingress_path || "") + "/api/settings?key=ai-provider"
+    );
+    if (res.ok) {
+      const data = await res.json();
+      if (data?.value) provider = data.value;
+    }
+  } catch {
+    /* default */
+  }
+
+  let targetUrl = "https://chatgpt.com/";
+  if (provider === "claude") targetUrl = "https://claude.ai/new";
+  else if (provider === "gemini") targetUrl = "https://gemini.google.com/";
+  else if (provider === "ollama" || provider === "custom") {
+    try {
+      const resUrl = await fetch(
+        (window.__ingress_path || "") + "/api/settings?key=ai-custom-url"
+      );
+      if (resUrl.ok) {
+        const d = await resUrl.json();
+        if (d?.value) targetUrl = d.value;
+      }
+    } catch {
+      /* use default */
+    }
+  }
+
+  window.open(targetUrl, "_blank");
+}
+
+/**
+ * Ask AI about a task — sends to HA Assist with inline response.
+ * Falls back to clipboard + external if HA is disconnected.
+ */
+export async function askAIForTask(taskId: string): Promise<AIResult> {
+  const task = await resolveTask(taskId);
+  const type = task.taskType ?? task.task_type ?? "Task";
+
+  const prompt = `I am working on the following ${type} in Meitheal. Help me plan, break down, or solve blocking issues.
+
+Title: ${task.title}
+Status: ${task.status}
+Priority: ${task.priority ?? "None"}
+Due Date: ${task.dueDate ?? "No due date"}
+
+Description:
 ${task.description || "No description provided."}
 
-Please act as a senior technical co-pilot and help me break this down into actionable sub-tasks or solve the immediate blocking issues.
+Please act as a senior technical co-pilot. Break this down into actionable sub-tasks or suggest the next step.`;
+
+  try {
+    const result = await callAssist(prompt);
+    if (result) {
+      return {
+        response: result.speech,
+        source: "ha-assist",
+        conversationId: result.conversationId,
+      };
+    }
+  } catch (err) {
+    console.warn("[ai] HA Assist call failed, falling back:", err);
+  }
+
+  // Fallback
+  await fallbackToClipboard(prompt);
+  return { response: null, source: "clipboard-fallback" };
+}
+
+/**
+ * Auto-score a task against strategic frameworks via HA Assist.
+ * Returns structured field suggestions that can fill evaluator sliders.
+ */
+export async function autoScoreTask(
+  taskId: string,
+  frameworks: Array<{
+    id: string;
+    name: string;
+    archetype: string;
+    fields: Array<{
+      key: string;
+      label: string;
+      help_text?: string;
+      description?: string;
+      min?: number;
+      max?: number;
+      options?: Array<{ label: string; value: string | number }>;
+    }>;
+  }>
+): Promise<{
+  scores: Record<string, Record<string, number | string>>;
+  justification: string;
+  source: "ha-assist" | "clipboard-fallback";
+}> {
+  const task = await resolveTask(taskId);
+
+  let prompt = `Score the following task against strategic frameworks. Return a JSON object with keys for each framework ID, and values being objects mapping field keys to suggested values.
+
+Task: "${task.title}"
+Status: ${task.status}
+Priority: ${task.priority ?? "None"}
+Description: ${task.description || "No description."}
+
+Frameworks to evaluate:
 `;
 
-    // 3. Write to Clipboard (requires secure context)
-    if (typeof navigator !== "undefined" && navigator.clipboard && window.isSecureContext) {
-        try {
-            await navigator.clipboard.writeText(prompt);
-        } catch (err) {
-            console.error("Clipboard write failed:", err);
-            // Fallback: user will see text in the opened AI provider
-        }
+  for (const fw of frameworks) {
+    prompt += `\n**${fw.name}** (ID: "${fw.id}", type: ${fw.archetype})\n`;
+    for (const f of fw.fields) {
+      prompt += `- ${f.label} (key: "${f.key}")`;
+      if (f.help_text || f.description) prompt += `: ${f.help_text || f.description}`;
+      if (f.min !== undefined && f.max !== undefined) {
+        prompt += ` [range: ${f.min}–${f.max}]`;
+      }
+      if (f.options) {
+        prompt += ` [options: ${f.options.map((o) => `${o.label}=${o.value}`).join(", ")}]`;
+      }
+      prompt += "\n";
     }
+  }
 
-    // 4. Route accurately based on provider
-    let targetUrl = "https://chatgpt.com/";
-    switch (provider) {
-        case "claude":
-            targetUrl = "https://claude.ai/new";
-            break;
-        case "gemini":
-            targetUrl = "https://gemini.google.com/";
-            break;
-        case "ollama":
-        case "custom":
-            targetUrl = customUrl || "http://localhost:11434/";
-            break;
+  prompt += `
+Respond with ONLY a JSON object in this exact format, no markdown fences:
+{
+  "scores": { "<framework_id>": { "<field_key>": <value>, ... }, ... },
+  "justification": "Brief 1-2 sentence explanation of your scoring rationale."
+}`;
+
+  try {
+    const result = await callAssist(prompt);
+    if (result) {
+      // Try to parse structured JSON from the response
+      const parsed = extractJSON(result.speech);
+      if (parsed?.scores) {
+        return {
+          scores: parsed.scores,
+          justification: parsed.justification || result.speech,
+          source: "ha-assist",
+        };
+      }
+      // If AI returned text but not parseable JSON, return it as justification
+      return {
+        scores: {},
+        justification: result.speech,
+        source: "ha-assist",
+      };
     }
+  } catch (err) {
+    console.warn("[ai] Auto-score via Assist failed:", err);
+  }
 
-    // Deep linking to provider
-    window.open(targetUrl, "_blank");
+  // Fallback: clipboard
+  if (navigator.clipboard && window.isSecureContext) {
+    try {
+      await navigator.clipboard.writeText(prompt);
+    } catch {
+      /* denied */
+    }
+  }
+
+  return {
+    scores: {},
+    justification: "HA Assist unavailable — prompt copied to clipboard. Paste into your AI provider.",
+    source: "clipboard-fallback",
+  };
+}
+
+/**
+ * Extract JSON from a potentially messy AI response (may include
+ * markdown fences, preamble text, etc.).
+ */
+function extractJSON(
+  text: string
+): { scores: Record<string, Record<string, number | string>>; justification?: string } | null {
+  try {
+    // Try direct parse first
+    return JSON.parse(text);
+  } catch {
+    /* not pure JSON */
+  }
+
+  // Try to find JSON block in markdown fences
+  const fenceMatch = text.match(/```(?:json)?\s*([\s\S]*?)```/);
+  if (fenceMatch) {
+    try {
+      return JSON.parse(fenceMatch[1].trim());
+    } catch {
+      /* malformed */
+    }
+  }
+
+  // Try to find first { ... } block
+  const braceMatch = text.match(/\{[\s\S]*\}/);
+  if (braceMatch) {
+    try {
+      return JSON.parse(braceMatch[0]);
+    } catch {
+      /* malformed */
+    }
+  }
+
+  return null;
 }

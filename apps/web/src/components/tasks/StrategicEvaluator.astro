@@ -268,13 +268,16 @@ const defaultMapping: Record<string, string> = {
     });
 
     try {
-      const res = await fetch(`${window.__ingress_path || ""}/api/tasks/${currentTaskId}`, {
-        method: "PUT",
-        headers: { "content-type": "application/json" },
-        body: JSON.stringify({
-          framework_payload: JSON.stringify(currentPayload),
-        }),
-      });
+      const res = await fetch(
+        `${window.__ingress_path || ""}/api/tasks/${currentTaskId}`,
+        {
+          method: "PUT",
+          headers: { "content-type": "application/json" },
+          body: JSON.stringify({
+            framework_payload: JSON.stringify(currentPayload),
+          }),
+        },
+      );
 
       if (res.ok) {
         renderSidebarBadge();
@@ -368,93 +371,97 @@ const defaultMapping: Record<string, string> = {
 
   evalTriggerBtn?.addEventListener("click", openEvaluator);
 
-  // 6. AI Auto-Score Hook
+  // 6. AI Auto-Score — uses HA Assist for real scoring
   askAiBtn?.addEventListener("click", async () => {
-    askAiBtn.textContent = "⚙️ Simulating AI...";
+    askAiBtn.textContent = "⚙️ Scoring…";
     askAiBtn.disabled = true;
 
-    // 1. Build the AI Prompt
-    let prompt = `I am evaluating a task against several strategic frameworks to score priority, impact, or domain relevance.\n\n`;
+    // Remove any previous justification
+    document.getElementById("se-ai-justification")?.remove();
+
+    // Build framework descriptors for the AI
+    const fwDescriptors = currentActiveFrameworks.map((fw) => ({
+      id: fw.id,
+      name: fw.data.name,
+      archetype: fw.data.archetype,
+      fields: fw.data.fields.map((f) => ({
+        key: f.key,
+        label: f.label,
+        help_text: f.help_text || f.description || "",
+        min: f.min,
+        max: f.max,
+        options: f.options,
+      })),
+    }));
+
     try {
-      const res = await fetch(`${window.__ingress_path || ""}/api/tasks/${currentTaskId}`);
-      if (res.ok) {
-        const { task } = await res.json();
-        prompt += `### Task Details:\n`;
-        prompt += `- Title: ${task.title}\n`;
-        prompt += `- Status: ${task.status}\n`;
-        prompt += `- Priority: ${task.priority}\n`;
-        prompt += `- Description: ${task.description || "None"}\n\n`;
-      }
-    } catch {}
+      // Dynamic import to keep the strategic evaluator lean
+      const { autoScoreTask } = await import("@domains/ai/ai-context-service");
+      const result = await autoScoreTask(currentTaskId, fwDescriptors);
 
-    prompt += `### Frameworks to Evaluate:\n`;
-    currentActiveFrameworks.forEach((fw) => {
-      prompt += `\n**${fw.data.name}** (${fw.data.archetype})\n`;
-      fw.data.fields.forEach((f) => {
-        prompt += `- ${f.label}: ${f.help_text || "Determine appropriate value."}\n`;
-        if (f.ui_type === "slider" || f.type === "number") {
-          prompt += `  (Range: ${f.min || 0} to ${f.max || 100})\n`;
-        } else if (f.options) {
-          prompt += `  (Options: ${f.options.map((o) => o.label).join(", ")})\n`;
-        }
-      });
-    });
-
-    prompt += `\nPlease act as a senior technical co-pilot and product manager. Suggest the optimal values for each dimension based on the task description. If this is a numerical framework, please estimate the exact numbers based on standard industry scales.\n`;
-
-    // 2. Copy to Clipboard
-    if (navigator.clipboard && window.isSecureContext) {
-      try {
-        await navigator.clipboard.writeText(prompt);
-      } catch {}
-    }
-
-    // 3. Fake UI Slider Movements & Logic output
-    setTimeout(() => {
-      contentEl.querySelectorAll(".se-input").forEach((el) => {
-        if (el.type === "range") {
-          const min = Number(el.min) || 0;
-          const max = Number(el.max) || 100;
-          el.value = Math.floor(min + (max - min) * 0.75);
-        } else if (el.type === "radio") {
-          const name = el.getAttribute("name");
-          const inputs = document.querySelectorAll(`[name="${name}"]`);
-          if (inputs.length > 0)
-            inputs[Math.floor(inputs.length / 2)].checked = true;
-        } else if (el.tagName === "SELECT") {
-          const opts = el.options;
-          if (opts.length > 0)
-            el.value = opts[Math.floor(opts.length / 2)].value;
+      if (
+        result.source === "ha-assist" &&
+        Object.keys(result.scores).length > 0
+      ) {
+        // Apply AI scores to the UI inputs
+        for (const [fwId, fieldValues] of Object.entries(result.scores)) {
+          for (const [fieldKey, value] of Object.entries(fieldValues)) {
+            const inputs = contentEl.querySelectorAll(
+              `.se-input[data-framework="${fwId}"][data-key="${fieldKey}"]`,
+            );
+            inputs.forEach((el) => {
+              if (el.type === "radio") {
+                if (String(el.value) === String(value)) el.checked = true;
+              } else {
+                el.value = value;
+              }
+            });
+          }
         }
         updateLiveResult();
-      });
-      askAiBtn.innerHTML = `<span>✨</span> Auto-Scored (Prompt Copied)`;
 
-      if (!document.getElementById("se-ai-justification")) {
+        // Show justification
         const just = document.createElement("div");
         just.id = "se-ai-justification";
         just.className =
           "mt-4 p-3 bg-accent/10 border border-accent/20 rounded-md text-[11px] text-text-secondary leading-relaxed";
-        just.innerHTML = `<strong class="text-accent block mb-1">AI Prompt Copied!</strong> I've pre-filled a mock baseline. <b>Paste your clipboard into your AI provider (ChatGPT, Claude, Ollama)</b> to get the true strategic evaluation. Adjust sliders based on the AI's feedback.`;
+        just.innerHTML = `<strong class="text-accent block mb-1">✨ AI Evaluation</strong>${result.justification}`;
         contentEl.prepend(just);
+
+        askAiBtn.innerHTML = `<span>✨</span> Scored via Assist`;
+      } else if (result.source === "clipboard-fallback") {
+        // HA not connected — show fallback message
+        const just = document.createElement("div");
+        just.id = "se-ai-justification";
+        just.className =
+          "mt-4 p-3 bg-warning/10 border border-warning/20 rounded-md text-[11px] text-text-secondary leading-relaxed";
+        just.innerHTML = `<strong class="text-warning block mb-1">⚠ HA Assist Unavailable</strong>${result.justification}`;
+        contentEl.prepend(just);
+        askAiBtn.innerHTML = `<span>📋</span> Prompt Copied`;
+      } else {
+        // Assist responded but couldn't parse structured scores
+        const just = document.createElement("div");
+        just.id = "se-ai-justification";
+        just.className =
+          "mt-4 p-3 bg-accent/10 border border-accent/20 rounded-md text-[11px] text-text-secondary leading-relaxed";
+        just.innerHTML = `<strong class="text-accent block mb-1">✨ AI Response</strong>${result.justification}<br/><span class="text-text-muted mt-1 block">Adjust sliders manually based on AI feedback above.</span>`;
+        contentEl.prepend(just);
+        askAiBtn.innerHTML = `<span>✨</span> AI Responded`;
       }
+    } catch (err) {
+      console.error("Auto-score failed:", err);
+      const just = document.createElement("div");
+      just.id = "se-ai-justification";
+      just.className =
+        "mt-4 p-3 bg-danger/10 border border-danger/20 rounded-md text-[11px] text-text-secondary leading-relaxed";
+      just.innerHTML = `<strong class="text-danger block mb-1">Error</strong>Failed to score: ${err.message || "Unknown error"}`;
+      contentEl.prepend(just);
+      askAiBtn.innerHTML = `<span>❌</span> Failed`;
+    }
 
-      // Attempt to load provider from settings
-      fetch((window.__ingress_path || "") + "/api/settings?key=ai-provider")
-        .then((r) => r.json())
-        .then((data) => {
-          const provider = data?.value || "chatgpt";
-          let targetUrl = "https://chatgpt.com/";
-          if (provider === "claude") targetUrl = "https://claude.ai/new";
-          if (provider === "gemini") targetUrl = "https://gemini.google.com/";
-          window.open(targetUrl, "_blank");
-        })
-        .catch(() => window.open("https://chatgpt.com/", "_blank"));
-
-      setTimeout(() => {
-        askAiBtn.disabled = false;
-        askAiBtn.innerHTML = `<span>🤖</span> Auto-Score`;
-      }, 5000);
-    }, 800);
+    setTimeout(() => {
+      askAiBtn.disabled = false;
+      askAiBtn.innerHTML = `<span>🤖</span> Auto-Score`;
+    }, 4000);
   });
 </script>

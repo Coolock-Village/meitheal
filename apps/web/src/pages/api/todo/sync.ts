@@ -44,6 +44,7 @@ export const POST: APIRoute = async ({ request }) => {
     let body: {
       action?: "sync" | "enable" | "disable";
       entity_id?: string;
+      entities?: string[];
       direction?: "inbound" | "outbound" | "bidirectional";
     };
 
@@ -91,30 +92,37 @@ export const POST: APIRoute = async ({ request }) => {
       }
 
       case "enable": {
-        if (!body.entity_id) {
-          return new Response(JSON.stringify({ ok: false, error: "entity_id required" }), {
+        // Support multi-entity: body.entities array or single body.entity_id
+        const entities: string[] = Array.isArray((body as Record<string, unknown>).entities)
+          ? ((body as Record<string, unknown>).entities as string[]).filter((e) => typeof e === "string" && e.length > 0)
+          : body.entity_id ? [body.entity_id] : [];
+
+        if (entities.length === 0) {
+          return new Response(JSON.stringify({ ok: false, error: "entity_id or entities[] required" }), {
             status: 400, headers: { "Content-Type": "application/json" },
           });
         }
-        startTodoSync({
-          entityId: body.entity_id,
-          syncEnabled: true,
-          writeBack: body.direction === "outbound" || body.direction === "bidirectional",
-          syncDirection: body.direction ?? "bidirectional",
-        });
-        return new Response(JSON.stringify({ ok: true, message: `Sync enabled for ${body.entity_id}` }), {
+        startTodoSync(
+          entities.map((entityId) => ({
+            entityId,
+            syncEnabled: true,
+            writeBack: body.direction === "outbound" || body.direction === "bidirectional",
+            syncDirection: body.direction ?? "bidirectional",
+          })),
+        );
+        return new Response(JSON.stringify({ ok: true, message: `Sync enabled for ${entities.length} entity/entities: ${entities.join(", ")}` }), {
           status: 200, headers: { "Content-Type": "application/json" },
         });
       }
 
       case "disable": {
-        if (!body.entity_id) {
-          return new Response(JSON.stringify({ ok: false, error: "entity_id required" }), {
-            status: 400, headers: { "Content-Type": "application/json" },
-          });
+        // Stop specific entity or all active syncs
+        if (body.entity_id) {
+          stopTodoSync(body.entity_id);
+        } else {
+          stopTodoSync(); // stop all
         }
-        stopTodoSync(body.entity_id);
-        return new Response(JSON.stringify({ ok: true, message: `Sync disabled for ${body.entity_id}` }), {
+        return new Response(JSON.stringify({ ok: true, message: body.entity_id ? `Sync disabled for ${body.entity_id}` : "All todo syncs disabled" }), {
           status: 200, headers: { "Content-Type": "application/json" },
         });
       }
