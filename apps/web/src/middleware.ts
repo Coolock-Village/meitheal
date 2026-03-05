@@ -9,6 +9,7 @@ import { buildSecurityHeaders, isCsrfAllowed } from "@domains/auth/ingress-polic
 import { createLogger, defaultRedactionPatterns } from "@meitheal/domain-observability";
 import { getPersistenceClient, ensureSchema } from "@domains/tasks/persistence/store";
 import { initHAIntegrations } from "@domains/ha";
+import type { DateFormat } from "./lib/date";
 
 const logger = createLogger({
   service: "meitheal-web",
@@ -133,7 +134,7 @@ export const onRequest: MiddlewareHandler = async ({ request, locals }, next) =>
     for (const row of res.rows) {
       if (row.key === "timezone" && typeof row.value === "string") locals.timezone = row.value;
       if (row.key === "week_start" && typeof row.value === "string") locals.weekStart = row.value;
-      if (row.key === "date_format" && typeof row.value === "string") locals.dateFormat = row.value;
+      if (row.key === "date_format" && typeof row.value === "string") locals.dateFormat = row.value as DateFormat;
     }
   } catch {
     /* ignore db errors, defaults used */

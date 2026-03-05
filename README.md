@@ -81,6 +81,28 @@ Meitheal ships both:
 
 Calendar sync is automatic when running as an HA addon — Meitheal detects your calendar entities and syncs events bidirectionally (HA events → tasks, task due dates → calendar events). See `meitheal-hub/DOCS.md` for configuration.
 
+### Voice & Assist Integration
+
+Meitheal registers as an LLM API provider in Home Assistant, making task management available to any conversation agent (Gemini, OpenAI, Ollama).
+
+**Quick setup:**
+
+1. HA auto-discovers Meitheal on addon start → confirm in **Settings → Devices & Services**
+2. Go to **Settings → Voice Assistants → [Your Agent] → Configure → LLM APIs** → select **"Meitheal Tasks"**
+3. Expose `todo.meitheal_tasks` in **Settings → Voice Assistants → Expose**
+
+**Example commands:**
+
+- "What are my tasks?" — searches active tasks
+- "Add buy groceries to my tasks" — creates a task
+- "What's overdue?" — lists past-due tasks
+- "What's on my plate today?" — shows today's agenda
+- "Mark buy groceries as done" — completes by title
+
+**8 LLM tools:** search, create, complete, update, get details, get overdue, get today's tasks, task summary.
+
+See `meitheal-hub/DOCS.md` for full tool reference and troubleshooting.
+
 Interop design is informed by existing HA/Vikunja integration patterns, including:
 
 - <https://github.com/joeShuff/vikunja-homeassistant>
@@ -126,6 +148,7 @@ Interop design is informed by existing HA/Vikunja integration patterns, includin
 | a11y (ARIA, semantic HTML) | ✅ | Vikunja ⚠️ Trello ✅ |
 | Offline Image Attachments (IDB) | ✅ | Vikunja ❌ Trello ❌ |
 | AI Context Routing (LLM) | ✅ | Vikunja ❌ Trello ❌ |
+| HA Voice/Assist (8 LLM tools) | ✅ | Vikunja ❌ Trello ❌ |
 | Strict Perf Budgets (CI) | ✅ | Vikunja ❌ Trello ❌ |
 | Web Notifications (overdue/reminders) | ✅ | Vikunja ❌ Trello ✅ |
 | Web Share API (native OS sharing) | ✅ | Vikunja ❌ Trello ✅ |
@@ -190,3 +213,4 @@ All 19 phases complete and container-verified:
 - 70+ source files, 0 typecheck errors
 - Container-tested on `ghcr.io/home-assistant/amd64-base:3.20`
 - OpenAPI 3.0.3 specification (12+ routes)
+- 8 LLM tools registered for HA Assist/Voice control
