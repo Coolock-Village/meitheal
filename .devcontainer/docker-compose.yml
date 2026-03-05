@@ -28,10 +28,8 @@ services:
       GROCY_URL: "http://grocy:80"
       NODERED_URL: "http://nodered:1880"
     volumes:
-      - type: volume
-        target: /var/lib/docker
-      - type: volume
-        target: /mnt/supervisor
+      - ha-docker-data:/var/lib/docker
+      - ha-supervisor-data:/mnt/supervisor
     networks:
       - meitheal-dev
     depends_on:
@@ -55,7 +53,7 @@ services:
     networks:
       - meitheal-dev
     healthcheck:
-      test: ["CMD", "curl", "-fsS", "http://127.0.0.1:80/"]
+      test: [ "CMD", "curl", "-fsS", "http://127.0.0.1:80/" ]
       interval: 15s
       timeout: 5s
       start_period: 30s
@@ -76,13 +74,17 @@ services:
     networks:
       - meitheal-dev
     healthcheck:
-      test: ["CMD", "curl", "-fsS", "http://127.0.0.1:1880/"]
+      test: [ "CMD", "curl", "-fsS", "http://127.0.0.1:1880/" ]
       interval: 15s
       timeout: 5s
       start_period: 20s
       retries: 5
 
 volumes:
+  ha-docker-data:
+    name: meitheal-dev-docker
+  ha-supervisor-data:
+    name: meitheal-dev-supervisor
   grocy-data:
     name: meitheal-dev-grocy
   nodered-data:

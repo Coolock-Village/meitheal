@@ -13,7 +13,7 @@
  */
 import { createLogger, defaultRedactionPatterns } from "@meitheal/domain-observability";
 import { GrocyAdapter, type GrocyChore, type GrocyTask } from "@meitheal/integration-core";
-import { choreToTask, taskToTask, shoppingListToTask } from "./grocy-mapper";
+import { choreToTask, taskToTask, shoppingListToTask } from "./grocy-mapper.js";
 
 const logger = createLogger({
   service: "meitheal-web",
@@ -222,7 +222,7 @@ export async function syncFromGrocy(): Promise<{
   try {
     const shoppingResult = await adapter.getShoppingList();
     if (shoppingResult.ok && shoppingResult.data.length > 0) {
-      result.shopping = await mergeShoppingList(shoppingResult.data);
+      result.shopping = await mergeShoppingList(shoppingResult.data as { id?: number; productId: number; amount: number; note?: string }[]);
     }
   } catch (err) {
     result.errors++;
@@ -557,8 +557,8 @@ async function mergeShoppingList(items: { id?: number; productId: number; amount
 
 // ═══════ Table Bootstrap ═══════
 
-/** Ensure grocy_sync_confirmations table exists. Idempotent. */
-async function ensureGrocySyncTable(client: { execute: (sql: string | { sql: string; args: unknown[] }) => Promise<unknown> }): Promise<void> {
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+async function ensureGrocySyncTable(client: any): Promise<void> {
   await client.execute({
     sql: `CREATE TABLE IF NOT EXISTS grocy_sync_confirmations (
       confirmation_id TEXT PRIMARY KEY,

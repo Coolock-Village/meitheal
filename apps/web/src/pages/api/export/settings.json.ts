@@ -11,10 +11,20 @@ export const GET: APIRoute = async () => {
         // Fetch all true server-side settings
         const result = await client.execute("SELECT * FROM settings");
 
-        // Convert array of rows into a key-value object
+        // Secrets that MUST NOT be exported
+        const EXCLUDED_KEYS = new Set([
+            "caldav_password_enc",
+            "ha_token",
+            "n8n_api_key",
+            "n8n_signing_secret",
+            "webhook_secret",
+            "grocy_api_key",
+        ]);
+
+        // Convert array of rows into a key-value object, excluding secrets
         const settingsObject: Record<string, string> = {};
         for (const row of result.rows) {
-            if (row.key && row.value !== null) {
+            if (row.key && row.value !== null && !EXCLUDED_KEYS.has(row.key as string)) {
                 settingsObject[row.key as string] = row.value as string;
             }
         }

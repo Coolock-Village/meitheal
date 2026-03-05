@@ -586,7 +586,7 @@ export async function syncCalDAVEvents(): Promise<{ created: number; updated: nu
         for (const evt of events) {
           // Check if already synced via UID (dedup)
           const existingRes = await client.execute({
-            sql: "SELECT id FROM calendar_confirmations WHERE provider_event_id = ? AND source = 'caldav' LIMIT 1",
+            sql: "SELECT confirmation_id FROM calendar_confirmations WHERE provider_event_id = ? AND source = 'caldav' LIMIT 1",
             args: [evt.uid],
           });
 
@@ -597,24 +597,32 @@ export async function syncCalDAVEvents(): Promise<{ created: number; updated: nu
 
           // Create task from CalDAV event
           const taskId = crypto.randomUUID();
+          const reqId = crypto.randomUUID();
+          const nowMs = Date.now();
           await client.execute({
-            sql: `INSERT INTO tasks (id, title, description, status, due_date, calendar_sync_state, created_at, updated_at)
-                  VALUES (?, ?, ?, 'backlog', ?, 'synced', ?, ?)`,
+            sql: `INSERT INTO tasks (id, title, description, status, priority, due_date,
+                    labels, framework_payload, calendar_sync_state, board_id,
+                    custom_fields, task_type, idempotency_key, request_id,
+                    created_at, updated_at)
+                  VALUES (?, ?, ?, 'backlog', 3, ?, '[]', '{}', 'synced', 'default',
+                    '{}', 'task', ?, ?, ?, ?)`,
             args: [
               taskId,
               evt.summary,
               evt.description || `📡 CalDAV event from ${cal.displayName}`,
               evt.dtstart,
-              Date.now(),
-              Date.now(),
+              `caldav-sync-${evt.uid}`,
+              reqId,
+              nowMs,
+              nowMs,
             ],
           });
 
           // Record confirmation for dedup
           await client.execute({
-            sql: `INSERT INTO calendar_confirmations (id, task_id, provider_event_id, source, created_at)
-                  VALUES (?, ?, ?, 'caldav', ?)`,
-            args: [crypto.randomUUID(), taskId, evt.uid, Date.now()],
+            sql: `INSERT INTO calendar_confirmations (confirmation_id, task_id, request_id, provider_event_id, source, payload, created_at)
+                  VALUES (?, ?, ?, ?, 'caldav', ?, ?)`,
+            args: [crypto.randomUUID(), taskId, reqId, evt.uid, JSON.stringify({ summary: evt.summary, dtstart: evt.dtstart, calendar: cal.displayName }), nowMs],
           });
 
           totalCreated++;

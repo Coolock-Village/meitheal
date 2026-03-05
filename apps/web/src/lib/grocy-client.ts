@@ -1,5 +1,5 @@
 import { getPersistenceClient } from "@domains/tasks/persistence/store";
-import { GrocyStockAdapter } from "@meitheal/integration-core";
+import { GrocyAdapter } from "@meitheal/integration-core";
 import { createLogger, defaultRedactionPatterns } from "@meitheal/domain-observability";
 
 const logger = createLogger({
@@ -11,7 +11,7 @@ const logger = createLogger({
   auditEnabled: false,
 });
 
-export async function createGrocyClient(): Promise<GrocyStockAdapter | null> {
+export async function createGrocyClient(): Promise<GrocyAdapter | null> {
   try {
     const client = getPersistenceClient();
     const result = await client.execute(
@@ -41,7 +41,7 @@ export async function createGrocyClient(): Promise<GrocyStockAdapter | null> {
       return null;
     }
 
-    return new GrocyStockAdapter({
+    return new GrocyAdapter({
       baseUrl,
       apiKey,
       timeoutMs: 5000,

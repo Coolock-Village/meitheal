@@ -106,6 +106,23 @@ Cross-context imports must occur through public package APIs, not deep path impo
 - Version in `config.yaml` must match the tag (e.g., `version: "0.2.6"` ↔ `v0.2.6`)
 - Also bump `MEITHEAL_VERSION` in `run.sh` to match
 
+## Verification Tiers (Mandatory)
+
+Changes **must** be verified in the correct environment tier before completion.
+
+| Change touches… | Required Tier | How to start |
+|-----------------|---------------|--------------|
+| CSS, layout, UI components, client JS | 🔧 Tier 1: `npm run dev` in `apps/web/` | Local Astro dev server |
+| Ingress, middleware, `serve.mjs` | 🏠 Tier 2: `./scripts/devcontainer-up.sh` | HA devcontainer |
+| HA API, WebSocket, `domains/ha/` | 🏠 Tier 2 | HA devcontainer |
+| Supervisor API, `run.sh`, `config.yaml` | 🏠 Tier 2 | HA devcontainer |
+| Calendar/Todo sync, entity exposure | 🏠 Tier 2 | HA devcontainer |
+| LLM API (`llm_api.py`, `__init__.py`) | 🏠 Tier 2 | HA devcontainer |
+| Addon lifecycle (start/stop/build) | 🏠 Tier 2 | HA devcontainer |
+| Final acceptance on real data | 🌐 Tier 3 | Production HA (`ha.home.arpa`) |
+
+> **⚠️ AGENTS**: Do NOT mark HA integration work as verified using only Tier 1. If the devcontainer isn't running, start it with `./scripts/devcontainer-up.sh up`. See `.agents/workflows/devcontainer.md` for details.
+
 ## KCS Rules
 
 - New behavior requires updated docs and a runbook touchpoint

@@ -586,7 +586,7 @@ const { locale } = Astro.props;
           <div class="integration-card__title-info">
             <strong>Grocy</strong>
             <span class="integration-card__desc"
-              >Household inventory & chore management</span
+              >Chores, tasks &amp; shopping list sync</span
             >
           </div>
         </div>
@@ -622,6 +622,15 @@ const { locale } = Astro.props;
             Grocy addon found — URL auto-populated from HA ingress. No
             additional setup needed.
           </div>
+        </div>
+
+        <!-- Grocy test result callout -->
+        <div
+          id="grocy-test-result"
+          class="integration-callout"
+          style="display: none;"
+          aria-live="polite"
+        >
         </div>
 
         <div class="integration-card__config">
@@ -668,17 +677,60 @@ const { locale } = Astro.props;
             <div class="form-label-row">
               <label class="form-label" for="grocy-sync-mode">Sync Mode</label>
               <HelpTooltip
-                text="Controls how data flows between Grocy and Meitheal. Import pulls chores/products into tasks, Export pushes completed tasks to Grocy, and Bidirectional keeps both systems in sync."
+                text="Controls how data flows between Grocy and Meitheal. Import pulls chores/tasks into Meitheal, Export pushes completions to Grocy, Bidirectional keeps both in sync."
                 id="help-grocy-sync"
               />
             </div>
             <select class="form-select" id="grocy-sync-mode">
               <option value="import">Import Grocy → Meitheal</option>
               <option value="export">Export Meitheal → Grocy</option>
-              <option value="bidirectional">Bidirectional sync</option>
+              <option value="bidirectional" selected>Bidirectional sync</option>
             </select>
           </div>
+          <div class="form-group">
+            <div class="form-label-row">
+              <label class="form-label" for="grocy-sync-interval"
+                >Sync Interval</label
+              >
+              <HelpTooltip
+                text="How often Meitheal polls Grocy for changes. More frequent = faster sync but more API calls."
+                id="help-grocy-interval"
+              />
+            </div>
+            <select class="form-select" id="grocy-sync-interval">
+              <option value="60000">Every 1 minute</option>
+              <option value="300000">Every 5 minutes</option>
+              <option value="900000" selected>Every 15 minutes</option>
+              <option value="1800000">Every 30 minutes</option>
+              <option value="3600000">Every hour</option>
+              <option value="0">Manual only</option>
+            </select>
+          </div>
+
+          <!-- Last synced info -->
+          <div class="form-group" id="grocy-sync-info" style="display: none;">
+            <div
+              class="integration-callout integration-callout--info"
+              style="margin: 0;"
+            >
+              <span id="grocy-last-synced">Never synced</span>
+              <span
+                id="grocy-item-count"
+                style="margin-left: auto; font-size: 12px; opacity: 0.7;"
+              ></span>
+            </div>
+          </div>
+
           <div class="integration-card__actions">
+            <button type="button" class="btn btn-outline" id="test-grocy"
+              >Test Connection</button
+            >
+            <button
+              type="button"
+              class="btn btn-outline"
+              id="sync-grocy-now"
+              style="display: none;">Sync Now</button
+            >
             <button type="button" class="btn btn-primary" id="save-grocy"
               >Save Grocy Settings</button
             >
