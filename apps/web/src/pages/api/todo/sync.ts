@@ -51,9 +51,29 @@ export const POST: APIRoute = async ({ request }) => {
 
     switch (action) {
       case "sync": {
-        await syncTodoFromHA(body.entity_id);
+        // Auto-start sync if entity_id provided but not yet active
+        if (body.entity_id) {
+          const existing = getTodoSyncStatus(body.entity_id);
+          if (!existing) {
+            startTodoSync({
+              entityId: body.entity_id,
+              syncEnabled: true,
+              writeBack: body.direction === "outbound" || body.direction === "bidirectional",
+              syncDirection: body.direction ?? "bidirectional",
+            });
+          }
+        }
+        const result = await syncTodoFromHA(body.entity_id);
         const status = getTodoSyncStatus(body.entity_id);
-        return new Response(JSON.stringify({ ok: true, status }), {
+        return new Response(JSON.stringify({
+          ok: true,
+          status,
+          synced: result.synced,
+          errors: result.errors,
+          message: result.synced > 0
+            ? `Synced ${result.synced} item(s)`
+            : result.errors > 0 ? "Sync encountered errors" : "No items to sync",
+        }), {
           status: 200, headers: { "Content-Type": "application/json" },
         });
       }

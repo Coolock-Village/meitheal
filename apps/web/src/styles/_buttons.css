@@ -53,6 +53,13 @@
   .btn-danger:hover {
     @apply bg-red-600;
   }
+.btn-ghost-accent {
+  @apply btn bg-transparent text-accent border border-accent/30;
+}
+
+.btn-ghost-accent:hover:not(:disabled) {
+  @apply bg-accent/10 text-accent border-accent/50;
+}
 }
 
 /* Button micro-interactions */

@@ -1804,18 +1804,25 @@ const locale: Locale = cookieLocale === "ga" ? "ga" : "en";
               }),
             },
           );
-          const data = (await res.json()) as { ok: boolean; status?: unknown };
-          if (resultEl)
-            resultEl.textContent = data.ok ? "Sync triggered" : "Sync failed";
+          const data = (await res.json()) as {
+            ok: boolean;
+            synced?: number;
+            errors?: number;
+            message?: string;
+            status?: unknown;
+          };
+          const msg =
+            data.message ?? (data.ok ? "Sync triggered" : "Sync failed");
+          if (resultEl) resultEl.textContent = msg;
           showToast(
-            data.ok ? "✅ Todo sync triggered" : "❌ Todo sync failed",
+            data.ok ? `✅ ${msg}` : `❌ ${msg}`,
             data.ok ? "success" : "error",
           );
           // Update last-synced timestamp
           if (data.ok) {
             const lastSynced = document.getElementById("todo-last-synced");
             if (lastSynced)
-              lastSynced.textContent = `Last synced: ${new Date().toLocaleTimeString()}`;
+              lastSynced.textContent = `Last synced: ${new Date().toLocaleTimeString()}${data.synced ? ` — ${data.synced} item(s)` : ""}`;
           }
         } catch {
           if (resultEl) resultEl.textContent = "Sync failed";

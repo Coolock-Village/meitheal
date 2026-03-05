@@ -39,7 +39,9 @@
   }
 
   .data-table th {
-    @apply text-left text-xs text-text-muted font-semibold px-3 py-2.5 bg-bg-secondary/50 border-b border-border;
+    @apply text-left text-[11px] text-text-muted font-bold px-3 py-3 bg-bg-secondary/50 border-b border-border;
+      text-transform: uppercase;
+      letter-spacing: 0.06em;
   }
 
   .data-table td {
@@ -102,10 +104,15 @@
 
   .delete-row {
     @apply bg-transparent border-none cursor-pointer text-text-muted text-sm p-1 rounded transition-colors;
+    min-width: 32px;
+      min-height: 32px;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
   }
 
   .delete-row:hover {
-    @apply text-danger;
+    @apply text-danger bg-danger/10;
   }
 
 }

@@ -133,7 +133,7 @@ async function autoStartTodoSync(): Promise<void> {
       args: [],
     });
 
-    const settings: Record<string, string> = {};
+    const settings: Record<string, string | boolean> = {};
     for (const row of res.rows) {
       if (typeof row.key === "string" && typeof row.value === "string") {
         // Settings values are stored JSON-encoded (with quotes)
@@ -146,14 +146,14 @@ async function autoStartTodoSync(): Promise<void> {
     }
 
     const enabled =
-      settings.todo_sync_enabled === "true" ||
-      settings.todo_sync_enabled === true?.toString();
-    const entityId = settings.todo_entity;
+      settings.todo_sync_enabled === true ||
+      settings.todo_sync_enabled === "true";
+    const entityId = typeof settings.todo_entity === "string" ? settings.todo_entity : undefined;
     const direction =
-      (settings.todo_sync_direction as
+      (typeof settings.todo_sync_direction === "string" ? settings.todo_sync_direction : "bidirectional") as
         | "inbound"
         | "outbound"
-        | "bidirectional") ?? "bidirectional";
+        | "bidirectional";
 
     if (!enabled || !entityId) {
       logger.log("info", {

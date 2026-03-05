@@ -33,6 +33,7 @@ const logger = createLogger({
   redactPatterns: defaultRedactionPatterns, auditEnabled: false,
 });
 const SYS_REQ = "ha-system";
+const NO_SYNC_LABEL = "no-sync";
 
 export interface TodoSyncConfig {
   entityId: string;
@@ -113,7 +114,8 @@ export function startTodoSync(configs: TodoSyncConfig | TodoSyncConfig[]): void 
 /**
  * Sync items FROM a specific HA todo entity TO Meitheal tasks table.
  */
-export async function syncTodoFromHA(entityId?: string): Promise<void> {
+export async function syncTodoFromHA(entityId?: string): Promise<{ synced: number; errors: number }> {
+  const totals = { synced: 0, errors: 0 };
   const targets = entityId
     ? [activeSyncs.get(entityId)].filter(Boolean) as TodoSyncState[]
     : Array.from(activeSyncs.values()).filter((s) => s.config.syncDirection !== "outbound");
@@ -130,17 +132,20 @@ export async function syncTodoFromHA(entityId?: string): Promise<void> {
         });
         continue;
       }
+      totals.synced += items.length;
 
       await mergeHATodoItems(config.entityId, items as HATodoItem[]);
       state.lastSyncAt = Date.now();
       state.itemCount = items.length;
     } catch (err) {
+      totals.errors++;
       logger.log("error", {
         event: "todo.sync.from_ha.failed", domain: "todo", component: "todo-bridge",
         request_id: SYS_REQ, message: `Failed to sync from ${config.entityId}: ${err}`,
       });
     }
   }
+  return totals;
 }
 
 /**
@@ -231,12 +236,13 @@ async function mergeHATodoItems(entityId: string, items: HATodoItem[]): Promise<
         const reqId = crypto.randomUUID();
         const nowMs = Date.now();
 
+        const syncLabel = `synced from ${entityId}`;
         await client.execute({
           sql: `INSERT INTO tasks (id, title, description, status, priority, due_date,
                   labels, framework_payload, calendar_sync_state, board_id,
                   custom_fields, task_type, idempotency_key, request_id,
                   created_at, updated_at)
-                VALUES (?, ?, ?, ?, 3, ?, '[]', '{}', 'synced', 'default',
+                VALUES (?, ?, ?, ?, 3, ?, ?, '{}', 'synced', 'default',
                   '{}', 'task', ?, ?, ?, ?)`,
           args: [
             taskId,
@@ -244,6 +250,7 @@ async function mergeHATodoItems(entityId: string, items: HATodoItem[]): Promise<
             item.description ?? "",
             meithealStatus,
             item.due ?? null,
+            JSON.stringify([syncLabel]),
             `todo-sync-${uid}`,
             reqId,
             nowMs,
@@ -297,7 +304,17 @@ export async function pushTaskToTodoList(
   entityId: string,
   dueDate?: string | null,
   description?: string,
+  labels?: string[],
 ): Promise<boolean> {
+  // Respect 'no-sync' label — user opted this task out of sync
+  if (labels?.includes(NO_SYNC_LABEL)) {
+    logger.log("debug", {
+      event: "todo.sync.push_skipped", domain: "todo", component: "todo-bridge",
+      request_id: SYS_REQ, message: `Skipped push for "${title}" — has '${NO_SYNC_LABEL}' label`,
+    });
+    return false;
+  }
+
   const syncState = activeSyncs.get(entityId);
   if (!syncState || syncState.config.syncDirection === "inbound") {
     return false;

@@ -110,11 +110,17 @@
   }
 
   .kanban-add-task {
-    @apply text-sm text-text-muted cursor-pointer px-4 py-2 transition-colors;
+    @apply text-sm text-text-muted cursor-pointer px-4 py-2.5 transition-all;
+      border-top: 1px dashed var(--border);
+      text-align: center;
+      font-weight: 500;
   }
 
   .kanban-add-task:hover {
     @apply text-accent;
+    background: rgba(16, 185, 129, 0.06);
+      border-top-color: var(--accent);
+      border-top-style: solid;
   }
 
   /* --- Lane management --- */
