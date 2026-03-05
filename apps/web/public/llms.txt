@@ -1,0 +1,3 @@
+Meitheal is an Astro-first, Home Assistant-native task management engine.
+Primary docs: README.md, AGENTS.md, WEBMCP.md, docs/decisions.
+Detailed API reference: llms-full.txt

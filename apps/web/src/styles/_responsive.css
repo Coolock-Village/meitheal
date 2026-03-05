@@ -18,7 +18,7 @@
   }
 
   .main-content {
-    @apply ml-0;
+    width: 100%;
   }
 
   .menu-toggle {
@@ -41,6 +41,31 @@
     gap: 8px !important;
   }
 
+                /* Mobile: bento grid single column */
+                .bento-grid {
+                  grid-template-columns: 1fr !important;
+                  gap: 10px !important;
+                }
+        
+                /* Mobile: constrain content area */
+                .content-area,
+                .content,
+                main {
+                  max-width: 100vw;
+                  overflow-x: hidden;
+                }
+        
+                /* Mobile: reduce content padding */
+                .content {
+                  padding: 0 12px 16px !important;
+                }
+        
+                /* Mobile: card full width */
+                .card {
+                  max-width: 100%;
+                  overflow: hidden;
+                  word-wrap: break-word;
+                }
   /* Mobile: stack filter bar vertically */
   .filter-bar {
     flex-direction: column;
@@ -102,6 +127,56 @@
   .page-title {
     font-size: 16px !important;
   }
+/* Mobile: compact topbar */
+.topbar {
+  padding: 8px 12px !important;
+  gap: 8px;
+}
+
+/* Mobile: shrink search container */
+.search-container {
+  margin-left: 4px !important;
+  margin-right: 4px !important;
+  max-width: none;
+  flex: 1;
+  min-width: 0;
+}
+
+/* Mobile: settings tabs scroll hint */
+.settings-tabs {
+  gap: 16px;
+  padding-bottom: 2px;
+  margin-left: -12px;
+  margin-right: -12px;
+  padding-left: 12px;
+  padding-right: 12px;
+}
+
+/* Mobile: stat-card compact */
+.stat-card {
+  padding: 10px 12px !important;
+  min-height: 72px !important;
+  gap: 10px !important;
+}
+
+.stat-icon {
+  width: 36px !important;
+  height: 36px !important;
+  font-size: 1rem !important;
+}
+
+.stat-value {
+  font-size: 1.25rem !important;
+}
+
+.stat-label {
+  font-size: 0.65rem !important;
+}
+
+/* Mobile: sidebar toggle hidden — use hamburger menu instead */
+.sidebar-toggle {
+  display: none !important;
+}
 }
 
 /* Print stylesheet */

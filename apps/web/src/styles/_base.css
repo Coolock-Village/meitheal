@@ -8,10 +8,14 @@
 @layer base {
   html {
     @apply text-base;
+    overflow-x: hidden;
+      max-width: 100vw;
   }
 
   body {
     @apply font-sans bg-bg-primary text-text-primary leading-relaxed flex min-h-screen;
+    overflow-x: hidden;
+      max-width: 100vw;
   }
 
   a {

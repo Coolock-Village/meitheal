@@ -3,7 +3,7 @@
 ## Validated (Existing)
 
 | ID | Requirement | Source | Tests |
-|----|-------------|--------|-------|
+| ---- | ------------- | -------- | ------- |
 | R-001 | Astro SSR with Node adapter for HA runtime | `STACK.md`, `README.md` | `pnpm check` |
 | R-002 | DDD monorepo with 5 bounded contexts | `ARCHITECTURE.md`, `CONVENTIONS.md` | `governance/repo-standards.spec.ts` |
 | R-003 | SQLite + Drizzle ORM with migration pipeline | `STACK.md`, `INTEGRATIONS.md` | `migration-check` CI job |
@@ -20,7 +20,7 @@
 ## Active (Phase 2+)
 
 | ID | Requirement | Phase | Priority | Source |
-|----|-------------|-------|----------|--------|
+| ---- | ------------- | ------- | ---------- | -------- |
 | R-101 | HMAC-signed webhook emission for domain events | 2 | P0 | ADR-006 |
 | R-102 | Webhook config schema (Zod + content YAML) | 2 | P0 | ADR-006 |
 | R-103 | Grocy stock check adapter | 2 | P1 | ADR-006 |
@@ -46,11 +46,11 @@
 ## Out of Scope
 
 | Exclusion | Reason |
-|-----------|--------|
+| ----------- | -------- |
 | Obsidian sync | Deferred to Phase 5+ |
 | Calendar write-back from external events | Complexity, deferred |
 | Full Grocy recipe management | Beyond integration scope |
 | Electron/Tauri desktop app | Violates Astro-first principle |
 
 ---
-*Last updated: 2026-02-28 after brownfield initialization*
+Last updated: 2026-02-28 after brownfield initialization

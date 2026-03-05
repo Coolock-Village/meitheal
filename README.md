@@ -149,6 +149,9 @@ Interop design is informed by existing HA/Vikunja integration patterns, includin
 | Offline Image Attachments (IDB) | ✅ | Vikunja ❌ Trello ❌ |
 | AI Context Routing (LLM) | ✅ | Vikunja ❌ Trello ❌ |
 | HA Voice/Assist (8 LLM tools) | ✅ | Vikunja ❌ Trello ❌ |
+| Voice Triggers (no LLM, accent-friendly) | ✅ | Vikunja ❌ Trello ❌ |
+| MCP Server (live Model Context Protocol) | ✅ | Vikunja ❌ Trello ❌ |
+| Proactive Notifications (overdue push) | ✅ | Vikunja ❌ Trello ❌ |
 | Strict Perf Budgets (CI) | ✅ | Vikunja ❌ Trello ❌ |
 | Web Notifications (overdue/reminders) | ✅ | Vikunja ❌ Trello ✅ |
 | Web Share API (native OS sharing) | ✅ | Vikunja ❌ Trello ✅ |
@@ -213,4 +216,6 @@ All 19 phases complete and container-verified:
 - 70+ source files, 0 typecheck errors
 - Container-tested on `ghcr.io/home-assistant/amd64-base:3.20`
 - OpenAPI 3.0.3 specification (12+ routes)
-- 8 LLM tools registered for HA Assist/Voice control
+- 8 LLM tools + 6 voice intents for HA Assist/Voice control
+- Live MCP server at `/api/mcp`
+- `llms-full.txt` with complete API reference

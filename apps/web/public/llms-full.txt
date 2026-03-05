@@ -1,0 +1,136 @@
+Meitheal — Home Assistant-Native Task Management Engine
+=======================================================
+
+Meitheal (pronounced "meh-hal") is a cooperative task and life management system
+running as a Home Assistant addon. It manages household tasks, to-do lists, and
+projects with voice control, automation integration, and multi-agent support.
+
+## Quick Start
+
+Meitheal exposes its API at the addon's base URL (default: http://local_meitheal:3000).
+All endpoints accept and return JSON.
+
+## Core API Endpoints
+
+### Tasks
+
+- `GET /api/tasks` — List all tasks
+  Returns: `{ tasks: [{ id, title, status, priority, due_date, description, labels, position }] }`
+
+- `POST /api/tasks/create` — Create a task
+  Body: `{ title: string, frameworkPayload?: { description?: string } }`
+  Returns: `{ id, title, status, ... }`
+
+- `PUT /api/tasks/:id` — Update a task
+  Body: `{ title?, status?, priority?, due_date?, description? }`
+  status values: "todo", "in_progress", "done", "cancelled"
+  priority values: 1 (urgent) to 5 (lowest)
+
+- `DELETE /api/tasks/:id` — Delete a task
+
+### Search & Filtering
+
+- `GET /api/tasks?status=todo` — Filter by status
+- `GET /api/tasks?q=keyword` — Search by keyword
+- `GET /api/tasks?priority=1` — Filter by priority
+
+### Export
+
+- `GET /api/export/tasks.json` — Export all tasks as JSON
+- `GET /api/export/tasks.csv` — Export all tasks as CSV
+
+### Health
+
+- `GET /api/health` — Health check endpoint
+
+### Home Assistant Integration
+
+- `GET /api/ha/agents` — List available HA conversation agents
+- `POST /api/ha/assist` — Proxy to HA conversation.process
+  Body: `{ text: string, agent_id?: string, conversation_id?: string }`
+- `GET /api/ha/calendars` — List synced calendar entities
+
+### Agent Protocol (A2A)
+
+- `GET /.well-known/agent-card.json` — Agent capability card
+- `POST /api/a2a/message` — Send A2A message
+
+### MCP (Model Context Protocol)
+
+- `GET /.well-known/mcp.json` — MCP server discovery
+- `POST /api/mcp` — MCP tool execution endpoint
+
+## Home Assistant Services
+
+These services can be called from HA automations, scripts, and voice:
+
+- `meitheal.create_task` — Create a new task (params: title, description?)
+- `meitheal.complete_task` — Mark task done (params: task_id or title)
+- `meitheal.sync_todo` — Force refresh task data
+- `meitheal.search_tasks` — Search tasks (params: query, status?)
+- `meitheal.get_overdue_tasks` — Get all overdue tasks
+- `meitheal.notify_overdue` — Push overdue notification to HA
+
+## LLM API Tools (for conversation agents)
+
+When "Meitheal Tasks" is selected in a conversation agent's LLM APIs:
+
+- `meitheal_search_tasks` — Search by keyword, status, or priority
+- `meitheal_get_task` — Get full task details by ID
+- `meitheal_create_task` — Create a new task
+- `meitheal_complete_task` — Mark done by ID or title
+- `meitheal_update_task` — Update priority, due date, status, description
+- `meitheal_get_overdue` — List overdue tasks
+- `meitheal_get_todays_tasks` — Today's tasks + overdue
+- `meitheal_task_summary` — Active, overdue, done, total counts
+
+## Voice Commands (no LLM required)
+
+These work with HA's built-in Assist without any LLM:
+
+- "add [item] to my tasks" — creates a task
+- "done with [item]" / "mark [item] done" — completes a task
+- "show my tasks" / "what's on my list" — lists active tasks
+- "what's late" / "what's overdue" — shows overdue tasks
+- "today's tasks" / "what's due today" — today's agenda
+- "how many tasks" / "task count" — summary counts
+
+Also responds to "meitheal", "me hall", "may hall", "meh hall", or "MH":
+- "MH add buy groceries"
+- "meitheal today"
+- "me hall what's overdue"
+
+## Data Model
+
+### Task Object
+```json
+{
+  "id": "string (UUID)",
+  "title": "string",
+  "status": "todo | in_progress | done | cancelled",
+  "priority": 1-5,
+  "description": "string | null",
+  "due_date": "ISO 8601 date | null",
+  "labels": ["string"],
+  "position": 0,
+  "created_at": "ISO 8601 datetime",
+  "updated_at": "ISO 8601 datetime"
+}
+```
+
+### Priority Scale
+- 1: Urgent (highest)
+- 2: High
+- 3: Medium (default)
+- 4: Low
+- 5: Lowest
+
+### Status Flow
+todo → in_progress → done
+todo → cancelled
+
+## Authentication
+
+When running as an HA addon, requests through ingress are authenticated by
+the Supervisor. Direct API access requires the `SUPERVISOR_TOKEN` or
+HA long-lived access token in the Authorization header.

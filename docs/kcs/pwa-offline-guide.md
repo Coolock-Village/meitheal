@@ -12,7 +12,7 @@ Meitheal uses a **service worker** to cache the app shell and intercept network 
 ## What's Available Offline
 
 | Feature | Offline | Notes |
-|---------|---------|-------|
+| --------- | --------- | ------- |
 | View tasks | ✅ | Last-synced data from IndexedDB |
 | Create tasks | ✅ | Saved locally, synced when online |
 | Edit tasks | ✅ | Saved locally, synced when online |
@@ -28,7 +28,7 @@ Meitheal uses a **service worker** to cache the app shell and intercept network 
 Meitheal leverages modern browser APIs for a native-like experience:
 
 | API | Module | Purpose |
-|-----|--------|---------|
+| ----- | -------- | --------- |
 | Notifications + Permissions | `domains/offline/notifications.ts` | Task reminders, overdue alerts |
 | Web Locks | `domains/offline/sync-lock.ts` | Single-tab sync queue safety |
 | BroadcastChannel | `domains/offline/tab-sync.ts` | Cross-tab state sync |
@@ -53,10 +53,10 @@ The web app manifest (`manifest.webmanifest`) includes:
 - **Shortcuts**: New Task, Kanban Board, Settings — appear in long-press/right-click on app icon
 - **Share Target**: Receive shared content from other apps (text → new task)
 
-## Sync Status Indicator
+### Sync Status Indicator
 
 | Icon | State | Meaning |
-|------|-------|------------|
+| ------ | ------- | ----------- |
 | ✓ | Synced | All changes saved to server |
 | ↻ | Syncing | Upload in progress |
 | ● | Pending | Changes queued, waiting for connectivity |
@@ -82,7 +82,7 @@ When the same task is edited on multiple devices:
 ## Troubleshooting
 
 | Problem | Solution |
-|---------|----------|
+| --------- | ---------- |
 | App shows stale data | Pull down to refresh, or check sync indicator |
 | "Queue at capacity" | Connect to network to flush pending changes |
 | SW update available | Accept update prompt when it appears |
@@ -106,7 +106,7 @@ When Meitheal runs as an HA add-on, all URLs are proxied through `/api/hassio_in
 **No ingress = standalone mode**: all paths stay at `/` (backward compatible).
 
 | Feature | Standalone | HA Ingress |
-|---------|-----------|------------|
+| --------- | ----------- | ------------ |
 | SW URL | `/sw.js` | `/api/hassio_ingress/{token}/sw.js` |
 | SW Scope | `/` | `/api/hassio_ingress/{token}/` |
 | Manifest scope | `/` | `/api/hassio_ingress/{token}/` |
@@ -118,7 +118,7 @@ When Meitheal runs as an HA add-on, all URLs are proxied through `/api/hassio_in
 PWA features (service worker, install prompt, push notifications) require a **secure context** — HTTPS or localhost.
 
 | Access Method | HTTPS | PWA Available |
-|---------------|-------|---------------|
+| --------------- | ------- | --------------- |
 | Nabu Casa | ✅ auto | ✅ |
 | DuckDNS + Let's Encrypt | ✅ addon | ✅ |
 | Reverse proxy (Caddy, NPM) | ✅ | ✅ |
@@ -132,7 +132,7 @@ PWA features (service worker, install prompt, push notifications) require a **se
 As of v0.1.60, the service worker uses **4 scoped caches** with automatic eviction to prevent disk bloat:
 
 | Cache | Strategy | Max Entries | TTL | Purpose |
-|-------|----------|-------------|-----|--------|
+| ------- | ---------- | ------------- | ----- | -------- |
 | `precache` | Version-bump only | ~11 | ∞ (cleared on deploy) | App shell pages + icons |
 | `static` | Cache-first | 100 | 7 days | CSS, JS, fonts, images |
 | `api` | Network-first | 50 | 1 hour | API responses |
@@ -160,4 +160,4 @@ The `beforeinstallprompt` event is captured in `Layout.astro` and stored on `win
 
 ---
 
-*Last updated: 2026-03-04 — Phase 59 cache eviction, install flow, update flow*
+Last updated: 2026-03-04 — Phase 59 cache eviction, install flow, update flow

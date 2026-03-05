@@ -219,6 +219,42 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
             "manually expose via Settings → Voice Assistants → Expose"
         )
 
+    # Register custom intents — accent-friendly voice commands that work
+    # WITHOUT an LLM. Uses HA's built-in sentence matching engine.
+    # Triggers: "add X to my tasks", "done with X", "show my tasks",
+    # "what's overdue", "today's tasks", "task count"
+    # Also supports phonetic variants: "me hall", "may hall", "MH"
+    try:
+        from .intents import async_register_intents
+        async_register_intents(hass)
+    except Exception:
+        _LOGGER.warning("Could not register Meitheal intents — voice triggers disabled")
+
+    # Register proactive notification service
+    # meitheal.notify_overdue — pushes overdue task alerts through HA notify
+    async def handle_notify_overdue(call: ServiceCall) -> None:
+        """Push overdue task notifications through HA persistent_notification."""
+        if not coordinator.data or not coordinator.data.overdue_count:
+            return
+
+        overdue = [t for t in coordinator.data.tasks if t.is_overdue]
+        titles = ", ".join(t.title for t in overdue[:5])
+        extra = f" (+{len(overdue) - 5} more)" if len(overdue) > 5 else ""
+
+        await hass.services.async_call(
+            "persistent_notification",
+            "create",
+            {
+                "title": f"⏰ {len(overdue)} Overdue Tasks",
+                "message": f"These tasks are past due: {titles}{extra}",
+                "notification_id": "meitheal_overdue",
+            },
+        )
+
+    hass.services.async_register(
+        DOMAIN, "notify_overdue", handle_notify_overdue
+    )
+
     return True
 
 
@@ -235,4 +271,5 @@ async def async_unload_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
             hass.services.async_remove(DOMAIN, SERVICE_SYNC_TODO)
             hass.services.async_remove(DOMAIN, SERVICE_SEARCH_TASKS)
             hass.services.async_remove(DOMAIN, SERVICE_GET_OVERDUE_TASKS)
+            hass.services.async_remove(DOMAIN, "notify_overdue")
     return unload_ok

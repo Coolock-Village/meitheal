@@ -21,7 +21,7 @@ Primary Delivery drives completion math and release readiness.
 ### Primary Delivery (`01-06`)
 
 | Phase | Name | Status | Evidence |
-|------|------|--------|----------|
+| ------ | ------ | -------- | ---------- |
 | 01 | Foundation & Vertical Slice | ✅ Complete | `01-01-SUMMARY.md` |
 | 02 | Integration Deepening | ✅ Complete | `02-01..02-04-SUMMARY.md` |
 | 03 | PWA & Offline-First | ✅ Complete | `03-01..03-03-SUMMARY.md` |
@@ -32,7 +32,7 @@ Primary Delivery drives completion math and release readiness.
 ### Extension Track (`15-18`)
 
 | Phase | Name | Status | Evidence |
-|------|------|--------|----------|
+| ------ | ------ | -------- | ---------- |
 | 15 | UX Parity & Board Domain Separation | ✅ Complete | `15-01-PLAN.md`, `15-01-SUMMARY.md` |
 | 16 | Astro Optimizations & UX | ✅ Complete | `16-01-PLAN.md`, `16-01-SUMMARY.md` |
 | 17 | Full 50-Persona Audit | ✅ Complete | `17-01-PLAN.md`, `17-01-SUMMARY.md` |
@@ -203,41 +203,49 @@ Execution artifacts:
 ## Phase 32: UX Breakage & Clashing Audit ✅
 
 Current state:
+
 - Complete. Fixed Kanban board horizontal overflow (grid→flex containment). All pages audited at 1440×900.
 
 ## Phase 33: Unification of Flow & UX ✅
 
 Current state:
+
 - Complete. Fixed sidebar badge showing `taskCounts.total` instead of `active`. Empty states and modals verified.
 
 ## Phase 34: Shared Component Extraction (Astro Native) ✅
 
 Current state:
+
 - Complete. 20 Astro components extracted (EmptyState, Icon, PriorityLabel, RiceBadge, StatusBadge, etc). EmptyState used in 5 pages.
 
 ## Phase 35: Modular Menu & Sidebar Systems ✅
 
 Current state:
+
 - Complete. Data-driven NAV_ITEMS record, DB-persisted sidebar_config with custom ordering/labels/items.
 
 ## Phase 36: Theme & Styling Engine Extensibility ✅
 
 Current state:
+
 - Complete. CSS variables for all design tokens, `data-theme` attribute for dark/light/auto switching.
 
 ## Phase 37: Language & Localization Architecture ✅
 
 Current state:
+
 - Complete. Type-safe `t()` function, en/ga JSON translation files, SSR cookie-based locale, `I18nText.astro` component.
 
 ## Phase 38: Settings Export Alignment ✅
 
 Current state:
+
 - Complete. `sidebar_config` included in settings import/export. All UI preferences serialized.
 
 ## Phase 39: HA OS Addon Production Readiness 🚀
 
 Current state:
+
 - [x] Multi-stage Dockerfile (build inside container, self-contained image)
 - [x] Docker Hub publishing (`coolockvillage/meitheal-hub-{arch}`)
 - [x] CI workflow dual-push (GHCR + Docker Hub) with `workflow_dispatch` tag override
@@ -264,6 +272,7 @@ Current state:
 ## Phase 60: HA Assist & Voice Integration 🔄
 
 Current state:
+
 - [x] Enhanced `llm_api.py` — 8 tools (added `UpdateTask`, `GetTodaysTasks`), richer API prompt
 - [x] Auto-expose `todo.meitheal_tasks` entity to Assist on setup
 - [x] Entity registry defaults for voice discoverability
@@ -277,4 +286,4 @@ Current state:
 None — all PR #1 checks (perf-budgets, typecheck-and-tests, CodeQL, governance, schema-drift, ha-harness, migration-check) are passing.
 
 ---
-*Last updated: 2026-03-01 during Phase 32-41 autonomous design/UX initialization*
+Last updated: 2026-03-01 during Phase 32-41 autonomous design/UX initialization

@@ -64,6 +64,10 @@
     "get_overdue_tasks": {
       "name": "Get Overdue Tasks",
       "description": "Get all tasks past their due date."
+    },
+    "notify_overdue": {
+      "name": "Notify Overdue",
+      "description": "Push a notification about overdue tasks to HA persistent notifications."
     }
   }
 }
