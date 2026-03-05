@@ -1455,7 +1455,7 @@ const locale: Locale = cookieLocale === "ga" ? "ga" : "en";
                 const isEnabled = savedEntities.includes(c.entity_id);
                 const stateLabel =
                   c.state === "off" ? "no active event" : c.state;
-                return `<label class="cal-toggle-card${isEnabled ? " cal-toggle-card--active" : ""}" data-entity="${c.entity_id}">
+                return `<div class="cal-toggle-card${isEnabled ? " cal-toggle-card--active" : ""}" data-entity="${c.entity_id}">
                   <div class="cal-toggle-card__info">
                     <span class="cal-toggle-card__name">${c.friendly_name}</span>
                     <span class="cal-toggle-card__entity">${c.entity_id}</span>
@@ -1465,7 +1465,7 @@ const locale: Locale = cookieLocale === "ga" ? "ga" : "en";
                     <input type="checkbox" class="cal-entity-toggle" value="${c.entity_id}" ${isEnabled ? "checked" : ""} />
                     <span class="toggle-slider"></span>
                   </label>
-                </label>`;
+                </div>`;
               },
             )
             .join("");
@@ -1491,7 +1491,7 @@ const locale: Locale = cookieLocale === "ga" ? "ga" : "en";
           (window as unknown as Record<string, unknown>).__updateCalCount =
             updateCalCountBadge;
 
-          // Toggle card active state on change
+          // Toggle card active state on change + make entire card clickable
           entitiesContainer
             .querySelectorAll<HTMLInputElement>(".cal-entity-toggle")
             .forEach((cb) => {
@@ -1502,6 +1502,23 @@ const locale: Locale = cookieLocale === "ga" ? "ga" : "en";
                 }
                 updateCalCountBadge();
               });
+            });
+
+          // Click anywhere on card toggles the checkbox (since outer is now <div> not <label>)
+          entitiesContainer
+            .querySelectorAll<HTMLElement>(".cal-toggle-card")
+            .forEach((card) => {
+              card.addEventListener("click", (e) => {
+                // Don't double-toggle if the click was on the toggle itself
+                if ((e.target as HTMLElement).closest(".toggle-label")) return;
+                const cb =
+                  card.querySelector<HTMLInputElement>(".cal-entity-toggle");
+                if (cb) {
+                  cb.checked = !cb.checked;
+                  cb.dispatchEvent(new Event("change", { bubbles: true }));
+                }
+              });
+              card.style.cursor = "pointer";
             });
 
           // Enable All / Disable All handlers
@@ -1589,9 +1606,10 @@ const locale: Locale = cookieLocale === "ga" ? "ga" : "en";
       // Ensure the list container is visible
       if (entitiesList) entitiesList.style.display = "block";
       // Add new toggle card
-      const card = document.createElement("label");
+      const card = document.createElement("div");
       card.className = "cal-toggle-card cal-toggle-card--active";
       card.dataset.entity = entityId;
+      card.style.cursor = "pointer";
       card.innerHTML = `
         <div class="cal-toggle-card__info">
           <span class="cal-toggle-card__name">${entityId}</span>
@@ -1611,6 +1629,15 @@ const locale: Locale = cookieLocale === "ga" ? "ga" : "en";
             .__updateCalCount;
           if (typeof updater === "function") (updater as () => void)();
         });
+      // Click anywhere on card toggles the checkbox
+      card.addEventListener("click", (e) => {
+        if ((e.target as HTMLElement).closest(".toggle-label")) return;
+        const cb = card.querySelector<HTMLInputElement>(".cal-entity-toggle");
+        if (cb) {
+          cb.checked = !cb.checked;
+          cb.dispatchEvent(new Event("change", { bubbles: true }));
+        }
+      });
       container.appendChild(card);
       // Hide empty state if visible
       const emptyState = document.getElementById("cal-no-entities");
@@ -2064,14 +2091,18 @@ const locale: Locale = cookieLocale === "ga" ? "ga" : "en";
             synced?: number;
             errors?: number;
             message?: string;
+            ha_connected?: boolean;
             status?: unknown;
           };
           const msg =
             data.message ?? (data.ok ? "Sync triggered" : "Sync failed");
           if (resultEl) resultEl.textContent = msg;
+
+          // Show appropriate toast based on HA connection state
+          const isOk = data.ok && data.ha_connected !== false;
           showToast(
-            data.ok ? `✅ ${msg}` : `❌ ${msg}`,
-            data.ok ? "success" : "error",
+            isOk ? `✅ ${msg}` : `⚠️ ${msg}`,
+            isOk ? "success" : "error",
           );
           // Update last-synced timestamp
           if (data.ok) {

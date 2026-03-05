@@ -1,0 +1,104 @@
+/**
+ * Grocy → Meitheal Field Mapper
+ *
+ * Anti-Corruption Layer per DDD: translates Grocy domain objects
+ * into Meitheal task fields at the boundary. No Grocy types leak
+ * into the core task domain.
+ *
+ * @domain grocy
+ * @bounded-context integration
+ */
+import type { GrocyChore, GrocyTask } from "@meitheal/integration-core";
+
+interface MeithealTaskData {
+  title: string;
+  description: string | null;
+  status: string;
+  priority: number;
+  dueDate: string | null;
+  labels: string[];
+}
+
+/**
+ * Map a Grocy chore to Meitheal task fields.
+ *
+ * - Overdue chores get priority 1 (urgent)
+ * - Due chores get priority 3 (normal)
+ * - Labels: "grocy-chore", "synced from grocy", optional "overdue"
+ */
+export function choreToTask(chore: GrocyChore): MeithealTaskData {
+  const labels = ["grocy-chore", "synced from grocy"];
+
+  if (chore.isOverdue) {
+    labels.push("overdue");
+  }
+
+  const assignee = chore.nextExecutionAssignedUser?.display_name;
+  const description = [
+    chore.periodType ? `Repeats: ${chore.periodType}${chore.periodInterval ? ` every ${chore.periodInterval}` : ""}` : null,
+    assignee ? `Assigned to: ${assignee}` : null,
+    chore.lastTrackedTime ? `Last done: ${chore.lastTrackedTime.split(" ")[0]}` : null,
+  ]
+    .filter(Boolean)
+    .join("\n");
+
+  return {
+    title: chore.choreName,
+    description: description || null,
+    status: chore.isOverdue ? "todo" : "todo",
+    priority: chore.isOverdue ? 1 : 3,
+    dueDate: chore.nextEstimatedExecutionTime?.split(" ")[0] ?? null,
+    labels,
+  };
+}
+
+/**
+ * Map a Grocy task to Meitheal task fields.
+ *
+ * - Grocy tasks are simpler (name, due_date, done, category)
+ * - Labels: "grocy-task", "synced from grocy"
+ */
+export function taskToTask(task: GrocyTask): MeithealTaskData {
+  const labels = ["grocy-task", "synced from grocy"];
+
+  return {
+    title: task.name,
+    description: task.description,
+    status: task.done ? "done" : "todo",
+    priority: 3,
+    dueDate: task.dueDate,
+    labels,
+  };
+}
+
+/**
+ * Consolidate Grocy shopping list items into a single Meitheal task.
+ *
+ * Creates one "🛒 Go Shopping (N items)" task with item summary in description.
+ * Per persona audit: don't import individual items — Meitheal tells you WHEN
+ * to go shopping, Grocy tells you WHAT to buy.
+ */
+export function shoppingListToTask(
+  items: { id?: number; productId: number; amount: number; note?: string }[]
+): MeithealTaskData {
+  const itemCount = items.length;
+
+  const description = items
+    .slice(0, 20)
+    .map((item) => {
+      const qty = item.amount > 1 ? ` ×${item.amount}` : "";
+      const note = item.note ? ` — ${item.note}` : "";
+      return `• Item #${item.productId}${qty}${note}`;
+    })
+    .join("\n")
+    + (itemCount > 20 ? `\n… and ${itemCount - 20} more items` : "");
+
+  return {
+    title: `🛒 Go Shopping (${itemCount} item${itemCount !== 1 ? "s" : ""})`,
+    description,
+    status: "todo",
+    priority: 3,
+    dueDate: null,
+    labels: ["grocy-shopping", "synced from grocy"],
+  };
+}

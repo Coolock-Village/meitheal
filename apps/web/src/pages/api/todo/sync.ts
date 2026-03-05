@@ -9,6 +9,7 @@
  */
 import type { APIRoute } from "astro";
 import { syncTodoFromHA, getTodoSyncStatus, startTodoSync, stopTodoSync } from "@domains/todo";
+import { getHAConnectionStatus } from "@domains/ha/ha-connection";
 
 /**
  * GET /api/todo/sync — returns current sync status for all entities
@@ -16,7 +17,14 @@ import { syncTodoFromHA, getTodoSyncStatus, startTodoSync, stopTodoSync } from "
 export const GET: APIRoute = async () => {
   try {
     const status = getTodoSyncStatus();
-    return new Response(JSON.stringify({ ok: true, sync: status }), {
+    const haStatus = getHAConnectionStatus();
+    return new Response(JSON.stringify({
+      ok: true,
+      sync: status,
+      ha_connected: haStatus.connected,
+      ha_version: haStatus.haVersion,
+      ha_error: haStatus.lastError,
+    }), {
       status: 200, headers: { "Content-Type": "application/json" },
     });
   } catch (err) {
@@ -65,14 +73,18 @@ export const POST: APIRoute = async ({ request }) => {
         }
         const result = await syncTodoFromHA(body.entity_id);
         const status = getTodoSyncStatus(body.entity_id);
+        const haStatus = getHAConnectionStatus();
         return new Response(JSON.stringify({
           ok: true,
           status,
+          ha_connected: haStatus.connected,
           synced: result.synced,
           errors: result.errors,
-          message: result.synced > 0
-            ? `Synced ${result.synced} item(s)`
-            : result.errors > 0 ? "Sync encountered errors" : "No items to sync",
+          message: !haStatus.connected
+            ? "HA not connected — check SUPERVISOR_TOKEN and addon context"
+            : result.synced > 0
+              ? `Synced ${result.synced} item(s)`
+              : result.errors > 0 ? "Sync encountered errors" : "No items to sync",
         }), {
           status: 200, headers: { "Content-Type": "application/json" },
         });
