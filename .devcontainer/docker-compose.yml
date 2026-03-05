@@ -1,0 +1,94 @@
+# Meitheal — Devcontainer Compose Stack
+# Boots HA Supervisor + integration sidecar services for full-stack testing.
+#
+# Services:
+#   ha-devcontainer  — HA Supervisor + addon dev environment (primary)
+#   grocy            — Real Grocy API for stock/shopping list integration testing
+#   nodered          — Node-RED with HA WebSocket palette for flow testing
+#
+# Usage: Opened automatically by VS Code devcontainer. Manual: docker compose up -d
+#
+# Ports:
+#   7123 → HA (8123)     UI + API
+#   7357 → HA (4357)     Supervisor API
+#   9192 → Grocy (80)    Grocy web UI + API
+#   1880 → Node-RED      Node-RED editor
+
+services:
+  ha-devcontainer:
+    image: ghcr.io/home-assistant/devcontainer:2-addons
+    privileged: true
+    ports:
+      - "7123:8123"
+      - "7357:4357"
+    environment:
+      GIT_EDITOR: "code --wait"
+      WORKSPACE_DIRECTORY: "${containerWorkspaceFolder:-/mnt/supervisor/addons/local/meitheal}"
+      # Integration service URLs (available inside HA + Meitheal addon)
+      GROCY_URL: "http://grocy:80"
+      NODERED_URL: "http://nodered:1880"
+    volumes:
+      - type: volume
+        target: /var/lib/docker
+      - type: volume
+        target: /mnt/supervisor
+    networks:
+      - meitheal-dev
+    depends_on:
+      grocy:
+        condition: service_healthy
+      nodered:
+        condition: service_healthy
+
+  grocy:
+    # Standalone Grocy image (not HA addon — runs independently)
+    image: lscr.io/linuxserver/grocy:latest
+    restart: unless-stopped
+    ports:
+      - "9192:80"
+    environment:
+      PUID: 1000
+      PGID: 1000
+      TZ: ${TZ:-Europe/Dublin}
+    volumes:
+      - grocy-data:/config
+    networks:
+      - meitheal-dev
+    healthcheck:
+      test: ["CMD", "curl", "-fsS", "http://127.0.0.1:80/"]
+      interval: 15s
+      timeout: 5s
+      start_period: 30s
+      retries: 5
+
+  nodered:
+    image: nodered/node-red:latest
+    restart: unless-stopped
+    ports:
+      - "1880:1880"
+    environment:
+      TZ: ${TZ:-Europe/Dublin}
+      NODE_RED_CREDENTIAL_SECRET: ${NODE_RED_CREDENTIAL_SECRET:-dev-secret}
+    volumes:
+      - nodered-data:/data
+      - ./nodered/settings.js:/data/settings.js:ro
+      - ./nodered/package.json:/data/package.json:ro
+    networks:
+      - meitheal-dev
+    healthcheck:
+      test: ["CMD", "curl", "-fsS", "http://127.0.0.1:1880/"]
+      interval: 15s
+      timeout: 5s
+      start_period: 20s
+      retries: 5
+
+volumes:
+  grocy-data:
+    name: meitheal-dev-grocy
+  nodered-data:
+    name: meitheal-dev-nodered
+
+networks:
+  meitheal-dev:
+    name: meitheal-dev
+    driver: bridge

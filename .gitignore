@@ -11,3 +11,7 @@ apps/web/.astro
 apps/web/.data
 .dev.vars
 .data/
+
+# Devcontainer: track .env (non-secret defaults), ignore local overrides
+!.devcontainer/.env
+.devcontainer/.env.local
