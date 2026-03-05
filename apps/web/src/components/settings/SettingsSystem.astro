@@ -797,7 +797,8 @@ const version =
       navigator.serviceWorker.ready.then((reg) => {
         if (reg.waiting && updateBtn) {
           updateBtn.style.display = "";
-          updateBtn.addEventListener("click", () => {
+          updateBtn.addEventListener("click", (e) => {
+            e.preventDefault();
             reg.waiting?.postMessage({ type: "SKIP_WAITING" });
             window.location.reload();
           });
@@ -822,7 +823,8 @@ const version =
       showInstallBtn();
       window.addEventListener("meitheal-pwa-installable", showInstallBtn);
 
-      installBtn.addEventListener("click", async () => {
+      installBtn.addEventListener("click", async (e) => {
+        e.preventDefault();
         const prompt = window.__pwa_install_prompt;
         if (!prompt) return;
         try {
@@ -848,6 +850,104 @@ const version =
 
   initPwaCompact();
   document.addEventListener("astro:page-load", initPwaCompact);
+
+  // ── PWA Troubleshooting Actions ──
+  function showTroubleshootResult(msg: string, ok = true) {
+    const el = document.getElementById("pwa-troubleshoot-result");
+    if (!el) return;
+    el.textContent = msg;
+    el.style.display = "block";
+    el.style.color = ok ? "var(--accent)" : "var(--danger)";
+    setTimeout(() => {
+      el.style.display = "none";
+    }, 4000);
+  }
+
+  function initPwaTroubleshooting() {
+    const clearCacheBtn = document.getElementById("pwa-clear-cache-btn");
+    const forceUpdateBtn = document.getElementById("pwa-force-update-btn");
+    const clearOfflineBtn = document.getElementById("pwa-clear-offline-btn");
+
+    clearCacheBtn?.addEventListener("click", async () => {
+      try {
+        const names = await caches.keys();
+        await Promise.all(names.map((n) => caches.delete(n)));
+        showTroubleshootResult(
+          `✓ Cleared ${names.length} cache(s). Reload to re-populate.`,
+        );
+      } catch (err) {
+        showTroubleshootResult("✗ Failed to clear caches.", false);
+      }
+    });
+
+    forceUpdateBtn?.addEventListener("click", async () => {
+      try {
+        if (!("serviceWorker" in navigator)) {
+          showTroubleshootResult("Service workers not available.", false);
+          return;
+        }
+        const reg = await navigator.serviceWorker.getRegistration();
+        if (reg) {
+          await reg.update();
+          if (reg.waiting) {
+            reg.waiting.postMessage({ type: "SKIP_WAITING" });
+          }
+          showTroubleshootResult("✓ SW update triggered. Reloading...");
+          setTimeout(() => window.location.reload(), 800);
+        } else {
+          showTroubleshootResult("No service worker registered.", false);
+        }
+      } catch (err) {
+        showTroubleshootResult("✗ SW update failed.", false);
+      }
+    });
+
+    clearOfflineBtn?.addEventListener("click", async () => {
+      try {
+        // Clear all known IDB databases
+        const dbNames = [
+          "meitheal-offline",
+          "meitheal-tasks",
+          "meitheal-sync",
+          "task_attachments",
+        ];
+        let deleted = 0;
+        for (const name of dbNames) {
+          try {
+            const req = indexedDB.deleteDatabase(name);
+            await new Promise<void>((resolve, reject) => {
+              req.onsuccess = () => {
+                deleted++;
+                resolve();
+              };
+              req.onerror = () => reject(req.error);
+              req.onblocked = () => resolve(); // may be blocked if other tabs open
+            });
+          } catch {
+            /* skip individual failures */
+          }
+        }
+        // Clear sync-related localStorage keys
+        [
+          "meitheal-sync-queue",
+          "meitheal-last-sync",
+          "meitheal-offline-tasks",
+        ].forEach((k) => {
+          try {
+            localStorage.removeItem(k);
+          } catch {}
+        });
+        showTroubleshootResult(
+          `✓ Cleared ${deleted} offline database(s) and sync state.`,
+        );
+      } catch (err) {
+        showTroubleshootResult("✗ Failed to clear offline data.", false);
+      }
+    });
+  }
+
+  initPwaTroubleshooting();
+  document.addEventListener("astro:page-load", initPwaTroubleshooting);
 
   // Accent color picker
   function initAccentColor() {

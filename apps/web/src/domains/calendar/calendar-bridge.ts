@@ -403,20 +403,11 @@ export function stopCalendarSync(): void {
  * Get current sync status — returns per-entity statuses for multi-calendar support.
  */
 export function getCalendarSyncStatus() {
-  if (activeSyncs.size === 0) {
-    return {
-      active: false,
-      entities: [],
-      entityId: null, // legacy compat
-      writeBack: false,
-      lastSyncAt: null,
-      lastSyncEventCount: null,
-      lastSyncError: null,
-    };
-  }
+  const haActive = activeSyncs.size > 0;
 
   const entities = Array.from(activeSyncs.entries()).map(([entityId, state]) => ({
     entityId,
+    source: "ha" as const,
     writeBack: state.config.writeBack,
     syncIntervalMs: state.config.syncIntervalMs,
     lastSyncAt: state.lastSyncAt,
@@ -424,11 +415,24 @@ export function getCalendarSyncStatus() {
     lastSyncError: state.lastSyncError,
   }));
 
+  // Include CalDAV sync status
+  if (caldavSyncState) {
+    entities.push({
+      entityId: "caldav:" + (caldavSyncState.url || "external"),
+      source: "caldav" as const,
+      writeBack: false,
+      syncIntervalMs: caldavSyncState.intervalMs,
+      lastSyncAt: caldavSyncState.lastSyncAt,
+      lastSyncEventCount: caldavSyncState.lastSyncEventCount,
+      lastSyncError: caldavSyncState.lastSyncError,
+    });
+  }
+
   // Legacy compat — return first entity's data at top level
   const first = entities[0];
 
   return {
-    active: true,
+    active: haActive || !!caldavSyncState,
     entities,
     entityCount: entities.length,
     entityId: first?.entityId ?? null,
@@ -436,6 +440,7 @@ export function getCalendarSyncStatus() {
     lastSyncAt: first?.lastSyncAt ?? null,
     lastSyncEventCount: entities.reduce((sum, e) => sum + (e.lastSyncEventCount ?? 0), 0),
     lastSyncError: entities.find((e) => e.lastSyncError)?.lastSyncError ?? null,
+    caldavActive: !!caldavSyncState,
   };
 }
 
@@ -452,4 +457,186 @@ export function getCalendarSyncConfigs(): CalendarSyncConfig[] {
 export function getCalendarSyncConfig(): CalendarSyncConfig | null {
   const first = activeSyncs.values().next();
   return first.done ? null : first.value.config;
+}
+
+// ─── CalDAV Sync ────────────────────────────────────────────────────
+
+interface CalDAVSyncState {
+  url: string;
+  timer: ReturnType<typeof setInterval> | null;
+  intervalMs: number;
+  lastSyncAt: number | null;
+  lastSyncEventCount: number | null;
+  lastSyncError: string | null;
+}
+
+let caldavSyncState: CalDAVSyncState | null = null;
+
+/**
+ * Start periodic CalDAV sync. Independent error boundary — CalDAV
+ * failure never impacts HA calendar sync.
+ */
+export function startCalDAVSync(url: string, intervalMs: number): void {
+  stopCalDAVSync();
+
+  caldavSyncState = {
+    url,
+    timer: null,
+    intervalMs,
+    lastSyncAt: null,
+    lastSyncEventCount: null,
+    lastSyncError: null,
+  };
+
+  // Run initial sync
+  syncCalDAVEvents().catch(() => { /* logged inside */ });
+
+  // Set up periodic sync if interval > 0
+  if (intervalMs > 0) {
+    caldavSyncState.timer = setInterval(() => {
+      syncCalDAVEvents().catch(() => { /* logged inside */ });
+    }, intervalMs);
+  }
+
+  logger.log("info", {
+    event: "calendar.caldav.started", domain: "calendar", component: "calendar-bridge",
+    request_id: SYS_REQ,
+    message: `CalDAV sync started (interval: ${intervalMs}ms)`,
+  });
+}
+
+/** Stop CalDAV sync */
+export function stopCalDAVSync(): void {
+  if (caldavSyncState?.timer) {
+    clearInterval(caldavSyncState.timer);
+  }
+  caldavSyncState = null;
+}
+
+/**
+ * Sync events from CalDAV server into Meitheal.
+ * Independent of HA calendar sync — uses separate error boundary.
+ */
+export async function syncCalDAVEvents(): Promise<{ created: number; updated: number; total: number }> {
+  if (!caldavSyncState) {
+    return { created: 0, updated: 0, total: 0 };
+  }
+
+  try {
+    // Dynamic import to avoid loading crypto at module level
+    const { decryptCalDAVPassword } = await import("../../pages/api/integrations/calendar/caldav-credentials");
+    const { listCalDAVEvents, discoverCalendars } = await import("./caldav-client");
+    const { ensureSchema, getPersistenceClient } = await import("@domains/tasks/persistence/store");
+
+    await ensureSchema();
+    const client = getPersistenceClient();
+
+    // Load credentials
+    const credRes = await client.execute({
+      sql: "SELECT key, value FROM settings WHERE key IN ('caldav_url', 'caldav_username', 'caldav_password_enc') ORDER BY key",
+      args: [],
+    });
+    const creds: Record<string, string> = {};
+    for (const row of credRes.rows) {
+      creds[String(row.key)] = String(row.value);
+    }
+
+    if (!creds.caldav_url || !creds.caldav_username || !creds.caldav_password_enc) {
+      caldavSyncState.lastSyncError = "CalDAV credentials not configured";
+      return { created: 0, updated: 0, total: 0 };
+    }
+
+    const config = {
+      url: creds.caldav_url,
+      username: creds.caldav_username,
+      password: decryptCalDAVPassword(creds.caldav_password_enc),
+    };
+
+    // Discover calendars
+    const calendars = await discoverCalendars(config);
+    if (calendars.length === 0) {
+      caldavSyncState.lastSyncError = "No calendars found on server";
+      return { created: 0, updated: 0, total: 0 };
+    }
+
+    // Fetch events from all discovered calendars — same range as HA sync
+    const now = new Date();
+    const start = new Date(now.getTime() - 7 * 86400000);  // -7 days
+    const end = new Date(now.getTime() + 30 * 86400000);    // +30 days
+
+    let totalCreated = 0;
+    let totalUpdated = 0;
+    let totalEvents = 0;
+
+    for (const cal of calendars) {
+      try {
+        const events = await listCalDAVEvents(config, cal.href, start, end);
+        totalEvents += events.length;
+
+        for (const evt of events) {
+          // Check if already synced via UID (dedup)
+          const existingRes = await client.execute({
+            sql: "SELECT id FROM calendar_confirmations WHERE provider_event_id = ? AND source = 'caldav' LIMIT 1",
+            args: [evt.uid],
+          });
+
+          if (existingRes.rows.length > 0) {
+            totalUpdated++;
+            continue;
+          }
+
+          // Create task from CalDAV event
+          const taskId = crypto.randomUUID();
+          await client.execute({
+            sql: `INSERT INTO tasks (id, title, description, status, due_date, calendar_sync_state, created_at, updated_at)
+                  VALUES (?, ?, ?, 'backlog', ?, 'synced', ?, ?)`,
+            args: [
+              taskId,
+              evt.summary,
+              evt.description || `📡 CalDAV event from ${cal.displayName}`,
+              evt.dtstart,
+              Date.now(),
+              Date.now(),
+            ],
+          });
+
+          // Record confirmation for dedup
+          await client.execute({
+            sql: `INSERT INTO calendar_confirmations (id, task_id, provider_event_id, source, created_at)
+                  VALUES (?, ?, ?, 'caldav', ?)`,
+            args: [crypto.randomUUID(), taskId, evt.uid, Date.now()],
+          });
+
+          totalCreated++;
+        }
+      } catch (calErr) {
+        logger.log("warn", {
+          event: "calendar.caldav.calendar_error", domain: "calendar", component: "calendar-bridge",
+          request_id: SYS_REQ, message: `Failed to sync CalDAV calendar ${cal.displayName}: ${calErr}`,
+        });
+      }
+    }
+
+    caldavSyncState.lastSyncAt = Date.now();
+    caldavSyncState.lastSyncEventCount = totalEvents;
+    caldavSyncState.lastSyncError = null;
+
+    logger.log("info", {
+      event: "calendar.caldav.synced", domain: "calendar", component: "calendar-bridge",
+      request_id: SYS_REQ,
+      message: `CalDAV sync complete: ${totalCreated} created, ${totalUpdated} already synced, ${totalEvents} total events`,
+    });
+
+    return { created: totalCreated, updated: totalUpdated, total: totalEvents };
+  } catch (err) {
+    const message = err instanceof Error ? err.message : "CalDAV sync failed";
+    if (caldavSyncState) caldavSyncState.lastSyncError = message;
+
+    logger.log("error", {
+      event: "calendar.caldav.error", domain: "calendar", component: "calendar-bridge",
+      request_id: SYS_REQ, message: `CalDAV sync error: ${message}`,
+    });
+
+    return { created: 0, updated: 0, total: 0 };
+  }
 }

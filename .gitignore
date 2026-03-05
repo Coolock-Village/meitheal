@@ -15,3 +15,6 @@ apps/web/.data
 # Devcontainer: track .env (non-secret defaults), ignore local overrides
 !.devcontainer/.env
 .devcontainer/.env.local
+
+# Local Archive
+meitheal-archive/

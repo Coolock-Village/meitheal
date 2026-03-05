@@ -211,7 +211,8 @@ async function autoStartCalendarSync(): Promise<void> {
     const res = await client.execute({
       sql: `SELECT key, value FROM settings WHERE key IN (
         'calendar_entities', 'calendar_entity', 'cal_entity', 'calendar-entity',
-        'calendar_sync_enabled', 'calendar_write_back', 'calendar_sync_interval_ms'
+        'calendar_sync_enabled', 'calendar_write_back', 'calendar_sync_interval_ms',
+        'caldav_url'
       )`,
       args: [],
     });
@@ -268,13 +269,13 @@ async function autoStartCalendarSync(): Promise<void> {
       } catch { /* non-critical */ }
     }
 
-    if (entityIds.length === 0) {
+    if (entityIds.length === 0 && !settings.caldav_url) {
       logger.log("info", {
         event: "ha.startup.calendar_sync.skipped",
         domain: "calendar",
         component: "ha-startup",
         request_id: SYS_REQ,
-        message: "Calendar sync not configured (no entities set)",
+        message: "Calendar sync not configured (no HA entities or CalDAV set)",
       });
       return;
     }
@@ -290,22 +291,29 @@ async function autoStartCalendarSync(): Promise<void> {
       return;
     }
 
-    const { startMultiCalendarSync } = await import("@domains/calendar/calendar-bridge");
+    const { startMultiCalendarSync, startCalDAVSync } = await import("@domains/calendar/calendar-bridge");
     const configs = entityIds.map((entityId) => ({
       entityId,
       syncEnabled: true,
       writeBack,
       syncIntervalMs,
     }));
-    startMultiCalendarSync(configs);
+
+    if (configs.length > 0) {
+      startMultiCalendarSync(configs);
+    }
+
+    if (settings.caldav_url) {
+      startCalDAVSync(settings.caldav_url, syncIntervalMs);
+    }
 
     logger.log("info", {
       event: "ha.startup.calendar_sync.started",
       domain: "calendar",
       component: "ha-startup",
       request_id: SYS_REQ,
-      message: `Auto-started multi-calendar sync for ${entityIds.length} entities (interval: ${syncIntervalMs}ms, writeBack: ${writeBack})`,
-      metadata: { entities: entityIds, interval_ms: syncIntervalMs },
+      message: `Auto-started calendar sync: ${entityIds.length} HA entities, CalDAV: ${!!settings.caldav_url} (interval: ${syncIntervalMs}ms)`,
+      metadata: { entities: entityIds, caldav: !!settings.caldav_url, interval_ms: syncIntervalMs },
     });
   } catch (err) {
     logger.log("error", {

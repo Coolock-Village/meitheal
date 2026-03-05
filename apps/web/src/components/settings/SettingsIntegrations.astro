@@ -289,19 +289,22 @@ const { locale } = Astro.props;
           </details>
 
           <!-- External CalDAV — collapsible -->
-          <details class="caldav-section">
+          <details class="caldav-section" id="caldav-details">
             <summary class="caldav-toggle">
               <span>📡 External Calendar (CalDAV)</span>
               <small
                 >For Nextcloud, Radicale, Baikal — not needed for HA calendars</small
               >
             </summary>
+
             <div class="form-group" style="margin-top: 10px;">
               <div class="form-label-row">
-                <label class="form-label" for="caldav-url">CalDAV URL</label>
+                <label class="form-label" for="caldav-url"
+                  >CalDAV Provider URL</label
+                >
                 <HelpTooltip
-                  text="For direct CalDAV sync with external calendar servers like Nextcloud, Radicale, or Baikal. Leave blank to use HA's built-in calendar integration only. When set, Meitheal will sync directly with your CalDAV server in addition to HA."
-                  id="help-caldav"
+                  text="URL for your CalDAV server. Meitheal will discover calendars automatically."
+                  id="help-caldav-url"
                 />
               </div>
               <input
@@ -310,6 +313,61 @@ const { locale } = Astro.props;
                 id="caldav-url"
                 placeholder="https://your-server.com/dav/calendars/"
               />
+              <small class="form-hint" style="margin-top: 4px;">
+                <strong>Nextcloud:</strong>
+                <code>https://your-nc.com/remote.php/dav/</code><br />
+                <strong>Radicale:</strong>
+                <code>http://your-radicale:5232/user/</code>
+              </small>
+            </div>
+
+            <div class="form-group" style="margin-top: 10px;">
+              <label class="form-label" for="caldav-username">Username</label>
+              <input
+                type="text"
+                class="form-input"
+                id="caldav-username"
+                autocomplete="username"
+                placeholder="Required for private calendars"
+              />
+            </div>
+
+            <div class="form-group" style="margin-top: 10px;">
+              <label class="form-label" for="caldav-password"
+                >Password or App Password</label
+              >
+              <input
+                type="password"
+                class="form-input"
+                id="caldav-password"
+                autocomplete="current-password"
+                placeholder="Saved securely (AES-256-GCM encrypted)"
+              />
+            </div>
+
+            <div
+              style="margin-top: 12px; display: flex; gap: 8px; align-items: center;"
+            >
+              <button
+                type="button"
+                class="btn btn-secondary"
+                id="caldav-test-btn"
+                style="min-width: 120px;"
+              >
+                Test Connection
+              </button>
+              <span id="caldav-test-result" style="font-size: 13px;"></span>
+            </div>
+
+            <div
+              id="caldav-active-indicator"
+              class="integration-callout integration-callout--success"
+              style="display: none; margin-top: 12px;"
+            >
+              <strong>✓ CalDAV Configured</strong>
+              <div class="integration-callout__detail">
+                Ready to sync alongside Home Assistant calendars.
+              </div>
             </div>
           </details>
 

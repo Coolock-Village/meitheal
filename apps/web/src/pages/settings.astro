@@ -1637,6 +1637,67 @@ const locale: Locale = cookieLocale === "ga" ? "ga" : "en";
       return select?.value || manual?.value || "";
     }
 
+    document
+      .getElementById("caldav-test-btn")
+      ?.addEventListener("click", async () => {
+        const url = (document.getElementById("caldav-url") as HTMLInputElement)
+          .value;
+        const username = (
+          document.getElementById("caldav-username") as HTMLInputElement
+        ).value;
+        const password = (
+          document.getElementById("caldav-password") as HTMLInputElement
+        ).value;
+        const resultEl = document.getElementById("caldav-test-result");
+        const btn = document.getElementById(
+          "caldav-test-btn",
+        ) as HTMLButtonElement;
+
+        if (!url || !username || !password) {
+          if (resultEl) {
+            resultEl.textContent = "URL, username, and password required";
+            resultEl.style.color = "var(--color-error)";
+          }
+          return;
+        }
+
+        btn.textContent = "Testing...";
+        btn.disabled = true;
+        if (resultEl) {
+          resultEl.textContent = "";
+          resultEl.style.color = "";
+        }
+
+        try {
+          const res = await fetch(
+            (window.__ingress_path || "") +
+              "/api/integrations/calendar/caldav-credentials",
+            {
+              method: "POST",
+              headers: { "content-type": "application/json" },
+              body: JSON.stringify({ action: "test", url, username, password }),
+            },
+          );
+          const data = await res.json();
+          if (resultEl) {
+            resultEl.textContent = data.ok
+              ? data.message
+              : `❌ ${data.message || data.error}`;
+            resultEl.style.color = data.ok
+              ? "var(--color-success)"
+              : "var(--color-error)";
+          }
+        } catch (err) {
+          if (resultEl) {
+            resultEl.textContent = "❌ Request failed";
+            resultEl.style.color = "var(--color-error)";
+          }
+        } finally {
+          btn.textContent = "Test Connection";
+          btn.disabled = false;
+        }
+      });
+
     document.getElementById("save-cal")?.addEventListener("click", async () => {
       // Collect enabled calendar entities from toggle cards
       const enabledEntities: string[] = [];
@@ -1646,8 +1707,15 @@ const locale: Locale = cookieLocale === "ga" ? "ga" : "en";
           enabledEntities.push(cb.value);
         });
 
-      const caldav = (document.getElementById("caldav-url") as HTMLInputElement)
-        .value;
+      const caldavUrl = (
+        document.getElementById("caldav-url") as HTMLInputElement
+      ).value;
+      const caldavUsername = (
+        document.getElementById("caldav-username") as HTMLInputElement
+      ).value;
+      const caldavPassword = (
+        document.getElementById("caldav-password") as HTMLInputElement
+      ).value;
       const writeBack =
         (document.getElementById("cal-write-back") as HTMLInputElement)
           ?.checked ?? false;
@@ -1670,7 +1738,29 @@ const locale: Locale = cookieLocale === "ga" ? "ga" : "en";
       );
       await saveSetting("calendar_write_back", writeBack);
       await saveSetting("calendar_sync_interval_ms", String(intervalMs));
-      if (caldav) await saveSetting("caldav_url", caldav);
+
+      if (caldavUrl && caldavUsername && caldavPassword) {
+        try {
+          await fetch(
+            (window.__ingress_path || "") +
+              "/api/integrations/calendar/caldav-credentials",
+            {
+              method: "POST",
+              headers: { "content-type": "application/json" },
+              body: JSON.stringify({
+                action: "save",
+                url: caldavUrl,
+                username: caldavUsername,
+                password: caldavPassword,
+              }),
+            },
+          );
+        } catch (err) {
+          console.error("Failed to save CalDAV credentials", err);
+        }
+      } else if (caldavUrl && !caldavUsername && !caldavPassword) {
+        await saveSetting("caldav_url", caldavUrl); // Legacy/unauthenticated
+      }
 
       // Enable/disable calendar sync via API
       if (enabledEntities.length > 0) {
@@ -2036,9 +2126,32 @@ const locale: Locale = cookieLocale === "ga" ? "ga" : "en";
           // Auto-expand configured card
           window.expandIntegrationCard?.("integration-calendar-body");
         }
-        if (s.caldav_url)
+        if (s.caldav_url) {
           (document.getElementById("caldav-url") as HTMLInputElement).value =
             String(s.caldav_url);
+          try {
+            const credRes = await fetch(
+              (window.__ingress_path || "") +
+                "/api/integrations/calendar/caldav-credentials",
+            );
+            if (credRes.ok) {
+              const credData = await credRes.json();
+              if (credData.configured) {
+                const indicator = document.getElementById(
+                  "caldav-active-indicator",
+                );
+                if (indicator) indicator.style.display = "block";
+                if (credData.username) {
+                  (
+                    document.getElementById(
+                      "caldav-username",
+                    ) as HTMLInputElement
+                  ).value = credData.username;
+                }
+              }
+            }
+          } catch (err) {}
+        }
         if (s.calendar_write_back) {
           const wb = document.getElementById(
             "cal-write-back",
