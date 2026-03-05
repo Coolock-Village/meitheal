@@ -1680,10 +1680,8 @@ const locale: Locale = cookieLocale === "ga" ? "ga" : "en";
             const settingsRes = await fetch(
               (window.__ingress_path || "") + "/api/settings",
             );
-            const settingsData = (await settingsRes.json()) as {
-              settings: Record<string, unknown>;
-            };
-            const s = settingsData.settings ?? ({} as Record<string, unknown>);
+            // GET /api/settings returns a flat key-value object (not wrapped in .settings)
+            const s = (await settingsRes.json()) as Record<string, unknown>;
             const raw =
               s.calendar_entities ?? s.calendar_entity ?? s.cal_entity;
             if (Array.isArray(raw)) {
@@ -2014,8 +2012,8 @@ const locale: Locale = cookieLocale === "ga" ? "ga" : "en";
       btn.textContent = "Saving...";
       btn.disabled = true;
 
-      // Save as JSON array for multi-calendar support
-      await saveSetting("calendar_entities", JSON.stringify(enabledEntities));
+      // Save array directly — saveSetting already JSON.stringifies server-side
+      await saveSetting("calendar_entities", enabledEntities);
       // Keep legacy key for backward compat (first enabled entity)
       await saveSetting("calendar_entity", enabledEntities[0] ?? "");
       await saveSetting(
@@ -2099,8 +2097,10 @@ const locale: Locale = cookieLocale === "ga" ? "ga" : "en";
       btn.textContent = "Save Calendar Settings";
       btn.disabled = false;
       showToast("settings.calendar_saved");
-      // Re-hydrate status after save
-      hydrateCalendarStatus();
+      // Update the count badge directly — dom already reflects correct state
+      const updater = (window as unknown as Record<string, unknown>)
+        .__updateCalCount;
+      if (typeof updater === "function") (updater as () => void)();
     });
 
     document.getElementById("test-cal")?.addEventListener("click", async () => {
