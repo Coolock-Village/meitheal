@@ -197,9 +197,30 @@ async function mergeHATodoItems(entityId: string, items: HATodoItem[]): Promise<
       });
 
       if (existing.rows.length > 0) {
-        // Update existing task
+        // Non-destructive update: only sync from HA if task hasn't been
+        // locally modified since last sync (preserves user edits)
         const taskId = existing.rows[0]!.task_id as string;
         const nowMs = Date.now();
+
+        // Check if user edited the task locally since last sync
+        const taskRow = await client.execute({
+          sql: "SELECT updated_at FROM tasks WHERE id = ?",
+          args: [taskId],
+        });
+        const syncRow = await client.execute({
+          sql: "SELECT updated_at FROM todo_sync_confirmations WHERE ha_entity_id = ? AND ha_todo_uid = ?",
+          args: [entityId, uid],
+        });
+
+        const taskUpdatedAt = (taskRow.rows[0]?.updated_at as number) ?? 0;
+        const lastSyncAt = (syncRow.rows[0]?.updated_at as number) ?? 0;
+
+        if (taskUpdatedAt > lastSyncAt) {
+          // Task was locally modified — skip HA overwrite to preserve user edits
+          skipped++;
+          continue;
+        }
+
         await client.execute({
           sql: `UPDATE tasks SET
             title = ?,
@@ -218,7 +239,7 @@ async function mergeHATodoItems(entityId: string, items: HATodoItem[]): Promise<
           ],
         });
 
-        // Update sync confirmation
+        // Update sync confirmation timestamp
         await client.execute({
           sql: "UPDATE todo_sync_confirmations SET payload = ?, updated_at = ? WHERE ha_entity_id = ? AND ha_todo_uid = ?",
           args: [

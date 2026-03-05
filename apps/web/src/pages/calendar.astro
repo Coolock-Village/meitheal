@@ -188,7 +188,6 @@ for (let week = 0; week < 6; week++) {
     >
       <span>←</span>
     </a>
-    <h2 class="cal-month-title">{monthName}</h2>
     <a
       href={`/calendar?year=${nextYear}&month=${nextMonth}`}
       class="cal-nav-btn"
@@ -405,9 +404,10 @@ for (let week = 0; week < 6; week++) {
     margin-top: 3px;
   }
   .cal-color-dot {
-    width: 6px;
-    height: 6px;
+    width: 8px;
+    height: 8px;
     border-radius: 50%;
+    box-shadow: 0 0 0 1px rgba(0, 0, 0, 0.2);
   }
   .cal-ha-badge {
     font-size: 10px;
