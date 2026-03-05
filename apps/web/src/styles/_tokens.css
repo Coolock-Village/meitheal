@@ -59,6 +59,9 @@
     --info: #3b82f6;
     --border: #32324e;
     --border-focus: #10b981;
+    --color-success: rgba(16, 185, 129, 0.9);
+      --color-error: rgba(239, 68, 68, 0.9);
+      --color-warning: rgba(245, 158, 11, 0.9);
     /* RGB channel vars — Tailwind <alpha-value> support */
     --bg-primary-rgb: 19 19 32;
       --bg-secondary-rgb: 30 30 52;

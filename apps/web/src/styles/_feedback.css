@@ -169,17 +169,18 @@ tbody tr:nth-child(n+6),
   animation: fade-in-up 0.3s ease forwards;
 }
 
+/* Toast types */
 .toast.success {
-  background: rgba(16, 185, 129, 0.9);
+  background: var(--color-success);
   color: white;
 }
 
 .toast.error {
-  background: rgba(239, 68, 68, 0.9);
+  background: var(--color-error);
   color: white;
 }
 
 .toast.warning {
-  background: rgba(245, 158, 11, 0.9);
+  background: var(--color-warning);
   color: white;
 }

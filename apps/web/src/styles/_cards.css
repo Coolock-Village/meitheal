@@ -113,7 +113,9 @@
   transition: opacity 0.2s ease;
 }
 
-.bento-card:hover .bento-card-actions {
+.bento-card:hover .bento-card-actions,
+.bento-card:focus-within .bento-card-actions,
+.bento-card:active .bento-card-actions {
   opacity: 1;
 }
 }
