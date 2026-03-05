@@ -80,9 +80,14 @@ When "Meitheal Tasks" is selected in a conversation agent's LLM APIs:
 - `meitheal_create_task` — Create a new task
 - `meitheal_complete_task` — Mark done by ID or title
 - `meitheal_update_task` — Update priority, due date, status, description
+- `meitheal_delete_task` — Delete a task permanently
+- `meitheal_batch_complete` — Complete multiple tasks (by label, priority, or titles)
 - `meitheal_get_overdue` — List overdue tasks
 - `meitheal_get_todays_tasks` — Today's tasks + overdue
-- `meitheal_task_summary` — Active, overdue, done, total counts
+- `meitheal_get_task_summary` — Active, overdue, done, total counts
+- `meitheal_get_calendar_events` — Calendar events from HA
+- `meitheal_get_upcoming` — Combined tasks + calendar upcoming view
+- `meitheal_daily_briefing` — Full day briefing (weather, tasks, calendar, who's home)
 
 ## Voice Commands (no LLM required)
 
@@ -90,15 +95,18 @@ These work with HA's built-in Assist without any LLM:
 
 - "add [item] to my tasks" — creates a task
 - "done with [item]" / "mark [item] done" — completes a task
+- "delete [item]" / "remove [item]" — deletes a task
 - "show my tasks" / "what's on my list" — lists active tasks
 - "what's late" / "what's overdue" — shows overdue tasks
 - "today's tasks" / "what's due today" — today's agenda
 - "how many tasks" / "task count" — summary counts
+- "good morning" / "brief me" / "start my day" — daily briefing (weather, tasks, urgent)
 
 Also responds to "meitheal", "me hall", "may hall", "meh hall", or "MH":
 - "MH add buy groceries"
 - "meitheal today"
 - "me hall what's overdue"
+- "meh hall brief me"
 
 ## Data Model
 

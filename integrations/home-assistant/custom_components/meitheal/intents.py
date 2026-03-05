@@ -269,6 +269,114 @@ class MeithealSummaryHandler(intent.IntentHandler):
         return response
 
 
+INTENT_DELETE_TASK = "MeithealDeleteTask"
+INTENT_BRIEFING = "MeithealBriefing"
+
+
+class MeithealDeleteTaskHandler(intent.IntentHandler):
+    """Handle 'delete X' / 'remove X from my list' intent."""
+
+    intent_type = INTENT_DELETE_TASK
+    slot_schema = {
+        vol.Required("item"): str,
+    }
+    platforms = set()
+
+    async def async_handle(self, intent_obj: intent.Intent) -> intent.IntentResponse:
+        """Delete a task from voice command."""
+        hass = intent_obj.hass
+        item = intent_obj.slots["item"]["value"]
+
+        coordinator = _get_coordinator(hass)
+        if not coordinator:
+            response = intent_obj.create_response()
+            response.async_set_speech("Sorry, Meitheal is not available right now.")
+            return response
+
+        # Find by title
+        task_id = None
+        if coordinator.data:
+            for task in coordinator.data.tasks:
+                if task.title.lower() == item.lower():
+                    task_id = task.id
+                    break
+
+        if not task_id:
+            response = intent_obj.create_response()
+            response.async_set_speech(f"Sorry, I couldn't find a task called '{item}'.")
+            return response
+
+        try:
+            await coordinator.async_delete_task(task_id)
+            response = intent_obj.create_response()
+            response.async_set_speech(f"Deleted '{item}' from your tasks.")
+            return response
+        except Exception as err:
+            _LOGGER.error("Failed to delete task via intent: %s", err)
+            response = intent_obj.create_response()
+            response.async_set_speech(f"Sorry, I couldn't delete that task. {err}")
+            return response
+
+
+class MeithealBriefingHandler(intent.IntentHandler):
+    """Handle 'good morning' / 'brief me' / 'start my day' intent."""
+
+    intent_type = INTENT_BRIEFING
+    platforms = set()
+
+    async def async_handle(self, intent_obj: intent.Intent) -> intent.IntentResponse:
+        """Provide a daily briefing via voice."""
+        from datetime import datetime, timezone
+
+        hass = intent_obj.hass
+        now = datetime.now(timezone.utc)
+        today_str = now.strftime("%Y-%m-%d")
+        hour = now.hour
+
+        greeting = "Good morning" if hour < 12 else (
+            "Good afternoon" if hour < 17 else "Good evening"
+        )
+
+        coordinator = _get_coordinator(hass)
+        parts = [f"{greeting}!"]
+
+        if coordinator and coordinator.data:
+            data = coordinator.data
+            parts.append(f"You have {data.active_count} active tasks")
+            if data.overdue_count:
+                parts.append(f"{data.overdue_count} overdue")
+
+            # Today's tasks
+            today_tasks = [
+                t for t in data.tasks
+                if t.status != "done" and t.due_date
+                and t.due_date.startswith(today_str)
+            ]
+            if today_tasks:
+                names = ", ".join(t.title for t in today_tasks[:3])
+                parts.append(f"Due today: {names}")
+
+            # Urgent items
+            urgent = [
+                t for t in data.tasks
+                if t.status != "done" and t.priority <= 2
+            ]
+            if urgent:
+                names = ", ".join(t.title for t in urgent[:2])
+                parts.append(f"Urgent: {names}")
+
+        # Weather
+        weather = hass.states.get("weather.home") or hass.states.get("weather.forecast_home")
+        if weather:
+            temp = weather.attributes.get("temperature", "")
+            unit = weather.attributes.get("temperature_unit", "°C")
+            parts.append(f"Weather: {weather.state}, {temp}{unit}")
+
+        response = intent_obj.create_response()
+        response.async_set_speech(". ".join(parts) + ".")
+        return response
+
+
 # Need vol for slot_schema
 import voluptuous as vol  # noqa: E402
 
@@ -281,4 +389,6 @@ def async_register_intents(hass: HomeAssistant) -> None:
     intent.async_register(hass, MeithealOverdueHandler())
     intent.async_register(hass, MeithealTodayHandler())
     intent.async_register(hass, MeithealSummaryHandler())
-    _LOGGER.info("Registered 6 Meitheal custom intents for voice control")
+    intent.async_register(hass, MeithealDeleteTaskHandler())
+    intent.async_register(hass, MeithealBriefingHandler())
+    _LOGGER.info("Registered 8 Meitheal custom intents for voice control")

@@ -560,6 +560,231 @@ class GetUpcomingEventsTool(Tool):
         }
 
 
+class DailyBriefingTool(Tool):
+    """Smart daily briefing — the 'Good morning' feature.
+
+    Combines tasks, calendar, overdue, and HA context (weather, presence)
+    into a single conversational summary. Beats Google/Siri/Alexa briefings
+    because it includes Meitheal task data.
+    """
+
+    name = "meitheal_daily_briefing"
+    description = (
+        "Get a comprehensive daily briefing combining today's tasks, calendar events, "
+        "overdue items, and Home Assistant context (weather, who's home). "
+        "Use this when the user says 'good morning', 'brief me', 'what's my day look like?', "
+        "'daily briefing', or 'start my day'."
+    )
+    parameters = vol.Schema({})
+
+    async def async_call(
+        self,
+        hass: HomeAssistant,
+        tool_input: ToolInput,
+        llm_context: LLMContext,
+    ) -> JsonObjectType:
+        """Build a comprehensive daily briefing."""
+        briefing: dict[str, Any] = {}
+        now = datetime.now(timezone.utc)
+        today_str = now.strftime("%Y-%m-%d")
+        hour = now.hour
+
+        # Time-aware greeting
+        if hour < 12:
+            briefing["greeting"] = "Good morning"
+        elif hour < 17:
+            briefing["greeting"] = "Good afternoon"
+        else:
+            briefing["greeting"] = "Good evening"
+
+        briefing["date"] = now.strftime("%A, %B %d")
+
+        # Tasks
+        coordinator = _get_coordinator(hass)
+        if coordinator and coordinator.data:
+            data = coordinator.data
+            briefing["tasks"] = {
+                "active": data.active_count,
+                "overdue": data.overdue_count,
+                "total": data.total_count,
+            }
+
+            # Today's tasks
+            today_tasks = [
+                {"title": t.title, "priority": t.priority}
+                for t in data.tasks
+                if t.status != "done" and t.due_date
+                and t.due_date.startswith(today_str)
+            ]
+            briefing["today_tasks"] = today_tasks[:5]
+
+            # Overdue
+            overdue = [
+                {"title": t.title, "due_date": t.due_date}
+                for t in data.tasks if t.is_overdue
+            ]
+            briefing["overdue_tasks"] = overdue[:5]
+
+            # High priority items
+            urgent = [
+                {"title": t.title, "priority": t.priority}
+                for t in data.tasks
+                if t.status != "done" and t.priority <= 2
+            ]
+            briefing["urgent_items"] = urgent[:3]
+
+        # HA context — weather
+        weather_state = hass.states.get("weather.home")
+        if not weather_state:
+            # Try common weather entity names
+            for entity_id in ("weather.forecast_home", "weather.openweathermap"):
+                weather_state = hass.states.get(entity_id)
+                if weather_state:
+                    break
+
+        if weather_state:
+            briefing["weather"] = {
+                "condition": weather_state.state,
+                "temperature": weather_state.attributes.get("temperature"),
+                "unit": weather_state.attributes.get("temperature_unit", "°C"),
+            }
+
+        # HA context — who's home (device_tracker/person)
+        people_home = []
+        for state in hass.states.async_all("person"):
+            if state.state == "home":
+                name = state.attributes.get("friendly_name", state.entity_id)
+                people_home.append(name)
+        if people_home:
+            briefing["people_home"] = people_home
+
+        return briefing
+
+
+class DeleteTaskTool(Tool):
+    """Delete a task by ID or title (Todoist parity)."""
+
+    name = "meitheal_delete_task"
+    description = (
+        "Delete a task permanently. Use when the user says 'delete', 'remove', "
+        "'get rid of', or 'drop' a task. Search by title for a match if no ID given."
+    )
+    parameters = vol.Schema(
+        {
+            vol.Optional(
+                "task_id", description="Task ID (if known)"
+            ): str,
+            vol.Optional(
+                "title", description="Task title to find and delete"
+            ): str,
+        }
+    )
+
+    async def async_call(
+        self,
+        hass: HomeAssistant,
+        tool_input: ToolInput,
+        llm_context: LLMContext,
+    ) -> JsonObjectType:
+        """Delete a task."""
+        coordinator = _get_coordinator(hass)
+        if not coordinator:
+            return {"error": "Meitheal is not available"}
+
+        task_id = tool_input.tool_args.get("task_id")
+        title = tool_input.tool_args.get("title")
+
+        if not task_id and title and coordinator.data:
+            for task in coordinator.data.tasks:
+                if task.title.lower() == title.lower():
+                    task_id = task.id
+                    break
+
+        if not task_id:
+            return {"error": f"Could not find task '{title}'"}
+
+        try:
+            await coordinator.async_delete_task(task_id)
+            return {"status": "deleted", "task_id": task_id, "title": title or ""}
+        except Exception as err:
+            return {"error": str(err)}
+
+
+class BatchCompleteTasksTool(Tool):
+    """Complete multiple tasks at once (batch operations)."""
+
+    name = "meitheal_batch_complete"
+    description = (
+        "Complete multiple tasks at once. Use when the user says "
+        "'clear all done', 'mark everything as done', 'I finished all my tasks', "
+        "or 'complete all X tasks'. Can filter by label, priority, or status. "
+        "Also responds to 'what did I finish today?' by listing completed tasks."
+    )
+    parameters = vol.Schema(
+        {
+            vol.Optional(
+                "action",
+                description="'complete' to mark tasks done, 'list_completed' to show what's done",
+            ): vol.In(["complete", "list_completed"]),
+            vol.Optional("label", description="Only affect tasks with this label"): str,
+            vol.Optional("max_priority", description="Only affect tasks with priority <= this (1=urgent)"): int,
+            vol.Optional("titles", description="List of specific task titles to complete"): [str],
+        }
+    )
+
+    async def async_call(
+        self,
+        hass: HomeAssistant,
+        tool_input: ToolInput,
+        llm_context: LLMContext,
+    ) -> JsonObjectType:
+        """Batch complete tasks or list completed ones."""
+        coordinator = _get_coordinator(hass)
+        if not coordinator or not coordinator.data:
+            return {"error": "No task data available"}
+
+        action = tool_input.tool_args.get("action", "complete")
+        label = tool_input.tool_args.get("label")
+        max_priority = tool_input.tool_args.get("max_priority")
+        titles = tool_input.tool_args.get("titles", [])
+
+        if action == "list_completed":
+            done = [
+                {"title": t.title, "updated": t.updated_at}
+                for t in coordinator.data.tasks if t.status == "done"
+            ]
+            return {"completed_tasks": done[:10], "total_done": len(done)}
+
+        # Batch complete
+        targets = []
+        for t in coordinator.data.tasks:
+            if t.status == "done":
+                continue
+            if titles and t.title.lower() not in [x.lower() for x in titles]:
+                continue
+            if label and label.lower() not in [l.lower() for l in t.labels]:
+                continue
+            if max_priority and t.priority > max_priority:
+                continue
+            if not titles and not label and not max_priority:
+                continue  # Safety: require at least one filter for batch ops
+            targets.append(t)
+
+        completed = []
+        for t in targets:
+            try:
+                await coordinator.async_complete_task(task_id=t.id)
+                completed.append(t.title)
+            except Exception:
+                pass
+
+        return {
+            "completed": completed,
+            "count": len(completed),
+            "message": f"Completed {len(completed)} tasks",
+        }
+
+
 # ── LLM API Registration ──
 
 API_PROMPT = (
@@ -570,21 +795,29 @@ API_PROMPT = (
     "- **Search tasks** by keyword, status (todo/in_progress/done), or priority (1-5)\n"
     "- **Create tasks** with a title and optional description\n"
     "- **Complete tasks** by ID or title\n"
+    "- **Delete tasks** permanently\n"
     "- **Update tasks** — change priority, due date, status, title, or description\n"
+    "- **Batch complete** — mark multiple tasks done by label or priority\n"
     "- **Check overdue tasks** — what's past due\n"
     "- **Get today's tasks** — what's on the agenda right now\n"
     "- **Get a summary** — counts of active, overdue, and completed tasks\n"
     "- **View calendar events** — events synced from HA calendars\n"
-    "- **See what's coming up** — combined view of tasks and calendar events\n\n"
+    "- **See what's coming up** — combined view of tasks and calendar events\n"
+    "- **Daily briefing** — full day overview with weather, tasks, calendar, who's home\n\n"
     "## How to Respond\n"
     "- When the user asks about their tasks, search first, then summarize results naturally.\n"
     "- When they say 'add', 'create', 'remind me to', or 'I need to' — create a task.\n"
     "- When they say 'done', 'complete', or 'finished' — complete the task.\n"
+    "- When they say 'delete', 'remove', or 'get rid of' — delete the task.\n"
     "- When they ask 'what's overdue?' or 'what did I miss?' — check overdue tasks.\n"
     "- When they ask 'what's on my plate?' or 'today's tasks' — get today's tasks.\n"
     "- When they ask 'what's on my calendar?' or 'any events?' — get calendar events.\n"
     "- When they ask 'what's coming up?' or 'what's my schedule?' — get upcoming items.\n"
+    "- When they say 'good morning', 'brief me', or 'start my day' — give a daily briefing.\n"
+    "- When they ask 'what did I finish?' — list completed tasks.\n"
     "- Priority levels: 1=urgent, 2=high, 3=medium (default), 4=low, 5=lowest.\n"
+    "- When a task title includes '#label', extract and set the label.\n"
+    "- When a task mentions 'urgent' or 'important', set priority to 1.\n"
     "- Always confirm actions back to the user.\n"
     "- Keep responses concise and conversational.\n"
 )
@@ -607,11 +840,14 @@ class MeithealLLMAPI(API):
                 CreateTaskTool(),
                 CompleteTaskTool(),
                 UpdateTaskTool(),
+                DeleteTaskTool(),
+                BatchCompleteTasksTool(),
                 GetOverdueTasksTool(),
                 GetTodaysTasksTool(),
                 GetTaskSummaryTool(),
                 GetCalendarEventsTool(),
                 GetUpcomingEventsTool(),
+                DailyBriefingTool(),
             ],
         )
 

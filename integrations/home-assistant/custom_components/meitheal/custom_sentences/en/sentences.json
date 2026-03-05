@@ -84,6 +84,40 @@
         }
       ]
     },
+    "MeithealDeleteTask": {
+      "data": [
+        {
+          "sentences": [
+            "delete {item}"
+          ]
+        },
+        {
+          "sentences": [
+            "remove {item} [from] [my] [tasks|list]"
+          ]
+        },
+        {
+          "sentences": [
+            "drop {item}"
+          ]
+        },
+        {
+          "sentences": [
+            "get rid of {item}"
+          ]
+        },
+        {
+          "sentences": [
+            "[meitheal|me hall|may hall|meh hall|MH] delete {item}"
+          ]
+        },
+        {
+          "sentences": [
+            "[meitheal|me hall|may hall|meh hall|MH] remove {item}"
+          ]
+        }
+      ]
+    },
     "MeithealShowTasks": {
       "data": [
         {
@@ -216,6 +250,45 @@
         {
           "sentences": [
             "[meitheal|me hall|may hall|meh hall|MH] [summary|status|count]"
+          ]
+        }
+      ]
+    },
+    "MeithealBriefing": {
+      "data": [
+        {
+          "sentences": [
+            "good morning"
+          ]
+        },
+        {
+          "sentences": [
+            "brief me"
+          ]
+        },
+        {
+          "sentences": [
+            "[daily] briefing"
+          ]
+        },
+        {
+          "sentences": [
+            "start [my] day"
+          ]
+        },
+        {
+          "sentences": [
+            "[what's|what is] [my] day [look like]"
+          ]
+        },
+        {
+          "sentences": [
+            "[meitheal|me hall|may hall|meh hall|MH] [brief|briefing]"
+          ]
+        },
+        {
+          "sentences": [
+            "[meitheal|me hall|may hall|meh hall|MH] good morning"
           ]
         }
       ]
