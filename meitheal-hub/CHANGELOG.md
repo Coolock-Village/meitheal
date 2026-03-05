@@ -1,5 +1,14 @@
 # Changelog
 
+## [0.1.60] — 2026-03-05
+
+### Changed
+- Phase 58: DDD CSS Architecture extraction (single `global.css` split into 14 domain partials)
+- Accessibility: Enhanced Touch target visibility for `.bento-card-actions`
+- Fixed HA Ingress FOUC (Flash of Unstyled Content) by moving class injection to the Astro Locals edge
+- Dark mode: Migrated toast notifications to semantic CSS variables
+- Hardened Modals with solid backwards-compatible backdrop filters
+
 ## [0.1.0] — 2026-03-01
 
 ### Added

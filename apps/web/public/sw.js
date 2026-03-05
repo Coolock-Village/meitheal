@@ -21,7 +21,8 @@
  *
  * @kcs Keep in sync with meitheal-hub/config.yaml version.
  */
-const CACHE_VERSION = "0.1.58";
+// Bump this version globally using the Phase deployment scripts
+const CACHE_VERSION = "0.1.60";
 const SYNC_TAG = "meitheal-background-sync";
 
 /**

@@ -127,9 +127,9 @@ PWA features (service worker, install prompt, push notifications) require a **se
 
 **Graceful degradation**: on insecure origins, Meitheal skips SW registration silently. The app works fully — you just won't get offline caching or the install prompt. Settings > System shows a PWA status card with actionable HTTPS guidance.
 
-## Cache Strategy & Eviction
+## Cache Eviction Rules
 
-As of v0.1.58, the service worker uses **4 scoped caches** with automatic eviction to prevent disk bloat:
+As of v0.1.60, the service worker uses **4 scoped caches** with automatic eviction to prevent disk bloat:
 
 | Cache | Strategy | Max Entries | TTL | Purpose |
 |-------|----------|-------------|-----|--------|
