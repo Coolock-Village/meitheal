@@ -41,6 +41,9 @@ test("rename sweep keeps legacy meitheal_hub references only where explicitly al
   const allowedLegacyHostFiles = new Set([
     path.join(repoRoot, "integrations/home-assistant/custom_components/meitheal/const.py"),
     path.join(repoRoot, "integrations/home-assistant/custom_components/meitheal/README.md"),
+    // DeviceInfo identifiers — meitheal_hub is the HA device slug, not deprecated
+    path.join(repoRoot, "integrations/home-assistant/custom_components/meitheal/__init__.py"),
+    path.join(repoRoot, "integrations/home-assistant/custom_components/meitheal/helpers.py"),
     path.join(repoRoot, "docs/kcs/troubleshooting.md"),
   ]);
 
@@ -61,9 +64,8 @@ test("rename sweep keeps legacy meitheal_hub references only where explicitly al
           violations.push(`${filePath}:${i + 1} contains deprecated panel URI`);
         }
         if (line.includes("meitheal_hub")) {
-          const allowedLegacyHost =
-            allowedLegacyHostFiles.has(filePath) && line.includes("local_meitheal_hub");
-          if (!allowedLegacyHost) {
+          // Whitelisted files can contain meitheal_hub (DeviceInfo identifiers, constants)
+          if (!allowedLegacyHostFiles.has(filePath)) {
             violations.push(`${filePath}:${i + 1} contains unexpected meitheal_hub reference`);
           }
         }

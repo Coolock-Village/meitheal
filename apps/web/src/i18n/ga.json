@@ -232,7 +232,7 @@
     },
     "settings": {
         "title": "Socruithe",
-        "ha_title": "☘ Home Assistant",
+        "ha_title": "🏠 Home Assistant",
         "ha_subtitle": "Socruithe nasctha agus comhtháthaithe",
         "ha_url": "URL HA",
         "ha_url_placeholder": "http://homeassistant.local:8123",

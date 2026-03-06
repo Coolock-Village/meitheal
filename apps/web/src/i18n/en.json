@@ -236,7 +236,7 @@
     },
     "settings": {
         "title": "Settings",
-        "ha_title": "☘ Home Assistant",
+        "ha_title": "🏠 Home Assistant",
         "ha_subtitle": "Connection and integration settings",
         "ha_url": "HA URL",
         "ha_url_placeholder": "http://homeassistant.local:8123",

@@ -50,7 +50,7 @@
 .filter-bar .form-select:not([value=""]),
 .filter-bar select:not(:invalid) {
   border-color: var(--accent);
-  background-color: rgba(16, 185, 129, 0.05);
+  background-color: rgba(99, 102, 241, 0.05);
 }
 
 .filter-clear-btn {

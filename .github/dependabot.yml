@@ -1,6 +1,7 @@
 # Dependabot version updates — https://docs.github.com/code-security/dependabot
 version: 2
 updates:
+  # Node.js / pnpm workspace
   - package-ecosystem: "npm"
     directory: "/"
     schedule:
@@ -14,6 +15,7 @@ updates:
     labels:
       - "dependencies"
 
+  # GitHub Actions
   - package-ecosystem: "github-actions"
     directory: "/"
     schedule:
@@ -22,6 +24,7 @@ updates:
       - "dependencies"
       - "ci"
 
+  # Dockerfile (HA addon base image)
   - package-ecosystem: "docker"
     directory: "/meitheal-hub"
     schedule:
@@ -29,3 +32,12 @@ updates:
     labels:
       - "dependencies"
       - "security"
+
+  # Python (HA custom component)
+  - package-ecosystem: "pip"
+    directory: "/integrations/home-assistant"
+    schedule:
+      interval: "weekly"
+    labels:
+      - "dependencies"
+      - "ha-integration"

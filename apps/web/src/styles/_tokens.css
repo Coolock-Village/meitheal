@@ -5,6 +5,9 @@
  * Owns: @font-face, :root vars, theme overrides, HA passthrough vars
  * Does NOT own: component styles, layout, responsive overrides
  *
+ * Brand Palette: "Hearth Slate + Electric Indigo"
+ * Background: #0F172A (Slate 900) — --bg-primary * Surface: #1E293B (Slate 800) — --bg-secondary * Border: #334155 (Slate 700) — --border * Accent: #6366F1 (Indigo 500) — --accent * Accent hover:#4F46E5 (Indigo 600) — --accent-hover * Amber: #F59E0B — logo highlight,
+ secondary accent * Danger: #EF4444 — --danger * * Typography: * Headings: Outfit (400-700) * Body/UI: Geist Variable * Fallback: Inter Variable * Mono: JetBrains Mono *
  * CSP audit: All url() references point to local @fontsource bundles.
  * No external CDN URLs — complies with strict font-src 'self' CSP.
  * If adding new url() references, ensure they are local assets only.
