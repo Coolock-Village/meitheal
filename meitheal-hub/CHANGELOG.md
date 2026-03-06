@@ -1,5 +1,31 @@
 # Changelog
 
+## [0.1.71] — 2026-03-06
+
+### Added
+
+- Auto-Score: HA Assist inline scoring replaces clipboard+external AI
+- Ask AI: Inline HA Assist response in task detail panel
+- `backlog` status across all surfaces (MCP, LLM API, UI, docs)
+- `.skills/core-workflows/SKILL.md` governance file
+- Grocy auto-key generation endpoint
+
+### Changed
+
+- `llms.txt` rewritten to llmstxt.org spec
+- `SKILL.md` rewritten to Agent Skills (agentskills.io) spec
+- `llms-full.txt` updated with Phase 62 additions
+
+### Fixed
+
+- CodeQL `js/incomplete-multi-character-sanitization` in ha-users.ts
+- TS2769 overload error in user-assignment test
+- SKILL.md markdownlint warnings
+
+### Security
+
+- All 4 Dependabot alerts resolved (SVGO, DOMPurify, Lodash, esbuild)
+
 ## [0.1.60] — 2026-03-05
 
 ### Changed
