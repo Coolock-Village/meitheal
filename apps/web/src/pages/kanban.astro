@@ -28,21 +28,26 @@ const client = getPersistenceClient();
 
 // Completed task auto-hide: read retention setting (default 30 days, 0 = never hide)
 let completedAutoHideDays = 30;
+// Backlog mode: visible (default) | hidden | disabled
+let backlogMode = "visible";
 try {
   const settingsResult = await client.execute({
-    sql: "SELECT value FROM settings WHERE key = 'completed_auto_hide_days' LIMIT 1",
+    sql: "SELECT key, value FROM settings WHERE key IN ('completed_auto_hide_days', 'backlog_mode')",
     args: [],
   });
-  if (settingsResult.rows.length > 0) {
-    const val = Number(
-      JSON.parse(
-        String((settingsResult.rows[0] as Record<string, unknown>).value),
-      ),
-    );
-    if (!isNaN(val) && val >= 0) completedAutoHideDays = val;
+  for (const row of settingsResult.rows) {
+    const r = row as Record<string, unknown>;
+    const k = String(r.key);
+    if (k === "completed_auto_hide_days") {
+      const val = Number(JSON.parse(String(r.value)));
+      if (!isNaN(val) && val >= 0) completedAutoHideDays = val;
+    } else if (k === "backlog_mode") {
+      const val = JSON.parse(String(r.value));
+      if (val === "hidden" || val === "disabled") backlogMode = val;
+    }
   }
 } catch {
-  /* settings table may not exist yet — use default */
+  /* settings table may not exist yet — use defaults */
 }
 
 const completedCutoffMs =
@@ -149,6 +154,11 @@ if (columns.length === 0) {
       wipLimit: 0,
     },
   ];
+}
+
+// Backlog mode: filter out backlog lane when hidden or disabled
+if (backlogMode === "hidden" || backlogMode === "disabled") {
+  columns = columns.filter((col) => col.key !== "backlog");
 }
 
 const priorityLabels: Record<number, string> = {
@@ -317,6 +327,7 @@ const typeConfig: Record<
 
   <div
     class="kanban-board"
+    data-backlog-mode={backlogMode}
     style={`padding: 0 0 8px; grid-template-columns: repeat(${columns.length}, 1fr);`}
   >
     {

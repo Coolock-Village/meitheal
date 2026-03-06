@@ -1618,12 +1618,30 @@ Astro.response.headers.set("X-Content-Type-Options", "nosniff");
               "td-status",
             ) as HTMLSelectElement | null;
             try {
-              const lanesRes = await fetch(
-                (window.__ingress_path || "") + "/api/lanes",
-              );
+              const [lanesRes, modeRes] = await Promise.all([
+                fetch((window.__ingress_path || "") + "/api/lanes"),
+                fetch(
+                  (window.__ingress_path || "") +
+                    "/api/settings?key=backlog_mode",
+                ),
+              ]);
+              let backlogMode = "visible";
+              try {
+                if (modeRes.ok) {
+                  const md = await modeRes.json();
+                  if (md.value === "hidden" || md.value === "disabled")
+                    backlogMode = md.value;
+                }
+              } catch {
+                /* default */
+              }
               if (lanesRes.ok && statusSelect) {
                 const lanesData = await lanesRes.json();
-                const lanes = lanesData.lanes || [];
+                let lanes = lanesData.lanes || [];
+                // When backlog is disabled, remove it from status options
+                if (backlogMode === "disabled") {
+                  lanes = lanes.filter((l: any) => l.key !== "backlog");
+                }
                 statusSelect.innerHTML = "";
                 for (const lane of lanes) {
                   // Add the main key as an option

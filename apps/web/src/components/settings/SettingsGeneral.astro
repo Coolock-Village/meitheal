@@ -515,13 +515,51 @@ const { locale } = Astro.props;
       <div>
         <div class="card-title">📊 Kanban Board</div>
         <div class="card-subtitle">
-          Configure how completed tasks are displayed on the Kanban board.
+          Configure Kanban board behaviour, including backlog visibility and
+          completed task retention.
         </div>
       </div>
     </div>
     <div
       style="padding: 16px; display: flex; flex-direction: column; gap: 16px;"
     >
+      <!-- Backlog Mode -->
+      <div>
+        <label
+          for="backlog-mode-select"
+          style="font-weight: 600; font-size: 13px; display: block; margin-bottom: 6px;"
+          >Backlog lane</label
+        >
+        <div style="display: flex; gap: 8px; align-items: center;">
+          <select
+            id="backlog-mode-select"
+            class="form-select"
+            style="flex: 1; max-width: 300px;"
+            aria-label="Backlog lane mode"
+          >
+            <option value="visible">📥 Visible (default)</option>
+            <option value="hidden">🙈 Hidden from Kanban</option>
+            <option value="disabled">🚫 Disabled</option>
+          </select>
+          <button
+            type="button"
+            class="btn btn-primary"
+            id="save-backlog-mode"
+            style="font-size: 13px;">Save</button
+          >
+        </div>
+        <div
+          id="backlog-mode-help"
+          style="font-size: 11px; color: var(--text-muted); margin-top: 4px;"
+        >
+          Backlog lane is shown on the Kanban board. Tasks can be placed in
+          Backlog.
+        </div>
+      </div>
+
+      <div style="border-top: 1px solid var(--border); padding-top: 16px;">
+      </div>
+
       <div>
         <label
           for="completed-retention-select"
@@ -999,6 +1037,65 @@ const { locale } = Astro.props;
 
     initUsersCard();
     document.addEventListener("astro:page-load", initUsersCard);
+  })();
+</script>
+
+<script is:inline>
+  (function () {
+    var bp = window.__ingress_path || "";
+    var select = document.getElementById("backlog-mode-select");
+    var saveBtn = document.getElementById("save-backlog-mode");
+    var helpDiv = document.getElementById("backlog-mode-help");
+    if (!select) return;
+
+    var helpTexts = {
+      visible:
+        "Backlog lane is shown on the Kanban board. Tasks can be placed in Backlog.",
+      hidden:
+        "Backlog lane is hidden from the Kanban board. Backlog tasks are only visible in Table view.",
+      disabled:
+        "Backlog is fully disabled. The status option is removed from all dropdowns. Use Todo for everything.",
+    };
+
+    function updateHelp() {
+      if (helpDiv) helpDiv.textContent = helpTexts[select.value] || "";
+    }
+    select.addEventListener("change", updateHelp);
+
+    // Load current value
+    fetch(bp + "/api/settings?key=backlog_mode")
+      .then(function (r) {
+        return r.ok ? r.json() : {};
+      })
+      .then(function (data) {
+        if (data.value !== null && data.value !== undefined) {
+          select.value = String(data.value);
+          updateHelp();
+        }
+        // Expose globally for other components
+        window.__backlog_mode = select.value;
+      })
+      .catch(function () {
+        /* use default */
+      });
+
+    // Save
+    saveBtn?.addEventListener("click", function () {
+      var val = select.value;
+      fetch(bp + "/api/settings", {
+        method: "PUT",
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify({ key: "backlog_mode", value: val }),
+      })
+        .then(function () {
+          window.__backlog_mode = val;
+          if (typeof window.showToast === "function")
+            window.showToast("Backlog mode saved — reload Kanban to apply");
+        })
+        .catch(function (err) {
+          console.error("Save backlog mode error:", err);
+        });
+    });
   })();
 </script>
 

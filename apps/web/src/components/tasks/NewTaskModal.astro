@@ -214,6 +214,30 @@ const locale: Locale = cookieLocale === "ga" ? "ga" : "en";
     }
   }
 
+  // Backlog mode: hide backlog option when disabled
+  (async function hideBacklogIfDisabled() {
+    try {
+      const res = await fetch(
+        (window.__ingress_path || "") + "/api/settings?key=backlog_mode",
+      );
+      if (!res.ok) return;
+      const data = await res.json();
+      if (data.value === "disabled") {
+        const statusSelect = document.getElementById(
+          "new-task-status",
+        ) as HTMLSelectElement;
+        if (statusSelect) {
+          const backlogOpt = statusSelect.querySelector(
+            'option[value="backlog"]',
+          );
+          if (backlogOpt) backlogOpt.remove();
+        }
+      }
+    } catch {
+      /* offline — keep all options */
+    }
+  })();
+
   // Use event delegation on document.body to catch all create-task-btn clicks
   // without cloning DOM nodes (which breaks other scripts' references).
   document.body.addEventListener("click", (e) => {
