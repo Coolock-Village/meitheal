@@ -215,6 +215,7 @@ export async function ensureSchema(): Promise<void> {
   await client.execute("CREATE INDEX IF NOT EXISTS integration_attempts_request_idx ON integration_attempts(request_id)");
   await client.execute("CREATE INDEX IF NOT EXISTS calendar_confirmations_task_idx ON calendar_confirmations(task_id)");
   await client.execute("CREATE INDEX IF NOT EXISTS calendar_confirmations_request_idx ON calendar_confirmations(request_id)");
+  await client.execute("CREATE INDEX IF NOT EXISTS calendar_confirmations_provider_event_idx ON calendar_confirmations(provider_event_id)");
   await client.execute("CREATE INDEX IF NOT EXISTS audit_trail_request_idx ON audit_trail(request_id)");
   await client.execute("CREATE INDEX IF NOT EXISTS audit_trail_task_idx ON audit_trail(task_id)");
   await client.execute("CREATE INDEX IF NOT EXISTS audit_trail_created_idx ON audit_trail(created_at)");

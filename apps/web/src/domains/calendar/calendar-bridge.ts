@@ -60,6 +60,18 @@ interface EntitySyncState {
 /** Map of entityId → sync state for multi-calendar support */
 const activeSyncs = new Map<string, EntitySyncState>();
 
+/** Concurrency guard — prevents overlapping syncs for the same entity */
+const syncingEntities = new Set<string>();
+
+/** Simple trailing debounce — returns a debounced version of fn */
+function debounce<T extends (...args: unknown[]) => unknown>(fn: T, delayMs: number): (...args: Parameters<T>) => void {
+  let timer: ReturnType<typeof setTimeout> | null = null;
+  return (...args: Parameters<T>) => {
+    if (timer) clearTimeout(timer);
+    timer = setTimeout(() => { timer = null; fn(...args); }, delayMs);
+  };
+}
+
 /**
  * Start simultaneous sync for multiple HA calendar entities.
  * Replaces any previously active syncs.
@@ -106,14 +118,15 @@ function startSingleEntitySync(config: CalendarSyncConfig): void {
     lastSyncError: null,
   };
 
-  // Subscribe to state changes for this calendar entity
-  const unsub = onEntityChange(config.entityId, async () => {
+  // Subscribe to state changes — debounced to avoid sync churn from frequent entity updates
+  const debouncedSync = debounce(async () => {
     logger.log("info", {
       event: "calendar.sync.entity_changed", domain: "calendar", component: "calendar-bridge",
-      request_id: SYS_REQ, message: `Calendar entity ${config.entityId} changed — syncing`,
+      request_id: SYS_REQ, message: `Calendar entity ${config.entityId} changed — syncing (debounced)`,
     });
     await syncEntityFromHA(config.entityId);
-  });
+  }, 10_000);
+  const unsub = onEntityChange(config.entityId, debouncedSync);
   state.unsubscribers.push(unsub);
 
   // Periodic full sync
@@ -186,6 +199,25 @@ export async function syncFromHA(overrideEntityId?: string): Promise<{ created: 
  * via the calendar_confirmations table (keyed by provider_event_id).
  */
 async function syncEntityFromHA(entityId: string): Promise<{ created: number; updated: number; total: number }> {
+  // Concurrency guard — skip if already syncing this entity
+  if (syncingEntities.has(entityId)) {
+    logger.log("debug", {
+      event: "calendar.sync.skipped_concurrent", domain: "calendar", component: "calendar-bridge",
+      request_id: SYS_REQ, message: `Sync already in progress for ${entityId} — skipping`,
+    });
+    return { created: 0, updated: 0, total: 0 };
+  }
+  syncingEntities.add(entityId);
+
+  try {
+    return await _syncEntityFromHAInner(entityId);
+  } finally {
+    syncingEntities.delete(entityId);
+  }
+}
+
+/** Inner sync logic — always called within concurrency guard */
+async function _syncEntityFromHAInner(entityId: string): Promise<{ created: number; updated: number; total: number }> {
   const state = activeSyncs.get(entityId);
 
   const now = new Date();
@@ -216,31 +248,36 @@ async function syncEntityFromHA(entityId: string): Promise<{ created: number; up
     let updated = 0;
     let skipped = 0;
 
-    for (const evt of events) {
-      const uid = evt.uid ?? `ha-cal-${entityId}-${evt.summary}-${evt.start}`;
+    // Batch dedup: pre-fetch all existing provider_event_ids in one query
+    const eventUids = events.map((evt) => evt.uid ?? `ha-cal-${entityId}-${evt.summary}-${evt.start}`);
+    const placeholders = eventUids.map(() => "?").join(", ");
+    const existingRows = await client.execute({
+      sql: `SELECT provider_event_id, task_id FROM calendar_confirmations WHERE provider_event_id IN (${placeholders})`,
+      args: eventUids,
+    });
+    const existingMap = new Map<string, string>();
+    for (const row of existingRows.rows) {
+      existingMap.set(String(row.provider_event_id), String(row.task_id));
+    }
 
-      // Check if we already have a confirmation for this event
-      const existing = await client.execute({
-        sql: "SELECT task_id FROM calendar_confirmations WHERE provider_event_id = ?",
-        args: [uid],
-      });
+    for (let i = 0; i < events.length; i++) {
+      const evt = events[i]!;
+      const uid = eventUids[i]!;
+      const existingTaskId = existingMap.get(uid);
 
-      if (existing.rows.length > 0) {
-        // Update existing task's due_date if changed
-        const taskId = existing.rows[0]!.task_id as string;
+      if (existingTaskId) {
+        // Update existing task — fold label check into single UPDATE
         await client.execute({
-          sql: "UPDATE tasks SET due_date = ?, description = COALESCE(?, description), updated_at = ? WHERE id = ?",
-          args: [evt.start, stripMeithealAttribution(evt.description), Date.now(), taskId],
+          sql: `UPDATE tasks SET
+                  due_date = ?, description = COALESCE(?, description), updated_at = ?,
+                  labels = CASE
+                    WHEN labels NOT LIKE '%calendar-sync%'
+                    THEN json_insert(labels, '$[#]', 'calendar-sync')
+                    ELSE labels
+                  END
+                WHERE id = ?`,
+          args: [evt.start, stripMeithealAttribution(evt.description), Date.now(), existingTaskId],
         });
-        // Ensure the calendar-sync label is present
-        try {
-          const labelRes = await client.execute({ sql: "SELECT labels FROM tasks WHERE id = ?", args: [taskId] });
-          const currentLabels: string[] = JSON.parse(String(labelRes.rows[0]?.labels ?? "[]"));
-          if (!currentLabels.includes("calendar-sync")) {
-            currentLabels.push("calendar-sync");
-            await client.execute({ sql: "UPDATE tasks SET labels = ? WHERE id = ?", args: [JSON.stringify(currentLabels), taskId] });
-          }
-        } catch { /* non-critical label update */ }
         updated++;
       } else {
         // Create new task from calendar event

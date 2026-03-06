@@ -350,14 +350,16 @@ export const PUT: APIRoute = async ({ params, request }) => {
         const [domain, ...rest] = target.split(".");
         const service = rest.join(".");
         if (domain && service) {
+          const deepLink = ingress ? ingress + "/kanban" : null;
           const pushData: Record<string, unknown> = {
             title,
             message: message.replace(/\[([^\]]+)\]\([^)]+\)/g, "$1"), // strip markdown links for push
+            data: {
+              // Android uses clickAction, iOS uses url — set both for cross-platform
+              ...(deepLink ? { clickAction: deepLink, url: deepLink } : {}),
+              tag: notifId, // prevent duplicate stacking
+            },
           };
-          // Add deep link URL for HA Companion App
-          if (ingress) {
-            pushData.data = { url: ingress + "/kanban" };
-          }
           promises.push(
             callHAService(domain, service, pushData)
               .catch(err => logApiError("ha-notify", `Failed to send mobile push to ${target}`, err))
