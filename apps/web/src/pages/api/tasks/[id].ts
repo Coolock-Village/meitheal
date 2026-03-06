@@ -312,19 +312,76 @@ export const PUT: APIRoute = async ({ params, request }) => {
     }
   } catch { /* settings not available — default to enabled */ }
 
-  // Phase 52: Persistent Notification if bumped to Urgent (P1)
+  // Read channel preferences for dispatch
+  let notifChannels = { sidebar: true, mobile_push: false };
+  let notifMobileTargets: string[] = [];
+  try {
+    const cpResult = await client.execute({
+      sql: "SELECT value FROM settings WHERE key = 'notification_preferences' LIMIT 1",
+      args: [],
+    });
+    if (cpResult.rows.length > 0) {
+      const cpRaw = JSON.parse(String((cpResult.rows[0] as Record<string, unknown>).value));
+      if (cpRaw?.channels) notifChannels = cpRaw.channels;
+      if (Array.isArray(cpRaw?.mobile_targets)) notifMobileTargets = cpRaw.mobile_targets;
+    }
+  } catch { /* default channels */ }
+
+  // Helper: dispatch notification to configured channels
+  async function dispatchNotification(title: string, message: string, notifId: string, ingress: string | null) {
+    const { callHAService } = await import("../../../domains/ha/ha-services");
+    const promises: Promise<unknown>[] = [];
+
+    // Sidebar bell (persistent_notification)
+    if (notifChannels.sidebar !== false) {
+      promises.push(
+        callHAService("persistent_notification", "create", {
+          title,
+          message,
+          notification_id: notifId,
+        }).catch(err => logApiError("ha-notify", "Failed to send sidebar notification", err))
+      );
+    }
+
+    // Mobile push (notify.mobile_app_*)
+    if (notifChannels.mobile_push && notifMobileTargets.length > 0) {
+      for (const target of notifMobileTargets) {
+        // target format: "notify.mobile_app_<name>" → domain: "notify", service: "mobile_app_<name>"
+        const [domain, ...rest] = target.split(".");
+        const service = rest.join(".");
+        if (domain && service) {
+          const pushData: Record<string, unknown> = {
+            title,
+            message: message.replace(/\[([^\]]+)\]\([^)]+\)/g, "$1"), // strip markdown links for push
+          };
+          // Add deep link URL for HA Companion App
+          if (ingress) {
+            pushData.data = { url: ingress + "/kanban" };
+          }
+          promises.push(
+            callHAService(domain, service, pushData)
+              .catch(err => logApiError("ha-notify", `Failed to send mobile push to ${target}`, err))
+          );
+        }
+      }
+    }
+
+    return Promise.all(promises);
+  }
+
+  // Phase 52: Notification if bumped to Urgent (P1)
   if (notifEnabled && sanitized.priority === 1 && oldTask?.priority !== 1) {
-    import("../../../domains/ha/ha-services").then(async ({ callHAService }) => {
-      const { getIngressEntry } = await import("../../../domains/ha/ha-connection");
+    import("../../../domains/ha/ha-connection").then(async ({ getIngressEntry }) => {
       const ingress = await getIngressEntry();
       const titleStr = typeof sanitized.title === "string" ? sanitized.title : String(oldTask?.title ?? "Task");
       const ticketKey = taskPayload.ticket_key ?? "Task";
       const link = ingress ? `\n\n[Open ${ticketKey} in Meitheal →](${ingress}/kanban)` : "";
-      callHAService("persistent_notification", "create", {
-        title: `🚨 Escalated to Urgent: ${titleStr}`,
-        message: `${ticketKey} has been escalated to P1 — Urgent.${link}`,
-        notification_id: `meitheal_urgent_${resolvedId}`,
-      }).catch(err => logApiError("ha-notify", "Failed to send urgent update notification", err));
+      dispatchNotification(
+        `🚨 Escalated to Urgent: ${titleStr}`,
+        `${ticketKey} has been escalated to P1 — Urgent.${link}`,
+        `meitheal_urgent_${resolvedId}`,
+        ingress,
+      ).catch(() => {});
     }).catch(() => {});
   }
 
@@ -332,8 +389,7 @@ export const PUT: APIRoute = async ({ params, request }) => {
   if (notifEnabled && sanitized.assigned_to !== undefined && String(sanitized.assigned_to) !== String(oldTask?.assigned_to ?? "")) {
     const assignee = typeof sanitized.assigned_to === "string" ? sanitized.assigned_to : null;
     if (assignee && !notifDisabledUsers.has(assignee)) {
-      import("../../../domains/ha/ha-services").then(async ({ callHAService }) => {
-        const { getIngressEntry } = await import("../../../domains/ha/ha-connection");
+      import("../../../domains/ha/ha-connection").then(async ({ getIngressEntry }) => {
         const ingress = await getIngressEntry();
         const titleStr = typeof sanitized.title === "string" ? sanitized.title : String(oldTask?.title ?? "Task");
         const ticketKey = taskPayload.ticket_key ?? "A task";
@@ -351,11 +407,12 @@ export const PUT: APIRoute = async ({ params, request }) => {
             if (nameResult.rows.length > 0) displayName = String((nameResult.rows[0] as Record<string, unknown>).name);
           }
         } catch { /* fallback to stripped ID */ }
-        callHAService("persistent_notification", "create", {
-          title: `📋 Task assigned: ${titleStr}`,
-          message: `${ticketKey} has been assigned to ${displayName}.${link}`,
-          notification_id: `meitheal_assigned_${resolvedId}`,
-        }).catch(err => logApiError("ha-notify", "Failed to send assignment notification", err));
+        dispatchNotification(
+          `📋 Task assigned: ${titleStr}`,
+          `${ticketKey} has been assigned to ${displayName}.${link}`,
+          `meitheal_assigned_${resolvedId}`,
+          ingress,
+        ).catch(() => {});
       }).catch(() => {});
     }
   }

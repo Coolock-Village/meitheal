@@ -508,6 +508,22 @@ const version =
                 >
               </div>
               <div
+                style="display: flex; gap: 6px; flex-wrap: wrap; margin-top: 6px;"
+              >
+                <button
+                  type="button"
+                  id="pwa-push-notif-btn"
+                  class="btn btn-ghost pwa-troubleshoot-btn"
+                  >🔔 Push Notifications</button
+                >
+                <button
+                  type="button"
+                  id="pwa-reset-hints-btn"
+                  class="btn btn-ghost pwa-troubleshoot-btn"
+                  >🔁 Reset All Hints</button
+                >
+              </div>
+              <div
                 id="pwa-troubleshoot-result"
                 style="display: none; margin-top: 6px; font-size: 11px; padding: 6px 10px; border-radius: 6px; background: var(--bg-secondary); border: 1px solid var(--border);"
               >
@@ -1031,6 +1047,71 @@ const version =
       } catch (err) {
         showTroubleshootResult("✗ Failed to clear offline data.", false);
       }
+    });
+    // Push notification opt-in
+    const pushBtn = document.getElementById("pwa-push-notif-btn");
+    pushBtn?.addEventListener("click", async () => {
+      if (!("Notification" in window)) {
+        showTroubleshootResult(
+          "Notifications not supported in this browser.",
+          false,
+        );
+        return;
+      }
+      const current = Notification.permission;
+      if (current === "granted") {
+        showTroubleshootResult("✓ Push notifications already enabled.");
+        return;
+      }
+      if (current === "denied") {
+        showTroubleshootResult(
+          "✗ Notifications blocked. Reset in browser settings → Site permissions.",
+          false,
+        );
+        return;
+      }
+      try {
+        const result = await Notification.requestPermission();
+        if (result === "granted") {
+          showTroubleshootResult("✓ Push notifications enabled!");
+          // Send a test notification
+          new Notification("Meitheal", {
+            body: "Push notifications are now active.",
+            icon: "/icons/icon-192.png",
+          });
+        } else {
+          showTroubleshootResult(
+            "Notifications dismissed. You can enable later in browser settings.",
+            false,
+          );
+        }
+      } catch {
+        showTroubleshootResult(
+          "✗ Failed to request notification permission.",
+          false,
+        );
+      }
+    });
+
+    // Reset all onboarding hints
+    const resetHintsBtn = document.getElementById("pwa-reset-hints-btn");
+    resetHintsBtn?.addEventListener("click", () => {
+      const keys = [
+        "meitheal-pwa-dismissed",
+        "meitheal_shortcut_hint_dismissed",
+      ];
+      let cleared = 0;
+      keys.forEach((k) => {
+        if (localStorage.getItem(k) !== null) {
+          localStorage.removeItem(k);
+          cleared++;
+        }
+      });
+      showTroubleshootResult(
+        cleared > 0
+          ? `✓ Reset ${cleared} hint(s). They'll reappear on next page load.`
+          : "No dismissed hints to reset.",
+      );
     });
   }
 

@@ -580,8 +580,71 @@ const { locale } = Astro.props;
             Enable notifications
           </div>
           <div style="font-size: 11px; color: var(--text-muted);">
-            Task assignments and urgent escalations appear in the HA sidebar
-            bell.
+            Task assignments and urgent escalations trigger notifications.
+          </div>
+        </div>
+      </div>
+
+      <!-- Notification Channels -->
+      <div style="border-top: 1px solid var(--border); padding-top: 12px;">
+        <div style="font-weight: 600; font-size: 13px; margin-bottom: 8px;">
+          Notification channels
+        </div>
+        <div style="display: flex; flex-direction: column; gap: 8px;">
+          <!-- Sidebar Bell -->
+          <div
+            style="display: flex; align-items: center; gap: 10px; padding: 8px 12px; background: var(--bg-secondary); border: 1px solid var(--border); border-radius: 8px;"
+          >
+            <label class="toggle-switch" style="flex-shrink: 0;">
+              <input type="checkbox" id="notif-channel-sidebar" checked />
+              <span class="toggle-slider"></span>
+            </label>
+            <div style="flex: 1;">
+              <div style="font-weight: 500; font-size: 13px;">
+                🔔 HA Sidebar Bell
+              </div>
+              <div style="font-size: 11px; color: var(--text-muted);">
+                Appears in the Home Assistant notification bell. Silent — no
+                sound or vibration.
+              </div>
+            </div>
+          </div>
+          <!-- Mobile Push -->
+          <div
+            style="display: flex; align-items: center; gap: 10px; padding: 8px 12px; background: var(--bg-secondary); border: 1px solid var(--border); border-radius: 8px;"
+          >
+            <label class="toggle-switch" style="flex-shrink: 0;">
+              <input type="checkbox" id="notif-channel-mobile" />
+              <span class="toggle-slider"></span>
+            </label>
+            <div style="flex: 1;">
+              <div style="font-weight: 500; font-size: 13px;">
+                📱 Mobile Push
+              </div>
+              <div style="font-size: 11px; color: var(--text-muted);">
+                Push notification to HA Companion App with sound and vibration.
+              </div>
+            </div>
+          </div>
+          <!-- Mobile push target selector (shown when mobile push enabled) -->
+          <div
+            id="notif-mobile-targets"
+            style="display: none; padding: 8px 12px 12px 48px;"
+          >
+            <div
+              style="font-size: 12px; color: var(--text-muted); margin-bottom: 6px;"
+            >
+              Select which devices receive push notifications:
+            </div>
+            <div
+              id="notif-mobile-target-list"
+              style="display: flex; flex-direction: column; gap: 4px;"
+            >
+              <span
+                style="color: var(--text-muted); font-size: 12px; font-style: italic;"
+                >Discovering devices…</span
+              >
+            </div>
           </div>
         </div>
       </div>
@@ -949,11 +1012,102 @@ const { locale } = Astro.props;
   (function () {
     var bp = window.__ingress_path || "";
     var globalToggle = document.getElementById("notif-global-toggle");
+    var sidebarCb = document.getElementById("notif-channel-sidebar");
+    var mobileCb = document.getElementById("notif-channel-mobile");
+    var mobileTargetsPanel = document.getElementById("notif-mobile-targets");
+    var mobileTargetList = document.getElementById("notif-mobile-target-list");
     var userTogglesContainer = document.getElementById("notif-user-toggles");
     var saveBtn = document.getElementById("save-notif-prefs");
     if (!globalToggle || !userTogglesContainer) return;
 
-    var prefs = { enabled: true, disabled_users: [] };
+    var prefs = {
+      enabled: true,
+      disabled_users: [],
+      channels: { sidebar: true, mobile_push: false },
+      mobile_targets: [],
+    };
+
+    // Toggle mobile target panel visibility
+    function updateMobilePanel() {
+      if (mobileTargetsPanel) {
+        mobileTargetsPanel.style.display =
+          mobileCb && mobileCb.checked ? "block" : "none";
+      }
+    }
+    if (mobileCb) mobileCb.addEventListener("change", updateMobilePanel);
+
+    // Discover notify.mobile_app_* services from HA
+    function discoverMobileTargets(savedTargets) {
+      if (!mobileTargetList) return;
+      fetch(bp + "/api/ha/services")
+        .then(function (r) {
+          return r.ok ? r.json() : { services: [] };
+        })
+        .catch(function () {
+          return { services: [] };
+        })
+        .then(function (data) {
+          var services = data.services || data || [];
+          var mobileServices = [];
+          // HA services API returns array of { domain, services: { ... } }
+          if (Array.isArray(services)) {
+            services.forEach(function (domainObj) {
+              if (domainObj.domain === "notify") {
+                var svcNames = Object.keys(domainObj.services || {});
+                svcNames.forEach(function (name) {
+                  if (name.startsWith("mobile_app_")) {
+                    var friendlyName = name
+                      .replace("mobile_app_", "")
+                      .replace(/_/g, " ");
+                    mobileServices.push({
+                      service: "notify." + name,
+                      name: friendlyName,
+                    });
+                  }
+                });
+              }
+            });
+          }
+
+          mobileTargetList.innerHTML = "";
+          if (mobileServices.length === 0) {
+            var empty = document.createElement("span");
+            empty.style.cssText =
+              "color: var(--text-muted); font-size: 12px; font-style: italic;";
+            empty.textContent =
+              "No HA Companion App devices found. Install the HA Companion App on your phone to enable mobile push.";
+            mobileTargetList.appendChild(empty);
+            return;
+          }
+
+          var savedSet = new Set(savedTargets || []);
+          mobileServices.forEach(function (svc) {
+            var row = document.createElement("div");
+            row.style.cssText =
+              "display: flex; align-items: center; gap: 8px; padding: 4px 0;";
+
+            var cb = document.createElement("input");
+            cb.type = "checkbox";
+            cb.checked = savedTargets.length === 0 || savedSet.has(svc.service);
+            cb.dataset.mobileTarget = svc.service;
+            cb.style.cssText = "accent-color: var(--accent);";
+            row.appendChild(cb);
+
+            var label = document.createElement("span");
+            label.style.cssText = "font-size: 13px;";
+            label.textContent = "📱 " + svc.name;
+            row.appendChild(label);
+
+            var svcLabel = document.createElement("span");
+            svcLabel.style.cssText =
+              "font-size: 11px; color: var(--text-muted); font-family: monospace;";
+            svcLabel.textContent = svc.service;
+            row.appendChild(svcLabel);
+
+            mobileTargetList.appendChild(row);
+          });
+        });
+    }
 
     // Load saved prefs + users in parallel
     Promise.all([
@@ -980,6 +1134,15 @@ const { locale } = Astro.props;
       }
 
       globalToggle.checked = prefs.enabled !== false;
+
+      // Restore channel toggles
+      var channels = prefs.channels || { sidebar: true, mobile_push: false };
+      if (sidebarCb) sidebarCb.checked = channels.sidebar !== false;
+      if (mobileCb) mobileCb.checked = channels.mobile_push === true;
+      updateMobilePanel();
+
+      // Discover mobile targets and restore saved selections
+      discoverMobileTargets(prefs.mobile_targets || []);
 
       var users = usersData.users || [];
       var disabledSet = new Set(prefs.disabled_users || []);
@@ -1053,9 +1216,22 @@ const { locale } = Astro.props;
         .forEach(function (cb) {
           if (!cb.checked) disabled.push(cb.dataset.userId);
         });
+      var mobileTargets = [];
+      if (mobileTargetList) {
+        mobileTargetList
+          .querySelectorAll("input[data-mobile-target]")
+          .forEach(function (cb) {
+            if (cb.checked) mobileTargets.push(cb.dataset.mobileTarget);
+          });
+      }
       var payload = {
         enabled: globalToggle.checked,
         disabled_users: disabled,
+        channels: {
+          sidebar: sidebarCb ? sidebarCb.checked : true,
+          mobile_push: mobileCb ? mobileCb.checked : false,
+        },
+        mobile_targets: mobileTargets,
       };
       fetch(bp + "/api/settings", {
         method: "PUT",
