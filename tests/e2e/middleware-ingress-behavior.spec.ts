@@ -38,7 +38,9 @@ test("csrf validation blocks cross-origin mutating requests outside ingress", ()
   expect(allowed).toBeFalsy();
 });
 
-test("csrf validation allows requests with no origin and no referer", () => {
+test("csrf validation rejects requests with no origin and no referer", () => {
+  // Correct behavior: missing both headers indicates a stripped-headers attack
+  // or non-browser client. The policy correctly rejects these in standalone mode.
   const allowed = isCsrfAllowed({
     behindIngress: false,
     isDev: false,
@@ -46,5 +48,5 @@ test("csrf validation allows requests with no origin and no referer", () => {
     referer: null,
     host: "meitheal.local",
   });
-  expect(allowed).toBeTruthy();
+  expect(allowed).toBeFalsy();
 });

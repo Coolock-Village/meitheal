@@ -103,6 +103,17 @@ async function getCachedWebhookSettings(): Promise<Record<string, unknown>> {
   return settings;
 }
 
+/**
+ * Reset all module-scoped webhook caches. Test-only.
+ * Must be called in `beforeEach` to prevent stale settings leaking across tests.
+ */
+export function resetWebhookCacheForTests(): void {
+  _cachedWebhookSettings = null;
+  _webhookSettingsCachedAt = 0;
+  _cachedN8nEvents = null;
+  _n8nEventsCachedAt = 0;
+}
+
 export async function dispatchTaskEvent(eventType: string, payload: Record<string, unknown>, requestId?: string) {
   try {
     // ── 1. HA Event Bus (Addon mode — Node-RED/n8n auto) ──

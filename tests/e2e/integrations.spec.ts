@@ -4,7 +4,7 @@ import { createHmac } from "node:crypto";
 import os from "node:os";
 import path from "node:path";
 import { ensureSchema, getPersistenceClient, resetPersistenceForTests } from "../../apps/web/src/domains/tasks/persistence/store";
-import { dispatchTaskEvent } from "../../apps/web/src/lib/webhook-dispatcher";
+import { dispatchTaskEvent, resetWebhookCacheForTests } from "../../apps/web/src/lib/webhook-dispatcher";
 
 function makeDbUrl(label: string): string {
   return `file:${path.join(os.tmpdir(), `meitheal-${label}-${Date.now()}-${Math.random()}.db`)}`;
@@ -53,13 +53,14 @@ test.describe("Integration Webhooks", () => {
     );
 
     receivedRequests = [];
+    resetWebhookCacheForTests();
   });
 
   test("emits HMAC-signed webhooks on task creation", async () => {
     const secret = "test_e2e_secret_key";
     const client = getPersistenceClient();
     const now = Date.now();
-    
+
     // 1. Configure the webhook settings
     await client.execute({ sql: "INSERT INTO settings (key, value, updated_at) VALUES (?, ?, ?)", args: ["webhook_endpoint", `"${`http://127.0.0.1:${port}/webhook`}"`, now] });
     await client.execute({ sql: "INSERT INTO settings (key, value, updated_at) VALUES (?, ?, ?)", args: ["webhook_secret", `"${secret}"`, now] });
