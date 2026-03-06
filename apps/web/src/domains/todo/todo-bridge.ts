@@ -57,6 +57,48 @@ interface TodoSyncState {
 
 const activeSyncs: Map<string, TodoSyncState> = new Map();
 
+// Cached persistence refs — avoids repeated dynamic imports in hot sync path
+let _storeModule: typeof import("@domains/tasks/persistence/store") | null = null;
+let _todoTableEnsured = false;
+
+async function getStoreModule() {
+  if (!_storeModule) _storeModule = await import("@domains/tasks/persistence/store");
+  return _storeModule;
+}
+
+async function getClient() {
+  const mod = await getStoreModule();
+  await mod.ensureSchema();
+  const client = mod.getPersistenceClient();
+  if (!_todoTableEnsured) {
+    await client.execute({
+      sql: `CREATE TABLE IF NOT EXISTS todo_sync_confirmations (
+        confirmation_id TEXT PRIMARY KEY,
+        task_id TEXT NOT NULL,
+        request_id TEXT NOT NULL,
+        ha_entity_id TEXT NOT NULL,
+        ha_todo_uid TEXT NOT NULL,
+        source TEXT NOT NULL DEFAULT 'ha.todo_sync',
+        sync_direction TEXT NOT NULL DEFAULT 'inbound',
+        payload TEXT,
+        created_at INTEGER NOT NULL,
+        updated_at INTEGER NOT NULL
+      )`,
+      args: [],
+    });
+    await client.execute({
+      sql: `CREATE INDEX IF NOT EXISTS idx_todo_sync_entity_uid ON todo_sync_confirmations(ha_entity_id, ha_todo_uid)`,
+      args: [],
+    });
+    await client.execute({
+      sql: `CREATE INDEX IF NOT EXISTS idx_todo_sync_task ON todo_sync_confirmations(task_id)`,
+      args: [],
+    });
+    _todoTableEnsured = true;
+  }
+  return client;
+}
+
 /**
  * Initialize todo sync with one or more HA todo entities.
  */
@@ -159,34 +201,7 @@ export async function syncTodoFromHA(entityId?: string): Promise<{ synced: numbe
  */
 async function mergeHATodoItems(entityId: string, items: HATodoItem[]): Promise<void> {
   try {
-    const { ensureSchema, getPersistenceClient } = await import("@domains/tasks/persistence/store");
-    await ensureSchema();
-    const client = getPersistenceClient();
-
-    // Ensure todo_sync_confirmations table exists
-    await client.execute({
-      sql: `CREATE TABLE IF NOT EXISTS todo_sync_confirmations (
-        confirmation_id TEXT PRIMARY KEY,
-        task_id TEXT NOT NULL,
-        request_id TEXT NOT NULL,
-        ha_entity_id TEXT NOT NULL,
-        ha_todo_uid TEXT NOT NULL,
-        source TEXT NOT NULL DEFAULT 'ha.todo_sync',
-        sync_direction TEXT NOT NULL DEFAULT 'inbound',
-        payload TEXT,
-        created_at INTEGER NOT NULL,
-        updated_at INTEGER NOT NULL
-      )`,
-      args: [],
-    });
-    await client.execute({
-      sql: `CREATE INDEX IF NOT EXISTS idx_todo_sync_entity_uid ON todo_sync_confirmations(ha_entity_id, ha_todo_uid)`,
-      args: [],
-    });
-    await client.execute({
-      sql: `CREATE INDEX IF NOT EXISTS idx_todo_sync_task ON todo_sync_confirmations(task_id)`,
-      args: [],
-    });
+    const client = await getClient();
 
     let created = 0;
     let updated = 0;
@@ -382,26 +397,7 @@ export async function pushTaskToTodoList(
   }
 
   try {
-    const { ensureSchema, getPersistenceClient } = await import("@domains/tasks/persistence/store");
-    await ensureSchema();
-    const client = getPersistenceClient();
-
-    // Ensure todo_sync_confirmations table exists (may not yet if outbound fires before inbound)
-    await client.execute({
-      sql: `CREATE TABLE IF NOT EXISTS todo_sync_confirmations (
-        confirmation_id TEXT PRIMARY KEY,
-        task_id TEXT NOT NULL,
-        request_id TEXT NOT NULL,
-        ha_entity_id TEXT NOT NULL,
-        ha_todo_uid TEXT NOT NULL,
-        source TEXT NOT NULL DEFAULT 'ha.todo_sync',
-        sync_direction TEXT NOT NULL DEFAULT 'inbound',
-        payload TEXT,
-        created_at INTEGER NOT NULL,
-        updated_at INTEGER NOT NULL
-      )`,
-      args: [],
-    });
+    const client = await getClient();
 
     // Check if this task already has a sync confirmation (outbound already pushed)
     const existing = await client.execute({

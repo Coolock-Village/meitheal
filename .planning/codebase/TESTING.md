@@ -1,7 +1,7 @@
 # Testing Patterns
 
-**Analysis Date:** 2026-03-04
-**Version:** 0.1.55
+**Analysis Date:** 2026-03-06
+**Version:** 0.1.69
 
 ## Framework
 
@@ -49,7 +49,7 @@ pnpm check                                  # Typecheck all packages
 | `repo-standards.spec.ts` | Governance | ✅ Active (4 tests) |
 | + 12 additional specs | Various | ✅/⏭ (see `tests/e2e/`) |
 
-**Totals:** 38 specs total
+**Totals:** 43 specs total (including unit/todo-status-mapper.spec.ts)
 
 ## CI Jobs
 
@@ -60,7 +60,8 @@ pnpm check                                  # Typecheck all packages
 | `governance` | `repo-standards.spec.ts` |
 | `migration-check` | `db:migrate` + `db:migrate:check` |
 | `schema-drift` | `schema:drift` |
-| `perf-budgets` | `perf:budget` (custom script) |
+| `perf-budgets` | `perf:budget` + font path guard |
+| `security-audit` | `pnpm audit` (dependency CVE check) |
 
 ## Patterns
 
@@ -72,4 +73,4 @@ pnpm check                                  # Typecheck all packages
 
 ---
 
-*Testing analysis: 2026-03-04 — v0.2.6*
+*Testing analysis: 2026-03-06 — v0.1.69 notification audit + CI security job*

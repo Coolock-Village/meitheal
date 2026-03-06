@@ -48,12 +48,16 @@ const MAX_RECONNECT_DELAY_MS = 30_000;
 export async function getHAConnection(): Promise<Connection | null> {
   if (connection) return connection;
   if (connecting) {
-    // P1.3: Wait for in-flight connection with timeout — no interval leak
+    // Wait for in-flight connection with timeout — both branches clear both timers
     return new Promise((resolve) => {
-      const timeout = setTimeout(() => resolve(connection), 15_000);
-      const check = setInterval(() => {
+      let check: ReturnType<typeof setInterval> | null = null;
+      const timeout = setTimeout(() => {
+        if (check) clearInterval(check);
+        resolve(connection);
+      }, 15_000);
+      check = setInterval(() => {
         if (!connecting) {
-          clearInterval(check);
+          clearInterval(check!);
           clearTimeout(timeout);
           resolve(connection);
         }

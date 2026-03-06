@@ -321,8 +321,7 @@ export async function pushCompletionToGrocy(taskId: string): Promise<boolean> {
   if (state.config.syncMode === "import") return false;
 
   try {
-    const { getPersistenceClient } = await import("@domains/tasks/persistence/store");
-    const client = getPersistenceClient();
+    const client = await getClient();
 
     // Look up the grocy sync confirmation for this task
     const row = await client.execute({
