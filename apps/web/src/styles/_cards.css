@@ -48,7 +48,7 @@
 
   .badge-done,
   .badge-complete {
-    @apply bg-accent/10 text-emerald-400 border-accent/20;
+    @apply bg-accent/10 text-accent border-accent/20;
   }
 
   /* --- Filter bar --- */

@@ -18,6 +18,15 @@
       max-width: 100vw;
   }
 
+    h1,
+    h2,
+    h3,
+    h4,
+    h5,
+    h6 {
+      font-family: 'Outfit', 'Geist Variable', 'Inter Variable', -apple-system, sans-serif;
+      letter-spacing: -0.01em;
+    }
   a {
     @apply text-accent no-underline transition-colors;
   }

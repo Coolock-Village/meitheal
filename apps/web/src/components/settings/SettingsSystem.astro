@@ -112,9 +112,9 @@ const version =
           <button
             type="button"
             class="accent-swatch"
-            data-color="#10b981"
-            title="Emerald (Default)"
-            style="background: #10b981;"></button>
+            data-color="#6366F1"
+            title="Indigo (Default)"
+            style="background: #6366F1;"></button>
           <button
             type="button"
             class="accent-swatch"
@@ -1139,7 +1139,7 @@ const version =
     if ((swatches[0] as HTMLElement).dataset.accentInit) return;
     (swatches[0] as HTMLElement).dataset.accentInit = "true";
 
-    const current = localStorage.getItem("meitheal-accent-color") || "#10b981";
+    const current = localStorage.getItem("meitheal-accent-color") || "#6366F1";
 
     function applyAccent(color: string) {
       const root = document.documentElement.style;
@@ -1182,7 +1182,7 @@ const version =
       document.documentElement.style.removeProperty("--accent-hover");
       document.documentElement.style.removeProperty("--accent-light");
       document.documentElement.style.removeProperty("--border-focus");
-      highlightActive("#10b981");
+      highlightActive("#6366F1");
     });
   }
 

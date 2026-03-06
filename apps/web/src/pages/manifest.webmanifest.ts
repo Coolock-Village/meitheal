@@ -22,7 +22,7 @@ import { getIngressPath } from "@domains/auth/ingress";
 const MANIFEST_BASE = {
   name: "Meitheal",
   short_name: "Meitheal",
-  description: "The cooperative task and life engine for your home.",
+  description: "Your homelab's execution layer — centralize tasks, automate coordination, get out of the way of life.",
   lang: "en",
   display: "standalone" as const,
   orientation: "any" as const,

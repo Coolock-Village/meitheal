@@ -43,7 +43,9 @@
 
 | Package | Purpose |
 |---------|---------|
-| `@fontsource-variable/inter` | Primary UI font (variable weight) |
+| `@fontsource/outfit` | Heading font (h1-h6) — clean geometric sans (400, 500, 600, 700) |
+| `@fontsource-variable/geist` | Primary body/UI font — Vercel's technical font (variable weight) |
+| `@fontsource-variable/inter` | Fallback body font (variable weight) |
 | `@fontsource/jetbrains-mono` | Monospace for task IDs, code blocks (400 + 500) |
 
 Fonts are bundled in the build — no external CDN requests to Google Fonts.

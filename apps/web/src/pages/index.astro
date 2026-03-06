@@ -17,7 +17,7 @@ let favorites: Record<string, unknown>[] = [];
 let openTasks: Record<string, unknown>[] = [];
 let stats = { total: 0, active: 0, completed: 0, overdue: 0 };
 const boardMap: Record<string, { name: string; color: string }> = {
-  default: { name: "Default", color: "#10b981" },
+  default: { name: "Default", color: "#6366F1" },
 };
 
 try {
@@ -71,7 +71,7 @@ try {
     const br = b as Record<string, unknown>;
     boardMap[String(br.id)] = {
       name: String(br.title ?? "Default"),
-      color: String(br.color ?? "#10b981"),
+      color: String(br.color ?? "#6366F1"),
     };
   }
 } catch (e) {
@@ -385,7 +385,7 @@ function relativeTime(dueDate: string): string {
             const boardId = String(task.board_id ?? "default");
             const board = boardMap[boardId] ?? {
               name: "Default",
-              color: "#10b981",
+              color: "#6366F1",
             };
             const ticketNum = task.ticket_number
               ? `MTH-${String(task.ticket_number).padStart(3, "0")}`

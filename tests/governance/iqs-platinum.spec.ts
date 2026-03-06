@@ -57,10 +57,13 @@ test.describe('IQS Bronze', () => {
     }
   });
 
-  test('runtime-data: uses ConfigEntry.runtime_data not hass.data[DOMAIN]', () => {
-    const init = readPython('__init__.py');
-    expect(init).toContain('entry.runtime_data');
-    expect(init).not.toContain("hass.data[DOMAIN]");
+  test('runtime-data: no Python file uses hass.data[DOMAIN] for coordinator lookup', () => {
+    // This catches the bug where intents.py and llm_api.py were silently broken
+    for (const file of ['__init__.py', 'sensor.py', 'todo.py', 'diagnostics.py', 'intents.py', 'llm_api.py']) {
+      const src = readPython(file);
+      expect(src).not.toContain('hass.data[DOMAIN]');
+      expect(src).not.toContain('hass.data.get(DOMAIN');
+    }
   });
 
   test('action-setup: services registered in async_setup_entry', () => {

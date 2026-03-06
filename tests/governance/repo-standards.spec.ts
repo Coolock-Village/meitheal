@@ -35,7 +35,7 @@ test("required governance files exist", () => {
 
 test("readme enforces Astro and HA first principles", () => {
   const readme = readFileSync(join(repoRoot, "README.md"), "utf8");
-  expect(readme).toContain("Astro first/native");
+  expect(readme).toContain("Astro-first");
   expect(readme).toContain("Home Assistant");
   expect(readme).toContain("DDD");
 });

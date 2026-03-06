@@ -53,7 +53,7 @@ export const POST: APIRoute = async ({ request }) => {
         // Use UUID-based ID to avoid slug collisions (Phase 28 fix)
         const id = `board-${crypto.randomUUID().split("-")[0]}`;
         const icon = String(body.icon ?? "📋").slice(0, 10);
-        const color = typeof body.color === "string" && /^#([0-9a-fA-F]{3}|[0-9a-fA-F]{6})$/.test(body.color) ? body.color : "#10b981";
+        const color = typeof body.color === "string" && /^#([0-9a-fA-F]{3}|[0-9a-fA-F]{6})$/.test(body.color) ? body.color : "#6366F1";
         const now = Date.now();
 
         // Get next position

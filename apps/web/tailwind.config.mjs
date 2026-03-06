@@ -4,7 +4,7 @@ export default {
     darkMode: 'class',
     theme: {
         extend: {
-            /* Meitheal Design Tokens — Irish navy + emerald */
+            /* Meitheal Design Tokens — Hearth Slate + Electric Indigo */
             colors: {
                 bg: {
                     primary: 'rgb(var(--bg-primary-rgb) / <alpha-value>)',
@@ -45,7 +45,8 @@ export default {
                 lg: 'var(--shadow-lg)',
             },
             fontFamily: {
-                sans: ['Inter Variable', 'Inter', '-apple-system', 'BlinkMacSystemFont', 'sans-serif'],
+                sans: ['Geist Variable', 'Inter Variable', 'Inter', '-apple-system', 'BlinkMacSystemFont', 'sans-serif'],
+                heading: ['Outfit', 'Geist Variable', 'Inter Variable', '-apple-system', 'sans-serif'],
             },
             transitionDuration: {
                 DEFAULT: '200ms',

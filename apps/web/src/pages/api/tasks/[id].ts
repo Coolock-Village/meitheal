@@ -363,8 +363,8 @@ export const PUT: APIRoute = async ({ params, request }) => {
               group: "meitheal",
               // Android: notification channel — separate urgent from normal
               channel: opts.isUrgent ? "meitheal_urgent" : "meitheal_tasks",
-              // Android: accent color (Meitheal green)
-              color: "#10b981",
+              // Android: accent color (Meitheal indigo)
+              color: "#6366F1",
               // Android: importance — high = heads-up popup for urgent
               ...(opts.isUrgent ? { importance: "high" } : {}),
               // iOS: push payload enrichments

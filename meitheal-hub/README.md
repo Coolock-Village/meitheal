@@ -1,16 +1,32 @@
-# Meitheal Hub Add-on
+# Meitheal
 
-Meitheal Hub is the Home Assistant add-on runtime for Meitheal, the cooperative task and life engine for your home.
-
-This add-on is Astro-first and runs the Meitheal web runtime with SQLite persistence and Home Assistant ingress support.
+> Your homelab's execution layer.
 
 [![Docker Hub](https://img.shields.io/docker/v/coolockvillage/meitheal-amd64?label=Docker%20Hub&logo=docker)](https://hub.docker.com/r/coolockvillage/meitheal-amd64)
 
-## Quick Install on HA Green
+## What is Meitheal?
+
+In the past, a meitheal (/ˈmʲɛhəlˠ/) was a village of humans working together. Today, running a household or homelab is a massive task, and your digital life is scattered.
+
+**Grocy** tracks WHAT needs to be done. **Meitheal** is the hub for WHEN to get things done, and WHERE to look for everything.
+
+Centralize your tasks, automate the coordination, and let technology get out of the way of life.
+
+## Key Features
+
+- **HA-Native** — Built as a first-class [Home Assistant app](https://www.home-assistant.io/apps/). Ingress, WebSocket, Supervisor lifecycle.
+- **Built on Astro** — [Astro](https://astro.build) SSR, ViewTransitions, strict perf budgets. Self-hosted fonts (Outfit, Geist).
+- **Calendar Sync** — Bidirectional sync with HA calendar entities.
+- **Voice & Assist** — 8 LLM tools for any HA conversation agent.
+- **Smart Notifications** — Sidebar, mobile push, calendar reminders. Actionable buttons.
+- **3 Views** — List, Kanban, Table. Drag-and-drop, swimlanes, inline editing.
+- **Data Portability** — JSON/CSV export, SQLite download, settings backup.
+
+## Quick Install
 
 1. **Settings** → **Add-ons** → **Add-on Store** → **⋮** → **Repositories**
 2. Add: `https://github.com/Coolock-Village/meitheal`
-3. Find **Meitheal Hub** → **Install** → **Start** → **Open Web UI**
+3. Find **Meitheal** → **Install** → **Start** → **Open Web UI**
 
 > **Updating:** After pushing new images, go to the add-on → **⋮** → **Check for updates**. Then **Update** + **Restart**.
 
@@ -35,13 +51,11 @@ curl http://localhost:3333/api/health
 
 ## Dev Build & Push
 
-For rapid iteration during development:
-
 ```bash
 # Login once
 docker login -u coolockvillage
 
-# Build and push :dev tag for both architectures
+# Build and push :dev tag
 ./meitheal-hub/build-push-dev.sh
 
 # Build and push a versioned release

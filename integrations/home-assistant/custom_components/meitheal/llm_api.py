@@ -47,11 +47,15 @@ _LOGGER = logging.getLogger(__name__)
 
 
 def _get_coordinator(hass: HomeAssistant) -> MeithealCoordinator | None:
-    """Get the first active Meitheal coordinator."""
-    data = hass.data.get(DOMAIN, {})
-    for _entry_id, coordinator in data.items():
-        if isinstance(coordinator, MeithealCoordinator):
-            return coordinator
+    """Get the first active Meitheal coordinator.
+
+    Uses config_entries + runtime_data (IQS: runtime-data pattern).
+    """
+    for entry in hass.config_entries.async_entries(DOMAIN):
+        if hasattr(entry, "runtime_data") and isinstance(
+            entry.runtime_data, MeithealCoordinator
+        ):
+            return entry.runtime_data
     return None
 
 
