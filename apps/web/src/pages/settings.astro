@@ -1587,9 +1587,19 @@ const locale: Locale = cookieLocale === "ga" ? "ga" : "en";
             if (syncInfoEl) syncInfoEl.style.display = "";
             if (lastSyncedEl) {
               const ts = new Date(sync.lastSyncAt).toLocaleTimeString();
-              lastSyncedEl.textContent = sync.lastSyncError
-                ? `Last sync: ${ts} — ⚠ ${sync.lastSyncError}`
-                : `Last synced: ${ts}`;
+              if (sync.lastSyncError) {
+                lastSyncedEl.textContent = `⚠ ${sync.lastSyncError} — last sync: ${ts}`;
+                lastSyncedEl.style.color = "var(--danger, #e74c3c)";
+                // Turn badge to error state
+                const statusEl = document.getElementById("grocy-status");
+                if (statusEl) {
+                  statusEl.textContent = "Sync Error";
+                  statusEl.className = "badge badge-error";
+                }
+              } else {
+                lastSyncedEl.textContent = `Last synced: ${ts}`;
+                lastSyncedEl.style.color = "";
+              }
             }
             if (itemCountEl) {
               itemCountEl.textContent = `${sync.itemCount} item${sync.itemCount !== 1 ? "s" : ""}`;

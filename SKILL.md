@@ -29,6 +29,7 @@ calendar events, and daily planning through Meitheal's APIs.
 ## When to Use This Skill
 
 Use this skill when the user:
+
 - Asks to create, update, complete, or delete tasks
 - Wants to see what's overdue, due today, or coming up
 - Asks for a daily briefing or morning summary
@@ -55,6 +56,7 @@ Send JSON-RPC 2.0 to `POST /api/mcp`:
 ```
 
 Available MCP tools (13):
+
 - `createTask` — title (required), description, priority (1-5), due_date
 - `searchTasks` — query, status (backlog/todo/in_progress/done), priority
 - `completeTask` — id or title
@@ -83,7 +85,7 @@ Available MCP tools (13):
 
 ## Task Data Model
 
-```
+```yaml
 id: UUID string
 title: string
 status: backlog | todo | in_progress | done | cancelled

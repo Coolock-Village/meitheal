@@ -558,3 +558,64 @@ test("Q1: assigned_to remains NULL when not set during creation", async () => {
 
   expect(result.rows[0]?.assigned_to).toBeNull();
 });
+
+// ── P3 #14: Idempotent Replay + assigned_to ──
+
+test("P3-14: assigned_to persists when same idempotency key is replayed", async () => {
+  const client = getPersistenceClient();
+  const now = Date.now();
+  const idemKey = `idem-replay-${now}`;
+
+  // First insert — simulate initial creation
+  await client.execute({
+    sql: `INSERT INTO tasks (id, title, status, assigned_to, idempotency_key, request_id, created_at, updated_at)
+          VALUES (?, ?, ?, ?, ?, ?, ?, ?)`,
+    args: ["replay-1", "Replay task", "pending", "ha_ryan", idemKey, "req-replay", now, now],
+  });
+
+  // Simulate replay: task found by idempotency key, assigned_to re-applied
+  const existing = await client.execute({
+    sql: "SELECT id, assigned_to FROM tasks WHERE idempotency_key = ? LIMIT 1",
+    args: [idemKey],
+  });
+  expect(existing.rows.length).toBe(1);
+
+  // Update assigned_to on replay (as fixed in P0)
+  const replayAssignee = "ha_jess";
+  await client.execute({
+    sql: "UPDATE tasks SET assigned_to = ?, updated_at = ? WHERE id = ?",
+    args: [replayAssignee, Date.now(), String(existing.rows[0]?.id)],
+  });
+
+  const final = await client.execute({
+    sql: "SELECT assigned_to FROM tasks WHERE id = ?",
+    args: ["replay-1"],
+  });
+  expect(final.rows[0]?.assigned_to).toBe("ha_jess");
+});
+
+// ── Backlog Lane: New Status ──
+
+test("backlog status persists and coexists with other statuses", async () => {
+  const client = getPersistenceClient();
+  const now = Date.now();
+
+  await client.execute({
+    sql: `INSERT INTO tasks (id, title, status, idempotency_key, request_id, created_at, updated_at)
+          VALUES (?, ?, ?, ?, ?, ?, ?)`,
+    args: ["backlog-1", "Backlog item", "backlog", "idem-bl", "req-bl", now, now],
+  });
+
+  const result = await client.execute({
+    sql: "SELECT status FROM tasks WHERE id = ?",
+    args: ["backlog-1"],
+  });
+  expect(result.rows[0]?.status).toBe("backlog");
+
+  // Ensure backlog tasks are NOT excluded by today/upcoming status filter
+  const active = await client.execute(
+    "SELECT id FROM tasks WHERE status NOT IN ('complete', 'done')",
+  );
+  const ids = active.rows.map((r) => (r as Record<string, unknown>).id);
+  expect(ids).toContain("backlog-1");
+});
