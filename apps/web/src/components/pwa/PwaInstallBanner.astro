@@ -210,6 +210,12 @@
 
   // Bind DOM event listeners — re-runs after each ViewTransitions swap
   function bindBannerListeners() {
+    const banner = document.getElementById("pwa-install-banner");
+    if (!banner) return;
+    // Guard: prevent duplicate listener accumulation on ViewTransitions
+    if ((banner as HTMLElement).dataset.bannerBound) return;
+    (banner as HTMLElement).dataset.bannerBound = "true";
+
     // Install button
     document
       .getElementById("pwa-install-btn")
@@ -239,15 +245,20 @@
     }
   }
 
-  // Listen for installable event (fires from Layout.astro)
-  window.addEventListener("meitheal-pwa-installable", () => {
-    showBanner();
-  });
+  // Window-level listeners — guarded to prevent accumulation across ViewTransitions
+  if (!(window as any).__pwaBannerListenersBound) {
+    (window as any).__pwaBannerListenersBound = true;
 
-  // Listen for installed event — hide permanently
-  window.addEventListener("meitheal-pwa-installed", () => {
-    dismissBanner();
-  });
+    // Listen for installable event (fires from Layout.astro)
+    window.addEventListener("meitheal-pwa-installable", () => {
+      showBanner();
+    });
+
+    // Listen for installed event — hide permanently
+    window.addEventListener("meitheal-pwa-installed", () => {
+      dismissBanner();
+    });
+  }
 
   // Initial bind + re-bind after ViewTransitions page swap
   bindBannerListeners();
