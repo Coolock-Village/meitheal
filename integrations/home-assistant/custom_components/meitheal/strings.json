@@ -9,7 +9,7 @@
           "port": "Port"
         },
         "data_description": {
-          "host": "Docker hostname of the Meitheal addon (usually 'local_meitheal')",
+          "host": "Docker hostname of the Meitheal addon (auto-discovered at boot, typically 'local-meitheal')",
           "port": "Port the Meitheal web server listens on"
         }
       },

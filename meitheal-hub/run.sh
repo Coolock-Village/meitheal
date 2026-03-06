@@ -1,7 +1,7 @@
 #!/usr/bin/with-contenv bashio
 set -euo pipefail
 
-export MEITHEAL_VERSION="0.1.68"
+export MEITHEAL_VERSION="0.1.76"
 export NODE_ENV="production"
 STARTUP_TS=$(date -u +"%Y-%m-%dT%H:%M:%SZ")
 echo "{\"event\":\"addon.startup\",\"version\":\"${MEITHEAL_VERSION}\",\"time\":\"${STARTUP_TS}\"}"
@@ -23,21 +23,49 @@ if [ -n "${SUPERVISOR_TOKEN:-}" ]; then
   export HA_BASE_URL="${HA_BASE_URL:-http://supervisor/core}"
   export HA_TOKEN="${HA_TOKEN:-$SUPERVISOR_TOKEN}"
 
-  # ── Discover ingress path from Supervisor API ──
+  # ── Query addon self-info from Supervisor API ──
+  # We cache the full JSON response here and reuse it for:
+  #   1. Ingress path discovery
+  #   2. Addon hostname for integration discovery
+  ADDON_SELF_INFO=$(curl -fsS -H "Authorization: Bearer ${SUPERVISOR_TOKEN}" \
+    http://supervisor/addons/self/info 2>/dev/null || true)
+
+  # ── Discover ingress path ──
   # HA Supervisor is supposed to inject X-Ingress-Path on proxied requests,
   # but some versions/configurations don't. Query the API to get the definitive
   # ingress URL and export it so serve.mjs can inject the header on every request.
-  INGRESS_URL=$(curl -fsS -H "Authorization: Bearer ${SUPERVISOR_TOKEN}" \
-    http://supervisor/addons/self/info 2>/dev/null \
-    | grep -o '"ingress_url":"[^"]*"' \
-    | head -1 \
-    | sed 's/"ingress_url":"\(.*\)"/\1/' || true)
+  if [ -n "${ADDON_SELF_INFO:-}" ]; then
+    INGRESS_URL=$(echo "${ADDON_SELF_INFO}" \
+      | grep -o '"ingress_url":"[^"]*"' \
+      | head -1 \
+      | sed 's/"ingress_url":"\(.*\)"/\1/' || true)
+  else
+    INGRESS_URL=""
+  fi
   if [ -n "${INGRESS_URL:-}" ]; then
     export INGRESS_PATH="${INGRESS_URL}"
-    echo "{\"event\":\"ingress.path.discovered\",\"path\":\"${INGRESS_PATH}\",\"time\":\"$(date -u +\"%Y-%m-%dT%H:%M:%SZ\")\"}"
+    echo "{\"event\":\"ingress.path.discovered\",\"path\":\"${INGRESS_PATH}\",\"time\":\"$(date -u +"%Y-%m-%dT%H:%M:%SZ")\"}"
   else
-    echo "{\"event\":\"ingress.path.discovery.failed\",\"time\":\"$(date -u +\"%Y-%m-%dT%H:%M:%SZ\")}" >&2
+    echo "{\"event\":\"ingress.path.discovery.failed\",\"time\":\"$(date -u +"%Y-%m-%dT%H:%M:%SZ")\"}" >&2
   fi
+
+  # ── Discover addon hostname ──
+  # Supervisor names addon containers as {REPO}_{SLUG}:
+  #   - local_meitheal for locally-installed addons
+  #   - {hash}_meitheal for GitHub-installed addons (hash from repo URL)
+  # The hostname field in /addons/self/info gives the DNS-resolvable name.
+  if [ -n "${ADDON_SELF_INFO:-}" ]; then
+    ADDON_HOSTNAME=$(echo "${ADDON_SELF_INFO}" \
+      | grep -o '"hostname":"[^"]*"' \
+      | head -1 \
+      | sed 's/"hostname":"\(.*\)"/\1/' || true)
+  else
+    ADDON_HOSTNAME=""
+  fi
+  if [ -z "${ADDON_HOSTNAME}" ]; then
+    ADDON_HOSTNAME="local-meitheal"
+  fi
+  echo "{\"event\":\"addon.hostname.discovered\",\"hostname\":\"${ADDON_HOSTNAME}\",\"time\":\"$(date -u +"%Y-%m-%dT%H:%M:%SZ")\"}"
 fi
 
 export HOST="${HOST:-0.0.0.0}"
@@ -54,7 +82,7 @@ if [ -d "$COMPONENT_SRC" ] && [ -d "/homeassistant" ]; then
      ! diff -q "$COMPONENT_SRC/manifest.json" "$COMPONENT_DST/manifest.json" >/dev/null 2>&1; then
     cp -r "$COMPONENT_SRC" /homeassistant/custom_components/
     COMP_VER=$(grep '"version"' "$COMPONENT_DST/manifest.json" 2>/dev/null | head -1 | sed 's/.*: *"\(.*\)".*/\1/')
-    echo "{\"event\":\"component.installed\",\"version\":\"${COMP_VER:-unknown}\",\"path\":\"$COMPONENT_DST\",\"time\":\"$(date -u +\"%Y-%m-%dT%H:%M:%SZ\")\"}"
+    echo "{\"event\":\"component.installed\",\"version\":\"${COMP_VER:-unknown}\",\"path\":\"$COMPONENT_DST\",\"time\":\"$(date -u +"%Y-%m-%dT%H:%M:%SZ")\"}"
   fi
 fi
 
@@ -84,7 +112,7 @@ if [ -f /opt/meitheal/apps/web/package.json ]; then
 
   for attempt in $(seq 1 15); do
     if curl -fsS "${HEALTHCHECK_URL}" >/dev/null 2>&1; then
-      echo "{\"event\":\"healthcheck.passed\",\"attempt\":${attempt},\"time\":\"$(date -u +\"%Y-%m-%dT%H:%M:%SZ\")\"}"
+      echo "{\"event\":\"healthcheck.passed\",\"attempt\":${attempt},\"time\":\"$(date -u +"%Y-%m-%dT%H:%M:%SZ")\"}"
       break
     fi
     sleep 1
@@ -103,22 +131,22 @@ if [ -f /opt/meitheal/apps/web/package.json ]; then
   #
   # After discovery, the custom component registers:
   # - TodoListEntity (todo.meitheal_tasks) for built-in Assist intents
-  # - MeithealLLMAPI (8 tools) for advanced conversation agents
+  # - MeithealLLMAPI (16 tools) for advanced conversation agents
   # - 3 sensors (active, overdue, total task counts)
   # - 5 services (create, complete, sync, search, get_overdue)
   #
   # To enable voice/Assist: Settings → Voice Assistants → [Agent] → LLM APIs → select "Meitheal Tasks"
   if [ -n "${SUPERVISOR_TOKEN:-}" ]; then
-    DISCOVERY_PAYLOAD="{\"service\":\"meitheal\",\"config\":{\"host\":\"local_meitheal\",\"port\":${PORT}}}"
+    DISCOVERY_PAYLOAD="{\"service\":\"meitheal\",\"config\":{\"host\":\"${ADDON_HOSTNAME:-local-meitheal}\",\"port\":${PORT}}}"
     DISC_RESULT=$(curl -fsS -X POST \
       -H "Authorization: Bearer ${SUPERVISOR_TOKEN}" \
       -H "Content-Type: application/json" \
       -d "${DISCOVERY_PAYLOAD}" \
       http://supervisor/discovery 2>/dev/null || true)
     if [ -n "${DISC_RESULT}" ]; then
-      echo "{\"event\":\"discovery.registered\",\"note\":\"Select 'Meitheal Tasks' in Voice Assistant LLM APIs for Assist integration\",\"time\":\"$(date -u +\"%Y-%m-%dT%H:%M:%SZ\")\"}"
+      echo "{\"event\":\"discovery.registered\",\"host\":\"${ADDON_HOSTNAME:-local-meitheal}\",\"port\":${PORT},\"note\":\"Select 'Meitheal Tasks' in Voice Assistant LLM APIs for Assist integration\",\"time\":\"$(date -u +"%Y-%m-%dT%H:%M:%SZ")\"}"
     else
-      echo "{\"event\":\"discovery.registration.failed\",\"time\":\"$(date -u +\"%Y-%m-%dT%H:%M:%SZ\")\"}" >&2
+      echo "{\"event\":\"discovery.registration.failed\",\"time\":\"$(date -u +"%Y-%m-%dT%H:%M:%SZ")\"}" >&2
     fi
   fi
 fi

@@ -8,8 +8,19 @@ DOMAIN = "meitheal"
 PLATFORMS = [Platform.TODO, Platform.SENSOR]
 
 # Addon network defaults (internal Docker DNS)
-DEFAULT_HOST = "local_meitheal"
-LEGACY_HOST = "local_meitheal_hub"
+# Supervisor names containers as {REPO}_{SLUG}, but for DNS resolution
+# underscores must be replaced with hyphens. The actual hostname is
+# dynamically discovered via /addons/self/info at boot and passed
+# through Supervisor discovery. These are fallbacks for manual setup.
+DEFAULT_HOST = "local-meitheal"
+LEGACY_HOST = "local-meitheal-hub"
+# Full list of hostnames to try during connection test (manual setup only)
+HOSTNAME_CANDIDATES = [
+    "local-meitheal",        # Local addon (hyphenated DNS form)
+    "local_meitheal",        # Local addon (underscore form, some Supervisor versions)
+    "local-meitheal-hub",    # Legacy slug
+    "local_meitheal_hub",    # Legacy slug (underscore form)
+]
 DEFAULT_PORT = 3000
 
 CONF_HOST = "host"
