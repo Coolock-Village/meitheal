@@ -17,6 +17,7 @@ import {
   stopGrocySync,
 } from "@domains/grocy";
 import { createGrocyClient } from "../../../lib/grocy-client";
+import { logApiError } from "../../../lib/api-logger";
 
 /**
  * GET /api/grocy/sync — returns current sync status
@@ -29,7 +30,7 @@ export const GET: APIRoute = async () => {
       headers: { "Content-Type": "application/json" },
     });
   } catch (err) {
-    console.error("[api/grocy/sync] GET failed:", err);
+    logApiError("grocy-sync", "GET failed", err);
     return new Response(JSON.stringify({ ok: false, error: "Internal server error" }), {
       status: 500,
       headers: { "Content-Type": "application/json" },
@@ -141,7 +142,7 @@ export const POST: APIRoute = async ({ request }) => {
         });
     }
   } catch (err) {
-    console.error("[api/grocy/sync] POST failed:", err);
+    logApiError("grocy-sync", "POST failed", err);
     return new Response(JSON.stringify({ ok: false, error: "Internal server error" }), {
       status: 500,
       headers: { "Content-Type": "application/json" },

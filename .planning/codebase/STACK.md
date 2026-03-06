@@ -279,4 +279,34 @@ HA Supervisor can send requests with `//` paths. Astro's internal `collapseDupli
 
 ---
 
-*Stack analysis: 2026-03-06 — v0.3.0 Security hardening audit (CSRF fix, rate limiter caps, settings cache, OOM guard, HA publishing checklist compliance)*
+*Stack analysis: 2026-03-06 — v0.3.0 Platinum IQS compliance + security hardening*
+
+## HA Integration Quality Scale (IQS) — Platinum
+
+> **Mandatory requirement**: The Meitheal HA integration MUST maintain Platinum tier IQS compliance at all times. Any PR that breaks IQS compliance will be blocked by the automated E2E gate.
+
+### E2E Regression Gate
+
+`tests/governance/iqs-platinum.spec.ts` — 31 assertions covering all 4 tiers:
+
+| Tier | Tests | Rules Covered |
+|------|-------|---------------|
+| 🥉 Bronze | 10 | config-flow, unique-config-entry, has-entity-name, entity-unique-id, runtime-data, action-setup, test-before-setup, common-modules, dependency-transparency, data_description |
+| 🥈 Silver | 5 | action-exceptions, config-entry-unloading, parallel-updates, integration-owner, log-when-unavailable |
+| 🥇 Gold | 12 | devices, diagnostics, discovery, entity-category, entity-disabled-by-default, entity-translations, exception-translations, icon-translations, reconfiguration-flow, repair-issues |
+| 🏆 Platinum | 4 | async-dependency, inject-websession, strict-typing, quality_scale |
+
+### Key Implementation Files
+
+| File | IQS Rules |
+|------|-----------|
+| `helpers.py` | common-modules, parallel-updates |
+| `repairs.py` | repair-issues |
+| `icons.json` | icon-translations |
+| `py.typed` | strict-typing |
+| `strings.json` | entity-translations, exception-translations, reconfigure step, repair issues |
+
+### Reference
+
+- [IQS Checklist](https://developers.home-assistant.io/docs/core/integration-quality-scale/checklist)
+- [IQS Rules](https://developers.home-assistant.io/docs/core/integration-quality-scale/rules)

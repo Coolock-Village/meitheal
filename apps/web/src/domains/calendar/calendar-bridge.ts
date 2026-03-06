@@ -14,7 +14,7 @@
  * @domain calendar
  * @bounded-context integration
  */
-import { onEntityChange, listCalendarEvents, createCalendarEvent } from "../ha";
+import { onEntityChange, listCalendarEvents, createCalendarEvent, updateCalendarEvent, deleteCalendarEvent } from "../ha";
 import { createLogger, defaultRedactionPatterns } from "@meitheal/domain-observability";
 
 const logger = createLogger({
@@ -320,7 +320,13 @@ async function _syncEntityFromHAInner(entityId: string): Promise<{ created: numb
 
       try {
         if (existingTaskId) {
-          // Update existing task — fold label check into single UPDATE with NULL/invalid JSON safety
+          // Build description: include location if present
+          const descParts: string[] = [];
+          if (evt.location) descParts.push(`📍 ${evt.location}`);
+          const stripped = stripMeithealAttribution(evt.description);
+          if (stripped) descParts.push(stripped);
+          const inboundDesc = descParts.length > 0 ? descParts.join('\n\n') : null;
+
           await client.execute({
             sql: `UPDATE tasks SET
                     due_date = ?, description = COALESCE(?, description), updated_at = ?,
@@ -331,7 +337,7 @@ async function _syncEntityFromHAInner(entityId: string): Promise<{ created: numb
                       ELSE COALESCE(labels, '[]')
                     END
                   WHERE id = ?`,
-            args: [evt.start, stripMeithealAttribution(evt.description), Date.now(), existingTaskId],
+            args: [evt.start, inboundDesc, Date.now(), existingTaskId],
           });
           updated++;
         } else {
@@ -339,6 +345,12 @@ async function _syncEntityFromHAInner(entityId: string): Promise<{ created: numb
           const taskId = crypto.randomUUID();
           const reqId = crypto.randomUUID();
           const nowMs = Date.now();
+
+          // Build description for new task: include location if present
+          const newDescParts: string[] = [];
+          if (evt.location) newDescParts.push(`📍 ${evt.location}`);
+          if (evt.description) newDescParts.push(evt.description);
+          const newDesc = newDescParts.length > 0 ? newDescParts.join('\n\n') : '';
 
           // Atomic INSERT...SELECT to prevent ticket_number race under concurrent sync
           await client.execute({
@@ -353,7 +365,7 @@ async function _syncEntityFromHAInner(entityId: string): Promise<{ created: numb
             args: [
               taskId,
               evt.summary,
-              evt.description ?? "",
+              newDesc,
               evt.start,
               JSON.stringify(["calendar-sync"]),
               `cal-sync-${uid}`,
@@ -532,7 +544,8 @@ export async function pushTaskToCalendar(
 
   if (!writeBackEntity?.writeBack) return false;
 
-  // Deduplication: check if we already pushed this task
+  // Check if we already pushed this task — if so, UPDATE instead of creating duplicate
+  let isUpdate = false;
   try {
     const mod = await getStoreModule();
     await mod.ensureSchema();
@@ -542,13 +555,13 @@ export async function pushTaskToCalendar(
       args: [taskId],
     });
     if (existing.rows.length > 0) {
+      isUpdate = true;
       logger.log("debug", {
-        event: "calendar.writeback.dedup", domain: "calendar", component: "calendar-bridge",
-        request_id: SYS_REQ, message: `Write-back already exists for task ${taskId} — skipping`,
+        event: "calendar.writeback.update", domain: "calendar", component: "calendar-bridge",
+        request_id: SYS_REQ, message: `Write-back exists for task ${taskId} — updating event`,
       });
-      return true; // Already pushed
     }
-  } catch { /* DB not available — proceed anyway */ }
+  } catch { /* DB not available — proceed with create */ }
 
   // All-day event detection: if dueDate is YYYY-MM-DD (no time), create all-day
   const isAllDay = /^\d{4}-\d{2}-\d{2}$/.test(dueDate);
@@ -568,12 +581,25 @@ export async function pushTaskToCalendar(
   }
 
   const richDescription = buildCalendarDescription(description, meta);
-  const success = await createCalendarEvent(writeBackEntity.entityId, {
-    summary: title,
-    start,
-    end,
-    description: richDescription,
-  });
+
+  // Use update path when event already exists, create otherwise
+  let success: boolean;
+  if (isUpdate) {
+    success = await updateCalendarEvent(writeBackEntity.entityId, {
+      summary: title,
+      start,
+      end,
+      description: richDescription,
+      uid: `writeback-${taskId}`,
+    });
+  } else {
+    success = await createCalendarEvent(writeBackEntity.entityId, {
+      summary: title,
+      start,
+      end,
+      description: richDescription,
+    });
+  }
 
   if (success) {
     // Record write-back confirmation for deduplication
@@ -602,6 +628,58 @@ export async function pushTaskToCalendar(
   }
 
   return success;
+}
+
+/**
+ * Remove a calendar event associated with a task (outbound delete).
+ * Looks up the write-back confirmation and calls deleteCalendarEvent.
+ * Safe to call even if no calendar event exists — returns false silently.
+ */
+export async function removeTaskCalendarEvent(taskId: string): Promise<boolean> {
+  try {
+    const mod = await getStoreModule();
+    await mod.ensureSchema();
+    const client = mod.getPersistenceClient();
+
+    // Find the write-back confirmation to get entity_id
+    const conf = await client.execute({
+      sql: "SELECT confirmation_id, payload FROM calendar_confirmations WHERE task_id = ? AND source = 'ha.write_back' LIMIT 1",
+      args: [taskId],
+    });
+
+    if (conf.rows.length === 0) return false; // No calendar event to delete
+
+    const row = conf.rows[0] as Record<string, unknown>;
+    const payload = JSON.parse(String(row.payload ?? "{}"));
+    const entityId = payload.entity_id as string | undefined;
+
+    if (!entityId) return false;
+
+    // Delete the event from HA calendar
+    const uid = `writeback-${taskId}`;
+    const deleted = await deleteCalendarEvent(entityId, uid);
+
+    // Clean up confirmation record regardless of HA response
+    await client.execute({
+      sql: "DELETE FROM calendar_confirmations WHERE task_id = ? AND source = 'ha.write_back'",
+      args: [taskId],
+    });
+
+    if (deleted) {
+      logger.log("info", {
+        event: "calendar.sync.deleted_from_ha", domain: "calendar", component: "calendar-bridge",
+        request_id: SYS_REQ, message: `Deleted calendar event for task ${taskId} from ${entityId}`,
+      });
+    }
+
+    return deleted;
+  } catch (err) {
+    logger.log("warn", {
+      event: "calendar.sync.delete_failed", domain: "calendar", component: "calendar-bridge",
+      request_id: SYS_REQ, message: `Failed to remove calendar event for task ${taskId}: ${err}`,
+    });
+    return false;
+  }
 }
 
 /** Stop sync for a single entity */

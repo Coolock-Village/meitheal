@@ -33,3 +33,17 @@ export function logApiError(
     message: `${message}: ${errDetail}`,
   });
 }
+
+export function logApiWarn(
+  component: string,
+  message: string,
+  requestId?: string,
+) {
+  apiLogger.log("warn", {
+    event: `api.${component}.warn`,
+    domain: "api",
+    component,
+    request_id: requestId ?? "unknown",
+    message,
+  });
+}

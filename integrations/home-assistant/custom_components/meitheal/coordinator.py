@@ -12,6 +12,7 @@ from homeassistant.helpers.aiohttp_client import async_get_clientsession
 from homeassistant.helpers.update_coordinator import DataUpdateCoordinator, UpdateFailed
 
 from .const import DOMAIN, SCAN_INTERVAL
+from .repairs import async_create_addon_unreachable_issue, async_delete_addon_unreachable_issue
 
 _LOGGER = logging.getLogger(__name__)
 
@@ -68,6 +69,8 @@ class MeithealCoordinator(DataUpdateCoordinator[MeithealCoordinatorData]):
         # handles SSL, and doesn't leak on error paths.
         self._session: aiohttp.ClientSession = async_get_clientsession(hass)
         self._previous_data: MeithealCoordinatorData | None = None
+        # IQS rule: log-when-unavailable — log once on state transitions
+        self._was_available: bool = True
 
     # ── Event Bus Helpers ─────────────────────────────────────────────
 
@@ -116,6 +119,12 @@ class MeithealCoordinator(DataUpdateCoordinator[MeithealCoordinatorData]):
                 tasks = [MeithealTask(t) for t in raw_tasks]
                 new_data = MeithealCoordinatorData(tasks)
 
+                # IQS: log-when-unavailable — log reconnection once
+                if not self._was_available:
+                    _LOGGER.info("Meitheal addon is available again at %s", self._base_url)
+                    self._was_available = True
+                    async_delete_addon_unreachable_issue(self.hass)
+
                 # Fire event on data change (count or overdue difference)
                 if self._previous_data is not None:
                     prev = self._previous_data
@@ -134,6 +143,17 @@ class MeithealCoordinator(DataUpdateCoordinator[MeithealCoordinatorData]):
                 return new_data
 
         except aiohttp.ClientError as err:
+            # IQS: log-when-unavailable — log unavailability once
+            if self._was_available:
+                _LOGGER.warning(
+                    "Meitheal addon is unavailable at %s: %s",
+                    self._base_url, err,
+                )
+                self._was_available = False
+                if hasattr(self, "config_entry") and self.config_entry:
+                    async_create_addon_unreachable_issue(
+                        self.hass, self.config_entry, str(err)
+                    )
             raise UpdateFailed(f"Cannot reach Meitheal: {err}") from err
 
     async def async_create_task(

@@ -18,6 +18,7 @@ import {
   removeTodoItem,
   removeTodoCompletedItems,
 } from "@domains/ha";
+import { logApiError } from "../../../lib/api-logger";
 
 /**
  * GET /api/todo/items?entity_id=todo.xyz&status=needs_action,completed
@@ -41,7 +42,7 @@ export const GET: APIRoute = async ({ url }) => {
       status: 200, headers: { "Content-Type": "application/json" },
     });
   } catch (err) {
-    console.error("[api/todo/items] GET failed:", err);
+    logApiError("todo-items", "GET failed", err);
     return new Response(JSON.stringify({ ok: false, error: "Internal server error" }), {
       status: 500, headers: { "Content-Type": "application/json" },
     });
@@ -78,7 +79,7 @@ export const POST: APIRoute = async ({ request }) => {
       headers: { "Content-Type": "application/json" },
     });
   } catch (err) {
-    console.error("[api/todo/items] POST failed:", err);
+    logApiError("todo-items", "POST failed", err);
     return new Response(JSON.stringify({ ok: false, error: "Internal server error" }), {
       status: 500, headers: { "Content-Type": "application/json" },
     });
@@ -120,7 +121,7 @@ export const PUT: APIRoute = async ({ request }) => {
       headers: { "Content-Type": "application/json" },
     });
   } catch (err) {
-    console.error("[api/todo/items] PUT failed:", err);
+    logApiError("todo-items", "PUT failed", err);
     return new Response(JSON.stringify({ ok: false, error: "Internal server error" }), {
       status: 500, headers: { "Content-Type": "application/json" },
     });
@@ -161,7 +162,7 @@ export const DELETE: APIRoute = async ({ request }) => {
       headers: { "Content-Type": "application/json" },
     });
   } catch (err) {
-    console.error("[api/todo/items] DELETE failed:", err);
+    logApiError("todo-items", "DELETE failed", err);
     return new Response(JSON.stringify({ ok: false, error: "Internal server error" }), {
       status: 500, headers: { "Content-Type": "application/json" },
     });

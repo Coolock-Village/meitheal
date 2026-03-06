@@ -18,6 +18,7 @@ import {
   getCalendarSyncStatus,
   syncFromHA,
 } from "@domains/calendar/calendar-bridge";
+import { logApiError } from "../../../../lib/api-logger";
 
 /**
  * GET /api/integrations/calendar/sync — returns current sync status
@@ -30,7 +31,7 @@ export const GET: APIRoute = async () => {
       headers: { "Content-Type": "application/json" },
     });
   } catch (err) {
-    console.error("[api/integrations/calendar/sync] GET failed:", err);
+    logApiError("calendar-sync", "GET failed", err);
     return new Response(
       JSON.stringify({ ok: false, error: "Internal server error" }),
       { status: 500, headers: { "Content-Type": "application/json" } },
@@ -212,7 +213,7 @@ export const POST: APIRoute = async ({ request }) => {
         );
     }
   } catch (err) {
-    console.error("[api/integrations/calendar/sync] POST failed:", err);
+    logApiError("calendar-sync", "POST failed", err);
     return new Response(
       JSON.stringify({ ok: false, error: "Internal server error" }),
       { status: 500, headers: { "Content-Type": "application/json" } },

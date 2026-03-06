@@ -10,6 +10,7 @@
  * @bounded-context integration
  */
 import type { APIRoute } from "astro";
+import { logApiError, logApiWarn } from "../../../lib/api-logger";
 
 interface SupervisorAddon {
   slug: string;
@@ -42,13 +43,13 @@ export const GET: APIRoute = async () => {
       // This is expected on older deployments with hassio_role: default.
       // Don't log as error — it's a known config issue, not a crash.
       if (res.status === 403 || res.status === 401) {
-        console.warn(`[api/ha/addons] Supervisor API returned ${res.status} — addon may need hassio_role: manager`);
+        logApiWarn("ha-addons", `Supervisor API returned ${res.status} — addon may need hassio_role: manager`);
         return new Response(
           JSON.stringify({ addons: [], message: "Insufficient permissions — upgrade addon to enable auto-discovery" }),
           { status: 200, headers: { "Content-Type": "application/json" } },
         );
       }
-      console.error(`[api/ha/addons] Supervisor API returned ${res.status}`);
+      logApiError("ha-addons", `Supervisor API returned ${res.status}`, new Error(`HTTP ${res.status}`));
       return new Response(
         JSON.stringify({ addons: [], message: `Supervisor API error: ${res.status}` }),
         { status: 200, headers: { "Content-Type": "application/json" } },
@@ -72,7 +73,7 @@ export const GET: APIRoute = async () => {
       headers: { "Content-Type": "application/json" },
     });
   } catch (err) {
-    console.error("[api/ha/addons] Failed:", err);
+    logApiError("ha-addons", "Failed to query Supervisor API", err);
     return new Response(
       JSON.stringify({ addons: [], message: "Failed to query Supervisor API" }),
       { status: 500, headers: { "Content-Type": "application/json" } },

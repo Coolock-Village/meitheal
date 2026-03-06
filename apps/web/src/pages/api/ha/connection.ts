@@ -10,6 +10,7 @@
  */
 import type { APIRoute } from "astro";
 import { getHAConnection, getHAConnectionStatus, getHAConfig } from "@domains/ha";
+import { logApiError } from "../../../lib/api-logger";
 
 export const GET: APIRoute = async () => {
   try {
@@ -47,7 +48,7 @@ export const GET: APIRoute = async () => {
       headers: { "Content-Type": "application/json" },
     });
   } catch (err) {
-    console.error("[api/ha/connection] Failed:", err);
+    logApiError("ha-connection", "Connection test failed", err);
     return new Response(JSON.stringify({
       connected: false,
       mode: "unknown",

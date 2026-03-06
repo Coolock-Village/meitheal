@@ -15,6 +15,7 @@ import type { APIRoute } from "astro";
 import { createCipheriv, createDecipheriv, randomBytes, scryptSync } from "node:crypto";
 import { ensureSchema, getPersistenceClient } from "@domains/tasks/persistence/store";
 import { testConnection } from "@domains/calendar/caldav-client";
+import { logApiError } from "../../../../lib/api-logger";
 
 // ─── Encryption Helpers ─────────────────────────────────────────────
 
@@ -79,7 +80,7 @@ export const GET: APIRoute = async () => {
       username: settings.caldav_username || null,
     }), { status: 200, headers: { "Content-Type": "application/json" } });
   } catch (err) {
-    console.error("[caldav-credentials] GET failed:", err);
+    logApiError("caldav-credentials", "GET failed", err);
     return new Response(
       JSON.stringify({ ok: false, error: "Internal server error" }),
       { status: 500, headers: { "Content-Type": "application/json" } },
@@ -145,7 +146,7 @@ export const POST: APIRoute = async ({ request }) => {
       ok: true, message: "CalDAV credentials saved securely",
     }), { status: 200, headers: { "Content-Type": "application/json" } });
   } catch (err) {
-    console.error("[caldav-credentials] POST failed:", err);
+    logApiError("caldav-credentials", "POST failed", err);
     return new Response(
       JSON.stringify({ ok: false, error: "Internal server error" }),
       { status: 500, headers: { "Content-Type": "application/json" } },
@@ -171,7 +172,7 @@ export const DELETE: APIRoute = async () => {
       ok: true, message: "CalDAV credentials removed",
     }), { status: 200, headers: { "Content-Type": "application/json" } });
   } catch (err) {
-    console.error("[caldav-credentials] DELETE failed:", err);
+    logApiError("caldav-credentials", "DELETE failed", err);
     return new Response(
       JSON.stringify({ ok: false, error: "Internal server error" }),
       { status: 500, headers: { "Content-Type": "application/json" } },

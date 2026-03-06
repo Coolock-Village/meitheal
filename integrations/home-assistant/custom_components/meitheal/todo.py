@@ -13,31 +13,14 @@ from homeassistant.components.todo import (
 )
 from homeassistant.config_entries import ConfigEntry
 from homeassistant.core import HomeAssistant
-from homeassistant.helpers.device_registry import DeviceEntryType
-from homeassistant.helpers.entity import DeviceInfo
 from homeassistant.helpers.entity_platform import AddEntitiesCallback
 from homeassistant.helpers.update_coordinator import CoordinatorEntity
 
 from .const import DOMAIN
 from .coordinator import MeithealCoordinator, MeithealTask
+from .helpers import PARALLEL_UPDATES as PARALLEL_UPDATES, device_info
 
 _LOGGER = logging.getLogger(__name__)
-
-
-def _device_info(entry: ConfigEntry) -> DeviceInfo:
-    """Return shared device info for all Meitheal entities.
-
-    Identifier MUST match the device registered in __init__.py
-    (DOMAIN, "meitheal_hub") so entities group under the same device.
-    """
-    return DeviceInfo(
-        identifiers={(DOMAIN, "meitheal_hub")},
-        name="Meitheal",
-        manufacturer="Coolock Village",
-        model="Task Engine",
-        entry_type=DeviceEntryType.SERVICE,
-        configuration_url="https://github.com/Coolock-Village/meitheal",
-    )
 
 
 def _status_to_ha(status: str) -> TodoItemStatus:
@@ -60,7 +43,7 @@ async def async_setup_entry(
     async_add_entities: AddEntitiesCallback,
 ) -> None:
     """Set up Meitheal todo list from config entry."""
-    coordinator: MeithealCoordinator = hass.data[DOMAIN][entry.entry_id]
+    coordinator: MeithealCoordinator = entry.runtime_data
     async_add_entities([MeithealTodoListEntity(coordinator, entry)], True)
 
 
@@ -93,7 +76,7 @@ class MeithealTodoListEntity(CoordinatorEntity[MeithealCoordinator], TodoListEnt
     ) -> None:
         super().__init__(coordinator)
         self._attr_unique_id = f"{entry.entry_id}_todo"
-        self._attr_device_info = _device_info(entry)
+        self._attr_device_info = device_info(entry)
         # Predictable entity ID so voice commands can target "Meitheal tasks"
         self._attr_suggested_object_id = "meitheal_tasks"
 

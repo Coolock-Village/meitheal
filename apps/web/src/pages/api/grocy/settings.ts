@@ -10,6 +10,7 @@
 import type { APIRoute } from "astro";
 import { ensureSchema, getPersistenceClient } from "@domains/tasks/persistence/store";
 import type { InValue } from "@libsql/client";
+import { logApiError } from "../../../lib/api-logger";
 
 const GROCY_SETTINGS_KEYS = [
   "grocy_url",
@@ -61,7 +62,7 @@ export const GET: APIRoute = async () => {
       headers: { "Content-Type": "application/json" },
     });
   } catch (err) {
-    console.error("[api/grocy/settings] GET failed:", err);
+    logApiError("grocy-settings", "GET failed", err);
     return new Response(JSON.stringify({ ok: false, error: "Internal server error" }), {
       status: 500,
       headers: { "Content-Type": "application/json" },
@@ -140,7 +141,7 @@ export const PUT: APIRoute = async ({ request }) => {
       { status: 200, headers: { "Content-Type": "application/json" } },
     );
   } catch (err) {
-    console.error("[api/grocy/settings] PUT failed:", err);
+    logApiError("grocy-settings", "PUT failed", err);
     return new Response(JSON.stringify({ ok: false, error: "Internal server error" }), {
       status: 500,
       headers: { "Content-Type": "application/json" },

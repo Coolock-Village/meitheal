@@ -17,6 +17,7 @@
  * @bounded-context integration
  */
 import type { APIRoute } from "astro";
+import { logApiError } from "../../../lib/api-logger";
 
 export const POST: APIRoute = async ({ request }) => {
   try {
@@ -106,7 +107,7 @@ export const POST: APIRoute = async ({ request }) => {
         });
       }
     } catch (err) {
-      console.error("[api/grocy/auto-key] Failed to save settings:", err);
+      logApiError("grocy-auto-key", "Failed to save settings", err);
       // Still return the key even if saving failed
     }
 
@@ -120,7 +121,7 @@ export const POST: APIRoute = async ({ request }) => {
       { status: 200, headers: { "Content-Type": "application/json" } },
     );
   } catch (err) {
-    console.error("[api/grocy/auto-key] POST failed:", err);
+    logApiError("grocy-auto-key", "POST failed", err);
     return new Response(
       JSON.stringify({ ok: false, error: "Internal server error" }),
       { status: 500, headers: { "Content-Type": "application/json" } },

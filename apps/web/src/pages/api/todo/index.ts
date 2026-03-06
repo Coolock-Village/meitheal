@@ -9,6 +9,7 @@
 import type { APIRoute } from "astro";
 import { getTodoEntities } from "@domains/ha";
 import { getTodoSyncStatus } from "@domains/todo";
+import { logApiError } from "../../../lib/api-logger";
 
 export const GET: APIRoute = async () => {
   try {
@@ -40,7 +41,7 @@ export const GET: APIRoute = async () => {
       headers: { "Content-Type": "application/json" },
     });
   } catch (err) {
-    console.error("[api/todo] GET failed:", err);
+    logApiError("todo", "GET failed", err);
     return new Response(JSON.stringify({ ok: false, error: "Internal server error" }), {
       status: 500,
       headers: { "Content-Type": "application/json" },

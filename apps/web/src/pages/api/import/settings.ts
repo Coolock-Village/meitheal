@@ -1,6 +1,6 @@
 import type { APIRoute } from "astro";
 import { ensureSchema, getPersistenceClient } from "@domains/tasks/persistence/store";
-import { logApiError } from "../../../lib/api-logger";
+import { logApiError, logApiWarn } from "../../../lib/api-logger";
 
 /** Known safe setting keys — only these will be imported.
  * IMPORTANT: Update this set when adding new saveSetting() calls.
@@ -60,7 +60,7 @@ export const POST: APIRoute = async ({ request }) => {
                 continue;
             }
             if (!ALLOWED_KEYS.has(key)) {
-                console.warn(`[import/settings] Rejected unknown key: ${key}`);
+                logApiWarn("import-settings", `Rejected unknown key: ${key}`);
                 continue;
             }
 

@@ -544,5 +544,10 @@ export const DELETE: APIRoute = async ({ params }) => {
 
   dispatchTaskEvent("task.deleted", { id: resolvedId }).catch(() => {});
 
+  // Clean up any associated calendar events (fire-and-forget)
+  import("../../../domains/calendar/calendar-bridge").then(({ removeTaskCalendarEvent }) => {
+    removeTaskCalendarEvent(resolvedId).catch(() => {});
+  }).catch(() => {});
+
   return new Response(null, { status: 204 });
 };

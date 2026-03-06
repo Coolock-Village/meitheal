@@ -9,6 +9,7 @@ export {
   stopCalendarSync,
   syncFromHA,
   pushTaskToCalendar,
+  removeTaskCalendarEvent,
   getCalendarSyncStatus,
   getCalendarSyncConfigs,
   getCalendarSyncConfig,

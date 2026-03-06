@@ -10,6 +10,7 @@
 import type { APIRoute } from "astro";
 import { syncTodoFromHA, getTodoSyncStatus, startTodoSync, stopTodoSync } from "@domains/todo";
 import { getHAConnectionStatus } from "@domains/ha/ha-connection";
+import { logApiError } from "../../../lib/api-logger";
 
 /**
  * GET /api/todo/sync — returns current sync status for all entities
@@ -28,7 +29,7 @@ export const GET: APIRoute = async () => {
       status: 200, headers: { "Content-Type": "application/json" },
     });
   } catch (err) {
-    console.error("[api/todo/sync] GET failed:", err);
+    logApiError("todo-sync", "GET failed", err);
     return new Response(JSON.stringify({ ok: false, error: "Internal server error" }), {
       status: 500, headers: { "Content-Type": "application/json" },
     });
@@ -133,7 +134,7 @@ export const POST: APIRoute = async ({ request }) => {
         });
     }
   } catch (err) {
-    console.error("[api/todo/sync] POST failed:", err);
+    logApiError("todo-sync", "POST failed", err);
     return new Response(JSON.stringify({ ok: false, error: "Internal server error" }), {
       status: 500, headers: { "Content-Type": "application/json" },
     });

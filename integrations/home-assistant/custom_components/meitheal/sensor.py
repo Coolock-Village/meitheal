@@ -8,32 +8,15 @@ from typing import Any
 from homeassistant.components.sensor import SensorEntity, SensorStateClass
 from homeassistant.config_entries import ConfigEntry
 from homeassistant.core import HomeAssistant
-from homeassistant.helpers.device_registry import DeviceEntryType
-from homeassistant.helpers.entity import DeviceInfo
+from homeassistant.helpers.entity import EntityCategory
 from homeassistant.helpers.entity_platform import AddEntitiesCallback
 from homeassistant.helpers.update_coordinator import CoordinatorEntity
 
 from .const import DOMAIN
 from .coordinator import MeithealCoordinator
+from .helpers import PARALLEL_UPDATES as PARALLEL_UPDATES, device_info
 
 _LOGGER = logging.getLogger(__name__)
-
-
-def _device_info(entry: ConfigEntry) -> DeviceInfo:
-    """Return shared device info for all Meitheal entities.
-
-    Identifier MUST match the device registered in __init__.py
-    (DOMAIN, "meitheal_hub") so entities group under the same device.
-    """
-    return DeviceInfo(
-        identifiers={(DOMAIN, "meitheal_hub")},
-        name="Meitheal",
-        manufacturer="Coolock Village",
-        model="Task Engine",
-        entry_type=DeviceEntryType.SERVICE,
-        configuration_url="https://github.com/Coolock-Village/meitheal",
-    )
-
 
 async def async_setup_entry(
     hass: HomeAssistant,
@@ -41,7 +24,7 @@ async def async_setup_entry(
     async_add_entities: AddEntitiesCallback,
 ) -> None:
     """Set up Meitheal sensor entities from config entry."""
-    coordinator: MeithealCoordinator = hass.data[DOMAIN][entry.entry_id]
+    coordinator: MeithealCoordinator = entry.runtime_data
     async_add_entities(
         [
             MeithealActiveTasksSensor(coordinator, entry),
@@ -59,6 +42,7 @@ class MeithealActiveTasksSensor(
 
     _attr_has_entity_name = True
     _attr_translation_key = "active_tasks"
+    _attr_entity_category = EntityCategory.DIAGNOSTIC
     _attr_state_class = SensorStateClass.MEASUREMENT
     _attr_native_unit_of_measurement = "tasks"
     _attr_icon = "mdi:checkbox-marked-circle-outline"
@@ -66,7 +50,7 @@ class MeithealActiveTasksSensor(
     def __init__(self, coordinator: MeithealCoordinator, entry: ConfigEntry) -> None:
         super().__init__(coordinator)
         self._attr_unique_id = f"{entry.entry_id}_active_tasks"
-        self._attr_device_info = _device_info(entry)
+        self._attr_device_info = device_info(entry)
 
     @property
     def native_value(self) -> int | None:
@@ -101,6 +85,7 @@ class MeithealOverdueTasksSensor(
 
     _attr_has_entity_name = True
     _attr_translation_key = "overdue_tasks"
+    _attr_entity_category = EntityCategory.DIAGNOSTIC
     _attr_state_class = SensorStateClass.MEASUREMENT
     _attr_native_unit_of_measurement = "tasks"
     _attr_icon = "mdi:clock-alert-outline"
@@ -108,7 +93,7 @@ class MeithealOverdueTasksSensor(
     def __init__(self, coordinator: MeithealCoordinator, entry: ConfigEntry) -> None:
         super().__init__(coordinator)
         self._attr_unique_id = f"{entry.entry_id}_overdue_tasks"
-        self._attr_device_info = _device_info(entry)
+        self._attr_device_info = device_info(entry)
 
     @property
     def native_value(self) -> int | None:
@@ -137,14 +122,16 @@ class MeithealTotalTasksSensor(
 
     _attr_has_entity_name = True
     _attr_translation_key = "total_tasks"
+    _attr_entity_category = EntityCategory.DIAGNOSTIC
     _attr_state_class = SensorStateClass.MEASUREMENT
     _attr_native_unit_of_measurement = "tasks"
     _attr_icon = "mdi:format-list-checks"
+    _attr_entity_registry_enabled_default = False  # IQS: entity-disabled-by-default
 
     def __init__(self, coordinator: MeithealCoordinator, entry: ConfigEntry) -> None:
         super().__init__(coordinator)
         self._attr_unique_id = f"{entry.entry_id}_total_tasks"
-        self._attr_device_info = _device_info(entry)
+        self._attr_device_info = device_info(entry)
 
     @property
     def native_value(self) -> int | None:

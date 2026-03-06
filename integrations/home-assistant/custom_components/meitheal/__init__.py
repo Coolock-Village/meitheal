@@ -12,8 +12,10 @@ Registers Meitheal as a first-class HA integration with:
 - meitheal.get_overdue_tasks: Service to retrieve overdue tasks
 - LLM API: Meitheal Tasks — 16 tools for Assist/conversation agents
 
-Phase 60: HA Assist & Voice Integration.
+IQS: Platinum tier compliance.
 """
+
+# ruff: noqa: TRY003
 
 from __future__ import annotations
 
@@ -71,16 +73,20 @@ SEARCH_TASKS_SCHEMA = vol.Schema(
 )
 
 
-async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
+type MeithealConfigEntry = ConfigEntry[MeithealCoordinator]
+
+
+async def async_setup_entry(hass: HomeAssistant, entry: MeithealConfigEntry) -> bool:
     """Set up Meitheal from a config entry."""
     host = entry.data.get(CONF_HOST, DEFAULT_HOST)
     port = entry.data.get(CONF_PORT, DEFAULT_PORT)
 
     coordinator = MeithealCoordinator(hass, host, port)
+    coordinator.config_entry = entry
     await coordinator.async_config_entry_first_refresh()
 
-    hass.data.setdefault(DOMAIN, {})
-    hass.data[DOMAIN][entry.entry_id] = coordinator
+    # IQS rule: runtime-data — store coordinator on the entry, not hass.data
+    entry.runtime_data = coordinator
 
     # ── Register Meitheal as a device ────────────────────────────────────
     # This creates a device entry so Meitheal appears in Settings → Devices,
@@ -112,7 +118,11 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
                 description=call.data.get("description"),
             )
         except Exception as err:
-            raise HomeAssistantError(f"Failed to create task: {err}") from err
+            raise HomeAssistantError(
+                translation_domain=DOMAIN,
+                translation_key="create_failed",
+                translation_placeholders={"error": str(err)},
+            ) from err
 
     async def handle_complete_task(call: ServiceCall) -> None:
         """Handle meitheal.complete_task service call."""
@@ -122,14 +132,21 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
                 title=call.data.get("title"),
             )
         except Exception as err:
-            raise HomeAssistantError(f"Failed to complete task: {err}") from err
+            raise HomeAssistantError(
+                translation_domain=DOMAIN,
+                translation_key="complete_failed",
+                translation_placeholders={"error": str(err)},
+            ) from err
 
     async def handle_sync_todo(call: ServiceCall) -> None:
         """Handle meitheal.sync_todo service call."""
         try:
             await coordinator.async_request_refresh()
         except Exception as err:
-            raise HomeAssistantError(f"Sync failed: {err}") from err
+            raise HomeAssistantError(
+                translation_domain=DOMAIN,
+                translation_key="addon_unavailable",
+            ) from err
 
     async def handle_search_tasks(call: ServiceCall) -> ServiceResponse:
         """Handle meitheal.search_tasks service call."""
@@ -275,18 +292,16 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
     return True
 
 
-async def async_unload_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
+async def async_unload_entry(hass: HomeAssistant, entry: MeithealConfigEntry) -> bool:
     """Unload a Meitheal config entry."""
     unload_ok = await hass.config_entries.async_unload_platforms(entry, PLATFORMS)
     if unload_ok:
-        coordinator: MeithealCoordinator = hass.data[DOMAIN].pop(entry.entry_id)
-        await coordinator.async_shutdown()
-        # Remove services if no more entries
-        if not hass.data[DOMAIN]:
-            hass.services.async_remove(DOMAIN, SERVICE_CREATE_TASK)
-            hass.services.async_remove(DOMAIN, SERVICE_COMPLETE_TASK)
-            hass.services.async_remove(DOMAIN, SERVICE_SYNC_TODO)
-            hass.services.async_remove(DOMAIN, SERVICE_SEARCH_TASKS)
-            hass.services.async_remove(DOMAIN, SERVICE_GET_OVERDUE_TASKS)
-            hass.services.async_remove(DOMAIN, "notify_overdue")
+        await entry.runtime_data.async_shutdown()
+        # Remove services (single_config_entry — always safe to remove)
+        hass.services.async_remove(DOMAIN, SERVICE_CREATE_TASK)
+        hass.services.async_remove(DOMAIN, SERVICE_COMPLETE_TASK)
+        hass.services.async_remove(DOMAIN, SERVICE_SYNC_TODO)
+        hass.services.async_remove(DOMAIN, SERVICE_SEARCH_TASKS)
+        hass.services.async_remove(DOMAIN, SERVICE_GET_OVERDUE_TASKS)
+        hass.services.async_remove(DOMAIN, "notify_overdue")
     return unload_ok

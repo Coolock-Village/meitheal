@@ -16,11 +16,24 @@
       "hassio_confirm": {
         "title": "Meitheal Discovered",
         "description": "The Meitheal addon was automatically detected at {host}:{port}.\n\nClick **Submit** to finish setup.\n\nAfter setup, select \"Meitheal Tasks\" in your conversation agent settings (Settings → Voice Assistants → [Agent] → LLM APIs) to enable voice task management."
+      },
+      "reconfigure": {
+        "title": "Reconfigure Meitheal",
+        "description": "Update the connection settings for the Meitheal addon.",
+        "data": {
+          "host": "Hostname",
+          "port": "Port"
+        },
+        "data_description": {
+          "host": "Docker hostname of the Meitheal addon",
+          "port": "Port the Meitheal web server listens on"
+        }
       }
     },
     "abort": {
       "already_configured": "Meitheal is already configured",
-      "cannot_connect": "Cannot reach the Meitheal addon. Make sure the addon is running."
+      "cannot_connect": "Cannot reach the Meitheal addon. Make sure the addon is running.",
+      "reconfigure_successful": "Connection settings updated successfully."
     },
     "error": {
       "cannot_connect": "Cannot reach Meitheal at the specified address. Check that the addon is started and the hostname is correct."
@@ -128,6 +141,12 @@
       "task_deleted": "Task was deleted from Meitheal",
       "task_overdue": "Task became overdue in Meitheal",
       "board_updated": "Meitheal board data changed"
+    }
+  },
+  "issues": {
+    "addon_unreachable": {
+      "title": "Meitheal addon is unreachable",
+      "description": "Cannot connect to the Meitheal addon: {error}\n\nPlease check:\n1. The Meitheal addon is running (Settings → Add-ons → Meitheal)\n2. The hostname and port are correct (Settings → Integrations → Meitheal → Configure)\n3. The addon container is healthy (`ha addons info local_meitheal`)"
     }
   }
 }

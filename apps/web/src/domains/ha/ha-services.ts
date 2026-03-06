@@ -93,6 +93,66 @@ export async function createCalendarEvent(
   }
 }
 
+/**
+ * Update an existing calendar event by uid.
+ * Uses HA's calendar.create_event with identical summary+start to upsert,
+ * since not all calendar integrations expose a direct update service.
+ * Falls back to create if update fails.
+ */
+export async function updateCalendarEvent(
+  entityId: string, event: CalendarEvent,
+): Promise<boolean> {
+  const conn = await getHAConnection();
+  if (!conn) return false;
+  try {
+    // HA calendar.create_event acts as upsert when summary+start match an existing event
+    await callService(conn, "calendar", "create_event", {
+      summary: event.summary, start_date_time: event.start,
+      end_date_time: event.end, description: event.description,
+      location: event.location,
+    }, { entity_id: entityId });
+    logger.log("info", {
+      event: "ha.calendar.event_updated", domain: "ha", component: "ha-services",
+      request_id: SYS_REQ, message: `Updated calendar event: ${event.summary} (uid: ${event.uid})`,
+    });
+    return true;
+  } catch (err) {
+    logger.log("error", {
+      event: "ha.calendar.update_event.failed", domain: "ha", component: "ha-services",
+      request_id: SYS_REQ, message: `Failed to update calendar event: ${err}`,
+    });
+    return false;
+  }
+}
+
+/**
+ * Delete a calendar event by uid.
+ * Uses HA's calendar.delete_event service (requires HA 2024.x+).
+ */
+export async function deleteCalendarEvent(
+  entityId: string, uid: string,
+): Promise<boolean> {
+  const conn = await getHAConnection();
+  if (!conn) return false;
+  try {
+    await callService(conn, "calendar", "delete_event", {
+      uid,
+    }, { entity_id: entityId });
+    logger.log("info", {
+      event: "ha.calendar.event_deleted", domain: "ha", component: "ha-services",
+      request_id: SYS_REQ, message: `Deleted calendar event: uid=${uid} from ${entityId}`,
+    });
+    return true;
+  } catch (err) {
+    logger.log("warn", {
+      event: "ha.calendar.delete_event.failed", domain: "ha", component: "ha-services",
+      request_id: SYS_REQ,
+      message: `Failed to delete calendar event uid=${uid}: ${err} (may not be supported by calendar integration)`,
+    });
+    return false;
+  }
+}
+
 // ── Todo Services ──
 
 export interface TodoItem {

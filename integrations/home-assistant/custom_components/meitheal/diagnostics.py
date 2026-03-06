@@ -21,7 +21,7 @@ async def async_get_config_entry_diagnostics(
     hass: HomeAssistant, entry: ConfigEntry
 ) -> dict[str, Any]:
     """Return diagnostics for a Meitheal config entry."""
-    coordinator: MeithealCoordinator = hass.data[DOMAIN][entry.entry_id]
+    coordinator: MeithealCoordinator = entry.runtime_data
 
     # Task stats (no PII — just counts and metadata)
     task_stats: dict[str, Any] = {"available": False}

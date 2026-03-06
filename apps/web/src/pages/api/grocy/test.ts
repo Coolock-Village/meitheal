@@ -9,6 +9,7 @@
  */
 import type { APIRoute } from "astro";
 import { GrocyAdapter } from "@meitheal/integration-core";
+import { logApiError } from "../../../lib/api-logger";
 
 /**
  * POST /api/grocy/test
@@ -129,7 +130,7 @@ export const POST: APIRoute = async ({ request }) => {
       { status: 200, headers: { "Content-Type": "application/json" } },
     );
   } catch (err) {
-    console.error("[api/grocy/test] POST failed:", err);
+    logApiError("grocy-test", "POST failed", err);
     return new Response(JSON.stringify({ ok: false, error: "Internal server error" }), {
       status: 500,
       headers: { "Content-Type": "application/json" },
