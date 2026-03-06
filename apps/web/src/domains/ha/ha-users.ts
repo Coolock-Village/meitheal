@@ -71,8 +71,9 @@ export async function listHAUsers(): Promise<HAUser[]> {
       (u) => !((u as unknown as Record<string, unknown>).system_generated) && u.is_active
     ).map((u) => ({
       ...u,
-      // Sanitize display name — strip HTML tags to prevent stored XSS
-      name: (u.name || "").replace(/<[^>]*>/g, "").trim() || "Unknown",
+      // Sanitize display name — strip HTML tags to prevent stored XSS.
+      // Loop to handle nested/malformed fragments like <scr<script>ipt> (CodeQL: js/incomplete-multi-character-sanitization).
+      name: (() => { let n = u.name || ""; for (let i = 0; i < 10 && /<[^>]*>/g.test(n); i++) n = n.replace(/<[^>]*>/g, ""); return n.trim() || "Unknown"; })(),
       // Validate ID is clean alphanumeric — prefix with ha_ for downstream validation compat
       id: /^[a-zA-Z0-9_-]+$/.test(u.id) ? u.id : `ha_sanitized_${u.id.replace(/[^a-zA-Z0-9]/g, "")}`,
     }));

@@ -713,12 +713,22 @@ const { locale } = Astro.props;
                 id="help-grocy-key"
               />
             </div>
-            <input
-              type="password"
-              class="form-input"
-              id="grocy-key"
-              placeholder="••••••••"
-            />
+            <div style="display: flex; gap: 8px; align-items: center;">
+              <input
+                type="password"
+                class="form-input"
+                id="grocy-key"
+                placeholder="••••••••"
+                style="flex: 1;"
+              />
+              <button
+                type="button"
+                class="btn btn-ghost"
+                id="grocy-auto-key"
+                style="font-size: 11px; white-space: nowrap; padding: 6px 10px;"
+                title="Attempt to auto-generate a Grocy API key">⚡ Auto</button
+              >
+            </div>
           </div>
           <!-- Custom config toggle for auto-detected installs -->
           <button

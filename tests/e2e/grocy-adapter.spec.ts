@@ -156,4 +156,135 @@ test.describe("Grocy Stock Adapter", () => {
       await mock.close()
     }
   })
+
+  test("getProducts returns product name map", async () => {
+    const mock = await createMockGrocyServer((req, res) => {
+      if (req.url === "/api/objects/products") {
+        res.writeHead(200, { "content-type": "application/json" })
+        res.end(
+          JSON.stringify([
+            { id: 1, name: "Milk" },
+            { id: 2, name: "Bread" },
+            { id: 3, name: "Eggs" },
+          ])
+        )
+      }
+    })
+
+    try {
+      const adapter = new GrocyStockAdapter({
+        baseUrl: `http://127.0.0.1:${mock.port}`,
+        apiKey: "test-key",
+      })
+
+      const result = await adapter.getProducts()
+      expect(result.ok).toBe(true)
+      if (result.ok) {
+        expect(result.data.get(1)).toBe("Milk")
+        expect(result.data.get(2)).toBe("Bread")
+        expect(result.data.get(3)).toBe("Eggs")
+        expect(result.data.size).toBe(3)
+      }
+    } finally {
+      await mock.close()
+    }
+  })
+
+  test("getCategories returns category name map", async () => {
+    const mock = await createMockGrocyServer((req, res) => {
+      if (req.url === "/api/objects/task_categories") {
+        res.writeHead(200, { "content-type": "application/json" })
+        res.end(
+          JSON.stringify([
+            { id: 1, name: "Household" },
+            { id: 2, name: "Work" },
+          ])
+        )
+      }
+    })
+
+    try {
+      const adapter = new GrocyStockAdapter({
+        baseUrl: `http://127.0.0.1:${mock.port}`,
+        apiKey: "test-key",
+      })
+
+      const result = await adapter.getCategories()
+      expect(result.ok).toBe(true)
+      if (result.ok) {
+        expect(result.data.get(1)).toBe("Household")
+        expect(result.data.get(2)).toBe("Work")
+      }
+    } finally {
+      await mock.close()
+    }
+  })
+
+  test("clearShoppingList sends POST to correct endpoint", async () => {
+    const calls: string[] = []
+    const mock = await createMockGrocyServer((req, res) => {
+      let body = ""
+      req.on("data", (chunk: Buffer) => {
+        body += chunk.toString()
+      })
+      req.on("end", () => {
+        calls.push(`${req.method} ${req.url} ${body}`)
+        res.writeHead(200, { "content-type": "application/json" })
+        res.end("{}")
+      })
+    })
+
+    try {
+      const adapter = new GrocyStockAdapter({
+        baseUrl: `http://127.0.0.1:${mock.port}`,
+        apiKey: "test-key",
+      })
+
+      const result = await adapter.clearShoppingList()
+      expect(result.ok).toBe(true)
+      expect(calls).toHaveLength(1)
+      expect(calls[0]).toContain("POST /api/stock/shoppinglist/clear")
+      expect(calls[0]).toContain('"list_id":1')
+    } finally {
+      await mock.close()
+    }
+  })
+
+  test("createTask sends correct payload and returns taskId", async () => {
+    const calls: string[] = []
+    const mock = await createMockGrocyServer((req, res) => {
+      let body = ""
+      req.on("data", (chunk: Buffer) => {
+        body += chunk.toString()
+      })
+      req.on("end", () => {
+        calls.push(`${req.method} ${req.url} ${body}`)
+        res.writeHead(200, { "content-type": "application/json" })
+        res.end(JSON.stringify({ created_object_id: 42 }))
+      })
+    })
+
+    try {
+      const adapter = new GrocyStockAdapter({
+        baseUrl: `http://127.0.0.1:${mock.port}`,
+        apiKey: "test-key",
+      })
+
+      const result = await adapter.createTask("Buy groceries", {
+        description: "Weekly shopping",
+        dueDate: "2026-03-10",
+      })
+
+      expect(result.ok).toBe(true)
+      if (result.ok) {
+        expect(result.data.taskId).toBe(42)
+      }
+      expect(calls).toHaveLength(1)
+      expect(calls[0]).toContain("POST /api/objects/tasks")
+      expect(calls[0]).toContain('"name":"Buy groceries"')
+      expect(calls[0]).toContain('"description":"Weekly shopping"')
+    } finally {
+      await mock.close()
+    }
+  })
 })

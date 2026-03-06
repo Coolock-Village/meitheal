@@ -1272,6 +1272,52 @@ const locale: Locale = cookieLocale === "ga" ? "ga" : "en";
       });
 
     // ───── Grocy Save ─────
+    // Auto-key generation button
+    document
+      .getElementById("grocy-auto-key")
+      ?.addEventListener("click", async () => {
+        const btn = document.getElementById(
+          "grocy-auto-key",
+        ) as HTMLButtonElement;
+        const origText = btn.textContent;
+        btn.disabled = true;
+        btn.textContent = "…";
+
+        try {
+          const urlInput = document.getElementById(
+            "grocy-url",
+          ) as HTMLInputElement;
+          const keyInput = document.getElementById(
+            "grocy-key",
+          ) as HTMLInputElement;
+          const body: Record<string, string> = {};
+          if (urlInput?.value?.trim()) body.url = urlInput.value.trim();
+
+          const res = await fetch(
+            (window.__ingress_path || "") + "/api/grocy/auto-key",
+            {
+              method: "POST",
+              headers: { "content-type": "application/json" },
+              body: JSON.stringify(body),
+            },
+          );
+          const data = await res.json();
+
+          if (data.ok) {
+            if (keyInput) keyInput.placeholder = data.apiKey || "••••";
+            if (urlInput && data.url) urlInput.value = data.url;
+            showToast("API key generated and saved", "success");
+          } else {
+            showToast(data.error || "Auto-key failed", "error");
+          }
+        } catch {
+          showToast("Failed to auto-generate key", "error");
+        } finally {
+          btn.disabled = false;
+          btn.textContent = origText;
+        }
+      });
+
     document
       .getElementById("save-grocy")
       ?.addEventListener("click", async () => {
