@@ -173,11 +173,16 @@ const navItems = order
   <div class="sidebar-header pb-4 mb-0 border-b border-border/50">
     <a
       href="/"
-      class="text-xl font-bold tracking-tight text-text-primary hover:text-accent transition-colors flex items-center gap-2 no-underline"
+      class="sidebar-brand text-xl font-bold tracking-tight text-text-primary hover:text-accent transition-colors flex items-center gap-2 no-underline"
       aria-label="Meitheal Home"
+      title="Ag Obair le Chéile — Working Together"
     >
       <span class="text-2xl" aria-hidden="true">☘️</span> Meitheal
+      <span class="sidebar-tooltip" aria-hidden="true"
+        >Ag Obair le Chéile&ensp;·&ensp;Working Together</span
+      >
     </a>
+    <span class="sidebar-ipa" aria-hidden="true">/ˈmʲɛhəlˠ/</span>
   </div>
 
   <div class="sidebar-scroll">
@@ -214,6 +219,46 @@ const navItems = order
 
   .sidebar-header {
     @apply mb-6 px-2;
+  }
+
+  .sidebar-ipa {
+    display: block;
+    font-size: 10px;
+    font-style: italic;
+    color: var(--text-muted);
+    opacity: 0.6;
+    letter-spacing: 0.5px;
+    padding-left: 2.25rem;
+    margin-top: 2px;
+    user-select: none;
+  }
+
+  .sidebar-brand {
+    position: relative;
+  }
+
+  .sidebar-tooltip {
+    position: absolute;
+    left: 0;
+    top: 100%;
+    margin-top: 4px;
+    white-space: nowrap;
+    font-size: 10px;
+    font-weight: 400;
+    font-style: italic;
+    color: var(--text-muted);
+    background: var(--bg-card);
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    padding: 4px 10px;
+    opacity: 0;
+    pointer-events: none;
+    transition: opacity 200ms ease;
+    z-index: 50;
+  }
+
+  .sidebar-brand:hover .sidebar-tooltip {
+    opacity: 1;
   }
 
   /* Expose these styles globally for the sub-components to use cleanly without duplicate scopes */

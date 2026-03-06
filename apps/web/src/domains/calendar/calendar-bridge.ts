@@ -621,13 +621,14 @@ export async function syncCalDAVEvents(): Promise<{ created: number; updated: nu
                     labels, framework_payload, calendar_sync_state, board_id,
                     custom_fields, task_type, idempotency_key, request_id,
                     created_at, updated_at)
-                  VALUES (?, ?, ?, 'backlog', 3, ?, '[]', '{}', 'synced', 'default',
+                  VALUES (?, ?, ?, 'backlog', 3, ?, ?, '{}', 'synced', 'default',
                     '{}', 'task', ?, ?, ?, ?)`,
             args: [
               taskId,
               evt.summary,
               evt.description || `📡 CalDAV event from ${cal.displayName}`,
               evt.dtstart,
+              '["calendar-sync"]',
               `caldav-sync-${evt.uid}`,
               reqId,
               nowMs,

@@ -128,8 +128,18 @@ export async function getTodoItems(
       service_data: serviceData,
       return_response: true,
     });
-    const response = result as Record<string, { items?: TodoItem[] }>;
-    const items = response?.[entityId]?.items ?? [];
+
+    // HA WebSocket call_service with return_response wraps data in a `response` key
+    // Try both: result.response[entityId].items AND result[entityId].items
+    let items: TodoItem[] = [];
+    const respObj = (result as { response?: Record<string, { items?: TodoItem[] }> });
+    if (respObj?.response?.[entityId]?.items) {
+      items = respObj.response[entityId].items!;
+    } else {
+      const direct = result as Record<string, { items?: TodoItem[] }>;
+      items = direct?.[entityId]?.items ?? [];
+    }
+
     logger.log("debug", {
       event: "ha.todo.get_items", domain: "ha", component: "ha-services",
       request_id: SYS_REQ, message: `Fetched ${items.length} todo items from ${entityId}`,
