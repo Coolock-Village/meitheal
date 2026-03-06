@@ -45,16 +45,21 @@ function stripMeithealAttribution(desc: string | null | undefined): string | nul
   return lines.join("\n").trim() || null;
 }
 
+/** Sync direction — matches Grocy bridge pattern */
+export type CalendarSyncMode = "import" | "export" | "bidirectional";
+
 export interface CalendarSyncConfig {
   entityId: string;
   syncEnabled: boolean;
-  writeBack: boolean; // push task due dates to HA
+  syncMode: CalendarSyncMode; // per-entity direction control
+  writeBack: boolean; // legacy compat — derived from syncMode at runtime
   syncIntervalMs: number;
 }
 
 export interface CalendarSyncStatusEntity {
   entityId: string;
   source: "ha" | "caldav";
+  syncMode: CalendarSyncMode;
   writeBack: boolean;
   syncIntervalMs: number;
   lastSyncAt: number | null;
@@ -240,6 +245,17 @@ export async function syncFromHA(overrideEntityId?: string): Promise<{ created: 
  * via the calendar_confirmations table (keyed by provider_event_id).
  */
 async function syncEntityFromHA(entityId: string): Promise<{ created: number; updated: number; total: number }> {
+  // Mode guard — export-only calendars skip inbound sync
+  const state = activeSyncs.get(entityId);
+  if (state?.config.syncMode === "export") {
+    logger.log("debug", {
+      event: "calendar.sync.skipped_export_only", domain: "calendar", component: "calendar-bridge",
+      request_id: SYS_REQ, message: `Inbound sync skipped for ${entityId} — export-only mode`,
+      metadata: { sync_mode: "export" },
+    });
+    return { created: 0, updated: 0, total: 0 };
+  }
+
   // Concurrency guard — skip if already syncing this entity
   if (syncingEntities.has(entityId)) {
     logger.log("debug", {
@@ -404,7 +420,9 @@ async function _syncEntityFromHAInner(entityId: string): Promise<{ created: numb
 
     // Stale event detection: archive tasks whose calendar events were deleted
     // Only run when no per-event errors to avoid false positives from partial API failures
-    if (errors === 0 && events.length > 0) {
+    // Scoped to import/bidirectional modes — export-only never creates inbound tasks
+    const staleMode = state?.config.syncMode ?? "bidirectional";
+    if (errors === 0 && events.length > 0 && staleMode !== "export") {
       try {
         const allConfirmations = await client.execute({
           sql: `SELECT c.confirmation_id, c.task_id, c.provider_event_id
@@ -529,13 +547,24 @@ export async function pushTaskToCalendar(
   taskId: string, title: string, dueDate: string, description?: string,
   targetEntityId?: string, meta?: TaskCalendarMeta,
 ): Promise<boolean> {
-  // Find the first entity with writeBack enabled, or use targetEntityId
+  // Find the first entity with export/bidirectional mode, or use targetEntityId
   let writeBackEntity: CalendarSyncConfig | undefined;
   if (targetEntityId) {
-    writeBackEntity = activeSyncs.get(targetEntityId)?.config;
+    const targetState = activeSyncs.get(targetEntityId);
+    // Mode guard — import-only calendars skip outbound push
+    if (targetState?.config.syncMode === "import") {
+      logger.log("debug", {
+        event: "calendar.writeback.skipped_import_only", domain: "calendar", component: "calendar-bridge",
+        request_id: SYS_REQ, message: `Outbound push skipped for ${targetEntityId} — import-only mode`,
+        metadata: { sync_mode: "import", task_id: taskId },
+      });
+      return false;
+    }
+    writeBackEntity = targetState?.config;
   } else {
     for (const [, state] of activeSyncs) {
-      if (state.config.writeBack) {
+      // Accept export or bidirectional mode for outbound writes
+      if (state.config.syncMode !== "import" && state.config.writeBack) {
         writeBackEntity = state.config;
         break;
       }
@@ -712,6 +741,7 @@ export function getCalendarSyncStatus() {
   const entities: CalendarSyncStatusEntity[] = Array.from(activeSyncs.entries()).map(([entityId, state]) => ({
     entityId,
     source: "ha" as const,
+    syncMode: state.config.syncMode ?? "bidirectional",
     writeBack: state.config.writeBack,
     syncIntervalMs: state.config.syncIntervalMs,
     lastSyncAt: state.lastSyncAt,
@@ -724,6 +754,7 @@ export function getCalendarSyncStatus() {
     entities.push({
       entityId: "caldav:" + (caldavSyncState.url || "external"),
       source: "caldav" as const,
+      syncMode: "import" as const,
       writeBack: false,
       syncIntervalMs: caldavSyncState.intervalMs,
       lastSyncAt: caldavSyncState.lastSyncAt,

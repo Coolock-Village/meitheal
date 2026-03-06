@@ -11,6 +11,7 @@
  * @bounded-context integration
  */
 import type { APIRoute } from "astro";
+import type { CalendarSyncMode } from "@domains/calendar/calendar-bridge";
 import {
   startCalendarSync,
   startMultiCalendarSync,
@@ -57,6 +58,8 @@ export const POST: APIRoute = async ({ request }) => {
       entities?: string[];
       write_back?: boolean;
       interval_ms?: number;
+      sync_mode?: CalendarSyncMode;
+      sync_modes?: Record<string, CalendarSyncMode>;
     };
 
     try {
@@ -156,21 +159,28 @@ export const POST: APIRoute = async ({ request }) => {
       case "enable": {
         const intervalMs = body.interval_ms ?? 5 * 60 * 1000;
         const writeBack = body.write_back ?? false;
+        const globalMode: CalendarSyncMode = body.sync_mode ?? "bidirectional";
+        const perEntityModes = body.sync_modes ?? {};
 
         // Multi-entity enable
         if (body.entities && body.entities.length > 0) {
-          const configs = body.entities.map((entityId) => ({
-            entityId,
-            syncEnabled: true,
-            writeBack,
-            syncIntervalMs: intervalMs,
-          }));
+          const configs = body.entities.map((entityId) => {
+            const entityMode = perEntityModes[entityId] ?? globalMode;
+            return {
+              entityId,
+              syncEnabled: true,
+              syncMode: entityMode,
+              writeBack: entityMode !== "import" ? writeBack : false,
+              syncIntervalMs: intervalMs,
+            };
+          });
           startMultiCalendarSync(configs);
           return new Response(
             JSON.stringify({
               ok: true,
               message: `Calendar sync enabled for ${body.entities.length} entities`,
               entities: body.entities,
+              sync_modes: configs.reduce((acc, c) => ({ ...acc, [c.entityId]: c.syncMode }), {} as Record<string, CalendarSyncMode>),
             }),
             { status: 200, headers: { "Content-Type": "application/json" } },
           );
@@ -183,16 +193,18 @@ export const POST: APIRoute = async ({ request }) => {
             { status: 400, headers: { "Content-Type": "application/json" } },
           );
         }
+        const singleMode = perEntityModes[body.entity_id] ?? globalMode;
         startCalendarSync({
           entityId: body.entity_id,
           syncEnabled: true,
-          writeBack,
+          syncMode: singleMode,
+          writeBack: singleMode !== "import" ? writeBack : false,
           syncIntervalMs: intervalMs,
         });
         return new Response(
           JSON.stringify({
             ok: true,
-            message: `Calendar sync enabled for ${body.entity_id}`,
+            message: `Calendar sync enabled for ${body.entity_id} (${singleMode})`,
           }),
           { status: 200, headers: { "Content-Type": "application/json" } },
         );

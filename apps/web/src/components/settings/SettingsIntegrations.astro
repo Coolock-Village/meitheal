@@ -371,6 +371,24 @@ const { locale } = Astro.props;
             </div>
           </details>
 
+          <!-- Sync Direction (global default) -->
+          <div class="form-group" style="margin-top: 10px;">
+            <label class="form-label" for="cal-sync-direction"
+              >Default Sync Direction</label
+            >
+            <select id="cal-sync-direction" class="form-select">
+              <option value="bidirectional" selected
+                >↔ Bidirectional — sync both ways</option
+              >
+              <option value="import">↓ Import only — HA → Meitheal</option>
+              <option value="export">↑ Export only — Meitheal → HA</option>
+            </select>
+            <small class="form-hint"
+              >Default for new calendars. Override per calendar using the
+              direction selector on each card.</small
+            >
+          </div>
+
           <!-- Write-back toggle -->
           <div class="form-group" style="margin-top: 10px;">
             <label
@@ -382,7 +400,7 @@ const { locale } = Astro.props;
             </label>
             <small class="form-hint"
               >When enabled, task completions update the corresponding calendar
-              event.</small
+              event. Only applies to Export and Bidirectional modes.</small
             >
           </div>
 
@@ -1475,6 +1493,34 @@ const { locale } = Astro.props;
     text-overflow: ellipsis;
   }
 
+  /* Per-card sync direction selector */
+  .cal-toggle-card__direction {
+    margin-top: 4px;
+  }
+
+  .cal-direction-select {
+    font-size: 11px;
+    padding: 2px 6px;
+    border: 1px solid var(--border);
+    border-radius: 5px;
+    background: var(--bg-primary);
+    color: var(--text-secondary);
+    font-family: inherit;
+    cursor: pointer;
+    transition: border-color 150ms ease;
+    max-width: 200px;
+  }
+
+  .cal-direction-select:hover {
+    border-color: color-mix(in srgb, var(--border) 50%, var(--accent));
+  }
+
+  .cal-direction-select:focus {
+    border-color: var(--accent);
+    outline: none;
+    box-shadow: 0 0 0 2px color-mix(in srgb, var(--accent) 20%, transparent);
+  }
+
   .cal-toggle-card__state {
     font-size: 10px;
     color: var(--text-muted);
@@ -2167,8 +2213,11 @@ const { locale } = Astro.props;
     },
     calendar: {
       title: "📅 Calendar Sync",
-      body: `<p>Bidirectional sync between Meitheal tasks and HA calendar events. Tasks with due dates appear as calendar events, and calendar events become tasks.</p>
-             <p>When connected to HA, select a calendar entity from the dropdown — Meitheal auto-detects available calendars. For external servers (Nextcloud, Radicale, Baikal), expand the CalDAV section.</p>
+      body: `<p>Directional sync between Meitheal tasks and HA calendar events. Choose per calendar:</p>
+             <p><strong>↔ Bidirectional</strong> — tasks ↔ events flow both ways. Duplicates prevented via confirmation tracking.<br>
+             <strong>↓ Import only</strong> — HA calendar events create Meitheal tasks. No write-back.<br>
+             <strong>↑ Export only</strong> — Meitheal tasks with due dates appear as calendar events. No inbound sync.</p>
+             <p>Select calendars from the toggle cards — Meitheal auto-detects available HA calendars. For external servers (Nextcloud, Radicale, Baikal), expand the CalDAV section.</p>
              <p>Sync window: past 7 days → next 30 days.</p>`,
     },
     todo: {

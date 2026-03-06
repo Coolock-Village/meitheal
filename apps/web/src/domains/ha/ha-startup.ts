@@ -237,6 +237,7 @@ async function autoStartCalendarSync(): Promise<void> {
       sql: `SELECT key, value FROM settings WHERE key IN (
         'calendar_entities', 'calendar_entity', 'cal_entity', 'calendar-entity',
         'calendar_sync_enabled', 'calendar_write_back', 'calendar_sync_interval_ms',
+        'calendar_sync_mode', 'calendar_sync_modes',
         'caldav_url'
       )`,
       args: [],
@@ -317,12 +318,31 @@ async function autoStartCalendarSync(): Promise<void> {
     }
 
     const { startMultiCalendarSync, startCalDAVSync } = await import("@domains/calendar/calendar-bridge");
-    const configs = entityIds.map((entityId) => ({
-      entityId,
-      syncEnabled: true,
-      writeBack,
-      syncIntervalMs,
-    }));
+    type CalSyncMode = import("@domains/calendar/calendar-bridge").CalendarSyncMode;
+
+    // Per-entity sync modes from settings (JSON map: {entity_id: mode})
+    let perEntityModes: Record<string, CalSyncMode> = {};
+    if (settings.calendar_sync_modes) {
+      try {
+        const parsed = typeof settings.calendar_sync_modes === "string"
+          ? JSON.parse(settings.calendar_sync_modes)
+          : settings.calendar_sync_modes;
+        if (parsed && typeof parsed === "object") perEntityModes = parsed;
+      } catch { /* invalid JSON */ }
+    }
+    const globalMode: CalSyncMode =
+      (settings.calendar_sync_mode as CalSyncMode) ?? "bidirectional";
+
+    const configs = entityIds.map((entityId) => {
+      const mode = perEntityModes[entityId] ?? globalMode;
+      return {
+        entityId,
+        syncEnabled: true,
+        syncMode: mode,
+        writeBack: mode !== "import" ? writeBack : false,
+        syncIntervalMs,
+      };
+    });
 
     if (configs.length > 0) {
       startMultiCalendarSync(configs);

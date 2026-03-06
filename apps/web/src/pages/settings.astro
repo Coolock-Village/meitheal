@@ -1869,6 +1869,8 @@ const locale: Locale = cookieLocale === "ga" ? "ga" : "en";
 
           // Get previously saved entities to pre-check
           let savedEntities: string[] = [];
+          let savedSyncModes: Record<string, string> = {};
+          let savedGlobalMode = "bidirectional";
           try {
             const settingsRes = await fetch(
               (window.__ingress_path || "") + "/api/settings",
@@ -1891,8 +1893,32 @@ const locale: Locale = cookieLocale === "ga" ? "ga" : "en";
                 savedEntities = raw ? [raw] : [];
               }
             }
+            // Restore per-entity sync modes
+            if (s.calendar_sync_modes) {
+              try {
+                const parsed =
+                  typeof s.calendar_sync_modes === "string"
+                    ? JSON.parse(s.calendar_sync_modes as string)
+                    : s.calendar_sync_modes;
+                if (parsed && typeof parsed === "object")
+                  savedSyncModes = parsed as Record<string, string>;
+              } catch {
+                /* invalid JSON */
+              }
+            }
+            if (typeof s.calendar_sync_mode === "string") {
+              savedGlobalMode = s.calendar_sync_mode;
+            }
           } catch {
             /* ignore */
+          }
+
+          // Restore global sync direction dropdown
+          const dirSelect = document.getElementById(
+            "cal-sync-direction",
+          ) as HTMLSelectElement | null;
+          if (dirSelect && savedGlobalMode) {
+            dirSelect.value = savedGlobalMode;
           }
 
           entitiesContainer.innerHTML = calendars
@@ -1905,10 +1931,19 @@ const locale: Locale = cookieLocale === "ga" ? "ga" : "en";
                 const isEnabled = savedEntities.includes(c.entity_id);
                 const stateLabel =
                   c.state === "off" ? "no active event" : c.state;
+                const entityMode =
+                  savedSyncModes[c.entity_id] ?? savedGlobalMode;
                 return `<div class="cal-toggle-card${isEnabled ? " cal-toggle-card--active" : ""}" data-entity="${c.entity_id}">
                   <div class="cal-toggle-card__info">
                     <span class="cal-toggle-card__name">${c.friendly_name}</span>
                     <span class="cal-toggle-card__entity">${c.entity_id}</span>
+                    <div class="cal-toggle-card__direction"${!isEnabled ? ' style="display:none"' : ""}>
+                      <select class="cal-direction-select" data-entity-dir="${c.entity_id}" aria-label="Sync direction for ${c.friendly_name}">
+                        <option value="bidirectional"${entityMode === "bidirectional" ? " selected" : ""}>↔ Bidirectional</option>
+                        <option value="import"${entityMode === "import" ? " selected" : ""}>↓ Import only</option>
+                        <option value="export"${entityMode === "export" ? " selected" : ""}>↑ Export only</option>
+                      </select>
+                    </div>
                     <span class="cal-toggle-card__state">${stateLabel}</span>
                   </div>
                   <label class="toggle-label">
@@ -1949,9 +1984,21 @@ const locale: Locale = cookieLocale === "ga" ? "ga" : "en";
                 const card = cb.closest(".cal-toggle-card");
                 if (card) {
                   card.classList.toggle("cal-toggle-card--active", cb.checked);
+                  // Show/hide direction selector when toggling
+                  const dirDiv = card.querySelector<HTMLElement>(
+                    ".cal-toggle-card__direction",
+                  );
+                  if (dirDiv) dirDiv.style.display = cb.checked ? "" : "none";
                 }
                 updateCalCountBadge();
               });
+            });
+
+          // Prevent direction select clicks from toggling the card checkbox
+          entitiesContainer
+            .querySelectorAll<HTMLSelectElement>(".cal-direction-select")
+            .forEach((sel) => {
+              sel.addEventListener("click", (e) => e.stopPropagation());
             });
 
           // Click anywhere on card toggles the checkbox (since outer is now <div> not <label>)
@@ -2064,6 +2111,13 @@ const locale: Locale = cookieLocale === "ga" ? "ga" : "en";
         <div class="cal-toggle-card__info">
           <span class="cal-toggle-card__name">${entityId}</span>
           <span class="cal-toggle-card__entity">${entityId}</span>
+          <div class="cal-toggle-card__direction">
+            <select class="cal-direction-select" data-entity-dir="${entityId}" aria-label="Sync direction for ${entityId}">
+              <option value="bidirectional" selected>↔ Bidirectional</option>
+              <option value="import">↓ Import only</option>
+              <option value="export">↑ Export only</option>
+            </select>
+          </div>
           <span class="cal-toggle-card__state">manually added</span>
         </div>
         <label class="toggle-label">
@@ -2184,6 +2238,21 @@ const locale: Locale = cookieLocale === "ga" ? "ga" : "en";
           enabledEntities.push(cb.value);
         });
 
+      // Collect per-entity sync directions
+      const syncModes: Record<string, string> = {};
+      document
+        .querySelectorAll<HTMLSelectElement>(".cal-direction-select")
+        .forEach((sel) => {
+          const entityId = sel.dataset.entityDir;
+          if (entityId && enabledEntities.includes(entityId)) {
+            syncModes[entityId] = sel.value;
+          }
+        });
+
+      const globalMode =
+        (document.getElementById("cal-sync-direction") as HTMLSelectElement)
+          ?.value ?? "bidirectional";
+
       const caldavUrl = (
         document.getElementById("caldav-url") as HTMLInputElement
       ).value;
@@ -2215,6 +2284,9 @@ const locale: Locale = cookieLocale === "ga" ? "ga" : "en";
       );
       await saveSetting("calendar_write_back", writeBack);
       await saveSetting("calendar_sync_interval_ms", String(intervalMs));
+      // Persist sync direction settings
+      await saveSetting("calendar_sync_mode", globalMode);
+      await saveSetting("calendar_sync_modes", syncModes);
 
       if (caldavUrl && caldavUsername && caldavPassword) {
         try {
@@ -2253,6 +2325,8 @@ const locale: Locale = cookieLocale === "ga" ? "ga" : "en";
                 entities: enabledEntities,
                 write_back: writeBack,
                 interval_ms: intervalMs,
+                sync_mode: globalMode,
+                sync_modes: syncModes,
               }),
             },
           );
