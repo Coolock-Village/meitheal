@@ -141,9 +141,14 @@ function startSingleEntitySync(config: CalendarSyncConfig): void {
   // Store cancel function so stopSingleEntitySync can clean up the pending timer
   state.unsubscribers.push(unsub, cancelDebounce);
 
-  // Periodic full sync
-  state.timer = setInterval(async () => {
-    await syncEntityFromHA(config.entityId);
+  // Periodic full sync — wrapped in error boundary to prevent unhandled rejection crash
+  state.timer = setInterval(() => {
+    syncEntityFromHA(config.entityId).catch((err) => {
+      logger.log("error", {
+        event: "calendar.sync.interval_error", domain: "calendar", component: "calendar-bridge",
+        request_id: SYS_REQ, message: `Periodic sync failed for ${config.entityId}: ${err}`,
+      });
+    });
   }, config.syncIntervalMs);
 
   activeSyncs.set(config.entityId, state);
@@ -293,21 +298,21 @@ async function _syncEntityFromHAInner(entityId: string): Promise<{ created: numb
         });
         updated++;
       } else {
-        // Create new task from calendar event — assign ticket_number for MTH-N key
+        // Create new task from calendar event — atomic ticket_number allocation
         const taskId = crypto.randomUUID();
         const reqId = crypto.randomUUID();
         const nowMs = Date.now();
 
-        const nextNumResult = await client.execute("SELECT COALESCE(MAX(ticket_number), 0) + 1 AS next_num FROM tasks");
-        const ticketNumber = Number((nextNumResult.rows[0] as Record<string, unknown>)?.next_num ?? 1);
-
+        // Atomic INSERT...SELECT to prevent ticket_number race under concurrent sync
         await client.execute({
           sql: `INSERT INTO tasks (id, title, description, status, priority, due_date,
                   labels, framework_payload, calendar_sync_state, board_id,
                   custom_fields, task_type, idempotency_key, request_id,
                   ticket_number, created_at, updated_at)
                 VALUES (?, ?, ?, 'todo', 3, ?, ?, '{}', 'synced', 'default',
-                  '{}', 'task', ?, ?, ?, ?, ?)`,
+                  '{}', 'task', ?, ?,
+                  (SELECT COALESCE(MAX(ticket_number), 0) + 1 FROM tasks),
+                  ?, ?)`,
           args: [
             taskId,
             evt.summary,
@@ -316,7 +321,6 @@ async function _syncEntityFromHAInner(entityId: string): Promise<{ created: numb
             JSON.stringify(["calendar-sync"]),
             `cal-sync-${uid}`,
             reqId,
-            ticketNumber,
             nowMs,
             nowMs,
           ],
@@ -475,7 +479,10 @@ function stopSingleEntitySync(entityId: string): void {
  * Stop all calendar syncs and clean up.
  */
 export function stopCalendarSync(): void {
-  for (const [entityId] of activeSyncs) {
+  // Copy keys to array first — stopSingleEntitySync deletes from the map,
+  // so iterating the map directly risks ConcurrentModificationError
+  const entityIds = Array.from(activeSyncs.keys());
+  for (const entityId of entityIds) {
     stopSingleEntitySync(entityId);
   }
 }
@@ -666,21 +673,21 @@ export async function syncCalDAVEvents(): Promise<{ created: number; updated: nu
             continue;
           }
 
-          // Create task from CalDAV event — assign ticket_number for MTH-N key
+          // Create task from CalDAV event — atomic ticket_number allocation
           const taskId = crypto.randomUUID();
           const reqId = crypto.randomUUID();
           const nowMs = Date.now();
 
-          const nextNumResult = await client.execute("SELECT COALESCE(MAX(ticket_number), 0) + 1 AS next_num FROM tasks");
-          const ticketNumber = Number((nextNumResult.rows[0] as Record<string, unknown>)?.next_num ?? 1);
-
+          // Atomic INSERT...SELECT to prevent ticket_number race under concurrent sync
           await client.execute({
             sql: `INSERT INTO tasks (id, title, description, status, priority, due_date,
                     labels, framework_payload, calendar_sync_state, board_id,
                     custom_fields, task_type, idempotency_key, request_id,
                     ticket_number, created_at, updated_at)
                   VALUES (?, ?, ?, 'backlog', 3, ?, ?, '{}', 'synced', 'default',
-                    '{}', 'task', ?, ?, ?, ?, ?)`,
+                    '{}', 'task', ?, ?,
+                    (SELECT COALESCE(MAX(ticket_number), 0) + 1 FROM tasks),
+                    ?, ?)`,
             args: [
               taskId,
               evt.summary,
@@ -689,7 +696,6 @@ export async function syncCalDAVEvents(): Promise<{ created: number; updated: nu
               '["calendar-sync"]',
               `caldav-sync-${evt.uid}`,
               reqId,
-              ticketNumber,
               nowMs,
               nowMs,
             ],

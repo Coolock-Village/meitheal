@@ -48,9 +48,12 @@ const MAX_RECONNECT_DELAY_MS = 30_000;
 export async function getHAConnection(): Promise<Connection | null> {
   if (connection) return connection;
   if (connecting) {
+    // Wait for in-flight connection with a 15s safety timeout to prevent infinite spin
     return new Promise((resolve) => {
+      let elapsed = 0;
       const check = setInterval(() => {
-        if (!connecting) { clearInterval(check); resolve(connection); }
+        elapsed += 100;
+        if (!connecting || elapsed >= 15_000) { clearInterval(check); resolve(connection); }
       }, 100);
     });
   }

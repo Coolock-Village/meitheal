@@ -293,9 +293,11 @@ export const PUT: APIRoute = async ({ params, request }) => {
 
   dispatchTaskEvent("task.updated", taskPayload, typeof body.request_id === "string" ? body.request_id : undefined).catch(() => {});
 
-  // Notification preference guard — check before dispatching any HA notifications
+  // Notification preference guard — single read for all prefs (enabled, per-user, channels)
   let notifEnabled = true;
   let notifDisabledUsers: Set<string> = new Set();
+  let notifChannels = { sidebar: true, mobile_push: false };
+  let notifMobileTargets: string[] = [];
   try {
     const notifPrefsResult = await client.execute({
       sql: "SELECT value FROM settings WHERE key = 'notification_preferences' LIMIT 1",
@@ -308,24 +310,11 @@ export const PUT: APIRoute = async ({ params, request }) => {
         if (Array.isArray(raw.disabled_users)) {
           notifDisabledUsers = new Set(raw.disabled_users);
         }
+        if (raw.channels) notifChannels = raw.channels;
+        if (Array.isArray(raw.mobile_targets)) notifMobileTargets = raw.mobile_targets;
       }
     }
-  } catch { /* settings not available — default to enabled */ }
-
-  // Read channel preferences for dispatch
-  let notifChannels = { sidebar: true, mobile_push: false };
-  let notifMobileTargets: string[] = [];
-  try {
-    const cpResult = await client.execute({
-      sql: "SELECT value FROM settings WHERE key = 'notification_preferences' LIMIT 1",
-      args: [],
-    });
-    if (cpResult.rows.length > 0) {
-      const cpRaw = JSON.parse(String((cpResult.rows[0] as Record<string, unknown>).value));
-      if (cpRaw?.channels) notifChannels = cpRaw.channels;
-      if (Array.isArray(cpRaw?.mobile_targets)) notifMobileTargets = cpRaw.mobile_targets;
-    }
-  } catch { /* default channels */ }
+  } catch { /* settings not available — default to enabled, sidebar channel */ }
 
   // Helper: dispatch notification to configured channels
   async function dispatchNotification(title: string, message: string, notifId: string, ingress: string | null) {
