@@ -24,10 +24,25 @@ const logger = createLogger({
 });
 const SYS_REQ = "ha-system";
 
-/** Strip outbound attribution text so it doesn't show in Meitheal's own UI. */
+/**
+ * Strip outbound enriched description metadata so it doesn't loop back on inbound sync.
+ * Removes: "Added from Meitheal" attribution, 📋/Status/Priority line, 🏷️ labels,
+ * 📝 Checklist header + ✅/☐ items — everything buildCalendarDescription appends.
+ */
 function stripMeithealAttribution(desc: string | null | undefined): string | null {
   if (!desc) return null;
-  return desc.replace(/\n?\n?Added from Meitheal$/i, "").trim() || null;
+  const lines = desc.split("\n").filter((line) => {
+    const t = line.trim();
+    if (!t) return true; // preserve blank lines in user content
+    if (/^Added from Meitheal$/i.test(t)) return false;
+    if (/^📋\s/.test(t)) return false;              // ticket key + status + priority line
+    if (/^🏷️\s/.test(t)) return false;              // labels line
+    if (/^📝\s*Checklist\b/.test(t)) return false;   // checklist header
+    if (/^\s*(✅|☐)\s/.test(t)) return false;        // checklist items
+    if (/^Status:\s/.test(t)) return false;           // bare status line
+    return true;
+  });
+  return lines.join("\n").trim() || null;
 }
 
 export interface CalendarSyncConfig {
@@ -372,6 +387,41 @@ async function _syncEntityFromHAInner(entityId: string): Promise<{ created: numb
           message: `Failed to process event "${evt.summary}" from ${entityId}: ${evtErr}`,
         });
         // Continue processing remaining events — don't let one bad event crash the whole sync
+      }
+    }
+
+    // Stale event detection: archive tasks whose calendar events were deleted
+    // Only run when no per-event errors to avoid false positives from partial API failures
+    if (errors === 0 && events.length > 0) {
+      try {
+        const allConfirmations = await client.execute({
+          sql: `SELECT c.confirmation_id, c.task_id, c.provider_event_id
+                FROM calendar_confirmations c
+                WHERE c.source = 'ha.calendar_sync'
+                  AND json_extract(c.payload, '$.entity_id') = ?`,
+          args: [entityId],
+        });
+        const currentUids = new Set(eventUids);
+        for (const row of allConfirmations.rows) {
+          const eventUid = String(row.provider_event_id);
+          if (!currentUids.has(eventUid)) {
+            const taskId = String(row.task_id);
+            await client.execute({
+              sql: `UPDATE tasks SET status = 'done', updated_at = ? WHERE id = ? AND status != 'done'`,
+              args: [Date.now(), taskId],
+            });
+            logger.log("info", {
+              event: "calendar.sync.stale_archived", domain: "calendar", component: "calendar-bridge",
+              request_id: SYS_REQ,
+              message: `Archived task ${taskId} — calendar event ${eventUid} no longer exists in ${entityId}`,
+            });
+          }
+        }
+      } catch (staleErr) {
+        logger.log("warn", {
+          event: "calendar.sync.stale_check_failed", domain: "calendar", component: "calendar-bridge",
+          request_id: SYS_REQ, message: `Stale event check failed for ${entityId}: ${staleErr}`,
+        });
       }
     }
 
