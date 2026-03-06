@@ -1422,7 +1422,14 @@ const locale: Locale = cookieLocale === "ga" ? "ga" : "en";
         const resultEl = document.getElementById("grocy-test-result");
         const btn = document.getElementById("test-grocy") as HTMLButtonElement;
 
-        if (!url || !key) {
+        // When auto-detected, use the auto-detected URL and don't require manual API key
+        const grocyAutoDetected = document.getElementById("grocy-auto-info");
+        const isAutoDetected =
+          grocyAutoDetected && grocyAutoDetected.style.display !== "none";
+
+        // For manual config, both URL and key are required
+        // For auto-detected, we can test with just the Supervisor ingress
+        if (!isAutoDetected && (!url || !key)) {
           if (resultEl) {
             resultEl.style.display = "block";
             resultEl.className =
@@ -1441,7 +1448,11 @@ const locale: Locale = cookieLocale === "ga" ? "ga" : "en";
             {
               method: "POST",
               headers: { "content-type": "application/json" },
-              body: JSON.stringify({ url, api_key: key }),
+              body: JSON.stringify({
+                url: url || undefined,
+                api_key: key || undefined,
+                auto_detected: isAutoDetected || false,
+              }),
             },
           );
           const data = await res.json();

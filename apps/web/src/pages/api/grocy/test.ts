@@ -18,7 +18,7 @@ import { GrocyAdapter } from "@meitheal/integration-core";
  */
 export const POST: APIRoute = async ({ request }) => {
   try {
-    let body: { url?: string; api_key?: string };
+    let body: { url?: string; api_key?: string; auto_detected?: boolean };
 
     try {
       body = await request.json();
@@ -29,12 +29,53 @@ export const POST: APIRoute = async ({ request }) => {
       });
     }
 
-    const url = body.url?.trim();
-    const apiKey = body.api_key?.trim();
+    let url = body.url?.trim();
+    let apiKey = body.api_key?.trim();
+    const autoDetected = body.auto_detected === true;
+
+    // For auto-detected installs, resolve URL via Supervisor if not provided
+    if (autoDetected && !url) {
+      try {
+        const supervisorToken = process.env.SUPERVISOR_TOKEN;
+        if (supervisorToken) {
+          const addonsRes = await fetch("http://supervisor/addons", {
+            headers: { Authorization: `Bearer ${supervisorToken}` },
+          });
+          if (addonsRes.ok) {
+            const addonsData = (await addonsRes.json()) as {
+              data?: { addons?: { slug: string; ingress_url?: string; state?: string }[] };
+            };
+            const grocy = addonsData.data?.addons?.find(
+              (a) => a.slug.includes("grocy") && a.state === "started"
+            );
+            if (grocy?.ingress_url) {
+              url = `http://supervisor${grocy.ingress_url}`;
+            }
+          }
+        }
+      } catch { /* Supervisor detection failed */ }
+    }
+
+    // For auto-detected installs, try fetching API key from saved settings
+    if (autoDetected && !apiKey) {
+      try {
+        const { ensureSchema, getPersistenceClient } = await import("@domains/tasks/persistence/store");
+        await ensureSchema();
+        const client = getPersistenceClient();
+        const row = await client.execute({
+          sql: "SELECT value FROM settings WHERE key = 'grocy_api_key' LIMIT 1",
+          args: [],
+        });
+        if (row.rows.length > 0 && row.rows[0]?.value) {
+          apiKey = String(row.rows[0].value);
+        }
+      } catch { /* Settings lookup failed */ }
+    }
 
     if (!url || !apiKey) {
+      const missing = !url && !apiKey ? "URL and API key" : !url ? "URL" : "API key";
       return new Response(
-        JSON.stringify({ ok: false, error: "Both url and api_key are required" }),
+        JSON.stringify({ ok: false, error: `${missing} required. ${autoDetected ? "Try the ⚡ Auto button to generate an API key, or create one in Grocy → Settings → API Keys." : ""}` }),
         { status: 400, headers: { "Content-Type": "application/json" } },
       );
     }
