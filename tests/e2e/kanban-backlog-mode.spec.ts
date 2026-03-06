@@ -27,6 +27,16 @@ test.beforeEach(async () => {
   process.env.MEITHEAL_DB_URL = makeDbUrl("backlog-mode");
   resetPersistenceForTests();
   await ensureSchema();
+
+  // Ensure settings table exists — ensureSchema only creates tasks/kanban_lanes
+  const client = getPersistenceClient();
+  await client.execute(
+    `CREATE TABLE IF NOT EXISTS settings (
+      key TEXT PRIMARY KEY,
+      value TEXT NOT NULL,
+      updated_at INTEGER NOT NULL
+    )`
+  );
 });
 
 // ── Settings Persistence ──
