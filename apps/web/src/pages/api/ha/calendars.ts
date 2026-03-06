@@ -49,32 +49,73 @@ export const GET: APIRoute = async ({ url }) => {
 export const POST: APIRoute = async ({ request }) => {
   try {
     let entityId: string | undefined;
+    let resolvedEntities: string[] = [];
     try {
       const body = await request.json() as { entity_id?: string };
       entityId = body.entity_id;
     } catch { /* no body or invalid JSON — will resolve from settings */ }
 
-    // Fall back to settings DB if no entity provided
-    if (!entityId) {
+    if (entityId) {
+      resolvedEntities = [entityId];
+    } else {
+      // Resolve from settings DB — prefer multi-entity, fall back to legacy
       try {
         const { ensureSchema, getPersistenceClient } = await import("@domains/tasks/persistence/store");
         await ensureSchema();
         const client = getPersistenceClient();
-        const res = await client.execute({
-          sql: "SELECT value FROM settings WHERE key IN ('calendar_entity', 'cal_entity') ORDER BY key LIMIT 1",
+
+        // Try multi-entity first
+        const multiRes = await client.execute({
+          sql: "SELECT value FROM settings WHERE key = 'calendar_entities' LIMIT 1",
           args: [],
         });
-        if (res.rows.length > 0) {
-          try { entityId = JSON.parse(String(res.rows[0]!.value)); } catch { entityId = String(res.rows[0]!.value); }
+        if (multiRes.rows.length > 0) {
+          try {
+            const parsed = JSON.parse(String(multiRes.rows[0]!.value));
+            if (Array.isArray(parsed)) {
+              resolvedEntities = parsed.filter((e: unknown) => typeof e === "string" && e.length > 0);
+            }
+          } catch { /* invalid JSON */ }
+        }
+
+        // Legacy fallback
+        if (resolvedEntities.length === 0) {
+          const res = await client.execute({
+            sql: "SELECT value FROM settings WHERE key IN ('calendar_entity', 'cal_entity') ORDER BY key LIMIT 1",
+            args: [],
+          });
+          if (res.rows.length > 0) {
+            try { entityId = JSON.parse(String(res.rows[0]!.value)); } catch { entityId = String(res.rows[0]!.value); }
+            if (entityId) resolvedEntities = [entityId];
+          }
         }
       } catch { /* DB not available */ }
     }
 
-    const result = await syncFromHA(entityId);
+    if (resolvedEntities.length === 0) {
+      return new Response(JSON.stringify({ ok: false, error: "No calendar entities configured" }), {
+        status: 400, headers: { "content-type": "application/json" },
+      });
+    }
+
+    // Sync each entity individually — bypasses activeSyncs guard
+    const results = await Promise.allSettled(
+      resolvedEntities.map((eid) => syncFromHA(eid)),
+    );
+    const aggregated = { created: 0, updated: 0, total: 0 };
+    for (const r of results) {
+      if (r.status === "fulfilled") {
+        aggregated.created += r.value.created;
+        aggregated.updated += r.value.updated;
+        aggregated.total += r.value.total;
+      }
+    }
+
     return new Response(JSON.stringify({
       ok: true,
-      message: `Synced ${result.total} events (${result.created} new, ${result.updated} updated)`,
-      ...result,
+      message: `Synced ${aggregated.total} events (${aggregated.created} new, ${aggregated.updated} updated) across ${resolvedEntities.length} calendar(s)`,
+      ...aggregated,
+      entities: resolvedEntities,
     }), {
       status: 200, headers: { "content-type": "application/json" },
     });
