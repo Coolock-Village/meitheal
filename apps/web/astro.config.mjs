@@ -1,6 +1,33 @@
 import { defineConfig } from "astro/config";
 import node from "@astrojs/node";
 import tailwind from "@astrojs/tailwind";
+import { readFileSync, writeFileSync } from "node:fs";
+import { resolve } from "node:path";
+
+// ── Single source of truth for version ──────────────────────────────
+// Read from meitheal-hub/config.yaml at build time. This value is
+// injected into all Astro components via vite.define, the service
+// worker via a generated version.json, and the health API at runtime.
+function getVersion() {
+  try {
+    const yaml = readFileSync(
+      resolve(process.cwd(), "../../meitheal-hub/config.yaml"),
+      "utf-8"
+    );
+    const match = yaml.match(/^version:\s*["']?([^"'\n]+)["']?/m);
+    if (match?.[1]) return match[1];
+  } catch { /* fallback */ }
+  return process.env.MEITHEAL_VERSION || "0.0.0-dev";
+}
+
+const MEITHEAL_VERSION = getVersion();
+
+// Write version.json to public/ so the service worker can read it.
+// This file is gitignored — it's regenerated on every build/dev start.
+writeFileSync(
+  resolve(process.cwd(), "public/version.json"),
+  JSON.stringify({ version: MEITHEAL_VERSION, generatedAt: new Date().toISOString() })
+);
 
 export default defineConfig({
   site: process.env.SITE_URL || "http://localhost:3000",
@@ -33,6 +60,7 @@ export default defineConfig({
     ],
     define: {
       __MEITHEAL_ASTRO_FIRST__: true,
+      __MEITHEAL_VERSION__: JSON.stringify(MEITHEAL_VERSION),
     },
   },
 });

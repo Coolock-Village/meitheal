@@ -54,3 +54,20 @@ test("repository metadata keeps Home Assistant publishing fields", () => {
   const maintainer = repositoryConfig.match(/^maintainer:\s*"([^"]+)"/m)?.[1] ?? "";
   expect(maintainer).toMatch(/^[^<]+<[^@\s]+@[^>\s]+>$/);
 });
+
+test("version consistency — config.yaml, run.sh, and sw.js must agree", () => {
+  // config.yaml is the single source of truth
+  const configYaml = readFileSync(join(addonRoot, "config.yaml"), "utf8");
+  const configVersion = configYaml.match(/^version:\s*["']?([^"'\n]+)["']?/m)?.[1];
+  expect(configVersion, "config.yaml must have a version").toBeTruthy();
+
+  // run.sh must export the same version
+  const runSh = readFileSync(join(addonRoot, "run.sh"), "utf8");
+  const runVersion = runSh.match(/MEITHEAL_VERSION="([^"]+)"/)?.[1];
+  expect(runVersion, "run.sh MEITHEAL_VERSION must match config.yaml").toBe(configVersion);
+
+  // sw.js hardcoded fallback should not be older than config.yaml
+  const swJs = readFileSync(join(repoRoot, "apps/web/public/sw.js"), "utf8");
+  const swVersion = swJs.match(/CACHE_VERSION\s*=\s*"([^"]+)"/)?.[1];
+  expect(swVersion, "sw.js CACHE_VERSION must match config.yaml").toBe(configVersion);
+});

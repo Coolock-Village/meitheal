@@ -7,9 +7,15 @@ interface Props {
 }
 const { locale } = Astro.props;
 
-// Dynamic version — prefer env var set by run.sh, fall back to config.yaml
+// Dynamic version — injected at build time from meitheal-hub/config.yaml via
+// vite.define in astro.config.mjs. Runtime env var takes precedence (Docker).
+declare const __MEITHEAL_VERSION__: string;
 const version =
-  import.meta.env.MEITHEAL_VERSION || process.env.MEITHEAL_VERSION || "0.1.60";
+  import.meta.env.MEITHEAL_VERSION ||
+  process.env.MEITHEAL_VERSION ||
+  (typeof __MEITHEAL_VERSION__ !== "undefined"
+    ? __MEITHEAL_VERSION__
+    : "0.0.0-dev");
 ---
 
 <div

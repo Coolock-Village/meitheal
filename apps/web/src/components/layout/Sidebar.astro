@@ -314,6 +314,21 @@ const navItems = order
     }
   }
 
+  /* Subtle amber pulse on the logo apex node when hovering the brand link */
+  .sidebar-brand:hover .sidebar-logo-svg circle[fill="#F59E0B"] {
+    animation: amber-pulse 1.5s ease-in-out infinite;
+  }
+
+  @keyframes amber-pulse {
+    0%,
+    100% {
+      filter: drop-shadow(0 0 0 transparent);
+    }
+    50% {
+      filter: drop-shadow(0 0 6px rgba(245, 158, 11, 0.5));
+    }
+  }
+
   /* Expose these styles globally for the sub-components to use cleanly without duplicate scopes */
   :global(.sidebar .nav-links) {
     @apply flex flex-col gap-1 list-none p-0 m-0 mb-6;

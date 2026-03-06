@@ -116,10 +116,40 @@ function relativeTime(dueDate: string): string {
   if (hours < 24) return `${prefix} ${hours} hour${hours !== 1 ? "s" : ""}`;
   return `${prefix} ${days} day${days !== 1 ? "s" : ""}`;
 }
+
+// Build context hint for greeting based on urgency
+const greetingHint =
+  stats.overdue > 0
+    ? `— ${stats.overdue} overdue`
+    : stats.active > 0
+      ? `— ${stats.active} in progress`
+      : "✦";
 ---
 
 <Layout title={`Meitheal — ${greeting}!`}>
-  <span slot="page-title">{greeting}! ✦</span>
+  <span slot="page-title"
+    >{greeting}! {
+      stats.overdue > 0 ? (
+        <a
+          href="#stat-overdue"
+          class="text-text-muted text-base font-normal hover:text-danger transition-colors no-underline hover:underline"
+        >
+          {greetingHint}
+        </a>
+      ) : stats.active > 0 ? (
+        <a
+          href="#stat-active"
+          class="text-text-muted text-base font-normal hover:text-accent transition-colors no-underline hover:underline"
+        >
+          {greetingHint}
+        </a>
+      ) : (
+        <span class="text-text-muted text-base font-normal">
+          {greetingHint}
+        </span>
+      )
+    }</span
+  >
   <button
     type="button"
     slot="actions"
@@ -135,7 +165,11 @@ function relativeTime(dueDate: string): string {
         <div class="stat-label">{t("dashboard.total_tasks", locale)}</div>
       </div>
     </div>
-    <div class="stat-card" title="Tasks currently in progress or active">
+    <div
+      class="stat-card stat-card-entrance"
+      id="stat-active"
+      title="Tasks currently in progress or active"
+    >
       <span class="stat-icon">⚡</span>
       <div>
         <div class="stat-value">{stats.active}</div>
@@ -150,7 +184,8 @@ function relativeTime(dueDate: string): string {
       </div>
     </div>
     <div
-      class={`stat-card ${stats.overdue > 0 ? "stat-card-danger" : ""}`}
+      id="stat-overdue"
+      class={`stat-card stat-card-entrance ${stats.overdue > 0 ? "stat-card-danger" : ""}`}
       title="Tasks past their due date across all boards"
     >
       <span class="stat-icon">⏰</span>
