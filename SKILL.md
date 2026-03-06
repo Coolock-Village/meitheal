@@ -55,7 +55,7 @@ Send JSON-RPC 2.0 to `POST /api/mcp`:
 }
 ```
 
-Available MCP tools (13):
+Available MCP tools (18):
 
 - `createTask` — title (required), description, priority (1-5), due_date
 - `searchTasks` — query, status (backlog/todo/in_progress/done), priority
@@ -70,6 +70,11 @@ Available MCP tools (13):
 - `getCalendarEvents` — days_ahead (default: 7)
 - `getUpcoming` — days_ahead (default: 7) — combined tasks + calendar
 - `batchComplete` — label, max_priority, or titles array
+- `assignTask` — id, assigned_to (HA or custom user)
+- `listUsers` — no params — list all available users
+- `linkTask` — source_task_id, target_task_id, link_type (related_to/blocked_by/blocks/duplicates/duplicated_by)
+- `unlinkTask` — task_id, link_id
+- `getTaskLinks` — task_id — get outbound + inbound relationships
 
 ### REST API (Alternative)
 
@@ -77,6 +82,9 @@ Available MCP tools (13):
 - `POST /api/tasks/create` — `{ title, frameworkPayload: { description } }`
 - `PUT /api/tasks/:id` — `{ status, priority, due_date, description }`
 - `DELETE /api/tasks/:id`
+- `GET /api/tasks/:id/links` — get task links (outbound + inbound)
+- `POST /api/tasks/:id/links` — `{ target_task_id, link_type }`
+- `DELETE /api/tasks/:id/links?link_id=xxx` — remove a link
 
 ### Discovery
 
@@ -93,6 +101,8 @@ priority: 1 (urgent) to 5 (lowest), default 3
 description: string or null
 due_date: ISO 8601 date or null
 labels: string array
+custom_fields: object (typed — text, number, url, date, select, checkbox)
+links: outbound + inbound (related_to, blocked_by, blocks, duplicates, duplicated_by)
 ```
 
 ## Important Notes

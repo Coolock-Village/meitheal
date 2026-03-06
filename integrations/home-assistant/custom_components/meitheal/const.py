@@ -26,6 +26,8 @@ SERVICE_SEARCH_TASKS = "search_tasks"
 SERVICE_GET_OVERDUE_TASKS = "get_overdue_tasks"
 
 # Meitheal task statuses
+STATUS_BACKLOG = "backlog"
 STATUS_TODO = "todo"
 STATUS_IN_PROGRESS = "in_progress"
 STATUS_DONE = "done"
+STATUS_CANCELLED = "cancelled"

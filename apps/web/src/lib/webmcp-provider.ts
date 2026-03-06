@@ -227,6 +227,71 @@ function getMeithealTools(): WebMCPTool[] {
         return res.json();
       },
     },
+    {
+      name: "linkTask",
+      description:
+        "Create a Jira-style link between two tasks. Link types: related_to, blocked_by, blocks, duplicates, duplicated_by.",
+      inputSchema: {
+        type: "object",
+        required: ["source_task_id", "target_task_id", "link_type"],
+        properties: {
+          source_task_id: { type: "string", description: "Source task UUID" },
+          target_task_id: { type: "string", description: "Target task UUID" },
+          link_type: {
+            type: "string",
+            enum: ["related_to", "blocked_by", "blocks", "duplicates", "duplicated_by"],
+            description: "Relationship type",
+          },
+        },
+      },
+      handler: async (input) => {
+        const res = await fetch(
+          `${window.__ingress_path || ""}/api/tasks/${input.source_task_id}/links`,
+          {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ target_task_id: input.target_task_id, link_type: input.link_type }),
+          },
+        );
+        return res.json();
+      },
+    },
+    {
+      name: "unlinkTask",
+      description: "Remove a link between two tasks by link ID.",
+      inputSchema: {
+        type: "object",
+        required: ["task_id", "link_id"],
+        properties: {
+          task_id: { type: "string", description: "Task UUID the link belongs to" },
+          link_id: { type: "string", description: "Link UUID to remove" },
+        },
+      },
+      handler: async (input) => {
+        const res = await fetch(
+          `${window.__ingress_path || ""}/api/tasks/${input.task_id}/links?link_id=${encodeURIComponent(String(input.link_id))}`,
+          { method: "DELETE" },
+        );
+        return res.json();
+      },
+    },
+    {
+      name: "getTaskLinks",
+      description: "Get all outbound and inbound links for a task.",
+      inputSchema: {
+        type: "object",
+        required: ["task_id"],
+        properties: {
+          task_id: { type: "string", description: "Task UUID" },
+        },
+      },
+      handler: async (input) => {
+        const res = await fetch(
+          `${window.__ingress_path || ""}/api/tasks/${input.task_id}/links`,
+        );
+        return res.json();
+      },
+    },
   ];
 }
 

@@ -172,6 +172,42 @@ const MCP_TOOLS = [
     description: "List all available users (Home Assistant auto-discovered + custom users)",
     inputSchema: { type: "object" as const, properties: {} },
   },
+  {
+    name: "linkTask",
+    description: "Create a Jira-style link between two tasks. Link types: related_to, blocked_by, blocks, duplicates, duplicated_by",
+    inputSchema: {
+      type: "object" as const,
+      required: ["source_task_id", "target_task_id", "link_type"],
+      properties: {
+        source_task_id: { type: "string", description: "Source task UUID" },
+        target_task_id: { type: "string", description: "Target task UUID" },
+        link_type: { type: "string", enum: ["related_to", "blocked_by", "blocks", "duplicates", "duplicated_by"], description: "Relationship type" },
+      },
+    },
+  },
+  {
+    name: "unlinkTask",
+    description: "Remove a link between two tasks by link ID",
+    inputSchema: {
+      type: "object" as const,
+      required: ["task_id", "link_id"],
+      properties: {
+        task_id: { type: "string", description: "Task UUID the link belongs to" },
+        link_id: { type: "string", description: "Link UUID to remove" },
+      },
+    },
+  },
+  {
+    name: "getTaskLinks",
+    description: "Get all links for a task (outbound and inbound relationships)",
+    inputSchema: {
+      type: "object" as const,
+      required: ["task_id"],
+      properties: {
+        task_id: { type: "string", description: "Task UUID" },
+      },
+    },
+  },
 ];
 
 export const POST: APIRoute = async ({ request }) => {
@@ -494,6 +530,28 @@ async function executeTool(
     case "listUsers": {
       const res = await fetch(`${baseUrl}/api/users`);
       return await res.json().catch(() => ({ users: [] }));
+    }
+
+    case "linkTask": {
+      const res = await fetch(`${baseUrl}/api/tasks/${args.source_task_id}/links`, {
+        method: "POST",
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify({ target_task_id: args.target_task_id, link_type: args.link_type }),
+      });
+      return await res.json().catch(() => ({ error: "Failed to create link" }));
+    }
+
+    case "unlinkTask": {
+      const res = await fetch(
+        `${baseUrl}/api/tasks/${args.task_id}/links?link_id=${encodeURIComponent(String(args.link_id))}`,
+        { method: "DELETE" },
+      );
+      return await res.json().catch(() => ({ error: "Failed to delete link" }));
+    }
+
+    case "getTaskLinks": {
+      const res = await fetch(`${baseUrl}/api/tasks/${args.task_id}/links`);
+      return await res.json().catch(() => ({ outbound: [], inbound: [] }));
     }
 
     default:

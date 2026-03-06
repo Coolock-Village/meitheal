@@ -62,6 +62,26 @@
     {
       "name": "batchComplete",
       "description": "Complete multiple tasks at once by label or priority filter"
+    },
+    {
+      "name": "assignTask",
+      "description": "Assign a task to a HA or custom user"
+    },
+    {
+      "name": "listUsers",
+      "description": "List all available users (HA auto-discovered + custom)"
+    },
+    {
+      "name": "linkTask",
+      "description": "Create a Jira-style link between two tasks (related_to, blocked_by, blocks, duplicates, duplicated_by)"
+    },
+    {
+      "name": "unlinkTask",
+      "description": "Remove a link between two tasks by link ID"
+    },
+    {
+      "name": "getTaskLinks",
+      "description": "Get all outbound and inbound links for a task"
     }
   ],
   "authentication": {

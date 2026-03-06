@@ -1,0 +1,202 @@
+{
+  "language": "ga",
+  "intents": {
+    "MeithealAddTask": {
+      "data": [
+        {
+          "sentences": [
+            "cuir {item} le [mo] thascanna"
+          ]
+        },
+        {
+          "sentences": [
+            "tasc nua {item}"
+          ]
+        },
+        {
+          "sentences": [
+            "cuir {item} ar [mo] liosta"
+          ]
+        },
+        {
+          "sentences": [
+            "[meitheal|me hall] cuir {item} [leis]"
+          ]
+        }
+      ]
+    },
+    "MeithealAddTaskPrompt": {
+      "data": [
+        {
+          "sentences": [
+            "cuir tasc [nua] [leis]"
+          ]
+        },
+        {
+          "sentences": [
+            "tasc nua"
+          ]
+        }
+      ]
+    },
+    "MeithealDoneTask": {
+      "data": [
+        {
+          "sentences": [
+            "tá {item} déanta"
+          ]
+        },
+        {
+          "sentences": [
+            "críochnaigh {item}"
+          ]
+        },
+        {
+          "sentences": [
+            "déanta [le] {item}"
+          ]
+        },
+        {
+          "sentences": [
+            "[meitheal|me hall] déanta [le] {item}"
+          ]
+        }
+      ]
+    },
+    "MeithealDeleteTask": {
+      "data": [
+        {
+          "sentences": [
+            "scrios {item}"
+          ]
+        },
+        {
+          "sentences": [
+            "bain {item} [de] [mo] [liosta|thascanna]"
+          ]
+        },
+        {
+          "sentences": [
+            "[meitheal|me hall] scrios {item}"
+          ]
+        }
+      ]
+    },
+    "MeithealShowTasks": {
+      "data": [
+        {
+          "sentences": [
+            "taispeáin [mo] thascanna"
+          ]
+        },
+        {
+          "sentences": [
+            "[cad|céard] [atá] ar [mo] liosta"
+          ]
+        },
+        {
+          "sentences": [
+            "[mo] liosta tascanna"
+          ]
+        },
+        {
+          "sentences": [
+            "[meitheal|me hall] tascanna"
+          ]
+        }
+      ]
+    },
+    "MeithealOverdue": {
+      "data": [
+        {
+          "sentences": [
+            "[cad|céard] [atá] déanach"
+          ]
+        },
+        {
+          "sentences": [
+            "tascanna déanacha"
+          ]
+        },
+        {
+          "sentences": [
+            "[cad] a chaill mé"
+          ]
+        },
+        {
+          "sentences": [
+            "[meitheal|me hall] [cad|céard] [atá] déanach"
+          ]
+        }
+      ]
+    },
+    "MeithealToday": {
+      "data": [
+        {
+          "sentences": [
+            "[cad|céard] [atá] dlite inniu"
+          ]
+        },
+        {
+          "sentences": [
+            "tascanna [an lae] inniu"
+          ]
+        },
+        {
+          "sentences": [
+            "[mo] lá"
+          ]
+        },
+        {
+          "sentences": [
+            "[meitheal|me hall] inniu"
+          ]
+        }
+      ]
+    },
+    "MeithealSummary": {
+      "data": [
+        {
+          "sentences": [
+            "[cé mhéad|cá mhéad] tasc"
+          ]
+        },
+        {
+          "sentences": [
+            "achoimre [ar] thascanna"
+          ]
+        },
+        {
+          "sentences": [
+            "[meitheal|me hall] achoimre"
+          ]
+        }
+      ]
+    },
+    "MeithealBriefing": {
+      "data": [
+        {
+          "sentences": [
+            "maidin mhaith"
+          ]
+        },
+        {
+          "sentences": [
+            "tabhair tuairisc dom"
+          ]
+        },
+        {
+          "sentences": [
+            "tosaigh [mo] lá"
+          ]
+        },
+        {
+          "sentences": [
+            "[meitheal|me hall] maidin mhaith"
+          ]
+        }
+      ]
+    }
+  },
+  "lists": {}
+}

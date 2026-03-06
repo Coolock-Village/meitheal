@@ -11,10 +11,11 @@ The MCP spec is tool-based: client sends a tool call, server executes
 and returns the result. This module processes incoming tool calls and
 routes them to the coordinator.
 
-Tools (13 — parity with LLM API):
+Tools (16 — parity with LLM API):
   - createTask, searchTasks, completeTask, updateTask, deleteTask, getTask
   - getOverdueTasks, getTodaysTasks, getTaskSummary, dailyBriefing
   - getCalendarEvents, getUpcoming, batchComplete
+  - linkTask, unlinkTask, getTaskLinks
 
 @see https://modelcontextprotocol.io/
 """
@@ -169,6 +170,42 @@ MCP_TOOLS = [
                 "label": {"type": "string", "description": "Only affect tasks with this label"},
                 "max_priority": {"type": "integer", "description": "Only affect tasks with priority <= this"},
                 "titles": {"type": "array", "items": {"type": "string"}, "description": "Specific task titles to complete"},
+            },
+        },
+    },
+    {
+        "name": "linkTask",
+        "description": "Create a Jira-style link between two tasks. Link types: related_to, blocked_by, blocks, duplicates, duplicated_by",
+        "inputSchema": {
+            "type": "object",
+            "required": ["source_task_id", "target_task_id", "link_type"],
+            "properties": {
+                "source_task_id": {"type": "string", "description": "Source task UUID"},
+                "target_task_id": {"type": "string", "description": "Target task UUID"},
+                "link_type": {"type": "string", "enum": ["related_to", "blocked_by", "blocks", "duplicates", "duplicated_by"], "description": "Relationship type"},
+            },
+        },
+    },
+    {
+        "name": "unlinkTask",
+        "description": "Remove a link between two tasks by link ID",
+        "inputSchema": {
+            "type": "object",
+            "required": ["task_id", "link_id"],
+            "properties": {
+                "task_id": {"type": "string", "description": "Task UUID the link belongs to"},
+                "link_id": {"type": "string", "description": "Link UUID to remove"},
+            },
+        },
+    },
+    {
+        "name": "getTaskLinks",
+        "description": "Get all outbound and inbound links for a task",
+        "inputSchema": {
+            "type": "object",
+            "required": ["task_id"],
+            "properties": {
+                "task_id": {"type": "string", "description": "Task UUID"},
             },
         },
     },
@@ -474,6 +511,25 @@ async def _execute_tool(
             except Exception:
                 pass
         return {"completed": completed, "count": len(completed)}
+
+    elif tool_name == "linkTask":
+        result = await coordinator.async_link_task(
+            source_task_id=args["source_task_id"],
+            target_task_id=args["target_task_id"],
+            link_type=args["link_type"],
+        )
+        return result
+
+    elif tool_name == "unlinkTask":
+        result = await coordinator.async_unlink_task(
+            task_id=args["task_id"],
+            link_id=args["link_id"],
+        )
+        return result
+
+    elif tool_name == "getTaskLinks":
+        result = await coordinator.async_get_task_links(task_id=args["task_id"])
+        return result
 
     else:
         raise ValueError(f"Unknown tool: {tool_name}")

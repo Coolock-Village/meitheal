@@ -823,6 +823,106 @@ API_PROMPT = (
 )
 
 
+class LinkTaskTool(Tool):
+    """Create a Jira-style link between two tasks."""
+
+    name = "meitheal_link_task"
+    description = (
+        "Create a relationship link between two tasks. "
+        "Link types: related_to, blocked_by, blocks, duplicates, duplicated_by. "
+        "Use when the user says 'link X to Y', 'X is blocked by Y', or 'X duplicates Y'."
+    )
+    parameters = vol.Schema(
+        {
+            vol.Required("source_task_id"): str,
+            vol.Required("target_task_id"): str,
+            vol.Required("link_type"): vol.In(
+                ["related_to", "blocked_by", "blocks", "duplicates", "duplicated_by"]
+            ),
+        }
+    )
+
+    async def async_call(
+        self,
+        hass: HomeAssistant,
+        tool_input: ToolInput,
+        llm_context: LLMContext,
+    ) -> JsonObjectType:
+        """Create a task link."""
+        coordinator = _get_coordinator(hass)
+        if not coordinator:
+            return {"error": "Meitheal not available"}
+        result = await coordinator.async_link_task(
+            source_task_id=tool_input.tool_args["source_task_id"],
+            target_task_id=tool_input.tool_args["target_task_id"],
+            link_type=tool_input.tool_args["link_type"],
+        )
+        return result
+
+
+class UnlinkTaskTool(Tool):
+    """Remove a link between two tasks."""
+
+    name = "meitheal_unlink_task"
+    description = (
+        "Remove a relationship link between tasks by link ID. "
+        "Use when the user says 'remove link' or 'unlink tasks'."
+    )
+    parameters = vol.Schema(
+        {
+            vol.Required("task_id"): str,
+            vol.Required("link_id"): str,
+        }
+    )
+
+    async def async_call(
+        self,
+        hass: HomeAssistant,
+        tool_input: ToolInput,
+        llm_context: LLMContext,
+    ) -> JsonObjectType:
+        """Remove a task link."""
+        coordinator = _get_coordinator(hass)
+        if not coordinator:
+            return {"error": "Meitheal not available"}
+        result = await coordinator.async_unlink_task(
+            task_id=tool_input.tool_args["task_id"],
+            link_id=tool_input.tool_args["link_id"],
+        )
+        return result
+
+
+class GetTaskLinksTool(Tool):
+    """Get all links for a task."""
+
+    name = "meitheal_get_task_links"
+    description = (
+        "Get all relationship links for a task — both outbound and inbound. "
+        "Shows what tasks are related, blocked by, or duplicated. "
+        "Use when the user asks 'what's linked to X' or 'show dependencies'."
+    )
+    parameters = vol.Schema(
+        {
+            vol.Required("task_id"): str,
+        }
+    )
+
+    async def async_call(
+        self,
+        hass: HomeAssistant,
+        tool_input: ToolInput,
+        llm_context: LLMContext,
+    ) -> JsonObjectType:
+        """Get task links."""
+        coordinator = _get_coordinator(hass)
+        if not coordinator:
+            return {"error": "Meitheal not available"}
+        result = await coordinator.async_get_task_links(
+            task_id=tool_input.tool_args["task_id"],
+        )
+        return result
+
+
 class MeithealLLMAPI(API):
     """Meitheal LLM API — Exposes task tools to HA conversation agents."""
 
@@ -848,6 +948,9 @@ class MeithealLLMAPI(API):
                 GetCalendarEventsTool(),
                 GetUpcomingEventsTool(),
                 DailyBriefingTool(),
+                LinkTaskTool(),
+                UnlinkTaskTool(),
+                GetTaskLinksTool(),
             ],
         )
 

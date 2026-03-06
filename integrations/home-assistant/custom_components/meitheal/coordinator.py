@@ -251,6 +251,43 @@ class MeithealCoordinator(DataUpdateCoordinator[MeithealCoordinatorData]):
         except aiohttp.ClientError:
             return False
 
+    async def async_link_task(
+        self, source_task_id: str, target_task_id: str, link_type: str
+    ) -> dict[str, Any]:
+        """Create a Jira-style link between two tasks."""
+        session = await self._ensure_session()
+        async with session.post(
+            f"{self._base_url}/api/tasks/{source_task_id}/links",
+            json={"target_task_id": target_task_id, "link_type": link_type},
+        ) as response:
+            result = await response.json()
+            _LOGGER.info(
+                "Linked tasks: %s --%s--> %s",
+                source_task_id, link_type, target_task_id,
+            )
+            return result
+
+    async def async_unlink_task(
+        self, task_id: str, link_id: str
+    ) -> dict[str, Any]:
+        """Remove a link between two tasks."""
+        session = await self._ensure_session()
+        async with session.delete(
+            f"{self._base_url}/api/tasks/{task_id}/links",
+            params={"link_id": link_id},
+        ) as response:
+            result = await response.json()
+            _LOGGER.info("Unlinked: link=%s from task=%s", link_id, task_id)
+            return result
+
+    async def async_get_task_links(self, task_id: str) -> dict[str, Any]:
+        """Get all outbound and inbound links for a task."""
+        session = await self._ensure_session()
+        async with session.get(
+            f"{self._base_url}/api/tasks/{task_id}/links",
+        ) as response:
+            return await response.json()
+
     async def async_shutdown(self) -> None:
         """Close the aiohttp session."""
         if self._session and not self._session.closed:

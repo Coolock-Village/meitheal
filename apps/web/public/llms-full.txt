@@ -28,6 +28,16 @@ All endpoints accept and return JSON.
 
 - `DELETE /api/tasks/:id` — Delete a task
 
+### Task Links (Jira-style relationships)
+
+- `GET /api/tasks/:id/links` — Get outbound + inbound links for a task
+  Returns: `{ outbound: [...], inbound: [...] }`
+
+- `POST /api/tasks/:id/links` — Create a link
+  Body: `{ target_task_id: string, link_type: "related_to" | "blocked_by" | "blocks" | "duplicates" | "duplicated_by" }`
+
+- `DELETE /api/tasks/:id/links?link_id=xxx` — Remove a link
+
 ### Search & Filtering
 
 - `GET /api/tasks?status=todo` — Filter by status
@@ -57,10 +67,10 @@ All endpoints accept and return JSON.
 
 ### MCP (Model Context Protocol)
 
-- `GET /.well-known/mcp.json` — MCP server discovery (13 tools)
+- `GET /.well-known/mcp.json` — MCP server discovery (18 tools)
 - `POST /api/mcp` — MCP tool execution endpoint (JSON-RPC 2.0)
 
-## MCP Tools (13 tools, same across Astro + Python servers)
+## MCP Tools (18 tools, same across Astro + Python servers)
 
 - `createTask` — Create task (title, description?, priority?, due_date?)
 - `searchTasks` — Search by keyword, status, priority
@@ -75,6 +85,11 @@ All endpoints accept and return JSON.
 - `getCalendarEvents` — HA calendar events synced into Meitheal
 - `getUpcoming` — Combined tasks + calendar view (configurable days_ahead)
 - `batchComplete` — Batch complete by label, priority, or title list
+- `assignTask` — Assign task to a HA or custom user
+- `listUsers` — List available users
+- `linkTask` — Create a Jira-style link between two tasks
+- `unlinkTask` — Remove a link by link ID
+- `getTaskLinks` — Get all outbound + inbound links for a task
 
 ## Home Assistant Services
 
@@ -104,6 +119,9 @@ When "Meitheal Tasks" is selected in a conversation agent's LLM APIs:
 - `meitheal_get_calendar_events` — Calendar events from HA
 - `meitheal_get_upcoming` — Combined tasks + calendar upcoming view
 - `meitheal_daily_briefing` — Full day briefing (weather, tasks, calendar, who's home)
+- `meitheal_link_task` — Create a Jira-style link between two tasks
+- `meitheal_unlink_task` — Remove a link between tasks
+- `meitheal_get_task_links` — Get all outbound + inbound links for a task
 
 ## Voice Commands (no LLM required)
 
@@ -122,6 +140,16 @@ Also responds to "meitheal", "me hall", "may hall", "meh hall", or "MH":
 - "MH add buy groceries"
 - "meitheal today"
 - "me hall what's overdue"
+
+### Irish Language (ga)
+
+- "cuir [item] le mo thascanna" — add task
+- "tá [item] déanta" / "déanta le [item]" — mark done
+- "taispeáin mo thascanna" — show tasks
+- "cad atá déanach" — what's overdue
+- "tascanna an lae inniu" — today's tasks
+- "cé mhéad tasc" — how many tasks
+- "maidin mhaith" — morning briefing
 
 ## Event Bus Integration
 
@@ -184,7 +212,31 @@ All task mutations appear in HA's history/logbook as `logbook_entry` events.
   "labels": ["string"],
   "position": 0,
   "created_at": "ISO 8601 datetime",
-  "updated_at": "ISO 8601 datetime"
+  "updated_at": "ISO 8601 datetime",
+  "custom_fields": {
+    "field_name": "value"
+  }
+}
+```
+
+### Custom Field Types
+
+Typed custom fields defined in Settings:
+- `text` — Free text string
+- `number` — Numeric value
+- `url` — URL with clickable link
+- `date` — Date picker (YYYY-MM-DD)
+- `select` — Dropdown from predefined options
+- `checkbox` — Boolean toggle
+
+### Task Link Object
+```json
+{
+  "id": "string (UUID)",
+  "source_task_id": "UUID",
+  "target_task_id": "UUID",
+  "link_type": "related_to | blocked_by | blocks | duplicates | duplicated_by",
+  "created_at": "ISO 8601 datetime"
 }
 ```
 
