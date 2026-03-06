@@ -60,6 +60,13 @@ interface EntitySyncState {
 /** Map of entityId → sync state for multi-calendar support */
 const activeSyncs = new Map<string, EntitySyncState>();
 
+// Cached persistence refs — avoids repeated dynamic imports in hot sync path
+let _storeModule: typeof import("@domains/tasks/persistence/store") | null = null;
+async function getStoreModule() {
+  if (!_storeModule) _storeModule = await import("@domains/tasks/persistence/store");
+  return _storeModule;
+}
+
 /** Concurrency guard — prevents overlapping syncs for the same entity */
 const syncingEntities = new Set<string>();
 
@@ -257,9 +264,9 @@ async function _syncEntityFromHAInner(entityId: string): Promise<{ created: numb
   }
 
   try {
-    const { ensureSchema, getPersistenceClient } = await import("@domains/tasks/persistence/store");
-    await ensureSchema();
-    const client = getPersistenceClient();
+    const mod = await getStoreModule();
+    await mod.ensureSchema();
+    const client = mod.getPersistenceClient();
 
     let created = 0;
     let updated = 0;
@@ -451,9 +458,9 @@ export async function pushTaskToCalendar(
 
   // Deduplication: check if we already pushed this task
   try {
-    const { ensureSchema, getPersistenceClient } = await import("@domains/tasks/persistence/store");
-    await ensureSchema();
-    const client = getPersistenceClient();
+    const mod = await getStoreModule();
+    await mod.ensureSchema();
+    const client = mod.getPersistenceClient();
     const existing = await client.execute({
       sql: "SELECT confirmation_id FROM calendar_confirmations WHERE task_id = ? AND source = 'ha.write_back'",
       args: [taskId],
@@ -495,8 +502,8 @@ export async function pushTaskToCalendar(
   if (success) {
     // Record write-back confirmation for deduplication
     try {
-      const { getPersistenceClient } = await import("@domains/tasks/persistence/store");
-      const client = getPersistenceClient();
+      const mod = await getStoreModule();
+      const client = mod.getPersistenceClient();
       await client.execute({
         sql: `INSERT INTO calendar_confirmations (confirmation_id, task_id, request_id, provider_event_id,
                 source, payload, created_at) VALUES (?, ?, ?, ?, 'ha.write_back', ?, ?)`,
@@ -669,10 +676,10 @@ export async function syncCalDAVEvents(): Promise<{ created: number; updated: nu
     // Dynamic import to avoid loading crypto at module level
     const { decryptCalDAVPassword } = await import("../../pages/api/integrations/calendar/caldav-credentials");
     const { listCalDAVEvents, discoverCalendars } = await import("./caldav-client");
-    const { ensureSchema, getPersistenceClient } = await import("@domains/tasks/persistence/store");
+    const mod = await getStoreModule();
 
-    await ensureSchema();
-    const client = getPersistenceClient();
+    await mod.ensureSchema();
+    const client = mod.getPersistenceClient();
 
     // Load credentials
     const credRes = await client.execute({
