@@ -9,6 +9,7 @@
  */
 import type { APIRoute } from "astro";
 import { ensureSchema, getPersistenceClient } from "@domains/tasks/persistence/store";
+import { apiError, apiJson } from "../../lib/api-response";
 import { logApiError } from "../../lib/api-logger";
 
 export const GET: APIRoute = async () => {
@@ -18,15 +19,10 @@ export const GET: APIRoute = async () => {
     const result = await client.execute(
       "SELECT * FROM saved_filters ORDER BY position ASC, created_at ASC",
     );
-    return new Response(JSON.stringify({ filters: result.rows }), {
-      status: 200,
-      headers: { "Content-Type": "application/json" },
-    });
+    return apiJson({ filters: result.rows });
   } catch (error) {
-    return new Response(
-      JSON.stringify({ error: "Failed to fetch saved filters" }),
-      { status: 500, headers: { "Content-Type": "application/json" } },
-    );
+    logApiError("saved-filters", "GET error", error);
+    return apiError("Failed to fetch saved filters", 500);
   }
 };
 
@@ -39,10 +35,7 @@ export const POST: APIRoute = async ({ request }) => {
     try {
       body = await request.json() as Record<string, unknown>;
     } catch {
-      return new Response(
-        JSON.stringify({ error: "Invalid JSON body" }),
-        { status: 400, headers: { "Content-Type": "application/json" } },
-      );
+      return apiError("Invalid JSON body", 400);
     }
 
     const { name, query_json, icon } = body as {
@@ -52,17 +45,11 @@ export const POST: APIRoute = async ({ request }) => {
     };
 
     if (!name || typeof name !== "string" || name.trim().length === 0) {
-      return new Response(
-        JSON.stringify({ error: "name is required" }),
-        { status: 400, headers: { "Content-Type": "application/json" } },
-      );
+      return apiError("name is required", 400);
     }
 
     if (name.trim().length > 100) {
-      return new Response(
-        JSON.stringify({ error: "name must be 100 characters or fewer" }),
-        { status: 400, headers: { "Content-Type": "application/json" } },
-      );
+      return apiError("name must be 100 characters or fewer", 400);
     }
 
     const id = crypto.randomUUID();
@@ -90,16 +77,10 @@ export const POST: APIRoute = async ({ request }) => {
       ],
     });
 
-    return new Response(
-      JSON.stringify({ id, name: name.trim(), position }),
-      { status: 201, headers: { "Content-Type": "application/json" } },
-    );
+    return apiJson({ id, name: name.trim(), position }, 201);
   } catch (error) {
     logApiError("saved-filters", "POST error", error);
-    return new Response(
-      JSON.stringify({ error: "Failed to create saved filter" }),
-      { status: 500, headers: { "Content-Type": "application/json" } },
-    );
+    return apiError("Failed to create saved filter", 500);
   }
 };
 
@@ -111,10 +92,7 @@ export const DELETE: APIRoute = async ({ request }) => {
     const id = url.searchParams.get("id");
 
     if (!id) {
-      return new Response(
-        JSON.stringify({ error: "id query parameter is required" }),
-        { status: 400, headers: { "Content-Type": "application/json" } },
-      );
+      return apiError("id query parameter is required", 400);
     }
 
     await client.execute({
@@ -122,14 +100,9 @@ export const DELETE: APIRoute = async ({ request }) => {
       args: [id],
     });
 
-    return new Response(JSON.stringify({ deleted: true }), {
-      status: 200,
-      headers: { "Content-Type": "application/json" },
-    });
+    return apiJson({ deleted: true });
   } catch (error) {
-    return new Response(
-      JSON.stringify({ error: "Failed to delete saved filter" }),
-      { status: 500, headers: { "Content-Type": "application/json" } },
-    );
+    logApiError("saved-filters", "DELETE error", error);
+    return apiError("Failed to delete saved filter", 500);
   }
 };
