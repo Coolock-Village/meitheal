@@ -55,6 +55,7 @@ interface EntitySyncState {
   lastSyncAt: number | null;
   lastSyncEventCount: number | null;
   lastSyncError: string | null;
+  consecutiveFailures: number;
 }
 
 /** Map of entityId → sync state for multi-calendar support */
@@ -134,6 +135,7 @@ function startSingleEntitySync(config: CalendarSyncConfig): void {
     lastSyncAt: null,
     lastSyncEventCount: null,
     lastSyncError: null,
+    consecutiveFailures: 0,
   };
 
   // Subscribe to state changes — debounced to avoid sync churn from frequent entity updates
@@ -244,6 +246,16 @@ async function syncEntityFromHA(entityId: string): Promise<{ created: number; up
 async function _syncEntityFromHAInner(entityId: string): Promise<{ created: number; updated: number; total: number }> {
   const state = activeSyncs.get(entityId);
 
+  // Backoff: skip sync after 5 consecutive failures (reset via stopSingleEntitySync or manual)
+  if (state && state.consecutiveFailures >= 5) {
+    logger.log("warn", {
+      event: "calendar.sync.backoff", domain: "calendar", component: "calendar-bridge",
+      request_id: SYS_REQ,
+      message: `Sync backoff for ${entityId} — ${state.consecutiveFailures} consecutive failures (last: ${state.lastSyncError})`,
+    });
+    return { created: 0, updated: 0, total: 0 };
+  }
+
   const now = new Date();
   const start = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000).toISOString();
   const end = new Date(now.getTime() + 30 * 24 * 60 * 60 * 1000).toISOString();
@@ -284,77 +296,90 @@ async function _syncEntityFromHAInner(entityId: string): Promise<{ created: numb
       existingMap.set(String(row.provider_event_id), String(row.task_id));
     }
 
+    let errors = 0;
+
     for (let i = 0; i < events.length; i++) {
       const evt = events[i]!;
       const uid = eventUids[i]!;
       const existingTaskId = existingMap.get(uid);
 
-      if (existingTaskId) {
-        // Update existing task — fold label check into single UPDATE with NULL/invalid JSON safety
-        await client.execute({
-          sql: `UPDATE tasks SET
-                  due_date = ?, description = COALESCE(?, description), updated_at = ?,
-                  labels = CASE
-                    WHEN labels IS NULL OR labels = '' OR labels = '[]' THEN '["calendar-sync"]'
-                    WHEN json_valid(labels) AND labels NOT LIKE '%calendar-sync%'
-                    THEN json_insert(labels, '$[#]', 'calendar-sync')
-                    ELSE COALESCE(labels, '[]')
-                  END
-                WHERE id = ?`,
-          args: [evt.start, stripMeithealAttribution(evt.description), Date.now(), existingTaskId],
-        });
-        updated++;
-      } else {
-        // Create new task from calendar event — atomic ticket_number allocation
-        const taskId = crypto.randomUUID();
-        const reqId = crypto.randomUUID();
-        const nowMs = Date.now();
+      try {
+        if (existingTaskId) {
+          // Update existing task — fold label check into single UPDATE with NULL/invalid JSON safety
+          await client.execute({
+            sql: `UPDATE tasks SET
+                    due_date = ?, description = COALESCE(?, description), updated_at = ?,
+                    labels = CASE
+                      WHEN labels IS NULL OR labels = '' OR labels = '[]' THEN '["calendar-sync"]'
+                      WHEN json_valid(labels) AND labels NOT LIKE '%calendar-sync%'
+                      THEN json_insert(labels, '$[#]', 'calendar-sync')
+                      ELSE COALESCE(labels, '[]')
+                    END
+                  WHERE id = ?`,
+            args: [evt.start, stripMeithealAttribution(evt.description), Date.now(), existingTaskId],
+          });
+          updated++;
+        } else {
+          // Create new task from calendar event — atomic ticket_number allocation
+          const taskId = crypto.randomUUID();
+          const reqId = crypto.randomUUID();
+          const nowMs = Date.now();
 
-        // Atomic INSERT...SELECT to prevent ticket_number race under concurrent sync
-        await client.execute({
-          sql: `INSERT INTO tasks (id, title, description, status, priority, due_date,
-                  labels, framework_payload, calendar_sync_state, board_id,
-                  custom_fields, task_type, idempotency_key, request_id,
-                  ticket_number, created_at, updated_at)
-                VALUES (?, ?, ?, 'todo', 3, ?, ?, '{}', 'synced', 'default',
-                  '{}', 'task', ?, ?,
-                  (SELECT COALESCE(MAX(ticket_number), 0) + 1 FROM tasks),
-                  ?, ?)`,
-          args: [
-            taskId,
-            evt.summary,
-            evt.description ?? "",
-            evt.start,
-            JSON.stringify(["calendar-sync"]),
-            `cal-sync-${uid}`,
-            reqId,
-            nowMs,
-            nowMs,
-          ],
-        });
+          // Atomic INSERT...SELECT to prevent ticket_number race under concurrent sync
+          await client.execute({
+            sql: `INSERT INTO tasks (id, title, description, status, priority, due_date,
+                    labels, framework_payload, calendar_sync_state, board_id,
+                    custom_fields, task_type, idempotency_key, request_id,
+                    ticket_number, created_at, updated_at)
+                  VALUES (?, ?, ?, 'todo', 3, ?, ?, '{}', 'synced', 'default',
+                    '{}', 'task', ?, ?,
+                    (SELECT COALESCE(MAX(ticket_number), 0) + 1 FROM tasks),
+                    ?, ?)`,
+            args: [
+              taskId,
+              evt.summary,
+              evt.description ?? "",
+              evt.start,
+              JSON.stringify(["calendar-sync"]),
+              `cal-sync-${uid}`,
+              reqId,
+              nowMs,
+              nowMs,
+            ],
+          });
 
-        // Record confirmation for deduplication — include source entity for multi-cal tracking
-        await client.execute({
-          sql: `INSERT INTO calendar_confirmations (confirmation_id, task_id, request_id, provider_event_id,
-                  source, payload, created_at) VALUES (?, ?, ?, ?, 'ha.calendar_sync', ?, ?)`,
-          args: [
-            crypto.randomUUID(),
-            taskId,
-            reqId,
-            uid,
-            JSON.stringify({ summary: evt.summary, start: evt.start, end: evt.end, entity_id: entityId }),
-            nowMs,
-          ],
-        });
+          // Record confirmation for deduplication — include source entity for multi-cal tracking
+          await client.execute({
+            sql: `INSERT INTO calendar_confirmations (confirmation_id, task_id, request_id, provider_event_id,
+                    source, payload, created_at) VALUES (?, ?, ?, ?, 'ha.calendar_sync', ?, ?)`,
+            args: [
+              crypto.randomUUID(),
+              taskId,
+              reqId,
+              uid,
+              JSON.stringify({ summary: evt.summary, start: evt.start, end: evt.end, entity_id: entityId }),
+              nowMs,
+            ],
+          });
 
-        created++;
+          created++;
+        }
+      } catch (evtErr) {
+        errors++;
+        logger.log("error", {
+          event: "calendar.sync.event_error", domain: "calendar", component: "calendar-bridge",
+          request_id: SYS_REQ,
+          message: `Failed to process event "${evt.summary}" from ${entityId}: ${evtErr}`,
+        });
+        // Continue processing remaining events — don't let one bad event crash the whole sync
       }
     }
 
     if (state) {
       state.lastSyncAt = Date.now();
       state.lastSyncEventCount = events.length;
-      state.lastSyncError = null;
+      state.lastSyncError = errors > 0 ? `${errors} event(s) failed` : null;
+      state.consecutiveFailures = errors > 0 ? state.consecutiveFailures + 1 : 0;
     }
 
     logger.log("info", {
@@ -369,6 +394,7 @@ async function _syncEntityFromHAInner(entityId: string): Promise<{ created: numb
     if (state) {
       state.lastSyncError = String(err);
       state.lastSyncAt = Date.now();
+      state.consecutiveFailures++;
     }
     logger.log("error", {
       event: "calendar.sync.merge_failed", domain: "calendar", component: "calendar-bridge",
