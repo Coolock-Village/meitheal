@@ -232,6 +232,15 @@ async function syncEntityFromHA(entityId: string): Promise<{ created: number; up
           sql: "UPDATE tasks SET due_date = ?, description = COALESCE(?, description), updated_at = ? WHERE id = ?",
           args: [evt.start, stripMeithealAttribution(evt.description), Date.now(), taskId],
         });
+        // Ensure the calendar-sync label is present
+        try {
+          const labelRes = await client.execute({ sql: "SELECT labels FROM tasks WHERE id = ?", args: [taskId] });
+          const currentLabels: string[] = JSON.parse(String(labelRes.rows[0]?.labels ?? "[]"));
+          if (!currentLabels.includes("calendar-sync")) {
+            currentLabels.push("calendar-sync");
+            await client.execute({ sql: "UPDATE tasks SET labels = ? WHERE id = ?", args: [JSON.stringify(currentLabels), taskId] });
+          }
+        } catch { /* non-critical label update */ }
         updated++;
       } else {
         // Create new task from calendar event
@@ -244,13 +253,14 @@ async function syncEntityFromHA(entityId: string): Promise<{ created: number; up
                   labels, framework_payload, calendar_sync_state, board_id,
                   custom_fields, task_type, idempotency_key, request_id,
                   created_at, updated_at)
-                VALUES (?, ?, ?, 'todo', 3, ?, '[]', '{}', 'synced', 'default',
+                VALUES (?, ?, ?, 'todo', 3, ?, ?, '{}', 'synced', 'default',
                   '{}', 'task', ?, ?, ?, ?)`,
           args: [
             taskId,
             evt.summary,
             evt.description ?? "",
             evt.start,
+            JSON.stringify(["calendar-sync"]),
             `cal-sync-${uid}`,
             reqId,
             nowMs,

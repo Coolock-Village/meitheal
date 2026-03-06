@@ -338,9 +338,22 @@ export const PUT: APIRoute = async ({ params, request }) => {
         const titleStr = typeof sanitized.title === "string" ? sanitized.title : String(oldTask?.title ?? "Task");
         const ticketKey = taskPayload.ticket_key ?? "A task";
         const link = ingress ? `\n\n[Open ${ticketKey} in Meitheal →](${ingress}/kanban)` : "";
+        // Resolve human-readable display name from user ID
+        let displayName = assignee.replace(/^(ha_|custom_)/, "");
+        try {
+          if (assignee.startsWith("ha_")) {
+            const { listHAUsers } = await import("../../../domains/ha/ha-users");
+            const haUsers = await listHAUsers();
+            const match = haUsers.find(u => `ha_${u.id}` === assignee);
+            if (match?.name) displayName = match.name;
+          } else if (assignee.startsWith("custom_")) {
+            const nameResult = await client.execute({ sql: "SELECT name FROM custom_users WHERE id = ? LIMIT 1", args: [assignee] });
+            if (nameResult.rows.length > 0) displayName = String((nameResult.rows[0] as Record<string, unknown>).name);
+          }
+        } catch { /* fallback to stripped ID */ }
         callHAService("persistent_notification", "create", {
           title: `📋 Task assigned: ${titleStr}`,
-          message: `${ticketKey} has been assigned to ${assignee}.${link}`,
+          message: `${ticketKey} has been assigned to ${displayName}.${link}`,
           notification_id: `meitheal_assigned_${resolvedId}`,
         }).catch(err => logApiError("ha-notify", "Failed to send assignment notification", err));
       }).catch(() => {});

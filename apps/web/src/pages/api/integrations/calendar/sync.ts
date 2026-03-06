@@ -74,8 +74,9 @@ export const POST: APIRoute = async ({ request }) => {
         // Trigger an immediate sync — all configured entities or specific one
         try {
           let entityId = body.entity_id;
+          let resolvedEntities: string[] = [];
 
-          // Fall back to settings DB if no entity provided and no active config
+          // Fall back to settings DB if no entity provided
           if (!entityId) {
             try {
               const { ensureSchema, getPersistenceClient } = await import("@domains/tasks/persistence/store");
@@ -91,37 +92,55 @@ export const POST: APIRoute = async ({ request }) => {
                 try {
                   const parsed = JSON.parse(String(res.rows[0]!.value));
                   if (Array.isArray(parsed) && parsed.length > 0) {
-                    // Sync all configured entities
-                    const result = await syncFromHA();
-                    return new Response(
-                      JSON.stringify({
-                        ok: true,
-                        message: `Multi-calendar sync complete: ${result.created} created, ${result.updated} updated from ${result.total} events`,
-                        ...result,
-                      }),
-                      { status: 200, headers: { "Content-Type": "application/json" } },
-                    );
+                    resolvedEntities = parsed.filter((e: unknown) => typeof e === "string" && e.length > 0);
                   }
                 } catch { /* invalid JSON */ }
               }
 
-              // Legacy fallback
-              const legacyRes = await client.execute({
-                sql: "SELECT value FROM settings WHERE key IN ('calendar_entity', 'cal_entity') ORDER BY key LIMIT 1",
-                args: [],
-              });
-              if (legacyRes.rows.length > 0) {
-                try { entityId = JSON.parse(String(legacyRes.rows[0]!.value)); } catch { entityId = String(legacyRes.rows[0]!.value); }
+              // Legacy fallback — single entity key
+              if (resolvedEntities.length === 0) {
+                const legacyRes = await client.execute({
+                  sql: "SELECT value FROM settings WHERE key IN ('calendar_entity', 'cal_entity') ORDER BY key LIMIT 1",
+                  args: [],
+                });
+                if (legacyRes.rows.length > 0) {
+                  try { entityId = JSON.parse(String(legacyRes.rows[0]!.value)); } catch { entityId = String(legacyRes.rows[0]!.value); }
+                  if (entityId) resolvedEntities = [entityId];
+                }
               }
             } catch { /* DB not available */ }
+          } else {
+            resolvedEntities = [entityId];
           }
 
-          const result = await syncFromHA(entityId);
+          if (resolvedEntities.length === 0) {
+            return new Response(
+              JSON.stringify({ ok: false, error: "No calendar entities configured. Go to Settings → Integrations → Calendar to select calendars." }),
+              { status: 400, headers: { "Content-Type": "application/json" } },
+            );
+          }
+
+          // Sync each resolved entity individually — bypasses activeSyncs check
+          // so manual sync works even if background sync wasn't auto-started
+          const results = await Promise.allSettled(
+            resolvedEntities.map((eid) => syncFromHA(eid)),
+          );
+
+          const aggregated = { created: 0, updated: 0, total: 0 };
+          for (const r of results) {
+            if (r.status === "fulfilled") {
+              aggregated.created += r.value.created;
+              aggregated.updated += r.value.updated;
+              aggregated.total += r.value.total;
+            }
+          }
+
           return new Response(
             JSON.stringify({
               ok: true,
-              message: `Calendar sync complete: ${result.created} created, ${result.updated} updated from ${result.total} events`,
-              ...result,
+              message: `Calendar sync complete: ${aggregated.created} created, ${aggregated.updated} updated from ${aggregated.total} events across ${resolvedEntities.length} calendar(s)`,
+              ...aggregated,
+              entities: resolvedEntities,
             }),
             { status: 200, headers: { "Content-Type": "application/json" } },
           );
