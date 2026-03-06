@@ -63,13 +63,24 @@ const activeSyncs = new Map<string, EntitySyncState>();
 /** Concurrency guard — prevents overlapping syncs for the same entity */
 const syncingEntities = new Set<string>();
 
-/** Simple trailing debounce — returns a debounced version of fn */
-function debounce<T extends (...args: unknown[]) => unknown>(fn: T, delayMs: number): (...args: Parameters<T>) => void {
-  let timer: ReturnType<typeof setTimeout> | null = null;
-  return (...args: Parameters<T>) => {
-    if (timer) clearTimeout(timer);
-    timer = setTimeout(() => { timer = null; fn(...args); }, delayMs);
+/** Debounce timers — stored separately so stopSingleEntitySync can cancel them */
+const debounceTimers = new Map<string, ReturnType<typeof setTimeout>>();
+
+/** Simple trailing debounce with cancellation — returns [debouncedFn, cancelFn] */
+function debounceWithCancel<T extends (...args: unknown[]) => unknown>(
+  fn: T, delayMs: number, key: string,
+): [(...args: Parameters<T>) => void, () => void] {
+  const debouncedFn = (...args: Parameters<T>) => {
+    const existing = debounceTimers.get(key);
+    if (existing) clearTimeout(existing);
+    const timer = setTimeout(() => { debounceTimers.delete(key); fn(...args); }, delayMs);
+    debounceTimers.set(key, timer);
   };
+  const cancelFn = () => {
+    const timer = debounceTimers.get(key);
+    if (timer) { clearTimeout(timer); debounceTimers.delete(key); }
+  };
+  return [debouncedFn, cancelFn];
 }
 
 /**
@@ -119,15 +130,16 @@ function startSingleEntitySync(config: CalendarSyncConfig): void {
   };
 
   // Subscribe to state changes — debounced to avoid sync churn from frequent entity updates
-  const debouncedSync = debounce(async () => {
+  const [debouncedSync, cancelDebounce] = debounceWithCancel(async () => {
     logger.log("info", {
       event: "calendar.sync.entity_changed", domain: "calendar", component: "calendar-bridge",
       request_id: SYS_REQ, message: `Calendar entity ${config.entityId} changed — syncing (debounced)`,
     });
     await syncEntityFromHA(config.entityId);
-  }, 10_000);
+  }, 10_000, `entity-change-${config.entityId}`);
   const unsub = onEntityChange(config.entityId, debouncedSync);
-  state.unsubscribers.push(unsub);
+  // Store cancel function so stopSingleEntitySync can clean up the pending timer
+  state.unsubscribers.push(unsub, cancelDebounce);
 
   // Periodic full sync
   state.timer = setInterval(async () => {
@@ -266,32 +278,36 @@ async function _syncEntityFromHAInner(entityId: string): Promise<{ created: numb
       const existingTaskId = existingMap.get(uid);
 
       if (existingTaskId) {
-        // Update existing task — fold label check into single UPDATE
+        // Update existing task — fold label check into single UPDATE with NULL/invalid JSON safety
         await client.execute({
           sql: `UPDATE tasks SET
                   due_date = ?, description = COALESCE(?, description), updated_at = ?,
                   labels = CASE
-                    WHEN labels NOT LIKE '%calendar-sync%'
+                    WHEN labels IS NULL OR labels = '' OR labels = '[]' THEN '["calendar-sync"]'
+                    WHEN json_valid(labels) AND labels NOT LIKE '%calendar-sync%'
                     THEN json_insert(labels, '$[#]', 'calendar-sync')
-                    ELSE labels
+                    ELSE COALESCE(labels, '[]')
                   END
                 WHERE id = ?`,
           args: [evt.start, stripMeithealAttribution(evt.description), Date.now(), existingTaskId],
         });
         updated++;
       } else {
-        // Create new task from calendar event
+        // Create new task from calendar event — assign ticket_number for MTH-N key
         const taskId = crypto.randomUUID();
         const reqId = crypto.randomUUID();
         const nowMs = Date.now();
+
+        const nextNumResult = await client.execute("SELECT COALESCE(MAX(ticket_number), 0) + 1 AS next_num FROM tasks");
+        const ticketNumber = Number((nextNumResult.rows[0] as Record<string, unknown>)?.next_num ?? 1);
 
         await client.execute({
           sql: `INSERT INTO tasks (id, title, description, status, priority, due_date,
                   labels, framework_payload, calendar_sync_state, board_id,
                   custom_fields, task_type, idempotency_key, request_id,
-                  created_at, updated_at)
+                  ticket_number, created_at, updated_at)
                 VALUES (?, ?, ?, 'todo', 3, ?, ?, '{}', 'synced', 'default',
-                  '{}', 'task', ?, ?, ?, ?)`,
+                  '{}', 'task', ?, ?, ?, ?, ?)`,
           args: [
             taskId,
             evt.summary,
@@ -300,6 +316,7 @@ async function _syncEntityFromHAInner(entityId: string): Promise<{ created: numb
             JSON.stringify(["calendar-sync"]),
             `cal-sync-${uid}`,
             reqId,
+            ticketNumber,
             nowMs,
             nowMs,
           ],
@@ -649,17 +666,21 @@ export async function syncCalDAVEvents(): Promise<{ created: number; updated: nu
             continue;
           }
 
-          // Create task from CalDAV event
+          // Create task from CalDAV event — assign ticket_number for MTH-N key
           const taskId = crypto.randomUUID();
           const reqId = crypto.randomUUID();
           const nowMs = Date.now();
+
+          const nextNumResult = await client.execute("SELECT COALESCE(MAX(ticket_number), 0) + 1 AS next_num FROM tasks");
+          const ticketNumber = Number((nextNumResult.rows[0] as Record<string, unknown>)?.next_num ?? 1);
+
           await client.execute({
             sql: `INSERT INTO tasks (id, title, description, status, priority, due_date,
                     labels, framework_payload, calendar_sync_state, board_id,
                     custom_fields, task_type, idempotency_key, request_id,
-                    created_at, updated_at)
+                    ticket_number, created_at, updated_at)
                   VALUES (?, ?, ?, 'backlog', 3, ?, ?, '{}', 'synced', 'default',
-                    '{}', 'task', ?, ?, ?, ?)`,
+                    '{}', 'task', ?, ?, ?, ?, ?)`,
             args: [
               taskId,
               evt.summary,
@@ -668,6 +689,7 @@ export async function syncCalDAVEvents(): Promise<{ created: number; updated: nu
               '["calendar-sync"]',
               `caldav-sync-${evt.uid}`,
               reqId,
+              ticketNumber,
               nowMs,
               nowMs,
             ],
