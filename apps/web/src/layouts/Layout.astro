@@ -3482,12 +3482,21 @@ Astro.response.headers.set("X-Content-Type-Options", "nosniff");
           if (e.target === tdOverlay) closeTD();
         });
 
-        // Hash navigation
+        // Hash navigation — also handles mobile back button
         function checkHash() {
           try {
             const hash = window.location.hash;
             if (hash.startsWith("#task-")) {
               openTaskDetail(hash.replace("#task-", ""));
+            } else if (
+              !hash &&
+              currentTaskId &&
+              tdOverlay &&
+              !tdOverlay.classList.contains("hidden")
+            ) {
+              // Hash cleared (back button pressed) → close the detail panel
+              tdOverlay.classList.add("hidden");
+              currentTaskId = null;
             }
           } catch (err) {
             console.warn("[Meitheal] Hash navigation error:", err);

@@ -1688,6 +1688,119 @@ const typeConfig: Record<
       // Apply on load
       applyUserFilter();
     })();
+
+    // ─── Touch Drag Polyfill ─────────────────────────────────────
+    // HTML5 Drag API doesn't fire on touch devices. This bridges
+    // touchstart/touchmove/touchend to the same handleDrop() logic.
+    (function initTouchDrag() {
+      if (!("ontouchstart" in window)) return; // desktop → skip
+
+      let dragCard = null;
+      let ghost = null;
+      let startX = 0,
+        startY = 0;
+      let isDragging = false;
+
+      document.addEventListener(
+        "touchstart",
+        function (e) {
+          const card = e.target.closest('.kanban-card[draggable="true"]');
+          if (!card) return;
+          const touch = e.touches[0];
+          startX = touch.clientX;
+          startY = touch.clientY;
+          dragCard = card;
+          isDragging = false;
+        },
+        { passive: true },
+      );
+
+      document.addEventListener(
+        "touchmove",
+        function (e) {
+          if (!dragCard) return;
+          const touch = e.touches[0];
+          const dx = Math.abs(touch.clientX - startX);
+          const dy = Math.abs(touch.clientY - startY);
+
+          // Threshold: 10px before entering drag mode
+          if (!isDragging && (dx > 10 || dy > 10)) {
+            isDragging = true;
+            dragCard.classList.add("dragging");
+            // Create visual ghost
+            ghost = dragCard.cloneNode(true);
+            ghost.style.cssText =
+              "position:fixed;pointer-events:none;opacity:0.7;z-index:999;width:" +
+              dragCard.offsetWidth +
+              "px;transform:rotate(2deg);box-shadow:0 8px 32px rgba(0,0,0,0.4);";
+            document.body.appendChild(ghost);
+          }
+
+          if (!isDragging) return;
+          e.preventDefault(); // prevent scroll during drag
+
+          // Position ghost at touch point
+          if (ghost) {
+            ghost.style.left = touch.clientX - 40 + "px";
+            ghost.style.top = touch.clientY - 20 + "px";
+          }
+
+          // Highlight column under touch
+          document.querySelectorAll(".kanban-column").forEach(function (col) {
+            col.classList.remove("drag-over");
+          });
+          const el = document.elementFromPoint(touch.clientX, touch.clientY);
+          const col = el ? el.closest(".kanban-column") : null;
+          if (col) col.classList.add("drag-over");
+        },
+        { passive: false },
+      );
+
+      document.addEventListener(
+        "touchend",
+        function (e) {
+          if (!dragCard) return;
+
+          if (isDragging) {
+            dragCard.classList.remove("dragging");
+            if (ghost) {
+              ghost.remove();
+              ghost = null;
+            }
+
+            document
+              .querySelectorAll(".kanban-column.drag-over")
+              .forEach(function (col) {
+                col.classList.remove("drag-over");
+              });
+
+            // Find the column under the last touch point
+            const touch = e.changedTouches[0];
+            const el = document.elementFromPoint(touch.clientX, touch.clientY);
+            const targetCol = el ? el.closest(".kanban-column") : null;
+
+            if (targetCol && dragCard.dataset.id) {
+              // Synthesize a drop event object for handleDrop
+              const fakeEvent = {
+                preventDefault: function () {},
+                currentTarget: targetCol,
+                target: el,
+                dataTransfer: {
+                  getData: function () {
+                    return dragCard.dataset.id;
+                  },
+                },
+              };
+              handleDrop(fakeEvent);
+            }
+          }
+
+          dragCard = null;
+          isDragging = false;
+        },
+        { passive: true },
+      );
+    })();
   </script>
 </Layout>
 

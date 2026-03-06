@@ -574,6 +574,92 @@ const locale: Locale = cookieLocale === "ga" ? "ga" : "en";
               renderSidebarList();
             });
 
+            // Touch drag support (HTML5 drag API doesn't work on touch devices)
+            let touchStartY = 0;
+            let touchDragging = false;
+            row.addEventListener(
+              "touchstart",
+              (e) => {
+                const handle = (e.target as HTMLElement).closest(
+                  ".drag-handle",
+                );
+                if (!handle) return;
+                const t0 = e.touches[0];
+                if (!t0) return;
+                dragSrcIndex = index;
+                touchStartY = t0.clientY;
+                touchDragging = false;
+                row.style.opacity = "0.3";
+              },
+              { passive: true },
+            );
+
+            row.addEventListener(
+              "touchmove",
+              (e) => {
+                if (dragSrcIndex !== index) return;
+                const t0 = e.touches[0];
+                if (!t0) return;
+                const dy = Math.abs(t0.clientY - touchStartY);
+                if (dy > 10) {
+                  touchDragging = true;
+                  e.preventDefault();
+                }
+                if (!touchDragging) return;
+                // Highlight target row
+                clearDropIndicators(list);
+                const el = document.elementFromPoint(t0.clientX, t0.clientY);
+                const targetRow = el?.closest(
+                  ".sidebar-config-row",
+                ) as HTMLElement | null;
+                if (targetRow && targetRow !== row) {
+                  targetRow.style.borderTopColor = "var(--accent)";
+                  targetRow.style.borderTopWidth = "3px";
+                }
+              },
+              { passive: false },
+            );
+
+            row.addEventListener(
+              "touchend",
+              (e) => {
+                if (dragSrcIndex !== index) return;
+                row.style.opacity = "1";
+                clearDropIndicators(list);
+                if (!touchDragging) {
+                  dragSrcIndex = null;
+                  return;
+                }
+                const touch = e.changedTouches[0];
+                if (!touch) {
+                  dragSrcIndex = null;
+                  return;
+                }
+                const el = document.elementFromPoint(
+                  touch.clientX,
+                  touch.clientY,
+                );
+                const targetRow = el?.closest(
+                  ".sidebar-config-row",
+                ) as HTMLElement | null;
+                if (targetRow && targetRow !== row) {
+                  const targetIdx = Number(targetRow.dataset.index);
+                  if (
+                    !isNaN(targetIdx) &&
+                    dragSrcIndex !== null &&
+                    dragSrcIndex !== targetIdx
+                  ) {
+                    const movedItem = orderItems.splice(dragSrcIndex, 1)[0];
+                    orderItems.splice(targetIdx, 0, movedItem);
+                    renderSidebarList();
+                  }
+                }
+                dragSrcIndex = null;
+                touchDragging = false;
+              },
+              { passive: true },
+            );
+
             list.appendChild(row);
           });
 
