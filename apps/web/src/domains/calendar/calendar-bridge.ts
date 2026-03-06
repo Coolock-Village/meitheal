@@ -158,42 +158,50 @@ function startSingleEntitySync(config: CalendarSyncConfig): void {
     consecutiveFailures: 0,
   };
 
-  // Subscribe to state changes — debounced to avoid sync churn from frequent entity updates
-  const [debouncedSync, cancelDebounce] = debounceWithCancel(async () => {
-    logger.log("info", {
-      event: "calendar.sync.entity_changed", domain: "calendar", component: "calendar-bridge",
-      request_id: SYS_REQ, message: `Calendar entity ${config.entityId} changed — syncing (debounced)`,
-    });
-    await syncEntityFromHA(config.entityId);
-  }, 10_000, `entity-change-${config.entityId}`);
-  const unsub = onEntityChange(config.entityId, debouncedSync);
-  // Store cancel function so stopSingleEntitySync can clean up the pending timer
-  state.unsubscribers.push(unsub, cancelDebounce);
-
-  // Periodic full sync — wrapped in error boundary to prevent unhandled rejection crash
-  state.timer = setInterval(() => {
-    syncEntityFromHA(config.entityId).catch((err) => {
-      logger.log("error", {
-        event: "calendar.sync.interval_error", domain: "calendar", component: "calendar-bridge",
-        request_id: SYS_REQ, message: `Periodic sync failed for ${config.entityId}: ${err}`,
+  // Export-only entities don't need inbound machinery — they push on task save only
+  if (config.syncMode !== "export") {
+    // Subscribe to state changes — debounced to avoid sync churn from frequent entity updates
+    const [debouncedSync, cancelDebounce] = debounceWithCancel(async () => {
+      logger.log("info", {
+        event: "calendar.sync.entity_changed", domain: "calendar", component: "calendar-bridge",
+        request_id: SYS_REQ, message: `Calendar entity ${config.entityId} changed — syncing (debounced)`,
       });
-    });
-  }, config.syncIntervalMs);
+      await syncEntityFromHA(config.entityId);
+    }, 10_000, `entity-change-${config.entityId}`);
+    const unsub = onEntityChange(config.entityId, debouncedSync);
+    // Store cancel function so stopSingleEntitySync can clean up the pending timer
+    state.unsubscribers.push(unsub, cancelDebounce);
+
+    // Periodic full sync — wrapped in error boundary to prevent unhandled rejection crash
+    if (config.syncIntervalMs > 0) {
+      state.timer = setInterval(() => {
+        syncEntityFromHA(config.entityId).catch((err) => {
+          logger.log("error", {
+            event: "calendar.sync.interval_error", domain: "calendar", component: "calendar-bridge",
+            request_id: SYS_REQ, message: `Periodic sync failed for ${config.entityId}: ${err}`,
+          });
+        });
+      }, config.syncIntervalMs);
+    }
+  }
 
   activeSyncs.set(config.entityId, state);
 
-  // Initial sync
-  syncEntityFromHA(config.entityId).catch((err) => {
-    logger.log("error", {
-      event: "calendar.sync.initial_failed", domain: "calendar", component: "calendar-bridge",
-      request_id: SYS_REQ, message: `Initial calendar sync failed for ${config.entityId}: ${err}`,
+  // Initial inbound sync (skipped for export-only via mode guard in syncEntityFromHA)
+  if (config.syncMode !== "export") {
+    syncEntityFromHA(config.entityId).catch((err) => {
+      logger.log("error", {
+        event: "calendar.sync.initial_failed", domain: "calendar", component: "calendar-bridge",
+        request_id: SYS_REQ, message: `Initial calendar sync failed for ${config.entityId}: ${err}`,
+      });
     });
-  });
+  }
 
   logger.log("info", {
     event: "calendar.sync.entity_started", domain: "calendar", component: "calendar-bridge",
     request_id: SYS_REQ,
-    message: `Calendar sync started for ${config.entityId} (interval: ${config.syncIntervalMs}ms, writeBack: ${config.writeBack})`,
+    message: `Calendar sync started for ${config.entityId} (mode: ${config.syncMode}, interval: ${config.syncIntervalMs}ms, writeBack: ${config.writeBack})`,
+    metadata: { entity_id: config.entityId, sync_mode: config.syncMode, write_back: config.writeBack, interval_ms: config.syncIntervalMs },
   });
 }
 

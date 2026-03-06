@@ -8,6 +8,19 @@
  * Bounded context: offline (notification lifecycle managed with PWA)
  */
 
+// --- Ingress-aware URL helper ---
+
+/**
+ * Build a URL prefixed with the HA ingress path when running inside HA.
+ * The ingress path is set on window.__ingress_path by Layout.astro.
+ * Falls back to raw path when running standalone.
+ */
+function getIngressAwareUrl(path: string): string {
+  const win = typeof window !== "undefined" ? window : undefined;
+  const prefix = (win as Record<string, unknown> | undefined)?.__ingress_path ?? "";
+  return `${prefix}${path}`;
+}
+
 // --- Permissions API pre-check ---
 
 /**
@@ -118,7 +131,7 @@ export async function checkOverdueTasks(tasks: TaskForCheck[]): Promise<void> {
         title: "⏰ Overdue Task",
         body: task.title,
         tag: `overdue-${task.id}`,
-        url: `/tasks?open=${task.id}`,
+        url: getIngressAwareUrl(`/tasks?open=${task.id}`),
       })
       notified.add(task.id)
     }
@@ -151,7 +164,7 @@ export async function checkUpcomingReminders(tasks: TaskForCheck[]): Promise<voi
         title: "📋 Task Due Soon",
         body: `${task.title} — due in ${minutesUntilDue} minutes`,
         tag: `upcoming-${task.id}`,
-        url: `/tasks?open=${task.id}`,
+        url: getIngressAwareUrl(`/tasks?open=${task.id}`),
       })
       notified.add(task.id)
     }

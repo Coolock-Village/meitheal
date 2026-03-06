@@ -48,6 +48,7 @@ let schemaEnsured = false; // Skip repeated ensureSchema after first run (F1)
 let _callHAService: typeof import("@domains/ha/ha-services").callHAService | null = null;
 let _formatTicketKey: typeof import("../../lib/ticket-key").formatTicketKey | null = null;
 let _getIngressEntry: typeof import("@domains/ha/ha-connection").getIngressEntry | null = null;
+let _getHABaseUrl: typeof import("@domains/ha/ha-connection").getHABaseUrl | null = null;
 
 async function getModuleRefs() {
   if (!_callHAService) {
@@ -58,16 +59,18 @@ async function getModuleRefs() {
     const mod = await import("../../lib/ticket-key");
     _formatTicketKey = mod.formatTicketKey;
   }
-  if (!_getIngressEntry) {
+  if (!_getIngressEntry || !_getHABaseUrl) {
     try {
       const mod = await import("@domains/ha/ha-connection");
       _getIngressEntry = mod.getIngressEntry;
+      _getHABaseUrl = mod.getHABaseUrl;
     } catch { /* ingress unavailable */ }
   }
   return {
     callHAService: _callHAService!,
     formatTicketKey: _formatTicketKey!,
     getIngressEntry: _getIngressEntry,
+    getHABaseUrl: _getHABaseUrl,
   };
 }
 
@@ -264,11 +267,18 @@ async function checkDueDates(): Promise<void> {
     if (allRows.length === 0) return;
 
     // Load module refs (F2: cached after first call)
-    const { callHAService, formatTicketKey, getIngressEntry } = await getModuleRefs();
+    const { callHAService, formatTicketKey, getIngressEntry, getHABaseUrl } = await getModuleRefs();
 
     let ingressPath: string | null = null;
     if (getIngressEntry) {
       try { ingressPath = await getIngressEntry(); } catch { /* ingress unavailable */ }
+    }
+
+    // Resolve HA base URL for full deep links (mobile push needs scheme+host)
+    // @see https://companion.home-assistant.io/docs/notifications/notifications-basic/#opening-a-url
+    let baseUrl: string | null = null;
+    if (getHABaseUrl) {
+      try { baseUrl = await getHABaseUrl(); } catch { /* standalone mode */ }
     }
 
     for (const row of allRows) {
@@ -316,8 +326,14 @@ async function checkDueDates(): Promise<void> {
           ? `in ${minutesUntilDue} min`
           : "in ~1 hour";
 
-      const deepLink = ingressPath ? `${ingressPath}/kanban` : null;
-      const sidebarLink = ingressPath ? `\n\n[Open ${ticketKey} in Meitheal →](${ingressPath}/kanban)` : "";
+      // Full URL for mobile push — Companion app needs scheme+host+path
+      // Relative ingress path for sidebar — renders inside HA frontend iframe
+      const fullDeepLink = (baseUrl && ingressPath)
+        ? `${baseUrl}${ingressPath}/kanban`
+        : null;
+      const sidebarLink = ingressPath
+        ? `\n\n[Open ${ticketKey} in Meitheal →](${ingressPath}/kanban)`
+        : "";
       const notifId = `meitheal_due_${taskId}`;
 
       // Sidebar notification
@@ -338,14 +354,14 @@ async function checkDueDates(): Promise<void> {
               title: `⏰ Due ${timeLabel}: ${title}`,
               message: `${ticketKey} is due ${timeLabel}.`,
               data: {
-                ...(deepLink ? { clickAction: deepLink, url: deepLink } : {}),
+                ...(fullDeepLink ? { clickAction: fullDeepLink, url: fullDeepLink } : {}),
                 tag: notifId,
                 group: "meitheal",
                 channel: "meitheal_reminders",
                 color: "#f59e0b",
                 push: { "interruption-level": "time-sensitive" },
                 actions: [
-                  ...(deepLink ? [{ action: "URI", title: "Open Task", uri: deepLink }] : []),
+                  ...(fullDeepLink ? [{ action: "URI", title: "Open Task", uri: fullDeepLink }] : []),
                   { action: `MEITHEAL_TASK_DONE_${taskId}`, title: "✅ Mark Done" },
                 ],
               },
@@ -362,7 +378,7 @@ async function checkDueDates(): Promise<void> {
           summary: `📋 ${ticketKey}: ${title} — DUE`,
           start_date_time: startIso,
           end_date_time: endIso,
-          description: `Task ${ticketKey} is due. ${deepLink ? `Open in Meitheal: ${deepLink}` : ""}`,
+          description: `Task ${ticketKey} is due. ${fullDeepLink ? `Open in Meitheal: ${fullDeepLink}` : ""}`,
         }, { entity_id: settings.calendarEntity }).catch(() => {});
       }
 

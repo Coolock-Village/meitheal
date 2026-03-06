@@ -1999,6 +1999,7 @@ const locale: Locale = cookieLocale === "ga" ? "ga" : "en";
             .querySelectorAll<HTMLSelectElement>(".cal-direction-select")
             .forEach((sel) => {
               sel.addEventListener("click", (e) => e.stopPropagation());
+              sel.addEventListener("mousedown", (e) => e.stopPropagation());
             });
 
           // Click anywhere on card toggles the checkbox (since outer is now <div> not <label>)
@@ -2006,8 +2007,13 @@ const locale: Locale = cookieLocale === "ga" ? "ga" : "en";
             .querySelectorAll<HTMLElement>(".cal-toggle-card")
             .forEach((card) => {
               card.addEventListener("click", (e) => {
-                // Don't double-toggle if the click was on the toggle itself
-                if ((e.target as HTMLElement).closest(".toggle-label")) return;
+                // Don't double-toggle if the click was on the toggle itself or direction select
+                const target = e.target as HTMLElement;
+                if (
+                  target.closest(".toggle-label") ||
+                  target.closest(".cal-direction-select")
+                )
+                  return;
                 const cb =
                   card.querySelector<HTMLInputElement>(".cal-entity-toggle");
                 if (cb) {
@@ -2026,9 +2032,13 @@ const locale: Locale = cookieLocale === "ga" ? "ga" : "en";
                 .querySelectorAll<HTMLInputElement>(".cal-entity-toggle")
                 .forEach((cb) => {
                   cb.checked = true;
-                  cb.closest(".cal-toggle-card")?.classList.add(
-                    "cal-toggle-card--active",
+                  const card = cb.closest(".cal-toggle-card");
+                  card?.classList.add("cal-toggle-card--active");
+                  // Show direction selector when enabling
+                  const dirDiv = card?.querySelector<HTMLElement>(
+                    ".cal-toggle-card__direction",
                   );
+                  if (dirDiv) dirDiv.style.display = "";
                 });
               updateCalCountBadge();
             });
@@ -2039,12 +2049,37 @@ const locale: Locale = cookieLocale === "ga" ? "ga" : "en";
                 .querySelectorAll<HTMLInputElement>(".cal-entity-toggle")
                 .forEach((cb) => {
                   cb.checked = false;
-                  cb.closest(".cal-toggle-card")?.classList.remove(
-                    "cal-toggle-card--active",
+                  const card = cb.closest(".cal-toggle-card");
+                  card?.classList.remove("cal-toggle-card--active");
+                  // Hide direction selector when disabling
+                  const dirDiv = card?.querySelector<HTMLElement>(
+                    ".cal-toggle-card__direction",
                   );
+                  if (dirDiv) dirDiv.style.display = "none";
                 });
               updateCalCountBadge();
             });
+
+          // Global direction cascade — when default changes, update all per-card selectors
+          // that still match the old default (i.e. haven't been individually overridden)
+          const globalDirSel = document.getElementById(
+            "cal-sync-direction",
+          ) as HTMLSelectElement | null;
+          if (globalDirSel) {
+            let previousGlobal = globalDirSel.value;
+            globalDirSel.addEventListener("change", () => {
+              const newGlobal = globalDirSel.value;
+              entitiesContainer
+                .querySelectorAll<HTMLSelectElement>(".cal-direction-select")
+                .forEach((sel) => {
+                  // Only cascade to cards that haven't been manually overridden
+                  if (sel.value === previousGlobal) {
+                    sel.value = newGlobal;
+                  }
+                });
+              previousGlobal = newGlobal;
+            });
+          }
 
           // Auto-enable all if none are saved and there's only one calendar
           if (savedEntities.length === 0 && calendars.length === 1) {

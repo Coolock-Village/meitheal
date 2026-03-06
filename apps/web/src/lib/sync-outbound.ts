@@ -127,7 +127,8 @@ export async function pushToActiveSyncs(
     try {
       const { pushTaskToCalendar, getCalendarSyncConfigs } = await import("@domains/calendar/calendar-bridge");
       const calConfigs = getCalendarSyncConfigs();
-      const hasWriteBack = calConfigs.some((c) => c.writeBack);
+      // Only push to calendars with export/bidirectional mode AND writeBack enabled
+      const hasWriteBack = calConfigs.some((c) => c.writeBack && c.syncMode !== "import");
 
       if (hasWriteBack) {
         // Build metadata for rich calendar description
@@ -147,7 +148,7 @@ export async function pushToActiveSyncs(
           ticketKey: ticketNumber ? `MTH-${ticketNumber}` : undefined,
         };
 
-        // pushTaskToCalendar already handles writeBack check and dedup internally
+        // pushTaskToCalendar already handles per-entity mode checks and dedup internally
         pushTaskToCalendar(taskId, title, dueDate, description, undefined, meta).catch((err) => {
           logger.log("error", {
             event: "sync.outbound.calendar.failed", domain: "integrations",

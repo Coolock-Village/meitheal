@@ -281,3 +281,54 @@ export async function getIngressEntry(): Promise<string | null> {
     return null;
   }
 }
+
+// ── HA Base URL Resolution (for notification deep links) ──
+
+let cachedBaseUrl: string | null = null;
+
+/**
+ * Get the HA instance base URL (external preferred, internal fallback).
+ * Used to construct full deep link URLs for mobile notifications.
+ * Returns e.g. "https://ha.home.arpa:8123" or null if unavailable.
+ *
+ * @domain ha
+ * @kcs HA Companion app requires full URLs (scheme+host) for clickAction/url.
+ *       Relative ingress paths only work inside the HA frontend iframe.
+ * @see https://companion.home-assistant.io/docs/notifications/notifications-basic/#opening-a-url
+ */
+export async function getHABaseUrl(): Promise<string | null> {
+  if (cachedBaseUrl) return cachedBaseUrl;
+
+  const config = await getHAConfig();
+  if (!config) return null;
+
+  // HassConfig type doesn't explicitly declare external_url/internal_url
+  // but HA Core always includes them in the get_config response.
+  const cfg = config as Record<string, unknown>;
+  const url = (typeof cfg.external_url === "string" && cfg.external_url)
+    ? cfg.external_url
+    : (typeof cfg.internal_url === "string" && cfg.internal_url)
+      ? cfg.internal_url
+      : null;
+
+  if (url) {
+    cachedBaseUrl = url.replace(/\/+$/, ""); // strip trailing slashes
+    logger.log("info", {
+      event: "ha.base_url.resolved", domain: "ha", component: "ha-connection",
+      request_id: SYS_REQ, message: `HA base URL resolved: ${cachedBaseUrl}`,
+    });
+  } else {
+    logger.log("warn", {
+      event: "ha.base_url.unresolved", domain: "ha", component: "ha-connection",
+      request_id: SYS_REQ,
+      message: "No external_url or internal_url in HA config — deep links will use relative paths",
+    });
+  }
+
+  return cachedBaseUrl;
+}
+
+/** Invalidate cached HA base URL (for testing or config changes). */
+export function invalidateBaseUrlCache(): void {
+  cachedBaseUrl = null;
+}
