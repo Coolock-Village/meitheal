@@ -175,13 +175,9 @@
 
 <script>
   const DISMISS_KEY = "meitheal-pwa-dismissed";
-  const DISMISS_DAYS = 30;
 
   function isDismissed(): boolean {
-    const ts = localStorage.getItem(DISMISS_KEY);
-    if (!ts) return false;
-    const age = Date.now() - Number(ts);
-    return age < DISMISS_DAYS * 86400000;
+    return localStorage.getItem(DISMISS_KEY) !== null;
   }
 
   function showBanner() {
@@ -190,10 +186,10 @@
     banner.style.display = "flex";
     void banner.offsetHeight;
     banner.classList.add("pwa-banner--visible");
-    // Auto-dismiss after 10s
+    // Auto-dismiss permanently after 10s
     setTimeout(() => {
       if (banner.classList.contains("pwa-banner--visible")) {
-        hideBanner();
+        dismissBanner();
       }
     }, 10000);
   }
@@ -208,7 +204,7 @@
   }
 
   function dismissBanner() {
-    localStorage.setItem(DISMISS_KEY, String(Date.now()));
+    localStorage.setItem(DISMISS_KEY, "permanent");
     hideBanner();
   }
 

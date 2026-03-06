@@ -40,11 +40,28 @@ export async function listCalendarEvents(
       service_data: { start_date_time: startDate, end_date_time: endDate },
       return_response: true,
     });
-    const response = result as Record<string, { events?: CalendarEvent[] }>;
-    const events = response?.[entityId]?.events ?? [];
-    logger.log("debug", {
+
+    // HA WebSocket call_service with return_response wraps data in a `response` key
+    // Try both: result.response[entityId].events AND result[entityId].events
+    let events: CalendarEvent[] = [];
+    const respObj = (result as { response?: Record<string, { events?: CalendarEvent[] }> });
+    if (respObj?.response?.[entityId]?.events) {
+      events = respObj.response[entityId].events!;
+    } else {
+      // Fallback: direct access (older HA versions or home-assistant-js-websocket unwrapping)
+      const direct = result as Record<string, { events?: CalendarEvent[] }>;
+      events = direct?.[entityId]?.events ?? [];
+    }
+
+    logger.log("info", {
       event: "ha.calendar.list_events", domain: "ha", component: "ha-services",
-      request_id: SYS_REQ, message: `Fetched ${events.length} events from ${entityId}`,
+      request_id: SYS_REQ,
+      message: `Fetched ${events.length} events from ${entityId} (range: ${startDate} → ${endDate})`,
+      metadata: {
+        result_keys: Object.keys(result ?? {}),
+        has_response_key: "response" in (result ?? {}),
+        has_entity_direct: entityId in (result ?? {}),
+      },
     });
     return events;
   } catch (err) {

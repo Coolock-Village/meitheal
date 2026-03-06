@@ -1438,20 +1438,31 @@ Astro.response.headers.set("X-Content-Type-Options", "nosniff");
           }
         });
 
-        // Keyboard shortcut onboarding hint (show once, auto-dismiss permanently after 8s)
-        if (!localStorage.getItem("meitheal_shortcut_hint_dismissed")) {
+        // Keyboard shortcut onboarding hint (show once, permanently dismissed after click or 8s)
+        if (
+          !localStorage.getItem("meitheal_shortcut_hint_dismissed") &&
+          !document.querySelector(".shortcut-hint")
+        ) {
           const hint = document.createElement("div");
           hint.className = "shortcut-hint";
           hint.textContent = "💡 Press ? for keyboard shortcuts";
           hint.setAttribute("role", "tooltip");
           hint.addEventListener("click", () => {
             hint.remove();
-            localStorage.setItem("meitheal_shortcut_hint_dismissed", "1");
+            localStorage.setItem(
+              "meitheal_shortcut_hint_dismissed",
+              "permanent",
+            );
           });
           document.body.appendChild(hint);
           setTimeout(() => {
-            hint.remove();
-            localStorage.setItem("meitheal_shortcut_hint_dismissed", "1");
+            if (hint.parentNode) {
+              hint.remove();
+              localStorage.setItem(
+                "meitheal_shortcut_hint_dismissed",
+                "permanent",
+              );
+            }
           }, 8000);
         }
         // Board switcher

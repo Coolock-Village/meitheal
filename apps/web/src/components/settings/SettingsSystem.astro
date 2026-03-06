@@ -421,6 +421,37 @@ const version =
               class="badge badge-active"
               style="font-size: 11px; display: none;">✓ Installed</span
             >
+            <span class="pwa-link-separator" aria-hidden="true">·</span>
+            <a
+              href="#"
+              id="pwa-popout-btn"
+              class="pwa-subtle-link"
+              title="Open in a standalone browser tab (required for install prompt)"
+              >open in browser ↗</a
+            >
+            <span class="pwa-link-separator" aria-hidden="true">·</span>
+            <a href="#" id="pwa-uninstall-btn" class="pwa-subtle-link"
+              >uninstall</a
+            >
+          </div>
+          <!-- Uninstall instructions (hidden by default) -->
+          <div
+            id="pwa-uninstall-info"
+            style="display: none; margin-top: 6px; font-size: 12px; color: var(--text-muted); line-height: 1.6; padding: 8px 12px; background: var(--bg-secondary); border-radius: 8px;"
+          >
+            <strong style="color: var(--text-secondary);"
+              >How to uninstall:</strong
+            ><br />
+            <strong>Chrome/Edge:</strong> Open the installed app → ⋮ menu → "Uninstall
+            Meitheal"<br />
+            <strong>Safari:</strong> Long-press the icon on your home screen → Remove<br
+            />
+            <strong>Firefox:</strong> Not applicable (does not support PWA install)<br
+            />
+            <small style="margin-top: 4px; display: block;"
+              >Your data is safe — uninstalling the PWA only removes the
+              shortcut and cached shell.</small
+            >
           </div>
           <details
             id="pwa-compact-details"
@@ -725,6 +756,12 @@ const version =
   .pwa-subtle-link:hover {
     color: var(--accent);
   }
+  .pwa-link-separator {
+    font-size: 11px;
+    color: var(--text-muted);
+    opacity: 0.4;
+    user-select: none;
+  }
   .pwa-troubleshoot-panel {
     margin-top: 8px;
     padding: 10px 12px;
@@ -850,6 +887,57 @@ const version =
 
   initPwaCompact();
   document.addEventListener("astro:page-load", initPwaCompact);
+
+  // ── Pop out to browser (escape HA iframe for PWA install) ──
+  function initPwaPopout() {
+    const popoutBtn = document.getElementById("pwa-popout-btn");
+    const uninstallBtn = document.getElementById("pwa-uninstall-btn");
+    const uninstallInfo = document.getElementById("pwa-uninstall-info");
+
+    popoutBtn?.addEventListener("click", (e) => {
+      e.preventDefault();
+      // Construct the full top-level URL for the app
+      // If inside HA ingress iframe, we need the parent origin + ingress path
+      const ingressPath = window.__ingress_path || "";
+      let targetUrl: string;
+
+      if (ingressPath) {
+        // We're in HA ingress — build the parent-frame URL
+        // The iframe src is just "/" but the real URL is origin + ingressPath + "/"
+        try {
+          const parentOrigin =
+            window.top?.location?.origin || window.location.origin;
+          targetUrl = parentOrigin + ingressPath + "/settings#system";
+        } catch {
+          // Cross-origin: can't read parent origin, use referrer or HA default
+          const referrer = document.referrer;
+          if (referrer) {
+            const refUrl = new URL(referrer);
+            targetUrl = refUrl.origin + ingressPath + "/settings#system";
+          } else {
+            // Last resort: just use the ingress path relative
+            targetUrl = ingressPath + "/settings#system";
+          }
+        }
+      } else {
+        // Standalone mode — same origin
+        targetUrl = window.location.origin + "/settings#system";
+      }
+
+      window.open(targetUrl, "_blank", "noopener");
+    });
+
+    uninstallBtn?.addEventListener("click", (e) => {
+      e.preventDefault();
+      if (uninstallInfo) {
+        const showing = uninstallInfo.style.display !== "none";
+        uninstallInfo.style.display = showing ? "none" : "block";
+      }
+    });
+  }
+
+  initPwaPopout();
+  document.addEventListener("astro:page-load", initPwaPopout);
 
   // ── PWA Troubleshooting Actions ──
   function showTroubleshootResult(msg: string, ok = true) {
