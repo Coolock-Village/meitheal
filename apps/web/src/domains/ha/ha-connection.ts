@@ -48,12 +48,15 @@ const MAX_RECONNECT_DELAY_MS = 30_000;
 export async function getHAConnection(): Promise<Connection | null> {
   if (connection) return connection;
   if (connecting) {
-    // Wait for in-flight connection with a 15s safety timeout to prevent infinite spin
+    // P1.3: Wait for in-flight connection with timeout — no interval leak
     return new Promise((resolve) => {
-      let elapsed = 0;
+      const timeout = setTimeout(() => resolve(connection), 15_000);
       const check = setInterval(() => {
-        elapsed += 100;
-        if (!connecting || elapsed >= 15_000) { clearInterval(check); resolve(connection); }
+        if (!connecting) {
+          clearInterval(check);
+          clearTimeout(timeout);
+          resolve(connection);
+        }
       }, 100);
     });
   }
@@ -100,13 +103,21 @@ export async function getHAConnection(): Promise<Connection | null> {
       const action: string | undefined = ev?.data?.action;
       if (action && action.startsWith("MEITHEAL_TASK_DONE_")) {
         const taskId = action.replace("MEITHEAL_TASK_DONE_", "");
+        // F14: Validate taskId format (UUID or hex) before using in fetch
+        if (!taskId || taskId.length > 64 || !/^[a-zA-Z0-9_-]+$/.test(taskId)) {
+          logger.log("warn", {
+            event: "ha.notification.action_invalid", domain: "ha", component: "ha-connection",
+            request_id: SYS_REQ, message: `Rejected invalid taskId from notification action: ${taskId.slice(0, 20)}`,
+          });
+          return;
+        }
         logger.log("info", {
           event: "ha.notification.action", domain: "ha", component: "ha-connection",
           request_id: SYS_REQ, message: `Received actionable notification to mark task done: ${taskId}`,
         });
 
         // Dispatch to internal API
-        fetch(`http://127.0.0.1:${process.env.PORT || 3000}/api/tasks/${taskId}`, {
+        fetch(`http://127.0.0.1:${process.env.PORT || 3000}/api/tasks/${encodeURIComponent(taskId)}`, {
           method: "PUT",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({ status: "done" })
@@ -123,31 +134,35 @@ export async function getHAConnection(): Promise<Connection | null> {
     // When sensor states change (e.g. active task count), we know the
     // coordinator refreshed — useful for triggering UI updates.
     connection.subscribeEvents((event: unknown) => {
-      const ev = event as { data?: { entity_id?: string; new_state?: { state?: string }; old_state?: { state?: string } } };
-      const entityId = ev?.data?.entity_id;
-      if (!entityId?.startsWith("sensor.meitheal_") && entityId !== "todo.meitheal_tasks") return;
-      const newState = ev?.data?.new_state?.state;
-      const oldState = ev?.data?.old_state?.state;
-      if (newState === oldState) return; // No actual change
-      logger.log("info", {
-        event: "ha.state_changed.meitheal", domain: "ha", component: "ha-connection",
-        request_id: SYS_REQ,
-        message: `Meitheal entity ${entityId} changed: ${oldState} → ${newState}`,
-      });
+      try {
+        const ev = event as { data?: { entity_id?: string; new_state?: { state?: string }; old_state?: { state?: string } } };
+        const entityId = ev?.data?.entity_id;
+        if (!entityId?.startsWith("sensor.meitheal_") && entityId !== "todo.meitheal_tasks") return;
+        const newState = ev?.data?.new_state?.state;
+        const oldState = ev?.data?.old_state?.state;
+        if (newState === oldState) return;
+        logger.log("info", {
+          event: "ha.state_changed.meitheal", domain: "ha", component: "ha-connection",
+          request_id: SYS_REQ,
+          message: `Meitheal entity ${entityId} changed: ${oldState} → ${newState}`,
+        });
+      } catch { /* P1.2: never crash WS listener */ }
     }, "state_changed");
 
     // Phase 62b: Subscribe to call_service for meitheal domain
     // Logs when services are invoked (from automations, voice, or dev tools).
     connection.subscribeEvents((event: unknown) => {
-      const ev = event as { data?: { domain?: string; service?: string; service_data?: Record<string, unknown> } };
-      if (ev?.data?.domain !== "meitheal") return;
-      const svc = ev?.data?.service ?? "unknown";
-      const svcData = ev?.data?.service_data ?? {};
-      logger.log("info", {
-        event: "ha.service_called.meitheal", domain: "ha", component: "ha-connection",
-        request_id: SYS_REQ,
-        message: `HA service meitheal.${svc} called with ${JSON.stringify(svcData)}`,
-      });
+      try {
+        const ev = event as { data?: { domain?: string; service?: string; service_data?: Record<string, unknown> } };
+        if (ev?.data?.domain !== "meitheal") return;
+        const svc = ev?.data?.service ?? "unknown";
+        const svcData = ev?.data?.service_data ?? {};
+        logger.log("info", {
+          event: "ha.service_called.meitheal", domain: "ha", component: "ha-connection",
+          request_id: SYS_REQ,
+          message: `HA service meitheal.${svc} called with ${JSON.stringify(svcData)}`,
+        });
+      } catch { /* P1.2: never crash WS listener */ }
     }, "call_service");
 
     // Phase 62b: Subscribe to component-fired meitheal events
@@ -159,15 +174,16 @@ export async function getHAConnection(): Promise<Connection | null> {
       "meitheal_board_updated",
     ]) {
       connection.subscribeEvents((event: unknown) => {
-        const ev = event as { data?: { source?: string; title?: string; task_id?: string } };
-        // Dedup: skip events fired by this addon (source='meitheal')
-        if (ev?.data?.source === "meitheal") return;
-        const title = ev?.data?.title ?? ev?.data?.task_id ?? "";
-        logger.log("info", {
-          event: `ha.bus.${eventType}`, domain: "ha", component: "ha-connection",
-          request_id: SYS_REQ,
-          message: `HA bus event ${eventType} (source: ${ev?.data?.source ?? "unknown"}): ${title}`,
-        });
+        try {
+          const ev = event as { data?: { source?: string; title?: string; task_id?: string } };
+          if (ev?.data?.source === "meitheal") return;
+          const title = ev?.data?.title ?? ev?.data?.task_id ?? "";
+          logger.log("info", {
+            event: `ha.bus.${eventType}`, domain: "ha", component: "ha-connection",
+            request_id: SYS_REQ,
+            message: `HA bus event ${eventType} (source: ${ev?.data?.source ?? "unknown"}): ${title}`,
+          });
+        } catch { /* P1.2: never crash WS listener */ }
       }, eventType);
     }
 

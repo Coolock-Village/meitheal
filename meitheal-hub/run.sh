@@ -54,18 +54,22 @@ if [ -n "${SUPERVISOR_TOKEN:-}" ]; then
   #   - local_meitheal for locally-installed addons
   #   - {hash}_meitheal for GitHub-installed addons (hash from repo URL)
   # The hostname field in /addons/self/info gives the DNS-resolvable name.
+  # IMPORTANT: Docker DNS resolves HYPHENS, not underscores. We must
+  # convert the hostname before using it for discovery or connection tests.
   if [ -n "${ADDON_SELF_INFO:-}" ]; then
-    ADDON_HOSTNAME=$(echo "${ADDON_SELF_INFO}" \
+    ADDON_HOSTNAME_RAW=$(echo "${ADDON_SELF_INFO}" \
       | grep -o '"hostname":"[^"]*"' \
       | head -1 \
       | sed 's/"hostname":"\(.*\)"/\1/' || true)
   else
-    ADDON_HOSTNAME=""
+    ADDON_HOSTNAME_RAW=""
   fi
-  if [ -z "${ADDON_HOSTNAME}" ]; then
-    ADDON_HOSTNAME="local-meitheal"
+  if [ -z "${ADDON_HOSTNAME_RAW}" ]; then
+    ADDON_HOSTNAME_RAW="local_meitheal"
   fi
-  echo "{\"event\":\"addon.hostname.discovered\",\"hostname\":\"${ADDON_HOSTNAME}\",\"time\":\"$(date -u +"%Y-%m-%dT%H:%M:%SZ")\"}"
+  # Convert underscores to hyphens for Docker DNS resolution
+  ADDON_HOSTNAME=$(echo "${ADDON_HOSTNAME_RAW}" | tr '_' '-')
+  echo "{\"event\":\"addon.hostname.discovered\",\"hostname_raw\":\"${ADDON_HOSTNAME_RAW}\",\"hostname\":\"${ADDON_HOSTNAME}\",\"time\":\"$(date -u +"%Y-%m-%dT%H:%M:%SZ")\"}"
 fi
 
 export HOST="${HOST:-0.0.0.0}"
@@ -138,15 +142,24 @@ if [ -f /opt/meitheal/apps/web/package.json ]; then
   # To enable voice/Assist: Settings → Voice Assistants → [Agent] → LLM APIs → select "Meitheal Tasks"
   if [ -n "${SUPERVISOR_TOKEN:-}" ]; then
     DISCOVERY_PAYLOAD="{\"service\":\"meitheal\",\"config\":{\"host\":\"${ADDON_HOSTNAME:-local-meitheal}\",\"port\":${PORT}}}"
-    DISC_RESULT=$(curl -fsS -X POST \
-      -H "Authorization: Bearer ${SUPERVISOR_TOKEN}" \
-      -H "Content-Type: application/json" \
-      -d "${DISCOVERY_PAYLOAD}" \
-      http://supervisor/discovery 2>/dev/null || true)
-    if [ -n "${DISC_RESULT}" ]; then
-      echo "{\"event\":\"discovery.registered\",\"host\":\"${ADDON_HOSTNAME:-local-meitheal}\",\"port\":${PORT},\"note\":\"Select 'Meitheal Tasks' in Voice Assistant LLM APIs for Assist integration\",\"time\":\"$(date -u +"%Y-%m-%dT%H:%M:%SZ")\"}"
-    else
-      echo "{\"event\":\"discovery.registration.failed\",\"time\":\"$(date -u +"%Y-%m-%dT%H:%M:%SZ")\"}" >&2
+    DISC_SUCCESS=false
+    for disc_attempt in 1 2 3; do
+      DISC_RESULT=$(curl -fsS -X POST \
+        -H "Authorization: Bearer ${SUPERVISOR_TOKEN}" \
+        -H "Content-Type: application/json" \
+        -d "${DISCOVERY_PAYLOAD}" \
+        http://supervisor/discovery 2>/dev/null || true)
+      if [ -n "${DISC_RESULT}" ]; then
+        DISC_UUID=$(echo "${DISC_RESULT}" | grep -o '"uuid":"[^"]*"' | head -1 | sed 's/"uuid":"\(.*\)"/\1/' || true)
+        echo "{\"event\":\"discovery.registered\",\"uuid\":\"${DISC_UUID:-unknown}\",\"host\":\"${ADDON_HOSTNAME:-local-meitheal}\",\"port\":${PORT},\"attempt\":${disc_attempt},\"note\":\"Select 'Meitheal Tasks' in Voice Assistant LLM APIs for Assist integration\",\"time\":\"$(date -u +"%Y-%m-%dT%H:%M:%SZ")\"}"
+        DISC_SUCCESS=true
+        break
+      fi
+      echo "{\"event\":\"discovery.registration.retry\",\"attempt\":${disc_attempt},\"time\":\"$(date -u +"%Y-%m-%dT%H:%M:%SZ")\"}" >&2
+      sleep 5
+    done
+    if [ "${DISC_SUCCESS}" != "true" ]; then
+      echo "{\"event\":\"discovery.registration.failed\",\"attempts\":3,\"time\":\"$(date -u +"%Y-%m-%dT%H:%M:%SZ")\"}" >&2
     fi
   fi
 fi

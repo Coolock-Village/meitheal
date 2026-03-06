@@ -20,9 +20,13 @@ _LOGGER = logging.getLogger(__name__)
 
 
 def _device_info(entry: ConfigEntry) -> DeviceInfo:
-    """Return shared device info for all Meitheal entities."""
+    """Return shared device info for all Meitheal entities.
+
+    Identifier MUST match the device registered in __init__.py
+    (DOMAIN, "meitheal_hub") so entities group under the same device.
+    """
     return DeviceInfo(
-        identifiers={(DOMAIN, entry.entry_id)},
+        identifiers={(DOMAIN, "meitheal_hub")},
         name="Meitheal",
         manufacturer="Coolock Village",
         model="Task Engine",

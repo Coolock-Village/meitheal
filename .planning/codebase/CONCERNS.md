@@ -1,7 +1,7 @@
 # Codebase Concerns
 
-**Analysis Date:** 2026-03-04
-**Version:** 0.1.59
+**Analysis Date:** 2026-03-06
+**Version:** 0.1.69
 
 ## Tech Debt
 
@@ -77,7 +77,15 @@ No bottlenecks detected.
 - ✅ `OA-430` — CSS `@import` after `@tailwind` caused 10+ PostCSS warnings per build — reordered in `global.css`
 - ✅ `OA-431` — Dead modal classes in `_modal.css` (`.modal-overlay`, `.modal-content`, `.modal-title`, `.modal-actions`) — removed by user
 - ✅ `OA-432` — Duplicate `Window.__ingress_path` declaration in `ingress-fetch.ts` — centralized in `types/window.d.ts`
+- ✅ `OA-433` — WS event handler crashes could kill connection — all 5 `subscribeEvents` callbacks wrapped in try/catch
+- ✅ `OA-434` — Polling wait `setInterval` leaked on timeout — replaced with proper `clearInterval`+`clearTimeout`
+- ✅ `OA-435` — Webhook dispatcher queried DB on every task event — cached n8n events + webhook settings with 60s TTL
+- ✅ `OA-436` — Settings GET all leaked `grocy_api_key` and `webhook_secret` — redacted in bulk response
+- ✅ `OA-437` — Epoch-ms due dates bypassed SQL ISO filter — added second query with `CAST(due_date AS INTEGER)` + GLOB
+- ✅ `OA-438` — Reminder window input accepted 0/negative values — clamped JS-side to 5-1440
+- ✅ `OA-439` — No notification timestamps — added time context to sidebar notifications
+- ✅ `OA-440` — Notification service data logged — kept at debug level only, safe
 
 ---
 
-*Concerns audit: 2026-03-04 — Phase 60 broad quality audit + deferrals*
+*Concerns audit: 2026-03-06 — 10-phase notification robustness audit*

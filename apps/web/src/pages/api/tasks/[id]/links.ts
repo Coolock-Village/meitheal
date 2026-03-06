@@ -1,6 +1,13 @@
 import type { APIRoute } from "astro";
 import { ensureSchema, getPersistenceClient } from "@domains/tasks/persistence/store";
 import { apiError, apiJson } from "../../../../lib/api-response";
+import { createLogger, defaultRedactionPatterns } from "@meitheal/domain-observability";
+
+const logger = createLogger({
+  service: "meitheal-web", env: process.env.NODE_ENV ?? "development",
+  minLevel: "info", enabledCategories: ["tasks"],
+  redactPatterns: defaultRedactionPatterns, auditEnabled: false,
+});
 
 /**
  * Valid Jira-style link types for task-to-task relationships.
@@ -59,7 +66,7 @@ export const GET: APIRoute = async ({ params }) => {
 
     return apiJson({ outbound: outbound.rows, inbound: inbound.rows });
   } catch (err) {
-    console.error("[links] GET failed:", err);
+    logger.log("error", { event: "api.links.get_failed", domain: "tasks", component: "links-api", request_id: "system", message: `GET links failed: ${err}` });
     return apiError("Failed to fetch task links", 500);
   }
 };
@@ -131,12 +138,11 @@ export const POST: APIRoute = async ({ params, request }) => {
       args: [id, sourceTaskId, target_task_id, link_type, now],
     });
 
-    // Structured logging (#47)
-    console.log(`[links] Created: ${sourceTaskId} --${link_type}--> ${target_task_id} (link=${id})`);
+    logger.log("info", { event: "api.links.created", domain: "tasks", component: "links-api", request_id: "system", message: `Created link: ${sourceTaskId} --${link_type}--> ${target_task_id}` });
 
     return apiJson({ id, source_task_id: sourceTaskId, target_task_id, link_type, created_at: now, created: true }, 201);
   } catch (err) {
-    console.error("[links] POST failed:", err);
+    logger.log("error", { event: "api.links.post_failed", domain: "tasks", component: "links-api", request_id: "system", message: `POST link failed: ${err}` });
     return apiError("Failed to create task link", 500);
   }
 };
@@ -172,12 +178,11 @@ export const DELETE: APIRoute = async ({ params, url }) => {
       return apiError("Link not found or does not belong to this task", 404);
     }
 
-    // Structured logging (#47)
-    console.log(`[links] Deleted: link=${link_id} from task=${taskId}`);
+    logger.log("info", { event: "api.links.deleted", domain: "tasks", component: "links-api", request_id: "system", message: `Deleted link=${link_id} from task=${taskId}` });
 
     return apiJson({ deleted: true });
   } catch (err) {
-    console.error("[links] DELETE failed:", err);
+    logger.log("error", { event: "api.links.delete_failed", domain: "tasks", component: "links-api", request_id: "system", message: `DELETE link failed: ${err}` });
     return apiError("Failed to delete task link", 500);
   }
 };

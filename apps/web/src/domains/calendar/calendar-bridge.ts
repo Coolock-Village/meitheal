@@ -371,13 +371,68 @@ async function _syncEntityFromHAInner(entityId: string): Promise<{ created: numb
   }
 }
 
+/** Task metadata for rich calendar event descriptions */
+export interface TaskCalendarMeta {
+  status?: string | undefined;
+  priority?: number | undefined;
+  labels?: string[] | undefined;
+  checklists?: Array<{ text: string; done: boolean }> | undefined;
+  ticketKey?: string | undefined; // e.g. "MTH-42"
+}
+
+const PRIORITY_LABELS = ['', '🔴 Critical', '🟠 High', '🟡 Medium', '🔵 Low', '⚪ Lowest'] as const;
+
+/** Build a rich, human-readable description for a calendar event from task data */
+function buildCalendarDescription(
+  description: string | undefined,
+  meta?: TaskCalendarMeta,
+): string {
+  const parts: string[] = [];
+
+  // Task description
+  if (description?.trim()) {
+    parts.push(description.trim());
+  }
+
+  // Status + Priority line
+  const statusParts: string[] = [];
+  if (meta?.ticketKey) statusParts.push(`📋 ${meta.ticketKey}`);
+  if (meta?.status) statusParts.push(`Status: ${meta.status}`);
+  if (meta?.priority && meta.priority >= 1 && meta.priority <= 5) {
+    statusParts.push(PRIORITY_LABELS[meta.priority]!);
+  }
+  if (statusParts.length > 0) parts.push(statusParts.join(' · '));
+
+  // Labels (exclude internal ones)
+  const displayLabels = (meta?.labels ?? []).filter(
+    (l) => l !== 'calendar-sync' && l !== 'no-sync' && !l.startsWith('synced from '),
+  );
+  if (displayLabels.length > 0) {
+    parts.push(`🏷️ ${displayLabels.join(', ')}`);
+  }
+
+  // Checklists
+  if (meta?.checklists && meta.checklists.length > 0) {
+    const done = meta.checklists.filter((c) => c.done).length;
+    parts.push(`📝 Checklist (${done}/${meta.checklists.length})`);
+    for (const item of meta.checklists) {
+      parts.push(`  ${item.done ? '✅' : '☐'} ${item.text}`);
+    }
+  }
+
+  // Attribution
+  parts.push('Added from Meitheal');
+
+  return parts.join('\n');
+}
+
 /**
  * Push a task due date TO HA calendar — supports write-back deduplication.
  * If dueDate has no time component (YYYY-MM-DD only), creates an all-day event.
  */
 export async function pushTaskToCalendar(
   taskId: string, title: string, dueDate: string, description?: string,
-  targetEntityId?: string,
+  targetEntityId?: string, meta?: TaskCalendarMeta,
 ): Promise<boolean> {
   // Find the first entity with writeBack enabled, or use targetEntityId
   let writeBackEntity: CalendarSyncConfig | undefined;
@@ -429,12 +484,12 @@ export async function pushTaskToCalendar(
     end = new Date(new Date(dueDate).getTime() + 60 * 60 * 1000).toISOString();
   }
 
-  const descParts = [description, `Added from Meitheal`].filter(Boolean);
+  const richDescription = buildCalendarDescription(description, meta);
   const success = await createCalendarEvent(writeBackEntity.entityId, {
     summary: title,
     start,
     end,
-    description: descParts.join("\n\n"),
+    description: richDescription,
   });
 
   if (success) {

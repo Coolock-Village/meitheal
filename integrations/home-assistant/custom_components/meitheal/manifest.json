@@ -16,5 +16,9 @@
   ],
   "after_dependencies": [
     "conversation"
+  ],
+  "requirements": [],
+  "loggers": [
+    "custom_components.meitheal"
   ]
 }

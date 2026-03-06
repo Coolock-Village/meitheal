@@ -44,7 +44,16 @@ const HA_EVENT_MAP: Record<string, MeithealEventType> = {
  * The Settings UI persists events under `n8n_events` for both auto and
  * standalone modes. Returns the list of enabled event types, defaulting to all.
  */
+// P2.2: Cache n8n auto events with TTL to avoid DB reads on every task event
+let _cachedN8nEvents: string[] | null = null;
+let _n8nEventsCachedAt = 0;
+const N8N_EVENTS_TTL_MS = 60_000; // 60 seconds
+
 async function getN8nAutoEvents(): Promise<string[]> {
+  const now = Date.now();
+  if (_cachedN8nEvents && (now - _n8nEventsCachedAt) < N8N_EVENTS_TTL_MS) {
+    return _cachedN8nEvents;
+  }
   try {
     const client = getPersistenceClient();
     const result = await client.execute(
@@ -52,11 +61,46 @@ async function getN8nAutoEvents(): Promise<string[]> {
     );
     if (result.rows.length > 0) {
       const parsed = JSON.parse(String(result.rows[0]!.value));
-      if (Array.isArray(parsed) && parsed.length > 0) return parsed;
+      if (Array.isArray(parsed) && parsed.length > 0) {
+        _cachedN8nEvents = parsed;
+        _n8nEventsCachedAt = now;
+        return parsed;
+      }
     }
   } catch { /* fall through to defaults */ }
   // Default: all events enabled
-  return ["task.created", "task.updated", "task.completed", "task.deleted"];
+  const defaults = ["task.created", "task.updated", "task.completed", "task.deleted"];
+  _cachedN8nEvents = defaults;
+  _n8nEventsCachedAt = now;
+  return defaults;
+}
+
+// P2.1: Cache webhook/n8n settings with TTL
+let _cachedWebhookSettings: Record<string, unknown> | null = null;
+let _webhookSettingsCachedAt = 0;
+
+async function getCachedWebhookSettings(): Promise<Record<string, unknown>> {
+  const now = Date.now();
+  if (_cachedWebhookSettings && (now - _webhookSettingsCachedAt) < N8N_EVENTS_TTL_MS) {
+    return _cachedWebhookSettings;
+  }
+  const settings: Record<string, unknown> = {};
+  try {
+    const client = getPersistenceClient();
+    const result = await client.execute(
+      "SELECT key, value FROM settings WHERE key IN ('webhook_endpoint', 'webhook_secret', 'n8n_webhook_url', 'n8n_events')"
+    );
+    for (const row of result.rows) {
+      try {
+        settings[String(row.key)] = JSON.parse(String(row.value));
+      } catch {
+        settings[String(row.key)] = String(row.value);
+      }
+    }
+  } catch { /* no webhook settings — empty */ }
+  _cachedWebhookSettings = settings;
+  _webhookSettingsCachedAt = now;
+  return settings;
 }
 
 export async function dispatchTaskEvent(eventType: string, payload: Record<string, unknown>, requestId?: string) {
@@ -106,38 +150,29 @@ export async function dispatchTaskEvent(eventType: string, payload: Record<strin
     }
 
     // ── 2. HTTP Webhooks (Standalone mode) ──
-    const client = getPersistenceClient();
-    const result = await client.execute("SELECT key, value FROM settings WHERE key IN ('webhook_endpoint', 'webhook_secret', 'n8n_webhook_url', 'n8n_events')");
-
-    const settings: Record<string, unknown> = {};
-    for (const row of result.rows) {
-      try {
-        settings[String(row.key)] = JSON.parse(String(row.value));
-      } catch {
-        settings[String(row.key)] = String(row.value);
-      }
-    }
+    // P2.1: Cache webhook settings with TTL to avoid DB reads on every event
+    const webhookSettings = await getCachedWebhookSettings();
 
     const subscribers: WebhookSubscriberConfig[] = [];
 
-    if (settings.webhook_endpoint) {
+    if (webhookSettings.webhook_endpoint) {
       subscribers.push({
         id: "generic-webhook",
-        url: String(settings.webhook_endpoint),
-        secret: String(settings.webhook_secret || ""),
+        url: String(webhookSettings.webhook_endpoint),
+        secret: String(webhookSettings.webhook_secret || ""),
         events: ["*"],
         enabled: true,
       });
     }
 
-    if (settings.n8n_webhook_url) {
+    if (webhookSettings.n8n_webhook_url) {
       let events = ["*"];
-      if (Array.isArray(settings.n8n_events) && settings.n8n_events.length > 0) {
-        events = settings.n8n_events;
+      if (Array.isArray(webhookSettings.n8n_events) && webhookSettings.n8n_events.length > 0) {
+        events = webhookSettings.n8n_events;
       }
       subscribers.push({
         id: "n8n-webhook",
-        url: String(settings.n8n_webhook_url),
+        url: String(webhookSettings.n8n_webhook_url),
         secret: "", // n8n doesn't strictly require the secret signature from the UI
         events,
         enabled: true,

@@ -14,12 +14,16 @@ PLATFORMS = [Platform.TODO, Platform.SENSOR]
 # through Supervisor discovery. These are fallbacks for manual setup.
 DEFAULT_HOST = "local-meitheal"
 LEGACY_HOST = "local-meitheal-hub"
-# Full list of hostnames to try during connection test (manual setup only)
+# Full list of hostnames to try during connection test (manual setup only).
+# Ordered by likelihood: local install first, then common repo-hash patterns.
 HOSTNAME_CANDIDATES = [
     "local-meitheal",        # Local addon (hyphenated DNS form)
     "local_meitheal",        # Local addon (underscore form, some Supervisor versions)
     "local-meitheal-hub",    # Legacy slug
     "local_meitheal_hub",    # Legacy slug (underscore form)
+    "868b2fee-meitheal",     # GitHub repo hash for Coolock-Village/meitheal
+    "868b2fee_meitheal",     # GitHub repo hash (underscore form)
+    "meitheal",              # Short name (some custom setups)
 ]
 DEFAULT_PORT = 3000
 

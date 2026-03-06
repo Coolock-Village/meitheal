@@ -1,43 +1,70 @@
 create_task:
+  name: Create Task
+  description: Create a new task in Meitheal.
   fields:
     title:
+      name: Title
+      description: The title of the task to create
       required: true
+      example: "Buy groceries"
       selector:
         text:
     description:
-      required: false
+      name: Description
+      description: Optional description or notes for the task
+      example: "From the organic market"
       selector:
         text:
           multiline: true
 
 complete_task:
+  name: Complete Task
+  description: Mark a task as done by ID or title.
   fields:
     task_id:
-      required: false
+      name: Task ID
+      description: The task ID to complete (use either this or title)
+      example: "abc123"
       selector:
         text:
     title:
-      required: false
+      name: Title
+      description: Find and complete a task by title (use either this or task_id)
+      example: "Buy groceries"
       selector:
         text:
 
 sync_todo:
+  name: Sync Tasks
+  description: Trigger a manual refresh of task data from Meitheal.
 
 search_tasks:
+  name: Search Tasks
+  description: Search tasks by keyword. Returns matching tasks from Meitheal.
   fields:
     query:
+      name: Search Query
+      description: Keyword to search in task titles and descriptions
       required: true
+      example: "groceries"
       selector:
         text:
     status:
-      required: false
+      name: Status Filter
+      description: Filter by task status
+      example: "todo"
       selector:
         select:
           options:
-            - todo
-            - in_progress
-            - done
+            - "backlog"
+            - "todo"
+            - "in_progress"
+            - "done"
 
 get_overdue_tasks:
+  name: Get Overdue Tasks
+  description: Get a list of all tasks that are past their due date and not yet completed.
 
 notify_overdue:
+  name: Notify Overdue
+  description: Push a notification about overdue tasks to HA persistent notifications.

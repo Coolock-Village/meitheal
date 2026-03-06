@@ -1,7 +1,7 @@
 # Architecture
 
-**Analysis Date:** 2026-03-04
-**Version:** 0.1.63
+**Analysis Date:** 2026-03-06
+**Version:** 0.1.69
 
 ## Pattern
 
@@ -32,6 +32,7 @@
 - `ha/` — HA WebSocket events, connection management
 - `todo/` — HA todo list sync, status mapping
 - `tasks/` — persistence, sync service
+- `notifications/` — due-date reminder scheduler, notification dispatch
 - `offline/` — SW registration (`sw-register.ts`), PWA lifecycle
 - `integrations/vikunja-compat/` — Vikunja compatibility layer
 
@@ -95,6 +96,8 @@ POST /api/tasks/create
 | `integration.sync.requested` | Calendar sync initiated | taskId, integration, idempotencyKey |
 | `integration.sync.completed` | Calendar sync result | taskId, confirmationId/errorCode |
 | `compat.request.completed` | Compat API request finished | route, method, status, duration |
+| `notification.dispatched` | Task notification sent | taskId, channel, target |
+| `notification.due_reminder` | Due-date reminder fired | taskId, minutesUntilDue |
 
 ## Error Handling
 
@@ -125,4 +128,4 @@ POST /api/tasks/create
 
 ---
 
-*Architecture analysis: 2026-03-05 — v0.1.63 mobile responsive fixes*
+*Architecture analysis: 2026-03-06 — v0.1.69 notification system audit*

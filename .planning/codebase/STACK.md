@@ -1,7 +1,7 @@
 # Technology Stack
 
 **Analysis Date:** 2026-03-06
-**Version:** 0.1.68
+**Version:** 0.3.0
 
 ## Languages
 
@@ -195,21 +195,70 @@ Eviction runs on activate + throttled every 5 min during fetch. Update checks ev
 | CSP | Strict policy — no external CDN allowed (`font-src 'self'`, `style-src 'self' 'unsafe-inline'`) |
 | Error responses | All API catch blocks return generic `"Internal server error"` (CWE-209) |
 | Viewport | WCAG 2.1 SC 1.4.4 compliant (no `user-scalable=0`) |
+| Input validation | `sanitize-html` strips XSS vectors; taskId regex-validated before use |
+| Settings API | Sensitive keys (`grocy_api_key`, `webhook_secret`) redacted in bulk GET |
 | Image signing | OCI labels for provenance |
 | Watchdog | Supervisor health monitoring via `/api/health` |
 | Backup | `cold` — addon stops during backup for data consistency |
 | Lockfile | `--frozen-lockfile` enforced in Dockerfile (both build + prod stages) |
+| HA checklist | Passes both [component](https://developers.home-assistant.io/docs/creating_component_code_review) and [platform](https://developers.home-assistant.io/docs/creating_platform_code_review) checklists |
+| CODEOWNERS | Review required for auth, middleware, rate-limit, HA integration paths |
+| Dependabot | Weekly scans for npm, GitHub Actions, and Docker base images |
+
+## Notification System
+
+**Architecture:** Multi-channel notification dispatch with per-user preferences, platform-specific enrichments, and a due-date reminder scheduler.
+
+| Component | File | Purpose |
+|-----------|------|---------|
+| Dispatch Engine | `src/pages/api/tasks/[id].ts` | Sends sidebar + mobile push on assignment/P1 escalation |
+| Due-Date Scheduler | `src/domains/notifications/due-date-reminders.ts` | 5-min interval, sends reminders for tasks due within configurable window |
+| Mark Done Handler | `src/domains/ha/ha-connection.ts` | Handles actionable notification buttons (status → done) |
+| Settings UI | `src/components/settings/SettingsGeneral.astro` | Per-user toggles, channel config, reminder window |
+| Settings API | `src/pages/api/settings.ts` | Persists `notification_preferences` key |
+
+**Notification Channels:**
+
+| Channel | Service | Features |
+|---------|---------|----------|
+| Sidebar Bell | `persistent_notification.create` | Markdown, deep links, auto-dismiss on completion |
+| Mobile Push | `notify.mobile_app_*` | Channels (urgent/tasks/reminders), importance, interruption-level |
+| Calendar Reminder | `calendar.create_event` | 15-min event propagates to phone calendars |
+
+**Platform Enrichments:**
+
+| Platform | Feature | Implementation |
+|----------|---------|----------------|
+| Android | Heads-up (P1) | `importance: "high"`, channel `meitheal_urgent` |
+| Android | Accent color | `color: "#10b981"` (green) / `"#f59e0b"` (amber reminders) |
+| Android | Actionable buttons | "Open Task" (URI), "✅ Mark Done" (event action) |
+| iOS | Focus bypass (P1) | `interruption-level: "time-sensitive"` |
+| iOS | Badge count | Open task count on HA app icon |
+
+**Production Safety:**
+
+| Concern | Mitigation |
+|---------|------------|
+| Memory leaks | Bounded `sentReminders` Set (500 max, bulk-prune 50) |
+| Race conditions | `processing` flag in `finally` block |
+| Crash prevention | All WS event handlers wrapped in try/catch |
+| Settings thrashing | Cached with 5-min TTL (matches scheduler interval) |
+| Module re-imports | Refs cached after first load |
+| Schema overhead | `ensureSchema()` called once per process lifetime |
+| SQL efficiency | Date-filtered queries (ISO + epoch fallback) |
+| Input validation | TaskId regex + `encodeURIComponent` before fetch |
 
 ## Middleware (`src/middleware.ts`)
 
 | Feature | Details |
 |---------|---------|
-| Ingress path rewriting | Rewrites HTML `href`/`src` + CSS `url()` for HA ingress proxy |
-| Ingress state persistence | Saves route + scroll to `sessionStorage`; restores within 60s after iframe recreation |
+| Ingress path rewriting | Rewrites HTML `href`/`src` + CSS `url()` for HA ingress proxy; OOM guard at 5MB |
+| Settings cache | Regional settings cached with 60s TTL (avoids DB query per request) |
 | CSP headers | Strict policy injected on every response |
 | Regional settings | Reads cookies → sets `Astro.locals` (timezone, weekStart, dateFormat) |
-| CSRF protection | Validates `Origin` header on non-GET requests |
-| Rate limiting | Token-bucket per IP on `/api/` routes |
+| CSRF protection | Validates `Origin`/`Referer` on non-GET requests; rejects missing headers in standalone mode |
+| Rate limiting | Token-bucket per IP on `/api/` routes; 10K entry cap with FIFO eviction |
+| IP normalization | Port stripping, IPv6 bracket unwrapping, whitespace trim |
 | Ingress context | `ingress-policy.ts` determines ingress path from `X-Ingress-Path` header |
 
 ## Ingress Double-Slash Fix (`scripts/serve.mjs`)
@@ -230,4 +279,4 @@ HA Supervisor can send requests with `//` paths. Astro's internal `collapseDupli
 
 ---
 
-*Stack analysis: 2026-03-04 — v0.1.59 Phase 59 PWA activation + cache eviction*
+*Stack analysis: 2026-03-06 — v0.3.0 Security hardening audit (CSRF fix, rate limiter caps, settings cache, OOM guard, HA publishing checklist compliance)*

@@ -8,6 +8,7 @@ from typing import Any
 
 import aiohttp
 from homeassistant.core import HomeAssistant
+from homeassistant.helpers.aiohttp_client import async_get_clientsession
 from homeassistant.helpers.update_coordinator import DataUpdateCoordinator, UpdateFailed
 
 from .const import DOMAIN, SCAN_INTERVAL
@@ -63,7 +64,9 @@ class MeithealCoordinator(DataUpdateCoordinator[MeithealCoordinatorData]):
             update_interval=SCAN_INTERVAL,
         )
         self._base_url = f"http://{host}:{port}"
-        self._session: aiohttp.ClientSession | None = None
+        # Use HA's shared aiohttp session — managed by HA lifecycle,
+        # handles SSL, and doesn't leak on error paths.
+        self._session: aiohttp.ClientSession = async_get_clientsession(hass)
         self._previous_data: MeithealCoordinatorData | None = None
 
     # ── Event Bus Helpers ─────────────────────────────────────────────
@@ -91,10 +94,7 @@ class MeithealCoordinator(DataUpdateCoordinator[MeithealCoordinatorData]):
         self.hass.bus.async_fire("logbook_entry", logbook_data)
 
     async def _ensure_session(self) -> aiohttp.ClientSession:
-        """Get or create aiohttp session."""
-        if self._session is None or self._session.closed:
-            timeout = aiohttp.ClientTimeout(total=15)
-            self._session = aiohttp.ClientSession(timeout=timeout)
+        """Return the HA shared aiohttp session."""
         return self._session
 
     async def _async_update_data(self) -> MeithealCoordinatorData:
@@ -289,6 +289,9 @@ class MeithealCoordinator(DataUpdateCoordinator[MeithealCoordinatorData]):
             return await response.json()
 
     async def async_shutdown(self) -> None:
-        """Close the aiohttp session."""
-        if self._session and not self._session.closed:
-            await self._session.close()
+        """Clean up coordinator state.
+
+        Session is managed by HA's shared client — no need to close it.
+        """
+        await super().async_shutdown()
+        self._previous_data = None

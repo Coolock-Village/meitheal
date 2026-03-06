@@ -23,14 +23,22 @@ const logger = createLogger({
 
 
 // ── In-memory rate limiter (R-107) ──
+// Capped at MAX_ENTRIES to prevent OOM under DDoS. Oldest entries evicted
+// when the cap is reached via FIFO iteration order of Map.
 const rateLimitMap = new Map<string, { count: number; resetAt: number }>();
 const RATE_LIMIT = 120; // requests per window
 const RATE_WINDOW_MS = 60_000; // 1 minute
+const MAX_RATE_ENTRIES = 10_000; // memory cap (~800KB at peak)
 
 function getRateLimit(ip: string): { remaining: number; resetAt: number; exceeded: boolean } {
   const now = Date.now();
   let entry = rateLimitMap.get(ip);
   if (!entry || now >= entry.resetAt) {
+    // Evict oldest entries if we've hit the cap (FIFO via Map insertion order)
+    if (rateLimitMap.size >= MAX_RATE_ENTRIES) {
+      const firstKey = rateLimitMap.keys().next().value;
+      if (firstKey !== undefined) rateLimitMap.delete(firstKey);
+    }
     entry = { count: 0, resetAt: now + RATE_WINDOW_MS };
     rateLimitMap.set(ip, entry);
   }
@@ -39,13 +47,21 @@ function getRateLimit(ip: string): { remaining: number; resetAt: number; exceede
   return { remaining, resetAt: entry.resetAt, exceeded: entry.count > RATE_LIMIT };
 }
 
-// Periodic cleanup (every 5 min)
-setInterval(() => {
+// Periodic cleanup (every 5 min). unref() so the timer doesn't
+// prevent the Node process from exiting on shutdown.
+const _rateLimitCleanup = setInterval(() => {
   const now = Date.now();
   for (const [ip, entry] of rateLimitMap) {
     if (now >= entry.resetAt) rateLimitMap.delete(ip);
   }
 }, 5 * 60_000);
+if (typeof _rateLimitCleanup?.unref === "function") _rateLimitCleanup.unref();
+
+// ── Settings cache (avoids DB query on every request) ──
+// TTL: 60s — settings change rarely, no need to hit SQLite every request.
+let _settingsCache: { timezone: string; weekStart: string; dateFormat: string } | null = null;
+let _settingsCacheExpiry = 0;
+const SETTINGS_CACHE_TTL_MS = 60_000;
 
 function applyRateLimitHeaders(response: Response, remaining: number, resetAt: number): void {
   response.headers.set("x-ratelimit-limit", String(RATE_LIMIT));
@@ -71,7 +87,21 @@ async function rewriteIngressPaths(response: Response, ingressPath: string): Pro
 
   if (!contentType.includes("text/html")) return response;
 
+  // Guard: skip rewriting excessively large responses (>5MB) to prevent OOM.
+  // Normal pages are <500KB; anything larger is likely a data export or error.
+  const contentLength = Number(response.headers.get("content-length") || 0);
+  if (contentLength > 5 * 1024 * 1024) return response;
+
   const html = await response.text();
+
+  // Double-check size after reading (content-length may be absent/wrong)
+  if (html.length > 5 * 1024 * 1024) {
+    return new Response(html, {
+      status: response.status,
+      statusText: response.statusText,
+      headers: response.headers,
+    });
+  }
 
   // Inject runtime ingress path for client-side JS (must come before any scripts)
   const ingressScript = `<script>window.__ingress_path="${ingressPath}";</script>`;
@@ -123,27 +153,42 @@ export const onRequest: MiddlewareHandler = async ({ request, locals }, next) =>
     });
   }
 
-  // Load regional settings for SSR
+  // Load regional settings for SSR (cached for 60s to avoid DB per-request)
   locals.timezone = "Europe/Dublin";
   locals.weekStart = "monday";
   locals.dateFormat = "relative";
-  try {
-    await ensureSchema();
-    const db = getPersistenceClient();
-    const res = await db.execute("SELECT key, value FROM settings WHERE key IN ('timezone', 'week_start', 'date_format')");
-    for (const row of res.rows) {
-      if (row.key === "timezone" && typeof row.value === "string") locals.timezone = row.value;
-      if (row.key === "week_start" && typeof row.value === "string") locals.weekStart = row.value;
-      if (row.key === "date_format" && typeof row.value === "string") locals.dateFormat = row.value as DateFormat;
+  const now = Date.now();
+  if (_settingsCache && now < _settingsCacheExpiry) {
+    locals.timezone = _settingsCache.timezone;
+    locals.weekStart = _settingsCache.weekStart;
+    locals.dateFormat = _settingsCache.dateFormat as DateFormat;
+  } else {
+    try {
+      await ensureSchema();
+      const db = getPersistenceClient();
+      const res = await db.execute("SELECT key, value FROM settings WHERE key IN ('timezone', 'week_start', 'date_format')");
+      for (const row of res.rows) {
+        if (row.key === "timezone" && typeof row.value === "string") locals.timezone = row.value;
+        if (row.key === "week_start" && typeof row.value === "string") locals.weekStart = row.value;
+        if (row.key === "date_format" && typeof row.value === "string") locals.dateFormat = row.value as DateFormat;
+      }
+      _settingsCache = { timezone: locals.timezone, weekStart: locals.weekStart, dateFormat: locals.dateFormat };
+      _settingsCacheExpiry = now + SETTINGS_CACHE_TTL_MS;
+    } catch {
+      /* ignore db errors, defaults used */
     }
-  } catch {
-    /* ignore db errors, defaults used */
   }
 
   // Rate limiting (API routes only)
-  const ip = request.headers.get("x-forwarded-for")?.split(",")[0]?.trim()
+  // Extract client IP — strip port numbers, normalize whitespace.
+  // x-forwarded-for can contain multiple IPs; use the leftmost (client).
+  // Note: behind HA Supervisor ingress, this is trusted.
+  const rawIp = (request.headers.get("x-forwarded-for")?.split(",")[0]?.trim()
     || request.headers.get("x-real-ip")
-    || "127.0.0.1";
+    || "127.0.0.1")
+    .replace(/:\d+$/, "")   // strip port (e.g. "192.168.1.1:54321" → "192.168.1.1")
+    .replace(/^\[|\]$/g, ""); // unwrap IPv6 brackets
+  const ip = rawIp || "127.0.0.1";
   const rateInfo = getRateLimit(ip);
 
   if (rateInfo.exceeded && url.pathname.startsWith("/api/")) {

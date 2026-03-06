@@ -130,8 +130,25 @@ export async function pushToActiveSyncs(
       const hasWriteBack = calConfigs.some((c) => c.writeBack);
 
       if (hasWriteBack) {
+        // Build metadata for rich calendar description
+        const priority = typeof payload.priority === 'number' ? payload.priority : undefined;
+        const ticketNumber = typeof payload.ticket_number === 'number' ? payload.ticket_number : undefined;
+        let checklists: Array<{ text: string; done: boolean }> | undefined;
+        try {
+          const raw = typeof payload.checklists === 'string' ? JSON.parse(payload.checklists) : payload.checklists;
+          if (Array.isArray(raw)) checklists = raw;
+        } catch { /* ignore */ }
+
+        const meta = {
+          status,
+          priority,
+          labels,
+          checklists,
+          ticketKey: ticketNumber ? `MTH-${ticketNumber}` : undefined,
+        };
+
         // pushTaskToCalendar already handles writeBack check and dedup internally
-        pushTaskToCalendar(taskId, title, dueDate, description).catch((err) => {
+        pushTaskToCalendar(taskId, title, dueDate, description, undefined, meta).catch((err) => {
           logger.log("error", {
             event: "sync.outbound.calendar.failed", domain: "integrations",
             component: "sync-outbound", request_id: "system",

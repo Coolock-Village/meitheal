@@ -1,7 +1,7 @@
 # External Integrations
 
 **Analysis Date:** 2026-03-06
-**Version:** 0.1.68
+**Version:** 0.3.0
 
 ## Home Assistant Calendar
 
@@ -44,18 +44,35 @@
 |----------|-------|
 | Path | `integrations/home-assistant/custom_components/meitheal/` |
 | Type | `hub` integration with config flow |
-| Discovery | Supervisor Discovery API — zero-touch setup via `async_step_hassio` |
-| Device | All entities grouped under "Meitheal" device (manufacturer: Coolock Village, model: Task Engine) |
+| Discovery | Supervisor Discovery API — zero-touch setup via `async_step_hassio`, 3-attempt retry with 5s delay |
+| Device Registry | Auto-creates device entry (manufacturer: Coolock Village, model: Task Engine, entry_type: SERVICE) |
+| Hostname Fix | Underscores→hyphens conversion for Docker DNS resolution (`868b2fee_meitheal` → `868b2fee-meitheal`) |
 | Entities | `todo.meitheal_tasks`, `sensor.meitheal_active_tasks`, `sensor.meitheal_overdue_tasks`, `sensor.meitheal_total_tasks` |
-| Services | `meitheal.create_task`, `meitheal.complete_task`, `meitheal.sync_todo`, `meitheal.search_tasks`, `meitheal.get_overdue_tasks` |
+| Services | `meitheal.create_task`, `meitheal.complete_task`, `meitheal.sync_todo`, `meitheal.search_tasks`, `meitheal.get_overdue_tasks`, `meitheal.notify_overdue` |
 | LLM Tools | 10: `search_tasks`, `create_task`, `complete_task`, `delete_task`, `update_task`, `get_overdue_tasks`, `get_todays_tasks`, `get_task_summary`, `get_upcoming_events`, `daily_briefing` + `batch_complete` |
 | MCP Tools | 13: `searchTasks`, `createTask`, `completeTask`, `updateTask`, `getCalendarEvents`, `getUpcoming`, `syncCalendar`, `assignTask`, `listUsers` + more |
 | Communication | REST API to addon at `http://{host}:{port}/api/tasks` |
 | Polling | 30s via `DataUpdateCoordinator` |
 | Auto-install | Addon copies component to `/homeassistant/custom_components/` at boot |
-| Auto-setup | Addon calls `POST /discovery` on Supervisor API → triggers `async_step_hassio()` in config_flow |
+| Auto-setup | Addon calls `POST /discovery` on Supervisor API (3 retries) → triggers `async_step_hassio()` in config_flow |
+| Session | Uses HA shared aiohttp session (`async_get_clientsession`) — no self-managed sessions |
 | Config | Auto-discovered on addon start; manual fallback: Settings → Devices & Services → Add Integration → Meitheal |
+| HA Checklist | Passes both [component](https://developers.home-assistant.io/docs/creating_component_code_review) and [platform](https://developers.home-assistant.io/docs/creating_platform_code_review) publishing checklists |
 | Icon | `icon.png` bundled in component directory |
+
+## Companion App Integration
+
+| Property | Value |
+|----------|-------|
+| Path | `integrations/home-assistant/companion_actions.yaml`, `blueprints/` |
+| Docs | `docs/companion-app-setup.md` |
+| Platforms | Android (shortcuts, widgets, quick settings) + iOS (Siri, Apple Watch, CarPlay) |
+| Scripts | `meitheal_quick_task`, `meitheal_check_overdue`, `meitheal_sync_now`, `meitheal_daily_summary` |
+| iOS Actions | `MEITHEAL_ADD_TASK`, `MEITHEAL_SHOW_OVERDUE`, `MEITHEAL_SYNC`, `MEITHEAL_DAILY_SUMMARY` |
+| Haptics | Android vibration pattern: `100, 200, 100, 200` on task notifications |
+| Deep-links | Ingress paths for direct task navigation |
+| Blueprints | Task notifications with actions, quick-add from reply, complete from notification button |
+| Android Shortcuts | Dashboard path: `/api/hassio_ingress/<TOKEN>/[kanban\|today\|calendar]` |
 
 ## Vikunja Compatibility API
 
@@ -222,6 +239,22 @@ podman run --rm -v /tmp/meitheal_test_data:/data:Z -p 4600:3000 local/meitheal-h
 
 Addon runs on `http://127.0.0.1:4600` in standalone mode. "Failed to get addon config from Supervisor API" is expected.
 
+## Notification Dispatch System
+
+| Property | Value |
+|----------|-------|
+| Domain | `domains/notifications/` bounded context |
+| Dispatch | `tasks/[id].ts` PUT handler — fires on assignment, P1 escalation, completion |
+| Scheduler | `due-date-reminders.ts` — 5-min interval, configurable window (5-1440 min) |
+| Channels | Sidebar bell (`persistent_notification`), mobile push (`notify.mobile_app_*`), calendar reminder (`calendar.create_event`) |
+| Settings | `notification_preferences` key in settings table |
+| Per-user | `disabled_users` array in prefs — users can opt out individually |
+| Android | Channels (`meitheal_urgent`, `meitheal_tasks`, `meitheal_reminders`), importance levels, accent colors, actionable buttons |
+| iOS | `interruption-level: time-sensitive` for P1, badge counts |
+| Actionable | "✅ Mark Done" button fires `MEITHEAL_TASK_DONE_{id}` event → `ha-connection.ts` handler |
+| Auto-dismiss | On task completion: clears `meitheal_urgent_*`, `meitheal_assigned_*`, `meitheal_due_*` tags |
+| Safety | Bounded sentReminders Set (500), processing mutex, cached settings (5-min TTL), try/catch on all WS handlers |
+
 ---
 
-*Integration audit: 2026-03-04 — Phase 57b updated*
+*Integration audit: 2026-03-06 — v0.1.69 notification dispatch system added*

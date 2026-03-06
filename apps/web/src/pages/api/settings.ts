@@ -49,15 +49,21 @@ export const GET: APIRoute = async ({ url }) => {
       return apiJson({ key: String(row.key), value: JSON.parse(String(row.value)) });
     }
 
-    // Return all settings
+    // P3.1: Return all settings (filter sensitive keys from bulk response)
+    const SENSITIVE_KEYS = new Set(["grocy_api_key", "webhook_secret"]);
     const result = await client.execute("SELECT key, value FROM settings ORDER BY key");
     const settings: Record<string, unknown> = {};
     for (const row of result.rows) {
       const r = row as Record<string, unknown>;
+      const k = String(r.key);
+      if (SENSITIVE_KEYS.has(k)) {
+        settings[k] = "••••••••"; // Redact sensitive values in bulk response
+        continue;
+      }
       try {
-        settings[String(r.key)] = JSON.parse(String(r.value));
+        settings[k] = JSON.parse(String(r.value));
       } catch {
-        settings[String(r.key)] = String(r.value);
+        settings[k] = String(r.value);
       }
     }
     return apiJson(settings);

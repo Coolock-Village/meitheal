@@ -15,6 +15,15 @@ from .const import DEFAULT_HOST, DEFAULT_PORT, DOMAIN, HOSTNAME_CANDIDATES
 _LOGGER = logging.getLogger(__name__)
 
 
+def _hyphenate(hostname: str) -> str:
+    """Convert underscores to hyphens for Docker DNS resolution.
+
+    Supervisor names addon containers as {REPO}_{SLUG} (with underscores),
+    but the internal Docker DNS only resolves hyphenated hostnames.
+    """
+    return hostname.replace("_", "-")
+
+
 class MeithealConfigFlow(ConfigFlow, domain=DOMAIN):
     """Config flow for Meitheal integration."""
 
@@ -35,6 +44,12 @@ class MeithealConfigFlow(ConfigFlow, domain=DOMAIN):
         Triggered automatically when the addon calls POST /discovery
         on the Supervisor API at boot. The discovery payload includes
         the dynamically-discovered addon hostname from /addons/self/info.
+
+        IMPORTANT: We intentionally do NOT test the connection here.
+        The addon may still be starting up when HA Core processes the
+        discovery message. We always show the "Discovered" card and
+        defer the connection test to async_step_hassio_confirm (when
+        the user clicks Submit) and async_setup_entry.
         """
         await self.async_set_unique_id(DOMAIN)
         self._abort_if_unique_id_configured()
@@ -42,44 +57,70 @@ class MeithealConfigFlow(ConfigFlow, domain=DOMAIN):
         host = discovery_info.get(CONF_HOST, DEFAULT_HOST)
         port = int(discovery_info.get(CONF_PORT, DEFAULT_PORT))
 
-        self._discovered_host = host
+        # Normalize hostname — Supervisor uses underscores, DNS uses hyphens
+        self._discovered_host = _hyphenate(host)
         self._discovered_port = port
 
-        # Validate the connection before showing confirmation
-        if not await self._test_connection(host, port):
-            _LOGGER.warning(
-                "Cannot connect to Meitheal at %s:%s — trying fallback hostnames",
-                host,
-                port,
-            )
-            # Try fallback hostnames in case the discovered one doesn't resolve
-            working_host = await self._find_working_host(port)
-            if working_host:
-                self._discovered_host = working_host
-                _LOGGER.info(
-                    "Connected to Meitheal via fallback hostname: %s:%s",
-                    working_host,
-                    port,
-                )
-            else:
-                # Don't abort — let user confirm and try later
-                # The addon might still be starting up
-                _LOGGER.warning(
-                    "Cannot reach Meitheal at any hostname — showing confirm dialog anyway"
-                )
+        _LOGGER.info(
+            "Meitheal addon discovered via Supervisor: %s:%s",
+            self._discovered_host,
+            self._discovered_port,
+        )
 
-        return await self.async_step_hassio_confirm()
+        return self.async_show_form(
+            step_id="hassio_confirm",
+            description_placeholders={
+                "addon": "Meitheal",
+                "host": self._discovered_host,
+                "port": str(self._discovered_port),
+            },
+        )
 
     async def async_step_hassio_confirm(
         self, user_input: dict[str, Any] | None = None
     ) -> ConfigFlowResult:
-        """Confirm Supervisor addon discovery."""
+        """Confirm Supervisor addon discovery.
+
+        When the user clicks Submit, we test the connection. If it fails,
+        we try fallback hostnames. If all fail, we still allow setup
+        (the coordinator will retry on its polling interval).
+        """
+        errors: dict[str, str] = {}
+
         if user_input is not None:
+            host = self._discovered_host
+            port = self._discovered_port
+
+            # Test with the discovered host first
+            if not await self._test_connection(host, port):
+                _LOGGER.warning(
+                    "Cannot connect to Meitheal at %s:%s — trying fallback hostnames",
+                    host,
+                    port,
+                )
+                working_host = await self._find_working_host(port)
+                if working_host:
+                    host = working_host
+                    _LOGGER.info(
+                        "Connected to Meitheal via fallback hostname: %s:%s",
+                        working_host,
+                        port,
+                    )
+                else:
+                    # Allow setup anyway — coordinator will retry
+                    _LOGGER.warning(
+                        "Cannot reach Meitheal at any hostname — "
+                        "proceeding with discovered host %s:%s "
+                        "(coordinator will retry on polling interval)",
+                        host,
+                        port,
+                    )
+
             return self.async_create_entry(
                 title="Meitheal",
                 data={
-                    CONF_HOST: self._discovered_host,
-                    CONF_PORT: self._discovered_port,
+                    CONF_HOST: host,
+                    CONF_PORT: port,
                 },
             )
 
@@ -87,7 +128,10 @@ class MeithealConfigFlow(ConfigFlow, domain=DOMAIN):
             step_id="hassio_confirm",
             description_placeholders={
                 "addon": "Meitheal",
+                "host": self._discovered_host,
+                "port": str(self._discovered_port),
             },
+            errors=errors,
         )
 
     # ── Manual user setup (fallback) ─────────────────────────────────────
@@ -101,6 +145,9 @@ class MeithealConfigFlow(ConfigFlow, domain=DOMAIN):
         if user_input is not None:
             host = user_input[CONF_HOST]
             port = user_input[CONF_PORT]
+
+            # Normalize hostname
+            host = _hyphenate(host)
 
             # Validate connection — try exact host first, then fallbacks
             if await self._test_connection(host, port):

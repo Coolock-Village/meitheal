@@ -82,6 +82,23 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
     hass.data.setdefault(DOMAIN, {})
     hass.data[DOMAIN][entry.entry_id] = coordinator
 
+    # ── Register Meitheal as a device ────────────────────────────────────
+    # This creates a device entry so Meitheal appears in Settings → Devices,
+    # and enables companion app features: device automations, Android shortcuts,
+    # iOS quick actions, Siri shortcuts, and widget integrations.
+    from homeassistant.helpers import device_registry as dr
+    dev_reg = dr.async_get(hass)
+    dev_reg.async_get_or_create(
+        config_entry_id=entry.entry_id,
+        identifiers={(DOMAIN, "meitheal_hub")},
+        name="Meitheal",
+        manufacturer="Coolock Village",
+        model="Task Engine",
+        sw_version=entry.data.get("version", "0.2.0"),
+        entry_type=dr.DeviceEntryType.SERVICE,
+        configuration_url=f"http://{host}:{port}",
+    )
+
     # Forward to platforms (todo, sensor)
     await hass.config_entries.async_forward_entry_setups(entry, PLATFORMS)
 

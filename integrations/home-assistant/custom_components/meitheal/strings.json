@@ -15,7 +15,7 @@
       },
       "hassio_confirm": {
         "title": "Meitheal Discovered",
-        "description": "The Meitheal addon was automatically detected. Click Submit to finish setup.\n\nAfter setup, select \"Meitheal Tasks\" in your conversation agent settings (Settings → Voice Assistants → [Agent] → LLM APIs) to enable voice task management."
+        "description": "The Meitheal addon was automatically detected at {host}:{port}.\n\nClick **Submit** to finish setup.\n\nAfter setup, select \"Meitheal Tasks\" in your conversation agent settings (Settings → Voice Assistants → [Agent] → LLM APIs) to enable voice task management."
       }
     },
     "abort": {
@@ -87,7 +87,7 @@
         },
         "status": {
           "name": "Status Filter",
-          "description": "Filter by task status (todo, in_progress, or done)"
+          "description": "Filter by task status (backlog, todo, in_progress, or done)"
         }
       }
     },

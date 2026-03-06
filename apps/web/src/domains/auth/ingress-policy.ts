@@ -17,11 +17,20 @@ function extractHost(urlValue: string | null): string | null {
 
 export function isCsrfAllowed(input: CsrfValidationInput): boolean {
   const { behindIngress, isDev, origin, referer, host } = input;
+  // Behind ingress: HA Supervisor handles session auth; skip CSRF.
+  // Dev mode: relaxed for local development.
   if (isDev || behindIngress) return true;
 
   const originHost = extractHost(origin);
   const refererHost = extractHost(referer);
-  if (!origin && !referer) return true;
+
+  // Standalone mode: if neither origin nor referer is present,
+  // reject the request. Browsers always send origin on cross-origin
+  // POST/PUT/DELETE. Same-origin requests include referer by default.
+  // Missing both headers likely indicates a non-browser client or
+  // a stripped-headers attack.
+  if (!origin && !referer) return false;
+
   return originHost === host || refererHost === host;
 }
 

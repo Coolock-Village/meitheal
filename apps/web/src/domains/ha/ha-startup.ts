@@ -28,6 +28,20 @@ const logger = createLogger({
 });
 const SYS_REQ = "ha-system";
 
+// Cached DB references — avoids 4x repeated dynamic import + ensureSchema
+let _dbReady = false;
+let _getPersistenceClient: (() => ReturnType<typeof import("@domains/tasks/persistence/store")["getPersistenceClient"]>) | null = null;
+
+async function getDB() {
+  if (!_dbReady) {
+    const mod = await import("@domains/tasks/persistence/store");
+    await mod.ensureSchema();
+    _getPersistenceClient = mod.getPersistenceClient;
+    _dbReady = true;
+  }
+  return _getPersistenceClient!();
+}
+
 let initialized = false;
 let initializing = false;
 
@@ -96,6 +110,9 @@ export async function initHAIntegrations(): Promise<void> {
     // Step 6: Validate webhook/n8n endpoints (non-blocking)
     await validateWebhookEndpoints();
 
+    // Step 7: Start due-date reminder scheduler
+    await autoStartDueDateReminders();
+
     initialized = true;
     logger.log("info", {
       event: "ha.startup.complete",
@@ -121,11 +138,7 @@ export async function initHAIntegrations(): Promise<void> {
  */
 async function autoStartTodoSync(): Promise<void> {
   try {
-    const { ensureSchema, getPersistenceClient } = await import(
-      "@domains/tasks/persistence/store"
-    );
-    await ensureSchema();
-    const client = getPersistenceClient();
+    const client = await getDB();
 
     // Read todo sync settings
     const res = await client.execute({
@@ -218,11 +231,7 @@ async function autoStartTodoSync(): Promise<void> {
  */
 async function autoStartCalendarSync(): Promise<void> {
   try {
-    const { ensureSchema, getPersistenceClient } = await import(
-      "@domains/tasks/persistence/store"
-    );
-    await ensureSchema();
-    const client = getPersistenceClient();
+    const client = await getDB();
 
     const res = await client.execute({
       sql: `SELECT key, value FROM settings WHERE key IN (
@@ -349,11 +358,7 @@ async function autoStartCalendarSync(): Promise<void> {
  */
 async function autoStartGrocySync(): Promise<void> {
   try {
-    const { ensureSchema, getPersistenceClient } = await import(
-      "@domains/tasks/persistence/store"
-    );
-    await ensureSchema();
-    const client = getPersistenceClient();
+    const client = await getDB();
 
     // Read grocy sync settings
     const res = await client.execute({
@@ -429,11 +434,7 @@ async function autoStartGrocySync(): Promise<void> {
  */
 async function validateWebhookEndpoints(): Promise<void> {
   try {
-    const { ensureSchema, getPersistenceClient } = await import(
-      "@domains/tasks/persistence/store"
-    );
-    await ensureSchema();
-    const client = getPersistenceClient();
+    const client = await getDB();
 
     const res = await client.execute({
       sql: "SELECT key, value FROM settings WHERE key IN ('webhook_endpoint', 'n8n_webhook_url')",
@@ -503,6 +504,35 @@ async function validateWebhookEndpoints(): Promise<void> {
       component: "ha-startup",
       request_id: SYS_REQ,
       message: `Webhook validation failed: ${err}`,
+    });
+  }
+}
+
+/**
+ * Start the due-date reminder scheduler.
+ * Sends notifications for tasks with upcoming due dates (within 1 hour).
+ * Also creates calendar events as native phone reminders.
+ */
+async function autoStartDueDateReminders(): Promise<void> {
+  try {
+    const { startDueDateReminders } = await import(
+      "@domains/notifications/due-date-reminders"
+    );
+    startDueDateReminders();
+    logger.log("info", {
+      event: "ha.startup.due_date_reminders.started",
+      domain: "notifications",
+      component: "ha-startup",
+      request_id: SYS_REQ,
+      message: "Due-date reminder scheduler started",
+    });
+  } catch (err) {
+    logger.log("error", {
+      event: "ha.startup.due_date_reminders.failed",
+      domain: "notifications",
+      component: "ha-startup",
+      request_id: SYS_REQ,
+      message: `Failed to start due-date reminder scheduler: ${err}`,
     });
   }
 }

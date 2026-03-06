@@ -15,8 +15,15 @@ Python custom component that registers Meitheal as a first-class HA integration.
 | `meitheal.sync_todo`            | Service        | Manual data refresh                |
 | `meitheal.search_tasks`         | Service        | Search tasks by keyword/status     |
 | `meitheal.get_overdue_tasks`    | Service        | List all overdue tasks             |
+| `meitheal.notify_overdue`       | Service        | Push overdue notification to HA    |
 
 All entities are grouped under a single **Meitheal** device (manufacturer: Coolock Village, model: Task Engine).
+
+**Also includes:**
+
+- **Diagnostics:** Download from Settings → Devices & Services → Meitheal → Download Diagnostics
+- **Device Triggers:** Automation triggers on task create/complete/delete events
+- **Companion App:** Android shortcuts, iOS Siri/Apple Watch/CarPlay integration
 
 ### LLM API Tools (Conversation Agents)
 
@@ -28,8 +35,13 @@ When HA 2026.3+ is available, Meitheal registers an LLM API that exposes these t
 | `meitheal_get_task` | Get full task details by ID |
 | `meitheal_create_task` | Create a new task |
 | `meitheal_complete_task` | Mark a task as done |
+| `meitheal_delete_task` | Delete a task |
+| `meitheal_update_task` | Update task fields |
 | `meitheal_get_overdue` | List overdue tasks |
+| `meitheal_get_todays_tasks` | List tasks due today |
 | `meitheal_task_summary` | Get counts (active, overdue, total, done) |
+| `meitheal_daily_briefing` | Full daily summary with agenda |
+| `meitheal_batch_complete` | Mark multiple tasks as done |
 
 ## Installation
 
@@ -104,3 +116,42 @@ automation:
         data:
           message: "You have {{ states('sensor.meitheal_overdue_tasks') }} overdue tasks!"
 ```
+
+## Notification System
+
+The addon dispatches notifications through HA services:
+
+| Channel | Service | Trigger |
+|---------|---------|---------|
+| Sidebar Bell | `persistent_notification.create` | Task assignment, P1 escalation |
+| Mobile Push | `notify.mobile_app_*` | Assignment, due-date reminders |
+| Calendar Reminder | `calendar.create_event` | Tasks due within configurable window |
+
+**Actionable notifications:** Android/iOS users see "Open Task" and "✅ Mark Done" buttons on mobile push notifications. Marking done fires `MEITHEAL_TASK_DONE_{id}` event → handled by `ha-connection.ts`.
+
+**Auto-dismiss:** All notification tags (urgent, assigned, due) are cleared when a task is completed.
+
+## HA Publishing Checklist Compliance
+
+This component passes both official HA code review checklists:
+
+| Requirement | Status |
+|-------------|--------|
+| PEP8 style guidelines | ✅ |
+| Constants from `homeassistant.const` | ✅ |
+| Config flow (no YAML config) | ✅ |
+| `hass.data[DOMAIN]` for state | ✅ |
+| Event names prefixed with domain | ✅ |
+| Entities extend proper base classes | ✅ |
+| No I/O in properties | ✅ |
+| `has_entity_name` + `translation_key` | ✅ |
+| Device grouping via `DeviceInfo` | ✅ |
+| HA shared aiohttp session | ✅ |
+| Lifecycle cleanup (`async_shutdown`) | ✅ |
+| Diagnostics support | ✅ |
+| Services with voluptuous schemas | ✅ |
+
+References:
+
+- [Component checklist](https://developers.home-assistant.io/docs/creating_component_code_review)
+- [Platform checklist](https://developers.home-assistant.io/docs/creating_platform_code_review)

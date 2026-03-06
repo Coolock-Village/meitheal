@@ -580,7 +580,8 @@ const { locale } = Astro.props;
             Enable notifications
           </div>
           <div style="font-size: 11px; color: var(--text-muted);">
-            Task assignments and urgent escalations trigger notifications.
+            Task assignments, urgent escalations, and due-date reminders trigger
+            notifications.
           </div>
         </div>
       </div>
@@ -646,6 +647,41 @@ const { locale } = Astro.props;
               >
             </div>
           </div>
+          <!-- Due-Date Reminders toggle (F12) -->
+          <div
+            style="display: flex; align-items: center; gap: 10px; padding: 8px 12px; background: var(--bg-secondary); border: 1px solid var(--border); border-radius: 8px;"
+          >
+            <label class="toggle-switch" style="flex-shrink: 0;">
+              <input type="checkbox" id="notif-channel-reminders" checked />
+              <span class="toggle-slider"></span>
+            </label>
+            <div style="flex: 1;">
+              <div style="font-weight: 500; font-size: 13px;">
+                ⏰ Due-Date Reminders
+              </div>
+              <div style="font-size: 11px; color: var(--text-muted);">
+                Sends reminder notifications for tasks due within the configured
+                window.
+              </div>
+            </div>
+          </div>
+          <!-- Reminder window config -->
+          <div id="reminder-window-config" style="padding: 4px 12px 4px 48px;">
+            <label
+              style="font-size: 12px; color: var(--text-muted); display: flex; align-items: center; gap: 8px;"
+            >
+              Remind
+              <input
+                type="number"
+                id="notif-reminder-minutes"
+                min="5"
+                max="1440"
+                value="60"
+                style="width: 60px; padding: 3px 6px; border: 1px solid var(--border); border-radius: 4px; font-size: 12px; background: var(--bg-primary);"
+              />
+              minutes before due
+            </label>
+          </div>
         </div>
       </div>
 
@@ -667,7 +703,7 @@ const { locale } = Astro.props;
         type="button"
         class="btn btn-primary"
         id="save-notif-prefs"
-        style="font-size: 13px; align-self: flex-start;"
+        style="font-size: 13px; align-self: flex-start; min-width: 200px;"
       >
         Save notification preferences
       </button>
@@ -1014,6 +1050,13 @@ const { locale } = Astro.props;
     var globalToggle = document.getElementById("notif-global-toggle");
     var sidebarCb = document.getElementById("notif-channel-sidebar");
     var mobileCb = document.getElementById("notif-channel-mobile");
+    var remindersCb = document.getElementById("notif-channel-reminders");
+    var reminderMinutesInput = document.getElementById(
+      "notif-reminder-minutes",
+    );
+    var reminderWindowConfig = document.getElementById(
+      "reminder-window-config",
+    );
     var mobileTargetsPanel = document.getElementById("notif-mobile-targets");
     var mobileTargetList = document.getElementById("notif-mobile-target-list");
     var userTogglesContainer = document.getElementById("notif-user-toggles");
@@ -1025,6 +1068,8 @@ const { locale } = Astro.props;
       disabled_users: [],
       channels: { sidebar: true, mobile_push: false },
       mobile_targets: [],
+      due_date_reminders: true,
+      reminder_window_minutes: 60,
     };
 
     // Toggle mobile target panel visibility
@@ -1035,6 +1080,16 @@ const { locale } = Astro.props;
       }
     }
     if (mobileCb) mobileCb.addEventListener("change", updateMobilePanel);
+
+    // Toggle reminder window config visibility
+    function updateReminderPanel() {
+      if (reminderWindowConfig) {
+        reminderWindowConfig.style.display =
+          remindersCb && remindersCb.checked ? "block" : "none";
+      }
+    }
+    if (remindersCb)
+      remindersCb.addEventListener("change", updateReminderPanel);
 
     // Discover notify.mobile_app_* services from HA
     function discoverMobileTargets(savedTargets) {
@@ -1141,6 +1196,12 @@ const { locale } = Astro.props;
       if (mobileCb) mobileCb.checked = channels.mobile_push === true;
       updateMobilePanel();
 
+      // Restore due-date reminder settings (F12)
+      if (remindersCb) remindersCb.checked = prefs.due_date_reminders !== false;
+      if (reminderMinutesInput)
+        reminderMinutesInput.value = prefs.reminder_window_minutes || 60;
+      updateReminderPanel();
+
       // Discover mobile targets and restore saved selections
       discoverMobileTargets(prefs.mobile_targets || []);
 
@@ -1208,7 +1269,7 @@ const { locale } = Astro.props;
       });
     });
 
-    // Save
+    // Save with loading state (F10)
     saveBtn?.addEventListener("click", function () {
       var disabled = [];
       userTogglesContainer
@@ -1232,7 +1293,22 @@ const { locale } = Astro.props;
           mobile_push: mobileCb ? mobileCb.checked : false,
         },
         mobile_targets: mobileTargets,
+        due_date_reminders: remindersCb ? remindersCb.checked : true,
+        // P10.2: Clamp reminder window to valid range (5-1440 min)
+        reminder_window_minutes: reminderMinutesInput
+          ? Math.max(
+              5,
+              Math.min(1440, parseInt(reminderMinutesInput.value, 10) || 60),
+            )
+          : 60,
       };
+
+      // F10: Show loading state
+      var origText = saveBtn.textContent;
+      saveBtn.textContent = "Saving…";
+      saveBtn.disabled = true;
+      saveBtn.style.opacity = "0.7";
+
       fetch(bp + "/api/settings", {
         method: "PUT",
         headers: { "content-type": "application/json" },
@@ -1242,11 +1318,23 @@ const { locale } = Astro.props;
         }),
       })
         .then(function () {
+          saveBtn.textContent = "✓ Saved";
           if (typeof window.showToast === "function")
             window.showToast("Notification preferences saved");
+          setTimeout(function () {
+            saveBtn.textContent = origText;
+            saveBtn.disabled = false;
+            saveBtn.style.opacity = "1";
+          }, 1500);
         })
         .catch(function (err) {
           console.error("Save notification prefs error:", err);
+          saveBtn.textContent = "✗ Failed";
+          setTimeout(function () {
+            saveBtn.textContent = origText;
+            saveBtn.disabled = false;
+            saveBtn.style.opacity = "1";
+          }, 2000);
         });
     });
   })();

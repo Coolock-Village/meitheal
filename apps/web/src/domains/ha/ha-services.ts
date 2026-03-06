@@ -53,15 +53,10 @@ export async function listCalendarEvents(
       events = direct?.[entityId]?.events ?? [];
     }
 
-    logger.log("info", {
+    logger.log("debug", {
       event: "ha.calendar.list_events", domain: "ha", component: "ha-services",
       request_id: SYS_REQ,
       message: `Fetched ${events.length} events from ${entityId} (range: ${startDate} → ${endDate})`,
-      metadata: {
-        result_keys: Object.keys(result ?? {}),
-        has_response_key: "response" in (result ?? {}),
-        has_entity_direct: entityId in (result ?? {}),
-      },
     });
     return events;
   } catch (err) {

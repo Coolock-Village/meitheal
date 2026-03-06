@@ -316,12 +316,21 @@ export const PUT: APIRoute = async ({ params, request }) => {
     }
   } catch { /* settings not available — default to enabled, sidebar channel */ }
 
+  // F4/F5: Load callHAService once for all notification helpers
+  const haServicesImport = import("../../../domains/ha/ha-services");
+
   // Helper: dispatch notification to configured channels
-  async function dispatchNotification(title: string, message: string, notifId: string, ingress: string | null) {
-    const { callHAService } = await import("../../../domains/ha/ha-services");
+  // opts.isUrgent — P1 escalation: Android heads-up, iOS Focus bypass
+  // opts.badgeCount — iOS badge on app icon (open task count)
+  interface DispatchOpts { isUrgent?: boolean; badgeCount?: number }
+  async function dispatchNotification(
+    title: string, message: string, notifId: string,
+    ingress: string | null, taskId?: string, opts: DispatchOpts = {},
+  ) {
+    const { callHAService } = await haServicesImport;
     const promises: Promise<unknown>[] = [];
 
-    // Sidebar bell (persistent_notification)
+    // Sidebar bell (persistent_notification) — markdown supported
     if (notifChannels.sidebar !== false) {
       promises.push(
         callHAService("persistent_notification", "create", {
@@ -332,21 +341,51 @@ export const PUT: APIRoute = async ({ params, request }) => {
       );
     }
 
-    // Mobile push (notify.mobile_app_*)
+    // Mobile push (notify.mobile_app_*) — enriched payloads
     if (notifChannels.mobile_push && notifMobileTargets.length > 0) {
+      // Strip markdown links for push (mobile doesn't render markdown)
+      const plainMessage = message.replace(/\[([^\]]+)\]\([^)]+\)/g, "$1");
+      // Deep-link path: ingress path is a valid HA-internal relative URL
+      const ingressPath = ingress ? ingress + "/kanban" : null;
+
       for (const target of notifMobileTargets) {
-        // target format: "notify.mobile_app_<name>" → domain: "notify", service: "mobile_app_<name>"
         const [domain, ...rest] = target.split(".");
         const service = rest.join(".");
         if (domain && service) {
-          const deepLink = ingress ? ingress + "/kanban" : null;
           const pushData: Record<string, unknown> = {
             title,
-            message: message.replace(/\[([^\]]+)\]\([^)]+\)/g, "$1"), // strip markdown links for push
+            message: plainMessage,
             data: {
-              // Android uses clickAction, iOS uses url — set both for cross-platform
-              ...(deepLink ? { clickAction: deepLink, url: deepLink } : {}),
-              tag: notifId, // prevent duplicate stacking
+              // Deep-link: tap to open Meitheal (Android clickAction, iOS url)
+              ...(ingressPath ? { clickAction: ingressPath, url: ingressPath } : {}),
+              // Notification identity & dedup
+              tag: notifId,
+              group: "meitheal",
+              // Android: notification channel — separate urgent from normal
+              channel: opts.isUrgent ? "meitheal_urgent" : "meitheal_tasks",
+              // Android: accent color (Meitheal green)
+              color: "#10b981",
+              // Android: importance — high = heads-up popup for urgent
+              ...(opts.isUrgent ? { importance: "high" } : {}),
+              // iOS: push payload enrichments
+              push: {
+                // time-sensitive bypasses Focus mode for urgent notifications
+                "interruption-level": opts.isUrgent ? "time-sensitive" : "active",
+                // Badge count: show open task count on HA app icon
+                ...(opts.badgeCount !== undefined ? { badge: opts.badgeCount } : {}),
+              },
+              // Actionable notification buttons
+              actions: [
+                ...(ingressPath ? [{
+                  action: "URI",
+                  title: "Open Task",
+                  uri: ingressPath,
+                }] : []),
+                ...(taskId ? [{
+                  action: `MEITHEAL_TASK_DONE_${taskId}`,
+                  title: "✅ Mark Done",
+                }] : []),
+              ],
             },
           };
           promises.push(
@@ -360,6 +399,39 @@ export const PUT: APIRoute = async ({ params, request }) => {
     return Promise.all(promises);
   }
 
+  // Helper: dismiss mobile notifications for a task (on completion)
+  async function dismissMobileNotification(notifTag: string) {
+    if (!notifChannels.mobile_push || notifMobileTargets.length === 0) return;
+    const { callHAService } = await haServicesImport;
+    for (const target of notifMobileTargets) {
+      const [domain, ...rest] = target.split(".");
+      const service = rest.join(".");
+      if (domain && service) {
+        callHAService(domain, service, {
+          message: "clear_notification",
+          data: { tag: notifTag },
+        }).catch(() => {}); // best-effort — don't block
+      }
+    }
+  }
+
+  // F7: Module-scope done statuses (avoid allocation on every PUT)
+  const doneStatuses = new Set(["done", "complete", "completed"]);
+
+  // Fetch open task count for iOS badge (fire-and-forget, cached per-request)
+  let openTaskBadge: number | undefined;
+  async function getOpenTaskBadge(): Promise<number> {
+    if (openTaskBadge !== undefined) return openTaskBadge;
+    try {
+      const countResult = await client.execute({
+        sql: "SELECT COUNT(*) as cnt FROM tasks WHERE status NOT IN ('done', 'complete', 'completed')",
+        args: [],
+      });
+      openTaskBadge = Number((countResult.rows[0] as Record<string, unknown>).cnt) || 0;
+    } catch { openTaskBadge = 0; }
+    return openTaskBadge;
+  }
+
   // Phase 52: Notification if bumped to Urgent (P1)
   if (notifEnabled && sanitized.priority === 1 && oldTask?.priority !== 1) {
     import("../../../domains/ha/ha-connection").then(async ({ getIngressEntry }) => {
@@ -367,11 +439,14 @@ export const PUT: APIRoute = async ({ params, request }) => {
       const titleStr = typeof sanitized.title === "string" ? sanitized.title : String(oldTask?.title ?? "Task");
       const ticketKey = taskPayload.ticket_key ?? "Task";
       const link = ingress ? `\n\n[Open ${ticketKey} in Meitheal →](${ingress}/kanban)` : "";
+      const badge = await getOpenTaskBadge();
       dispatchNotification(
         `🚨 Escalated to Urgent: ${titleStr}`,
         `${ticketKey} has been escalated to P1 — Urgent.${link}`,
         `meitheal_urgent_${resolvedId}`,
         ingress,
+        resolvedId,
+        { isUrgent: true, badgeCount: badge },
       ).catch(() => {});
     }).catch(() => {});
   }
@@ -398,13 +473,34 @@ export const PUT: APIRoute = async ({ params, request }) => {
             if (nameResult.rows.length > 0) displayName = String((nameResult.rows[0] as Record<string, unknown>).name);
           }
         } catch { /* fallback to stripped ID */ }
+        const badge = await getOpenTaskBadge();
         dispatchNotification(
           `📋 Task assigned: ${titleStr}`,
           `${ticketKey} has been assigned to ${displayName}.${link}`,
           `meitheal_assigned_${resolvedId}`,
           ingress,
+          resolvedId,
+          { badgeCount: badge },
         ).catch(() => {});
       }).catch(() => {});
+    }
+  }
+
+  // Auto-dismiss all notifications when task is marked done/complete
+  if (notifEnabled && sanitized.status !== undefined) {
+    if (doneStatuses.has(String(sanitized.status)) && !doneStatuses.has(String(oldTask?.status ?? ""))) {
+      // F13: Clear urgent, assignment, AND due-date reminder notification tags
+      dismissMobileNotification(`meitheal_urgent_${resolvedId}`);
+      dismissMobileNotification(`meitheal_assigned_${resolvedId}`);
+      dismissMobileNotification(`meitheal_due_${resolvedId}`);
+      // Also dismiss sidebar persistent notifications
+      if (notifChannels.sidebar !== false) {
+        haServicesImport.then(({ callHAService }) => {
+          callHAService("persistent_notification", "dismiss", { notification_id: `meitheal_urgent_${resolvedId}` }).catch(() => {});
+          callHAService("persistent_notification", "dismiss", { notification_id: `meitheal_assigned_${resolvedId}` }).catch(() => {});
+          callHAService("persistent_notification", "dismiss", { notification_id: `meitheal_due_${resolvedId}` }).catch(() => {});
+        }).catch(() => {});
+      }
     }
   }
 
