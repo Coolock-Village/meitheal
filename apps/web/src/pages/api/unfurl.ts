@@ -135,7 +135,7 @@ export const POST: APIRoute = async ({ request }) => {
             return;
           }
           callback(null, selected.address, selected.family);
-        }) as any
+        }) as unknown as typeof import("dns").lookup
       }
     });
 
