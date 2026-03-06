@@ -14,6 +14,7 @@ const locale: Locale = cookieLocale === "ga" ? "ga" : "en";
 
 let tasks: Record<string, unknown>[] = [];
 let favorites: Record<string, unknown>[] = [];
+let openTasks: Record<string, unknown>[] = [];
 let stats = { total: 0, active: 0, completed: 0, overdue: 0 };
 const boardMap: Record<string, { name: string; color: string }> = {
   default: { name: "Default", color: "#10b981" },
@@ -31,6 +32,16 @@ try {
   );
   favorites = favResult.rows as Record<string, unknown>[];
   tasks = result.rows as Record<string, unknown>[];
+
+  // My open tasks — non-completed, ordered by priority then due date
+  const openResult = await client.execute(
+    `SELECT id, title, status, priority, due_date, assigned_to, board_id, ticket_number, task_type
+     FROM tasks
+     WHERE status NOT IN ('complete', 'done')
+     ORDER BY priority ASC, due_date ASC NULLS LAST, updated_at DESC
+     LIMIT 15`,
+  );
+  openTasks = openResult.rows as Record<string, unknown>[];
 
   const countResult = await client.execute(
     "SELECT status, COUNT(*) as cnt FROM tasks GROUP BY status",
@@ -242,6 +253,88 @@ function relativeTime(dueDate: string): string {
     </form>
   </div>
 
+  <!-- My Open Tasks -->
+  <div class="card" style="margin-bottom: 20px;" id="my-open-tasks-card">
+    <div class="card-header">
+      <div>
+        <div class="card-title">🎯 My open tasks</div>
+        <div class="card-subtitle" id="my-open-count">
+          {openTasks.length} open task{openTasks.length !== 1 ? "s" : ""}
+        </div>
+      </div>
+      <div style="display: flex; gap: 8px; align-items: center;">
+        <select
+          class="form-select"
+          id="my-open-user-filter"
+          style="font-size: 12px; padding: 4px 8px; min-width: 120px;"
+        >
+          <option value="all">All users</option>
+        </select>
+        <a href="/kanban" class="btn btn-ghost" style="font-size: 12px;"
+          >Kanban →</a
+        >
+      </div>
+    </div>
+    <div class="task-list" id="my-open-list">
+      {
+        openTasks.length === 0 ? (
+          <div style="padding: 20px; text-align: center; color: var(--text-muted); font-size: 13px;">
+            🎉 All caught up — no open tasks!
+          </div>
+        ) : (
+          openTasks.map((task) => {
+            const p = Number(task.priority ?? 3);
+            const priColor =
+              p === 1
+                ? "#ef4444"
+                : p === 2
+                  ? "#f97316"
+                  : p === 4
+                    ? "#22c55e"
+                    : p === 5
+                      ? "#6b7280"
+                      : "#eab308";
+            const ticketNum = task.ticket_number
+              ? `MTH-${String(task.ticket_number).padStart(3, "0")}`
+              : null;
+            const statusLabel =
+              statusLabels[String(task.status)] ?? String(task.status);
+            return (
+              <div
+                class="task-item"
+                data-id={String(task.id)}
+                data-assigned={String(task.assigned_to ?? "")}
+                style="cursor:pointer;"
+              >
+                <div class="task-title">
+                  <span class="priority-dot" style={`color: ${priColor}`}>
+                    ●
+                  </span>
+                  {ticketNum && (
+                    <span style="font-size: 11px; color: var(--text-muted); margin-right: 6px;">
+                      {ticketNum}
+                    </span>
+                  )}
+                  {String(task.title)}
+                </div>
+                <div style="display: flex; gap: 6px; align-items: center;">
+                  <span class={`task-badge badge-${String(task.status)}`}>
+                    {statusLabel}
+                  </span>
+                  {task.due_date && (
+                    <span class="text-xs text-text-muted">
+                      {relativeTime(String(task.due_date))}
+                    </span>
+                  )}
+                </div>
+              </div>
+            );
+          })
+        )
+      }
+    </div>
+  </div>
+
   <div class="card">
     <div class="card-header">
       <div>
@@ -421,14 +514,17 @@ function relativeTime(dueDate: string): string {
 
         try {
           const activeBoard = window.__activeBoard ?? "default";
-          const res = await fetch((window.__ingress_path || "") + "/api/tasks", {
-            method: "POST",
-            headers: { "content-type": "application/json" },
-            body: JSON.stringify({
-              title,
-              board_id: activeBoard === "all" ? "default" : activeBoard,
-            }),
-          });
+          const res = await fetch(
+            (window.__ingress_path || "") + "/api/tasks",
+            {
+              method: "POST",
+              headers: { "content-type": "application/json" },
+              body: JSON.stringify({
+                title,
+                board_id: activeBoard === "all" ? "default" : activeBoard,
+              }),
+            },
+          );
           if (res.ok) {
             showToast("common.task_created");
             // Green flash on form
@@ -508,15 +604,78 @@ function relativeTime(dueDate: string): string {
       }
     });
 
-    // Dashboard task items → open detail panel on click
+    // My open tasks — user filter
+    const openSelect = document.getElementById(
+      "my-open-user-filter",
+    ) as HTMLSelectElement | null;
+    const openList = document.getElementById("my-open-list");
+    const openCount = document.getElementById("my-open-count");
+    if (openSelect && openList) {
+      const bp = (window as any).__ingress_path || "";
+      fetch(`${bp}/api/users`)
+        .then((r) => r.json())
+        .then(
+          (data: {
+            users?: { id: string; name?: string; display_name?: string }[];
+          }) => {
+            const users = data.users || [];
+            users.forEach((u) => {
+              const opt = document.createElement("option");
+              opt.value = u.id;
+              opt.textContent = u.display_name || u.name || u.id;
+              openSelect.appendChild(opt);
+            });
+            // Add "Unassigned" option
+            const unOpt = document.createElement("option");
+            unOpt.value = "__unassigned__";
+            unOpt.textContent = "Unassigned";
+            openSelect.appendChild(unOpt);
+
+            // Restore saved
+            const saved = localStorage.getItem(
+              "meitheal-dashboard-user-filter",
+            );
+            if (saved) openSelect.value = saved;
+            applyOpenFilter();
+          },
+        )
+        .catch(() => {});
+
+      function applyOpenFilter() {
+        if (!openSelect || !openList) return;
+        const val = openSelect.value;
+        let visible = 0;
+        openList
+          .querySelectorAll<HTMLElement>(".task-item[data-assigned]")
+          .forEach((el) => {
+            const assigned = el.dataset.assigned || "";
+            let show = true;
+            if (val === "__unassigned__") show = !assigned;
+            else if (val !== "all") show = assigned === val;
+            el.style.display = show ? "" : "none";
+            if (show) visible++;
+          });
+        if (openCount)
+          openCount.textContent = `${visible} open task${visible !== 1 ? "s" : ""}`;
+      }
+
+      openSelect.addEventListener("change", () => {
+        localStorage.setItem(
+          "meitheal-dashboard-user-filter",
+          openSelect.value,
+        );
+        applyOpenFilter();
+      });
+    }
+
+    // Dashboard task items (including My Open Tasks) → open detail panel on click
     document.querySelectorAll(".task-item[data-id]").forEach((el) => {
       el.addEventListener("click", (e) => {
         const target = e.target as HTMLElement;
-        // Don't intercept checkbox or button clicks
         if (target.closest("input, button, a")) return;
         const id = (el as HTMLElement).dataset.id;
-        if (id && typeof window.openTaskDetail === "function") {
-          window.openTaskDetail(id);
+        if (id && typeof (window as any).openTaskDetail === "function") {
+          (window as any).openTaskDetail(id);
         }
       });
     });

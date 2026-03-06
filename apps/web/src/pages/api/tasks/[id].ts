@@ -293,34 +293,58 @@ export const PUT: APIRoute = async ({ params, request }) => {
 
   dispatchTaskEvent("task.updated", taskPayload, typeof body.request_id === "string" ? body.request_id : undefined).catch(() => {});
 
-  // Phase 52: Native Push Notification if bumped to Urgent (P1)
-  if (sanitized.priority === 1 && oldTask?.priority !== 1) {
-    import("../../../domains/ha/ha-services").then(({ sendNotification }) => {
+  // Notification preference guard — check before dispatching any HA notifications
+  let notifEnabled = true;
+  let notifDisabledUsers: Set<string> = new Set();
+  try {
+    const notifPrefsResult = await client.execute({
+      sql: "SELECT value FROM settings WHERE key = 'notification_preferences' LIMIT 1",
+      args: [],
+    });
+    if (notifPrefsResult.rows.length > 0) {
+      const raw = JSON.parse(String((notifPrefsResult.rows[0] as Record<string, unknown>).value));
+      if (typeof raw === "object" && raw !== null) {
+        notifEnabled = raw.enabled !== false;
+        if (Array.isArray(raw.disabled_users)) {
+          notifDisabledUsers = new Set(raw.disabled_users);
+        }
+      }
+    }
+  } catch { /* settings not available — default to enabled */ }
+
+  // Phase 52: Persistent Notification if bumped to Urgent (P1)
+  if (notifEnabled && sanitized.priority === 1 && oldTask?.priority !== 1) {
+    import("../../../domains/ha/ha-services").then(async ({ callHAService }) => {
+      const { getIngressEntry } = await import("../../../domains/ha/ha-connection");
+      const ingress = await getIngressEntry();
       const titleStr = typeof sanitized.title === "string" ? sanitized.title : String(oldTask?.title ?? "Task");
-      const descStr = typeof sanitized.description === "string" ? sanitized.description : String(oldTask?.description ?? "");
-      sendNotification("notify", `🚨 Escalated to Urgent: ${titleStr}`, descStr.slice(0, 100) || "Action required.", {
-        push: { category: "URGENT_TASK_UPDATE" },
-        action_data: { task_id: resolvedId, ticket_key: taskPayload.ticket_key },
-        actions: [
-          { action: `MEITHEAL_TASK_DONE_${resolvedId}`, title: "Mark Done" },
-          { action: `MEITHEAL_TASK_VIEW_${resolvedId}`, title: "View details", uri: `/meitheal/task/${taskPayload.ticket_key}` }
-        ]
-      }).catch(err => logApiError("ha-notify", "Failed to send urgent update push", err));
+      const ticketKey = taskPayload.ticket_key ?? "Task";
+      const link = ingress ? `\n\n[Open ${ticketKey} in Meitheal →](${ingress}/kanban)` : "";
+      callHAService("persistent_notification", "create", {
+        title: `🚨 Escalated to Urgent: ${titleStr}`,
+        message: `${ticketKey} has been escalated to P1 — Urgent.${link}`,
+        notification_id: `meitheal_urgent_${resolvedId}`,
+      }).catch(err => logApiError("ha-notify", "Failed to send urgent update notification", err));
     }).catch(() => {});
   }
 
-  // Assignment-change push notification
-  if (sanitized.assigned_to !== undefined && String(sanitized.assigned_to) !== String(oldTask?.assigned_to ?? "")) {
-    import("../../../domains/ha/ha-services").then(({ sendNotification }) => {
-      const titleStr = typeof sanitized.title === "string" ? sanitized.title : String(oldTask?.title ?? "Task");
-      sendNotification("notify", `📋 Task assigned to you: ${titleStr}`, `You've been assigned to ${taskPayload.ticket_key ?? "a task"}.`, {
-        push: { category: "TASK_ASSIGNED" },
-        action_data: { task_id: resolvedId, ticket_key: taskPayload.ticket_key, assigned_to: sanitized.assigned_to },
-        actions: [
-          { action: `MEITHEAL_TASK_VIEW_${resolvedId}`, title: "View task", uri: `/meitheal/task/${taskPayload.ticket_key}` }
-        ]
-      }).catch(err => logApiError("ha-notify", "Failed to send assignment push", err));
-    }).catch(() => {});
+  // Assignment-change notification (respects per-user prefs)
+  if (notifEnabled && sanitized.assigned_to !== undefined && String(sanitized.assigned_to) !== String(oldTask?.assigned_to ?? "")) {
+    const assignee = typeof sanitized.assigned_to === "string" ? sanitized.assigned_to : null;
+    if (assignee && !notifDisabledUsers.has(assignee)) {
+      import("../../../domains/ha/ha-services").then(async ({ callHAService }) => {
+        const { getIngressEntry } = await import("../../../domains/ha/ha-connection");
+        const ingress = await getIngressEntry();
+        const titleStr = typeof sanitized.title === "string" ? sanitized.title : String(oldTask?.title ?? "Task");
+        const ticketKey = taskPayload.ticket_key ?? "A task";
+        const link = ingress ? `\n\n[Open ${ticketKey} in Meitheal →](${ingress}/kanban)` : "";
+        callHAService("persistent_notification", "create", {
+          title: `📋 Task assigned: ${titleStr}`,
+          message: `${ticketKey} has been assigned to ${assignee}.${link}`,
+          notification_id: `meitheal_assigned_${resolvedId}`,
+        }).catch(err => logApiError("ha-notify", "Failed to send assignment notification", err));
+      }).catch(() => {});
+    }
   }
 
   return new Response(JSON.stringify(taskPayload), {
@@ -352,6 +376,14 @@ export const DELETE: APIRoute = async ({ params }) => {
 
   const resolvedId = existing.rows[0]!.id as string;
   await client.execute({ sql: "DELETE FROM tasks WHERE id = ?", args: [resolvedId] });
+
+  // Orphan link cleanup (#10): remove all links referencing deleted task
+  try {
+    await client.execute({
+      sql: "DELETE FROM task_links WHERE source_task_id = ? OR target_task_id = ?",
+      args: [resolvedId, resolvedId],
+    });
+  } catch { /* task_links table may not exist yet — non-critical */ }
 
   dispatchTaskEvent("task.deleted", { id: resolvedId }).catch(() => {});
 

@@ -474,6 +474,21 @@ export async function ensureSchema(): Promise<void> {
       updated_at INTEGER NOT NULL
     )
   `);
+  // Jira-style task linking — relationship types beyond parent/children
+  await client.execute(`
+    CREATE TABLE IF NOT EXISTS task_links (
+      id TEXT PRIMARY KEY,
+      source_task_id TEXT NOT NULL,
+      target_task_id TEXT NOT NULL,
+      link_type TEXT NOT NULL,
+      created_at INTEGER NOT NULL,
+      FOREIGN KEY (source_task_id) REFERENCES tasks(id) ON DELETE CASCADE,
+      FOREIGN KEY (target_task_id) REFERENCES tasks(id) ON DELETE CASCADE,
+      UNIQUE(source_task_id, target_task_id, link_type)
+    )
+  `);
+  await client.execute("CREATE INDEX IF NOT EXISTS task_links_source_idx ON task_links(source_task_id)");
+  await client.execute("CREATE INDEX IF NOT EXISTS task_links_target_idx ON task_links(target_task_id)");
 
   ensured = true;
 

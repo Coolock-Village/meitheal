@@ -421,5 +421,19 @@
         "server_error": "Something Went Wrong",
         "server_error_desc": "An unexpected error occurred. Please try again or contact support.",
         "reload_page": "Reload Page"
+    },
+    "link_types": {
+        "related_to": "Related to",
+        "blocked_by": "Blocked by",
+        "blocks": "Blocks",
+        "duplicates": "Duplicates",
+        "duplicated_by": "Duplicated by",
+        "add_link": "Add link",
+        "remove_link": "Remove link",
+        "no_linked_tasks": "No linked tasks",
+        "search_tasks": "Search tasks to link…",
+        "link_created": "Link created",
+        "link_removed": "Link removed",
+        "load_links_retry": "Failed to load links. Tap to retry."
     }
 }

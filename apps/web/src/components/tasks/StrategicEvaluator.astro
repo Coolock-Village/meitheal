@@ -298,10 +298,11 @@ const defaultMapping: Record<string, string> = {
   });
 
   // 5. Sidebar Integrator (Exposed Globally so Layout.astro can call it when Task Detail opens)
-  window.attachStrategicLens = function (
+  window.attachStrategicLens = async function (
     taskId,
     taskType,
     frameworkPayloadStr,
+    cachedSettings,
   ) {
     currentTaskId = taskId;
     currentTaskType = taskType || "task";
@@ -313,10 +314,37 @@ const defaultMapping: Record<string, string> = {
       currentPayload = {};
     }
 
-    // Determine active frameworks
-    let fwIds = defaultMapping[currentTaskType];
-    // Convert old string fallback to array if present
-    if (typeof fwIds === "string") fwIds = [fwIds];
+    // Determine active frameworks — prefer cached settings from Layout, fallback to fetch
+    let fwIds = null;
+    let settings = cachedSettings || null;
+    if (!settings) {
+      try {
+        const settingsRes = await fetch(
+          (window.__ingress_path || "") + "/api/settings",
+        );
+        if (settingsRes.ok) settings = await settingsRes.json();
+      } catch {
+        /* fall through to defaults */
+      }
+    }
+    if (settings?.framework_mapping) {
+      const userMapping =
+        typeof settings.framework_mapping === "string"
+          ? JSON.parse(settings.framework_mapping)
+          : settings.framework_mapping;
+      if (
+        userMapping[currentTaskType] &&
+        Array.isArray(userMapping[currentTaskType])
+      ) {
+        fwIds = userMapping[currentTaskType];
+      }
+    }
+
+    // Fallback to defaultMapping if settings didn't have a mapping
+    if (!fwIds) {
+      fwIds = defaultMapping[currentTaskType];
+      if (typeof fwIds === "string") fwIds = [fwIds];
+    }
     if (!fwIds || !Array.isArray(fwIds)) fwIds = ["heart"]; // Ultimate fallback
 
     currentActiveFrameworks = frameworks.filter((f) => fwIds.includes(f.id));

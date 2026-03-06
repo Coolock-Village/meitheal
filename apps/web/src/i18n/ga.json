@@ -417,5 +417,19 @@
         "server_error": "Chuaigh Rud Éigin Mícheart",
         "server_error_desc": "Tharla earráid gan choinne. Bain triail eile as nó déan teagmháil le tacaíocht.",
         "reload_page": "Athlódáil Leathanach"
+    },
+    "link_types": {
+        "related_to": "Bainteach le",
+        "blocked_by": "Coiscthe ag",
+        "blocks": "Coisceann",
+        "duplicates": "Dúblach de",
+        "duplicated_by": "Dúblaithe ag",
+        "add_link": "Cuir nasc leis",
+        "remove_link": "Bain nasc",
+        "no_linked_tasks": "Gan tascanna nasctha",
+        "search_tasks": "Cuardaigh tascanna le nascadh…",
+        "link_created": "Nasc cruthaithe",
+        "link_removed": "Nasc bainte",
+        "load_links_retry": "Theip ar naisc a lódáil. Tapáil chun atriail."
     }
 }

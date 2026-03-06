@@ -35,6 +35,12 @@ const logger = createLogger({
 const SYS_REQ = "ha-system";
 const NO_SYNC_LABEL = "no-sync";
 
+/** Strip outbound attribution text so it doesn't show in Meitheal's own UI. */
+function stripMeithealAttribution(desc: string | null | undefined): string | null {
+  if (!desc) return null;
+  return desc.replace(/\n?\n?Added from Meitheal$/i, "").trim() || null;
+}
+
 export interface TodoSyncConfig {
   entityId: string;
   syncEnabled: boolean;
@@ -257,7 +263,7 @@ async function mergeHATodoItems(entityId: string, items: HATodoItem[]): Promise<
             item.summary,
             meithealStatus,
             item.due ?? null,
-            item.description ?? null,
+            stripMeithealAttribution(item.description),
             nowMs,
             taskId,
           ],
@@ -301,7 +307,7 @@ async function mergeHATodoItems(entityId: string, items: HATodoItem[]): Promise<
           args: [
             taskId,
             item.summary,
-            item.description ?? "",
+            stripMeithealAttribution(item.description) ?? "",
             meithealStatus,
             item.due ?? null,
             JSON.stringify([syncLabel]),

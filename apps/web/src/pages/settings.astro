@@ -889,7 +889,7 @@ const locale: Locale = cookieLocale === "ga" ? "ga" : "en";
         row.className = "custom-field-row";
         row.innerHTML = `
         <input type="text" class="form-input" placeholder="Field name" />
-        <select class="form-select">
+        <select class="form-select cf-type-select">
           <option value="text">Text</option>
           <option value="number">Number</option>
           <option value="url">URL</option>
@@ -897,10 +897,24 @@ const locale: Locale = cookieLocale === "ga" ? "ga" : "en";
           <option value="date">Date</option>
           <option value="checkbox">Checkbox</option>
         </select>
+        <input type="text" class="form-input cf-options-input" placeholder="Options (comma-separated)" style="display:none; flex:2;" />
         <button type="button" class="btn btn-primary custom-field-save" style="padding: 4px 12px; font-size: 12px;">Save</button>
         <button type="button" class="btn btn-ghost" style="padding: 4px 8px; color: var(--danger);" onclick="this.closest('.custom-field-row')?.remove()">×</button>
       `;
         list.appendChild(row);
+
+        // Show/hide options input when type changes to select
+        const typeSelect = row.querySelector(
+          ".cf-type-select",
+        ) as HTMLSelectElement;
+        const optionsInput = row.querySelector(
+          ".cf-options-input",
+        ) as HTMLInputElement;
+        typeSelect?.addEventListener("change", () => {
+          optionsInput.style.display =
+            typeSelect.value === "select" ? "block" : "none";
+        });
+
         row.querySelector("input")?.focus();
 
         // Attach save handler to new row
@@ -908,12 +922,28 @@ const locale: Locale = cookieLocale === "ga" ? "ga" : "en";
           .querySelector(".custom-field-save")
           ?.addEventListener("click", async function () {
             const nameInput = row.querySelector("input") as HTMLInputElement;
-            const typeSelect = row.querySelector("select") as HTMLSelectElement;
+            const typeSelect = row.querySelector(
+              ".cf-type-select",
+            ) as HTMLSelectElement;
+            const optionsInput = row.querySelector(
+              ".cf-options-input",
+            ) as HTMLInputElement;
             const name = nameInput?.value?.trim();
             const type = typeSelect?.value || "text";
             if (!name) {
               nameInput?.focus();
               return;
+            }
+
+            // Build field definition with optional options for select type
+            const fieldDef: { name: string; type: string; options?: string[] } =
+              { name, type };
+            if (type === "select" && optionsInput?.value?.trim()) {
+              fieldDef.options = optionsInput.value
+                .split(",")
+                .map((s) => s.trim())
+                .filter(Boolean)
+                .filter((v, i, a) => a.indexOf(v) === i);
             }
 
             try {
@@ -924,7 +954,7 @@ const locale: Locale = cookieLocale === "ga" ? "ga" : "en";
               const existing = settings.custom_fields
                 ? JSON.parse(settings.custom_fields)
                 : [];
-              existing.push({ name, type });
+              existing.push(fieldDef);
 
               await fetch((window.__ingress_path || "") + "/api/settings", {
                 method: "PUT",
@@ -937,6 +967,7 @@ const locale: Locale = cookieLocale === "ga" ? "ga" : "en";
 
               nameInput.disabled = true;
               typeSelect.disabled = true;
+              if (optionsInput) optionsInput.disabled = true;
               const saveBtn = row.querySelector(
                 ".custom-field-save",
               ) as HTMLButtonElement;

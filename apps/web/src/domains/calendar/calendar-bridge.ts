@@ -24,6 +24,12 @@ const logger = createLogger({
 });
 const SYS_REQ = "ha-system";
 
+/** Strip outbound attribution text so it doesn't show in Meitheal's own UI. */
+function stripMeithealAttribution(desc: string | null | undefined): string | null {
+  if (!desc) return null;
+  return desc.replace(/\n?\n?Added from Meitheal$/i, "").trim() || null;
+}
+
 export interface CalendarSyncConfig {
   entityId: string;
   syncEnabled: boolean;
@@ -224,7 +230,7 @@ async function syncEntityFromHA(entityId: string): Promise<{ created: number; up
         const taskId = existing.rows[0]!.task_id as string;
         await client.execute({
           sql: "UPDATE tasks SET due_date = ?, description = COALESCE(?, description), updated_at = ? WHERE id = ?",
-          args: [evt.start, evt.description ?? null, Date.now(), taskId],
+          args: [evt.start, stripMeithealAttribution(evt.description), Date.now(), taskId],
         });
         updated++;
       } else {

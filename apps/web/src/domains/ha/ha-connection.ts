@@ -222,3 +222,39 @@ export function closeHAConnection(): void {
     });
   }
 }
+
+// ── Ingress Entry Resolution ──
+
+let cachedIngressEntry: string | null = null;
+
+/**
+ * Get the addon's ingress entry path from the Supervisor API.
+ * Returns e.g. "/api/hassio_ingress/abc123..." or null if unavailable.
+ * Cached forever — ingress entry doesn't change at runtime.
+ */
+export async function getIngressEntry(): Promise<string | null> {
+  if (cachedIngressEntry) return cachedIngressEntry;
+
+  const token = process.env.SUPERVISOR_TOKEN;
+  if (!token) return null;
+
+  try {
+    const res = await fetch("http://supervisor/addons/self/info", {
+      headers: { Authorization: `Bearer ${token}` },
+    });
+    if (!res.ok) return null;
+    const data = await res.json() as { data?: { ingress_entry?: string } };
+    cachedIngressEntry = data?.data?.ingress_entry ?? null;
+    logger.log("info", {
+      event: "ha.ingress.resolved", domain: "ha", component: "ha-connection",
+      request_id: SYS_REQ, message: `Ingress entry: ${cachedIngressEntry}`,
+    });
+    return cachedIngressEntry;
+  } catch (err) {
+    logger.log("warn", {
+      event: "ha.ingress.resolve_failed", domain: "ha", component: "ha-connection",
+      request_id: SYS_REQ, message: `Failed to resolve ingress entry: ${err}`,
+    });
+    return null;
+  }
+}
