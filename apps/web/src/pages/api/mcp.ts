@@ -43,7 +43,7 @@ const MCP_TOOLS = [
       type: "object" as const,
       properties: {
         query: { type: "string", description: "Search keyword" },
-        status: { type: "string", enum: ["todo", "in_progress", "done", "cancelled"] },
+        status: { type: "string", enum: ["backlog", "todo", "in_progress", "done", "cancelled"] },
         priority: { type: "integer", minimum: 1, maximum: 5 },
         assigned_to: { type: "string", description: "Filter by assigned user ID" },
       },
@@ -69,7 +69,7 @@ const MCP_TOOLS = [
       properties: {
         id: { type: "string", description: "Task UUID" },
         title: { type: "string" },
-        status: { type: "string", enum: ["todo", "in_progress", "done", "cancelled"] },
+        status: { type: "string", enum: ["backlog", "todo", "in_progress", "done", "cancelled"] },
         priority: { type: "integer", minimum: 1, maximum: 5 },
         due_date: { type: "string", format: "date" },
         description: { type: "string" },
@@ -472,10 +472,21 @@ async function executeTool(
     }
 
     case "assignTask": {
-      const res = await fetch(`${baseUrl}/api/tasks/${args.id}`, {
+      const taskId = String(args.id ?? "");
+      if (!taskId || !/^[a-zA-Z0-9_-]+$/.test(taskId)) {
+        return { error: "id must be a non-empty alphanumeric string" };
+      }
+      const assignedTo = args.assigned_to != null ? String(args.assigned_to) : null;
+      if (assignedTo && !/^(ha_|custom_)/.test(assignedTo)) {
+        return { error: "assigned_to must start with 'ha_' or 'custom_'" };
+      }
+      if (assignedTo && assignedTo.length > 255) {
+        return { error: "assigned_to exceeds max length (255)" };
+      }
+      const res = await fetch(`${baseUrl}/api/tasks/${taskId}`, {
         method: "PUT",
         headers: { "content-type": "application/json" },
-        body: JSON.stringify({ assigned_to: args.assigned_to ?? null }),
+        body: JSON.stringify({ assigned_to: assignedTo }),
       });
       return { status: "assigned", ...(await res.json().catch(() => ({}))) };
     }

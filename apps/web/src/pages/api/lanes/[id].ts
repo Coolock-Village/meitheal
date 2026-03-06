@@ -30,6 +30,13 @@ export const PUT: APIRoute = async ({ params, request }) => {
       return apiError("Lane not found", 404);
     }
 
+    const isBuiltIn = Number((existing.rows[0] as Record<string, unknown>).built_in ?? 0) === 1;
+
+    // Prevent changing key or includes on built-in lanes (breaks status mapping)
+    if (isBuiltIn && (body.key !== undefined || body.includes !== undefined)) {
+      return apiError("Cannot change key or includes on built-in lanes", 403);
+    }
+
     const now = Date.now();
     const updates: string[] = [];
     const args: InValue[] = [];

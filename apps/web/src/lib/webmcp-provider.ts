@@ -104,7 +104,7 @@ function getMeithealTools(): WebMCPTool[] {
           query: { type: "string", description: "Free text search" },
           status: {
             type: "string",
-            enum: ["todo", "in_progress", "done", "cancelled"],
+            enum: ["backlog", "todo", "in_progress", "done", "cancelled"],
           },
           priority: {
             type: "integer",
@@ -152,7 +152,7 @@ function getMeithealTools(): WebMCPTool[] {
           taskId: { type: "integer", description: "Task ID to update" },
           status: {
             type: "string",
-            enum: ["todo", "in_progress", "done", "cancelled"],
+            enum: ["backlog", "todo", "in_progress", "done", "cancelled"],
             description: "New status",
           },
         },
@@ -198,7 +198,7 @@ function getMeithealTools(): WebMCPTool[] {
           upcoming: "/upcoming",
         };
         const path = viewMap[String(input.view)] ?? "/";
-        window.location.href = path;
+        window.location.href = (window.__ingress_path || "") + path;
         return { success: true, navigatedTo: path };
       },
     },
@@ -223,7 +223,7 @@ function getMeithealTools(): WebMCPTool[] {
           format === "csv"
             ? "/api/export/tasks.csv"
             : "/api/export/tasks.json";
-        const res = await fetch(endpoint);
+        const res = await fetch((window.__ingress_path || "") + endpoint);
         return res.json();
       },
     },

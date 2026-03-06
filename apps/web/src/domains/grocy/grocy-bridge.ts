@@ -189,6 +189,13 @@ export async function syncFromGrocy(): Promise<{
     if (productsResult.ok) productNames = productsResult.data;
   } catch { /* product names are best-effort */ }
 
+  // Pre-fetch task categories for board mapping (#12)
+  let categoryNames = new Map<number, string>();
+  try {
+    const categoriesResult = await adapter.getCategories();
+    if (categoriesResult.ok) categoryNames = categoriesResult.data;
+  } catch { /* category names are best-effort */ }
+
   // Track all Grocy entity keys seen this sync for stale detection (Fix #3)
   const seenEntityKeys = new Set<string>();
 
@@ -224,7 +231,7 @@ export async function syncFromGrocy(): Promise<{
     const tasksResult = await withRetry(() => adapter.getTasks(true));
     if (tasksResult.ok) {
       for (const t of tasksResult.data) seenEntityKeys.add(`task:${t.taskId}`);
-      result.tasks = await mergeGrocyTasks(tasksResult.data);
+      result.tasks = await mergeGrocyTasks(tasksResult.data, categoryNames);
     } else {
       result.errors++;
       logger.log("error", {
@@ -563,7 +570,10 @@ async function mergeGrocyChores(chores: GrocyChore[]): Promise<number> {
   return synced;
 }
 
-async function mergeGrocyTasks(tasks: GrocyTask[]): Promise<number> {
+async function mergeGrocyTasks(
+  tasks: GrocyTask[],
+  categoryNames?: Map<number, string>,
+): Promise<number> {
   const client = await getClient();
   const entityIds = tasks.map((t) => String(t.taskId));
   const existing = await batchLoadConfirmations(client, "task", entityIds);
@@ -571,7 +581,8 @@ async function mergeGrocyTasks(tasks: GrocyTask[]): Promise<number> {
   const nowMs = Date.now();
 
   for (const task of tasks) {
-    const taskData = taskToTask(task);
+    const categoryName = task.categoryId ? categoryNames?.get(task.categoryId) : undefined;
+    const taskData = taskToTask(task, categoryName);
     const match = existing.get(String(task.taskId));
 
     if (match) {
@@ -579,8 +590,8 @@ async function mergeGrocyTasks(tasks: GrocyTask[]): Promise<number> {
       if (match.taskUpdatedAt > match.syncUpdatedAt && !task.done) continue;
 
       await client.execute({
-        sql: `UPDATE tasks SET title = ?, status = ?, due_date = ?, description = COALESCE(?, description), updated_at = ? WHERE id = ?`,
-        args: [taskData.title, taskData.status, taskData.dueDate, taskData.description, nowMs, match.taskId],
+        sql: `UPDATE tasks SET title = ?, status = ?, due_date = ?, description = COALESCE(?, description), board_id = ?, updated_at = ? WHERE id = ?`,
+        args: [taskData.title, taskData.status, taskData.dueDate, taskData.description, taskData.boardId ?? "default", nowMs, match.taskId],
       });
       await client.execute({
         sql: "UPDATE grocy_sync_confirmations SET payload = ?, updated_at = ? WHERE grocy_entity_type = 'task' AND grocy_entity_id = ?",
@@ -594,11 +605,12 @@ async function mergeGrocyTasks(tasks: GrocyTask[]): Promise<number> {
                 labels, framework_payload, calendar_sync_state, board_id,
                 custom_fields, task_type, idempotency_key, request_id,
                 created_at, updated_at)
-              VALUES (?, ?, ?, ?, ?, ?, ?, '{}', 'synced', 'default', '{}', 'task', ?, ?, ?, ?)`,
+              VALUES (?, ?, ?, ?, ?, ?, ?, '{}', 'synced', ?, '{}', 'task', ?, ?, ?, ?)`,
         args: [
           meithealTaskId, taskData.title, taskData.description ?? "", taskData.status,
           taskData.priority, taskData.dueDate,
           JSON.stringify(taskData.labels),
+          taskData.boardId ?? "default",
           `grocy-task-${task.taskId}`, crypto.randomUUID(), nowMs, nowMs,
         ],
       });

@@ -66,7 +66,7 @@ COMPLETE_TASK_SCHEMA = vol.Schema(
 SEARCH_TASKS_SCHEMA = vol.Schema(
     {
         vol.Required("query"): cv.string,
-        vol.Optional("status"): vol.In(["todo", "in_progress", "done"]),
+        vol.Optional("status"): vol.In(["backlog", "todo", "in_progress", "done"]),
     }
 )
 

@@ -65,7 +65,7 @@ class SearchTasksTool(Tool):
     description = (
         "Search tasks in Meitheal, the household task manager. "
         "You can filter by keyword (matches title and description), "
-        "status (todo, in_progress, or done), or priority (1=urgent, 5=low). "
+        "status (backlog, todo, in_progress, or done), or priority (1=urgent, 5=low). "
         "Use this when the user asks about their tasks, to-do list, or task list."
     )
     parameters = vol.Schema(
@@ -73,8 +73,8 @@ class SearchTasksTool(Tool):
             vol.Optional("query", description="Keyword to search in title and description"): str,
             vol.Optional(
                 "status",
-                description="Filter by status: todo, in_progress, or done",
-            ): vol.In(["todo", "in_progress", "done"]),
+                description="Filter by status: backlog, todo, in_progress, or done",
+            ): vol.In(["backlog", "todo", "in_progress", "done"]),
             vol.Optional(
                 "priority",
                 description="Filter by priority (1 = highest/urgent, 5 = lowest)",
@@ -270,8 +270,8 @@ class UpdateTaskTool(Tool):
             ): vol.All(int, vol.Range(min=1, max=5)),
             vol.Optional(
                 "status",
-                description="New status: todo, in_progress, or done",
-            ): vol.In(["todo", "in_progress", "done"]),
+                description="New status: backlog, todo, in_progress, or done",
+            ): vol.In(["backlog", "todo", "in_progress", "done"]),
             vol.Optional("due_date", description="New due date in ISO 8601 format (YYYY-MM-DD)"): str,
         }
     )
@@ -792,7 +792,7 @@ API_PROMPT = (
     "running as a Home Assistant addon. Meitheal manages the household's tasks, "
     "to-do lists, projects, and calendar events synced from Home Assistant.\n\n"
     "## What You Can Do\n"
-    "- **Search tasks** by keyword, status (todo/in_progress/done), or priority (1-5)\n"
+    "- **Search tasks** by keyword, status (backlog/todo/in_progress/done), or priority (1-5)\n"
     "- **Create tasks** with a title and optional description\n"
     "- **Complete tasks** by ID or title\n"
     "- **Delete tasks** permanently\n"

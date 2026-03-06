@@ -50,6 +50,9 @@ export const GET: APIRoute = async () => {
     default_assignee: defaultAssignee,
   }), {
     status: 200,
-    headers: { "content-type": "application/json" },
+    headers: {
+      "content-type": "application/json",
+      "cache-control": "private, max-age=30, no-store",
+    },
   });
 };

@@ -495,6 +495,43 @@ export class GrocyAdapter {
       clearTimeout(timeout)
     }
   }
+  /**
+   * GET /api/objects/task_categories — returns a Map of categoryId → name.
+   * Used to map Grocy task categories to Meitheal boards (#12).
+   */
+  async getCategories(): Promise<GrocyResult<Map<number, string>>> {
+    return this.request<Map<number, string>>(
+      "GET",
+      "/api/objects/task_categories",
+      undefined,
+      (raw) => {
+        const items = Array.isArray(raw) ? raw : []
+        const map = new Map<number, string>()
+        for (const item of items) {
+          const r = item as Record<string, unknown>
+          map.set(Number(r.id ?? 0), String(r.name ?? `Category #${r.id}`))
+        }
+        return map
+      }
+    )
+  }
+
+  /**
+   * POST /api/objects/api_keys — create a new API key.
+   * Used for auto-generating a key when Grocy addon is detected via HA (#15).
+   * Note: requires an existing API key or session with admin access.
+   */
+  async createApiKey(): Promise<GrocyResult<{ apiKey: string }>> {
+    return this.request(
+      "POST",
+      "/api/objects/api_keys",
+      { key_type: "default" },
+      (raw) => {
+        const r = raw as Record<string, unknown>
+        return { apiKey: String(r.created_object_id ?? r.api_key ?? "") }
+      }
+    )
+  }
 }
 
 /**

@@ -26,13 +26,47 @@ const locale: Locale = cookieLocale === "ga" ? "ga" : "en";
 await ensureSchema();
 const client = getPersistenceClient();
 
+// Completed task auto-hide: read retention setting (default 30 days, 0 = never hide)
+let completedAutoHideDays = 30;
+try {
+  const settingsResult = await client.execute({
+    sql: "SELECT value FROM settings WHERE key = 'completed_auto_hide_days' LIMIT 1",
+    args: [],
+  });
+  if (settingsResult.rows.length > 0) {
+    const val = Number(
+      JSON.parse(
+        String((settingsResult.rows[0] as Record<string, unknown>).value),
+      ),
+    );
+    if (!isNaN(val) && val >= 0) completedAutoHideDays = val;
+  }
+} catch {
+  /* settings table may not exist yet — use default */
+}
+
+const completedCutoffMs =
+  completedAutoHideDays > 0 ? Date.now() - completedAutoHideDays * 86400000 : 0; // 0 = show all
+
 let tasks: Record<string, unknown>[] = [];
 let commentCounts: Record<string, number> = {};
 try {
   const result = await client.execute(
     "SELECT id, title, description, status, priority, due_date, labels, framework_payload, calendar_sync_state, board_id, custom_fields, start_date, end_date, progress, color, is_favorite, task_type, parent_id, ticket_number, assigned_to, created_at, updated_at FROM tasks ORDER BY priority ASC, created_at DESC",
   );
-  tasks = result.rows as Record<string, unknown>[];
+  let allTasks = result.rows as Record<string, unknown>[];
+
+  // Filter out completed tasks older than retention window (kanban-only; table view shows all)
+  if (completedCutoffMs > 0) {
+    allTasks = allTasks.filter((t) => {
+      const status = String(t.status ?? "").toLowerCase();
+      if (status === "complete" || status === "done") {
+        return Number(t.updated_at ?? 0) >= completedCutoffMs;
+      }
+      return true;
+    });
+  }
+  tasks = allTasks;
   // Comment count aggregation (competitor parity: Jira/Asana/Linear show comment counts)
   try {
     const ccResult = await client.execute(
@@ -79,9 +113,18 @@ try {
 if (columns.length === 0) {
   columns = [
     {
+      id: "lane-backlog",
+      key: "backlog",
+      label: "Backlog",
+      icon: "📥",
+      includes: ["backlog"],
+      builtIn: true,
+      wipLimit: 0,
+    },
+    {
       id: "lane-pending",
       key: "pending",
-      label: "Pending",
+      label: "Todo",
       icon: "📋",
       includes: ["pending", "todo"],
       builtIn: true,
@@ -90,7 +133,7 @@ if (columns.length === 0) {
     {
       id: "lane-active",
       key: "active",
-      label: "Active",
+      label: "In Progress",
       icon: "⚡",
       includes: ["active", "in_progress"],
       builtIn: true,
@@ -99,7 +142,7 @@ if (columns.length === 0) {
     {
       id: "lane-complete",
       key: "complete",
-      label: "Complete",
+      label: "Done",
       icon: "✅",
       includes: ["complete", "done"],
       builtIn: true,
@@ -194,6 +237,30 @@ const typeConfig: Record<
         <span class="type-dot" style="background: #10b981;"></span>
         {t("kanban.tasks_label", locale)}
       </button>
+    </div>
+    <div
+      class="user-filters"
+      id="user-filters"
+      role="group"
+      aria-label="Filter by assignee"
+    >
+      <button
+        type="button"
+        class="user-filter-btn active"
+        data-user="all"
+        title="Show all users"
+      >
+        👥 All
+      </button>
+      <button
+        type="button"
+        class="user-filter-btn"
+        data-user="unassigned"
+        title="Unassigned tasks"
+      >
+        ∅
+      </button>
+      <!-- Dynamic user pills populated by JS -->
     </div>
     <div class="type-group-toggle">
       <label
@@ -1323,32 +1390,52 @@ const typeConfig: Record<
         // Persist selection
         localStorage.setItem("meitheal-kanban-group-by", mode);
 
-        if (mode === "board" || mode === "priority") {
-          // Future: dynamic swimlane generation for board/priority
-          const toast = document.createElement("div");
-          toast.className = "toast success";
-          toast.textContent = `Group by ${mode} coming soon`;
-          document.querySelector(".toast-container")?.appendChild(toast);
-          setTimeout(() => toast.remove(), 2500);
-          groupBySelect.value = isGrouped ? "type" : "none";
-          return;
-        }
-
-        const shouldGroup = mode === "type";
-        if (shouldGroup === isGrouped) return;
-        isGrouped = shouldGroup;
-
+        // Ungroup everything first
         document.querySelectorAll(".kanban-column").forEach((col) => {
           const cardsContainer = col.querySelector(".kanban-cards");
           if (!cardsContainer) return;
 
-          const flatCards = cardsContainer.querySelectorAll(".flat-card");
-          const swimlaneGroups =
-            cardsContainer.querySelectorAll(".swimlane-group");
+          // Move all cards back to flat
+          cardsContainer
+            .querySelectorAll(".swimlane-group")
+            .forEach((group) => {
+              const swimlaneCards = group.querySelector(".swimlane-cards");
+              if (swimlaneCards) {
+                swimlaneCards
+                  .querySelectorAll(".kanban-card")
+                  .forEach((card) => {
+                    card.classList.remove("grouped-card");
+                    card.classList.add("flat-card");
+                    cardsContainer.insertBefore(card, group);
+                  });
+              }
+            });
 
-          if (isGrouped) {
-            // Move flat cards into respective swimlane groups
-            flatCards.forEach((card) => {
+          // Remove dynamic swimlane groups
+          cardsContainer
+            .querySelectorAll(".swimlane-group.dynamic-group")
+            .forEach((g) => g.remove());
+          // Hide static type swimlane groups
+          cardsContainer
+            .querySelectorAll(".swimlane-group:not(.dynamic-group)")
+            .forEach((g) => {
+              g.style.display = "none";
+            });
+        });
+
+        isGrouped = mode !== "none";
+
+        if (mode === "none") {
+          applyTypeFilters();
+          return;
+        }
+
+        if (mode === "type") {
+          // Use the pre-rendered type swimlane groups
+          document.querySelectorAll(".kanban-column").forEach((col) => {
+            const cardsContainer = col.querySelector(".kanban-cards");
+            if (!cardsContainer) return;
+            cardsContainer.querySelectorAll(".flat-card").forEach((card) => {
               const type = card.dataset.taskType || "task";
               const swimlane = cardsContainer.querySelector(
                 `.swimlane-group[data-swimlane-type="${type}"] .swimlane-cards`,
@@ -1359,34 +1446,94 @@ const typeConfig: Record<
                 swimlane.appendChild(card);
               }
             });
-            // Show swimlane groups, hide flat empty state
-            swimlaneGroups.forEach((group) => {
-              const groupType = group.dataset.swimlaneType;
-              group.style.display = activeTypes.has(groupType) ? "" : "none";
-              // Update swimlane count
-              const countEl = group.querySelector(".swimlane-count");
-              const cards = group.querySelectorAll(".kanban-card");
-              if (countEl) countEl.textContent = cards.length;
+            cardsContainer
+              .querySelectorAll(".swimlane-group:not(.dynamic-group)")
+              .forEach((group) => {
+                const groupType = group.dataset.swimlaneType;
+                group.style.display = activeTypes.has(groupType) ? "" : "none";
+                const countEl = group.querySelector(".swimlane-count");
+                const cards = group.querySelectorAll(".kanban-card");
+                if (countEl) countEl.textContent = cards.length;
+              });
+          });
+        } else if (mode === "board" || mode === "priority") {
+          // Dynamic swimlane generation for board/priority
+          const dataAttr = mode === "board" ? "board" : "priority";
+          const icons =
+            mode === "priority"
+              ? {
+                  "1": "🔴 P1 — Critical",
+                  "2": "🟠 P2 — High",
+                  "3": "🟡 P3 — Medium",
+                  "4": "🟢 P4 — Low",
+                  "5": "⚪ P5 — Minimal",
+                }
+              : {};
+          const defaultLabel =
+            mode === "priority" ? "🟡 P3 — Medium" : "📋 Default";
+
+          document.querySelectorAll(".kanban-column").forEach((col) => {
+            const cardsContainer = col.querySelector(".kanban-cards");
+            if (!cardsContainer) return;
+            const flatCards = Array.from(
+              cardsContainer.querySelectorAll(".flat-card"),
+            );
+
+            // Collect unique values
+            const groups = new Map();
+            flatCards.forEach((card) => {
+              const val =
+                card.dataset[dataAttr] ||
+                (mode === "priority" ? "3" : "default");
+              if (!groups.has(val)) groups.set(val, []);
+              groups.get(val).push(card);
             });
-          } else {
-            // Move cards back to flat container
-            swimlaneGroups.forEach((group) => {
-              const swimlaneCards = group.querySelector(".swimlane-cards");
-              if (swimlaneCards) {
-                const cards = swimlaneCards.querySelectorAll(".kanban-card");
-                cards.forEach((card) => {
-                  card.classList.remove("grouped-card");
-                  card.classList.add("flat-card");
-                  // Insert before the first swimlane group
-                  const firstGroup =
-                    cardsContainer.querySelector(".swimlane-group");
-                  cardsContainer.insertBefore(card, firstGroup);
-                });
-              }
-              group.style.display = "none";
+
+            // Sort: priority by number, board alphabetically
+            const sortedKeys = Array.from(groups.keys()).sort((a, b) => {
+              if (mode === "priority") return Number(a) - Number(b);
+              return a.localeCompare(b);
             });
-          }
-        });
+
+            sortedKeys.forEach((key) => {
+              const cards = groups.get(key);
+              const group = document.createElement("div");
+              group.className = "swimlane-group dynamic-group";
+              group.dataset.swimlaneType = key;
+
+              const header = document.createElement("div");
+              header.className = "swimlane-header";
+              const label =
+                icons[key] || (mode === "board" ? `📋 ${key}` : defaultLabel);
+              header.innerHTML = `<span class="swimlane-toggle">▼</span><span class="swimlane-label">${label}</span><span class="swimlane-count">${cards.length}</span>`;
+
+              // Collapse toggle
+              header.addEventListener("click", () => {
+                const cardsEl = group.querySelector(".swimlane-cards");
+                const toggle = header.querySelector(".swimlane-toggle");
+                if (cardsEl) {
+                  const collapsed = cardsEl.style.display === "none";
+                  cardsEl.style.display = collapsed ? "" : "none";
+                  if (toggle) toggle.textContent = collapsed ? "▼" : "▶";
+                  group.classList.toggle("swimlane-collapsed", !collapsed);
+                }
+              });
+
+              const swimlaneCards = document.createElement("div");
+              swimlaneCards.className = "swimlane-cards";
+              cards.forEach((card) => {
+                card.classList.remove("flat-card");
+                card.classList.add("grouped-card");
+                swimlaneCards.appendChild(card);
+              });
+
+              group.appendChild(header);
+              group.appendChild(swimlaneCards);
+              cardsContainer.appendChild(group);
+            });
+          });
+        }
+
         applyTypeFilters();
       });
 
@@ -1444,6 +1591,102 @@ const typeConfig: Record<
       } catch (_) {
         /* Offline attachments unavailable — non-critical */
       }
+    })();
+
+    // Phase 32: User filter — Jira-style assignee pills
+    (async function initUserFilter() {
+      const container = document.getElementById("user-filters");
+      if (!container) return;
+
+      try {
+        const res = await fetch((window.__ingress_path || "") + "/api/users");
+        if (!res.ok) return;
+        const data = await res.json();
+        const users = data.users || [];
+
+        // Render user pills dynamically
+        users.forEach((u) => {
+          const btn = document.createElement("button");
+          btn.type = "button";
+          btn.className = "user-filter-btn";
+          btn.dataset.user = u.id;
+          btn.title = u.display_name || u.name || u.id;
+
+          const avatar = document.createElement("span");
+          avatar.className = "user-avatar-pill";
+          avatar.style.background = u.color || "var(--accent)";
+          avatar.textContent = (u.display_name || u.name || "?")
+            .slice(0, 2)
+            .toUpperCase();
+          btn.appendChild(avatar);
+
+          const label = document.createElement("span");
+          label.textContent = u.display_name || u.name || u.id;
+          btn.appendChild(label);
+
+          container.appendChild(btn);
+        });
+      } catch {
+        /* users API unavailable — filter stays with All/Unassigned */
+      }
+
+      // Restore saved filter
+      const saved =
+        localStorage.getItem("meitheal-kanban-user-filter") || "all";
+      const savedBtn = container.querySelector(
+        `[data-user="${CSS.escape(saved)}"]`,
+      );
+      if (savedBtn) {
+        container
+          .querySelector(".user-filter-btn.active")
+          ?.classList.remove("active");
+        savedBtn.classList.add("active");
+      }
+
+      // Apply filter
+      function applyUserFilter() {
+        const activeBtn = container.querySelector(".user-filter-btn.active");
+        const userId = activeBtn?.dataset.user || "all";
+        localStorage.setItem("meitheal-kanban-user-filter", userId);
+
+        document
+          .querySelectorAll(".kanban-card[data-assigned]")
+          .forEach((el) => {
+            const card = el;
+            const assigned = card.dataset.assigned || "";
+
+            if (userId === "all") {
+              card.classList.remove("user-filtered-out");
+            } else if (userId === "unassigned") {
+              card.classList.toggle("user-filtered-out", assigned !== "");
+            } else {
+              card.classList.toggle("user-filtered-out", assigned !== userId);
+            }
+          });
+
+        // Update column counts (exclude user-filtered cards)
+        document.querySelectorAll(".kanban-column").forEach((col) => {
+          const count = col.querySelector(".kanban-count");
+          const visible = col.querySelectorAll(
+            '.kanban-card:not([style*="display: none"]):not(.user-filtered-out)',
+          );
+          if (count) count.textContent = visible.length;
+        });
+      }
+
+      // Click handlers
+      container.addEventListener("click", (e) => {
+        const btn = e.target.closest(".user-filter-btn");
+        if (!btn) return;
+        container
+          .querySelectorAll(".user-filter-btn")
+          .forEach((b) => b.classList.remove("active"));
+        btn.classList.add("active");
+        applyUserFilter();
+      });
+
+      // Apply on load
+      applyUserFilter();
     })();
   </script>
 </Layout>
@@ -1855,6 +2098,57 @@ const typeConfig: Record<
     background: var(--accent-light);
     border-color: var(--accent);
     color: var(--accent);
+  }
+
+  /* Phase 32: User filter pills */
+  .user-filters {
+    display: flex;
+    gap: 6px;
+    align-items: center;
+    flex-wrap: wrap;
+    border-left: 1px solid var(--border);
+    padding-left: 12px;
+    margin-left: 4px;
+  }
+  .user-filter-btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 5px;
+    padding: 4px 10px;
+    border: 1px solid var(--border);
+    border-radius: 20px;
+    background: transparent;
+    color: var(--text-muted);
+    font-size: 12px;
+    font-weight: 500;
+    cursor: pointer;
+    transition: all 200ms;
+    white-space: nowrap;
+  }
+  .user-filter-btn:hover {
+    border-color: var(--accent);
+    color: var(--text-primary);
+  }
+  .user-filter-btn.active {
+    background: var(--accent-light);
+    border-color: var(--accent);
+    color: var(--accent);
+  }
+  .user-avatar-pill {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 20px;
+    height: 20px;
+    border-radius: 50%;
+    color: #fff;
+    font-size: 9px;
+    font-weight: 700;
+    letter-spacing: 0.5px;
+    flex-shrink: 0;
+  }
+  .kanban-card.user-filtered-out {
+    display: none !important;
   }
   .type-dot {
     width: 8px;

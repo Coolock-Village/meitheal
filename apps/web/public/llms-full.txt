@@ -23,7 +23,7 @@ All endpoints accept and return JSON.
 
 - `PUT /api/tasks/:id` — Update a task
   Body: `{ title?, status?, priority?, due_date?, description? }`
-  status values: "todo", "in_progress", "done", "cancelled"
+  status values: "backlog", "todo", "in_progress", "done", "cancelled"
   priority values: 1 (urgent) to 5 (lowest)
 
 - `DELETE /api/tasks/:id` — Delete a task
@@ -177,7 +177,7 @@ All task mutations appear in HA's history/logbook as `logbook_entry` events.
 {
   "id": "string (UUID)",
   "title": "string",
-  "status": "todo | in_progress | done | cancelled",
+  "status": "backlog | todo | in_progress | done | cancelled",
   "priority": 1-5,
   "description": "string | null",
   "due_date": "ISO 8601 date | null",
@@ -196,7 +196,7 @@ All task mutations appear in HA's history/logbook as `logbook_entry` events.
 - 5: Lowest
 
 ### Status Flow
-todo → in_progress → done
+backlog → todo → in_progress → done
 todo → cancelled
 
 ## Authentication

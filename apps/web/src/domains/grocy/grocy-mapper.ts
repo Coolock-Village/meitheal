@@ -17,6 +17,8 @@ interface MeithealTaskData {
   priority: number;
   dueDate: string | null;
   labels: string[];
+  /** Board ID — defaults to 'default', set to Grocy category name when available (#12) */
+  boardId?: string;
 }
 
 /**
@@ -49,6 +51,7 @@ export function choreToTask(chore: GrocyChore): MeithealTaskData {
     priority: chore.isOverdue ? 1 : 3,
     dueDate: chore.nextEstimatedExecutionTime?.split(" ")[0] ?? null,
     labels,
+    boardId: "default",
   };
 }
 
@@ -57,9 +60,23 @@ export function choreToTask(chore: GrocyChore): MeithealTaskData {
  *
  * - Grocy tasks are simpler (name, due_date, done, category)
  * - Labels: "grocy-task", "synced from grocy"
+ * - Category name → boardId (slugified) when provided (#12)
+ *
+ * @param task - Grocy task from adapter
+ * @param categoryName - Optional category name from getCategories() map
  */
-export function taskToTask(task: GrocyTask): MeithealTaskData {
+export function taskToTask(task: GrocyTask, categoryName?: string): MeithealTaskData {
   const labels = ["grocy-task", "synced from grocy"];
+
+  // Add category as a label if available
+  if (categoryName) {
+    labels.push(`category:${categoryName.toLowerCase()}`);
+  }
+
+  // Slugify category name for board ID (e.g. "House Chores" → "house-chores")
+  const boardId = categoryName
+    ? categoryName.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, "") || "default"
+    : "default";
 
   return {
     title: task.name,
@@ -68,6 +85,7 @@ export function taskToTask(task: GrocyTask): MeithealTaskData {
     priority: 3,
     dueDate: task.dueDate,
     labels,
+    boardId,
   };
 }
 

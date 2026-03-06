@@ -354,9 +354,10 @@ export async function ensureSchema(): Promise<void> {
   if (Number(laneCount.rows[0]?.cnt ?? 0) === 0) {
     const now = Date.now();
     const defaultLanes = [
-      { id: "lane-pending", key: "pending", label: "Pending", icon: "📋", position: 0, includes: '["pending","todo"]', builtIn: 1 },
-      { id: "lane-active", key: "active", label: "Active", icon: "⚡", position: 1, includes: '["active","in_progress"]', builtIn: 1 },
-      { id: "lane-complete", key: "complete", label: "Complete", icon: "✅", position: 2, includes: '["complete","done"]', builtIn: 1 },
+      { id: "lane-backlog", key: "backlog", label: "Backlog", icon: "📥", position: 0, includes: '["backlog"]', builtIn: 1 },
+      { id: "lane-pending", key: "pending", label: "Todo", icon: "📋", position: 1, includes: '["pending","todo"]', builtIn: 1 },
+      { id: "lane-active", key: "active", label: "In Progress", icon: "⚡", position: 2, includes: '["active","in_progress"]', builtIn: 1 },
+      { id: "lane-complete", key: "complete", label: "Done", icon: "✅", position: 3, includes: '["complete","done"]', builtIn: 1 },
     ];
     for (const lane of defaultLanes) {
       await client.execute({
@@ -367,6 +368,23 @@ export async function ensureSchema(): Promise<void> {
   }
 
   await client.execute("CREATE INDEX IF NOT EXISTS kanban_lanes_position_idx ON kanban_lanes(position)");
+
+  // Migration: relabel built-in lanes Pending→Todo, Active→In Progress, Complete→Done
+  await client.execute("UPDATE kanban_lanes SET label = 'Todo' WHERE key = 'pending' AND built_in = 1 AND label = 'Pending'");
+  await client.execute("UPDATE kanban_lanes SET label = 'In Progress' WHERE key = 'active' AND built_in = 1 AND label = 'Active'");
+  await client.execute("UPDATE kanban_lanes SET label = 'Done' WHERE key = 'complete' AND built_in = 1 AND label = 'Complete'");
+
+  // Migration: add Backlog lane if not present (existing DBs that already seeded 3 lanes)
+  const backlogExists = await client.execute({ sql: "SELECT id FROM kanban_lanes WHERE key = 'backlog' LIMIT 1", args: [] });
+  if (backlogExists.rows.length === 0) {
+    const now = Date.now();
+    // Shift existing lanes up by 1 to make room at position 0
+    await client.execute("UPDATE kanban_lanes SET position = position + 1");
+    await client.execute({
+      sql: "INSERT INTO kanban_lanes (id, key, label, icon, position, wip_limit, includes, built_in, created_at, updated_at) VALUES (?, ?, ?, ?, 0, 0, ?, 1, ?, ?)",
+      args: ["lane-backlog", "backlog", "Backlog", "📥", '["backlog"]', now, now],
+    });
+  }
 
   // Phase 31: Recurring tasks — iCal RRULE format (e.g. "FREQ=WEEKLY;BYDAY=MO")
   if (!(await hasColumn(client, "tasks", "recurrence_rule"))) {

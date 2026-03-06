@@ -161,6 +161,18 @@ const typeIcons: Record<string, string> = {
                     🔁
                   </span>
                 )}
+                {task.assigned_to && (
+                  <span
+                    class="avatar avatar--sm"
+                    title={`Assigned to ${String(task.assigned_to)}`}
+                    aria-label={`Assigned to ${String(task.assigned_to)}`}
+                  >
+                    {String(task.assigned_to)
+                      .replace(/^(ha_|custom_)/, "")
+                      .slice(0, 2)
+                      .toUpperCase()}
+                  </span>
+                )}
               </div>
             );
           })}
@@ -254,6 +266,18 @@ const typeIcons: Record<string, string> = {
                     🔁
                   </span>
                 )}
+                {task.assigned_to && (
+                  <span
+                    class="assignee-badge"
+                    title={`Assigned to ${String(task.assigned_to)}`}
+                    aria-label={`Assigned to ${String(task.assigned_to)}`}
+                  >
+                    {String(task.assigned_to)
+                      .replace(/^(ha_|custom_)/, "")
+                      .slice(0, 2)
+                      .toUpperCase()}
+                  </span>
+                )}
               </div>
             );
           })
@@ -308,6 +332,18 @@ const typeIcons: Record<string, string> = {
                     {String(task.title)}
                   </div>
                 </div>
+                {task.assigned_to && (
+                  <span
+                    class="assignee-badge"
+                    title={`Assigned to ${String(task.assigned_to)}`}
+                    aria-label={`Assigned to ${String(task.assigned_to)}`}
+                  >
+                    {String(task.assigned_to)
+                      .replace(/^(ha_|custom_)/, "")
+                      .slice(0, 2)
+                      .toUpperCase()}
+                  </span>
+                )}
               </div>
             );
           })}

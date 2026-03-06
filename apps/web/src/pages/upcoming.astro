@@ -198,6 +198,18 @@ const totalTasks = days.reduce((sum, d) => sum + d.tasks.length, 0);
                         🔁
                       </span>
                     )}
+                    {task.assigned_to && (
+                      <span
+                        class="avatar avatar--sm"
+                        title={`Assigned to ${String(task.assigned_to)}`}
+                        aria-label={`Assigned to ${String(task.assigned_to)}`}
+                      >
+                        {String(task.assigned_to)
+                          .replace(/^(ha_|custom_)/, "")
+                          .slice(0, 2)
+                          .toUpperCase()}
+                      </span>
+                    )}
                   </div>
                 );
               })}

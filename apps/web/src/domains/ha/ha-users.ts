@@ -69,7 +69,13 @@ export async function listHAUsers(): Promise<HAUser[]> {
     // Filter out system-generated accounts (e.g. homeassistant, supervisor)
     const users = (result ?? []).filter(
       (u) => !((u as unknown as Record<string, unknown>).system_generated) && u.is_active
-    );
+    ).map((u) => ({
+      ...u,
+      // Sanitize display name — strip HTML tags to prevent stored XSS
+      name: (u.name || "").replace(/<[^>]*>/g, "").trim() || "Unknown",
+      // Validate ID is clean alphanumeric — prefix with ha_ for downstream validation compat
+      id: /^[a-zA-Z0-9_-]+$/.test(u.id) ? u.id : `ha_sanitized_${u.id.replace(/[^a-zA-Z0-9]/g, "")}`,
+    }));
 
     cachedUsers = users;
     cacheTimestamp = now;

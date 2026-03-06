@@ -121,7 +121,8 @@ const { locale } = Astro.props;
     searchTimeout = setTimeout(async () => {
       try {
         const res = await fetch(
-          `/api/tasks?q=${encodeURIComponent(q)}&limit=8`,
+          (window.__ingress_path || "") +
+            `/api/tasks?q=${encodeURIComponent(q)}&limit=8`,
         );
         const data = await res.json();
         if (data.tasks.length === 0) {
@@ -159,7 +160,8 @@ const { locale } = Astro.props;
     if (typeof window.openTaskDetail === "function") {
       window.openTaskDetail(taskId);
     } else {
-      window.location.href = `/tasks#task-${taskId}`; // Redirect to tasks list and open panel using new anchor syntax
+      window.location.href =
+        (window.__ingress_path || "") + `/tasks#task-${taskId}`; // Redirect to tasks list and open panel using new anchor syntax
     }
   });
 

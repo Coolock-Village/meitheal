@@ -83,6 +83,7 @@ function createCalendarAdapter(): CalendarIntegrationAdapter {
 export const POST: APIRoute = async ({ request }) => {
   const body = (await request.json().catch(() => ({}))) as {
     title?: string;
+    assigned_to?: string | null;
     frameworkPayload?: Record<string, unknown>;
     calendar?: {
       entityId?: string;
@@ -109,9 +110,27 @@ export const POST: APIRoute = async ({ request }) => {
   const calendarDefaults = await loadCalendarDefaults();
   const adapter = createCalendarAdapter();
 
+  // Validate assigned_to format if provided
+  let assignedTo: string | null = null;
+  if (typeof body.assigned_to === "string" && body.assigned_to.trim().length > 0) {
+    const rawAssigned = body.assigned_to.trim();
+    if (rawAssigned.length > 255) {
+      return new Response(JSON.stringify({ error: "assigned_to exceeds max length (255)" }), {
+        status: 400, headers: { "content-type": "application/json" },
+      });
+    }
+    if (!/^(ha_|custom_)/.test(rawAssigned)) {
+      return new Response(JSON.stringify({ error: "assigned_to must start with 'ha_' or 'custom_'" }), {
+        status: 400, headers: { "content-type": "application/json" },
+      });
+    }
+    assignedTo = rawAssigned;
+  }
+
   const result = await createTaskAndSyncCalendar(
     {
       title,
+      assignedTo,
       ...(body.frameworkPayload ? { frameworkPayload: body.frameworkPayload } : {}),
       requestId,
       idempotencyKey,

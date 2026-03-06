@@ -18,7 +18,10 @@ export const GET: APIRoute = async () => {
 
   return new Response(JSON.stringify({ default_assignee: value }), {
     status: 200,
-    headers: { "content-type": "application/json" },
+    headers: {
+      "content-type": "application/json",
+      "cache-control": "private, no-store",
+    },
   });
 };
 

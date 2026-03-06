@@ -509,6 +509,7 @@ Astro.response.headers.set("X-Content-Type-Options", "nosniff");
               <!-- Status + Board -->
               <div class="flex items-center gap-3">
                 <select id="td-status" class="inline-select">
+                  <option value="backlog">Backlog</option>
                   <option value="pending">Pending</option>
                   <option value="active">Active</option>
                   <option value="in_progress">In Progress</option>
@@ -1171,7 +1172,8 @@ Astro.response.headers.set("X-Content-Type-Options", "nosniff");
           searchTimeout = setTimeout(async () => {
             try {
               const res = await fetch(
-                `/api/tasks?q=${encodeURIComponent(q)}&limit=8`,
+                (window.__ingress_path || "") +
+                  `/api/tasks?q=${encodeURIComponent(q)}&limit=8`,
               );
               const data = (await res.json()) as {
                 tasks: Array<Record<string, unknown>>;
@@ -1211,7 +1213,8 @@ Astro.response.headers.set("X-Content-Type-Options", "nosniff");
           if (typeof window.openTaskDetail === "function") {
             window.openTaskDetail(taskId);
           } else {
-            window.location.href = `/tasks#edit-${taskId}`;
+            window.location.href =
+              (window.__ingress_path || "") + `/tasks#edit-${taskId}`;
           }
         });
 
@@ -2397,15 +2400,36 @@ Astro.response.headers.set("X-Content-Type-Options", "nosniff");
         document.getElementById("td-board")?.addEventListener("change", (e) => {
           saveTD("board_id", (e.target as HTMLSelectElement).value);
         });
-        // Assigned To: auto-save on change
+        // Assigned To: auto-save on change + toast feedback (UX2)
         document
           .getElementById("td-assigned-to")
-          ?.addEventListener("change", (e) =>
-            saveTD(
-              "assigned_to",
-              (e.target as HTMLSelectElement).value || null,
-            ),
-          );
+          ?.addEventListener("change", async (e) => {
+            const val = (e.target as HTMLSelectElement).value || null;
+            saveTD("assigned_to", val);
+            const sel = e.target as HTMLSelectElement;
+            const label = val
+              ? (sel.options[sel.selectedIndex]?.textContent ?? val)
+              : "Unassigned";
+            const { showToast } = await import("@lib/toast");
+            showToast(val ? `Assigned to ${label}` : "Unassigned");
+          });
+        // UX2: Keyboard shortcut 'A' to focus assignee dropdown in detail panel
+        document.addEventListener("keydown", (e) => {
+          const panel = document.getElementById("task-detail-panel");
+          if (!panel || panel.style.display === "none") return;
+          if (e.key === "a" && !e.ctrlKey && !e.metaKey && !e.altKey) {
+            const active = document.activeElement as HTMLElement;
+            if (
+              active?.tagName === "INPUT" ||
+              active?.tagName === "TEXTAREA" ||
+              active?.tagName === "SELECT" ||
+              active?.isContentEditable
+            )
+              return;
+            e.preventDefault();
+            document.getElementById("td-assigned-to")?.focus();
+          }
+        });
         document
           .getElementById("td-progress")
           ?.addEventListener("input", (e) => {

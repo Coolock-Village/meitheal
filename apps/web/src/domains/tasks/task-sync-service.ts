@@ -9,6 +9,7 @@ import type { CalendarIntegrationAdapter } from "@meitheal/integration-core";
 import {
   ensureSchema,
   findByIdempotencyKey,
+  getPersistenceClient,
   persistCalendarIntegrationResult,
   persistInitialPlan,
   type PersistedTaskResponse
@@ -23,6 +24,7 @@ export interface CalendarDefaults {
 
 export interface CreateTaskAndSyncInput {
   title: string;
+  assignedTo?: string | null;
   frameworkPayload?: Record<string, unknown>;
   requestId: string;
   idempotencyKey: string;
@@ -35,6 +37,7 @@ export interface CreateTaskAndSyncResult {
     id: string;
     title: string;
     status: string;
+    assigned_to?: string | null;
     frameworkPayload: Record<string, unknown>;
   };
   events: CreateTaskPlan["events"];
@@ -45,13 +48,15 @@ export interface CreateTaskAndSyncResult {
 function buildResult(
   persisted: PersistedTaskResponse,
   events: CreateTaskPlan["events"],
-  idempotentReplay: boolean
+  idempotentReplay: boolean,
+  assignedTo?: string | null,
 ): CreateTaskAndSyncResult {
   return {
     task: {
       id: persisted.task.id,
       title: persisted.task.title,
       status: persisted.task.status,
+      assigned_to: assignedTo ?? null,
       frameworkPayload: (persisted.task.frameworkPayload ?? {}) as Record<string, unknown>
     },
     events,
@@ -60,8 +65,8 @@ function buildResult(
   };
 }
 
-function mapStoredResponseToResult(stored: PersistedTaskResponse): CreateTaskAndSyncResult {
-  return buildResult(stored, [], true);
+function mapStoredResponseToResult(stored: PersistedTaskResponse, assignedTo?: string | null): CreateTaskAndSyncResult {
+  return buildResult(stored, [], true, assignedTo);
 }
 
 function isIdempotencyConflict(error: unknown): boolean {
@@ -82,7 +87,15 @@ export async function createTaskAndSyncCalendar(
 
   const existing = await findByIdempotencyKey(input.idempotencyKey);
   if (existing) {
-    return mapStoredResponseToResult(existing);
+    // Even on replay, apply assigned_to if changed (P0 audit fix)
+    if (input.assignedTo) {
+      const client = getPersistenceClient();
+      await client.execute({
+        sql: "UPDATE tasks SET assigned_to = ?, updated_at = ? WHERE id = ?",
+        args: [input.assignedTo, Date.now(), existing.task.id],
+      });
+    }
+    return mapStoredResponseToResult(existing, input.assignedTo);
   }
 
   const command: CreateTaskCommand = {
@@ -110,6 +123,15 @@ export async function createTaskAndSyncCalendar(
     throw error;
   }
 
+  // Apply assigned_to if provided (domain-tasks package is assignment-unaware)
+  if (input.assignedTo) {
+    const client = getPersistenceClient();
+    await client.execute({
+      sql: "UPDATE tasks SET assigned_to = ?, updated_at = ? WHERE id = ?",
+      args: [input.assignedTo, Date.now(), plan.aggregate.task.id],
+    });
+  }
+
   if (!input.calendarDefaults.enabled) {
     const disabledResult = await persistCalendarIntegrationResult({
       taskId: plan.aggregate.task.id,
@@ -123,7 +145,7 @@ export async function createTaskAndSyncCalendar(
       }
     });
 
-    return buildResult(disabledResult, plan.events, false);
+    return buildResult(disabledResult, plan.events, false, input.assignedTo);
   }
 
   const calendarCreateInput = {
@@ -144,5 +166,5 @@ export async function createTaskAndSyncCalendar(
     result: calendarResult
   });
 
-  return buildResult(persisted, plan.events, false);
+  return buildResult(persisted, plan.events, false, input.assignedTo);
 }

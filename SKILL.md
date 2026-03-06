@@ -56,7 +56,7 @@ Send JSON-RPC 2.0 to `POST /api/mcp`:
 
 Available MCP tools (13):
 - `createTask` — title (required), description, priority (1-5), due_date
-- `searchTasks` — query, status (todo/in_progress/done), priority
+- `searchTasks` — query, status (backlog/todo/in_progress/done), priority
 - `completeTask` — id or title
 - `updateTask` — id (required), title, status, priority, due_date, description
 - `deleteTask` — id (required)
@@ -86,7 +86,7 @@ Available MCP tools (13):
 ```
 id: UUID string
 title: string
-status: todo | in_progress | done | cancelled
+status: backlog | todo | in_progress | done | cancelled
 priority: 1 (urgent) to 5 (lowest), default 3
 description: string or null
 due_date: ISO 8601 date or null
@@ -96,7 +96,7 @@ labels: string array
 ## Important Notes
 
 - Priority 1 = urgent/highest, 5 = lowest. Default is 3 (medium).
-- Status flow: todo → in_progress → done, or todo → cancelled.
+- Status flow: backlog → todo → in_progress → done, or todo → cancelled.
 - When completing by title, the match is case-insensitive exact match.
 - `batchComplete` requires at least one filter (label, max_priority, or titles) — won't complete everything without a filter.
 - Authentication is handled by HA Supervisor ingress. No separate auth needed when accessed through HA.

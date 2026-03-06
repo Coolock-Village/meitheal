@@ -25,7 +25,10 @@ export const GET: APIRoute = async () => {
   });
   return new Response(JSON.stringify({ users }), {
     status: 200,
-    headers: { "content-type": "application/json" },
+    headers: {
+      "content-type": "application/json",
+      "cache-control": "private, no-store",
+    },
   });
 };
 
@@ -47,6 +50,26 @@ export const POST: APIRoute = async ({ request }) => {
   const id = `custom_${crypto.randomUUID().slice(0, 8)}`;
   const now = Date.now();
   const client = getPersistenceClient();
+
+  // Abuse prevention: max 50 custom users
+  const countResult = await client.execute("SELECT COUNT(*) as cnt FROM custom_users");
+  const count = Number((countResult.rows[0] as Record<string, unknown>).cnt);
+  if (count >= 50) {
+    return new Response(JSON.stringify({ error: "Maximum 50 custom users allowed" }), {
+      status: 409, headers: { "content-type": "application/json" },
+    });
+  }
+
+  // Duplicate name detection (case-insensitive)
+  const dupResult = await client.execute({
+    sql: "SELECT id FROM custom_users WHERE LOWER(name) = LOWER(?) LIMIT 1",
+    args: [name],
+  });
+  if (dupResult.rows.length > 0) {
+    return new Response(JSON.stringify({ error: "A custom user with this name already exists" }), {
+      status: 409, headers: { "content-type": "application/json" },
+    });
+  }
 
   await client.execute({
     sql: "INSERT INTO custom_users (id, name, color, created_at, updated_at) VALUES (?, ?, ?, ?, ?)",

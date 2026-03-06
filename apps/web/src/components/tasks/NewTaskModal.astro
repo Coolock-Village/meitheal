@@ -66,6 +66,7 @@ const locale: Locale = cookieLocale === "ga" ? "ga" : "en";
             >{t("tasks.status_label", locale)}</label
           >
           <select class="form-select bg-bg-input" id="new-task-status">
+            <option value="backlog">Backlog</option>
             <option value="pending" selected>Pending</option>
             <option value="in_progress">In Progress</option>
             <option value="done">Done</option>

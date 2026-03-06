@@ -53,7 +53,7 @@ MCP_TOOLS = [
             "type": "object",
             "properties": {
                 "query": {"type": "string", "description": "Search keyword"},
-                "status": {"type": "string", "enum": ["todo", "in_progress", "done", "cancelled"]},
+                "status": {"type": "string", "enum": ["backlog", "todo", "in_progress", "done", "cancelled"]},
                 "priority": {"type": "integer", "minimum": 1, "maximum": 5},
             },
         },
@@ -78,7 +78,7 @@ MCP_TOOLS = [
             "properties": {
                 "id": {"type": "string", "description": "Task UUID"},
                 "title": {"type": "string"},
-                "status": {"type": "string", "enum": ["todo", "in_progress", "done", "cancelled"]},
+                "status": {"type": "string", "enum": ["backlog", "todo", "in_progress", "done", "cancelled"]},
                 "priority": {"type": "integer", "minimum": 1, "maximum": 5},
                 "due_date": {"type": "string", "format": "date"},
                 "description": {"type": "string"},
