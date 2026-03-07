@@ -2,6 +2,7 @@ import type { APIRoute } from "astro";
 import { ensureSchema, getPersistenceClient } from "@domains/tasks/persistence/store";
 import { stripHtml } from "../../../lib/strip-html";
 import { apiError, apiJson } from "../../../lib/api-response";
+import { validateUuid } from "../../../lib/validation";
 import { createLogger, defaultRedactionPatterns } from "@meitheal/domain-observability";
 
 const logger = createLogger({
@@ -19,6 +20,10 @@ export const PUT: APIRoute = async ({ params, request }) => {
         const id = params.id;
         if (!id) {
             return apiError("Board ID required", 400);
+        }
+        const uuidErr = validateUuid(id, "board_id");
+        if (uuidErr && id !== "default") {
+            return apiError(uuidErr, 400);
         }
 
         const client = getPersistenceClient();
@@ -45,7 +50,7 @@ export const PUT: APIRoute = async ({ params, request }) => {
         });
 
         return apiJson({ ok: true });
-    } catch (e) {
+    } catch (e: unknown) {
         logger.log("error", {
             event: "api.boards.put.failed",
             domain: "tasks",
@@ -79,7 +84,7 @@ export const DELETE: APIRoute = async ({ params }) => {
         });
 
         return apiJson({ ok: true, moved_to: "default" });
-    } catch (e) {
+    } catch (e: unknown) {
         logger.log("error", {
             event: "api.boards.delete.failed",
             domain: "tasks",

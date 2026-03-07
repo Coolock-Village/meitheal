@@ -21,7 +21,7 @@ export const GET: APIRoute = async () => {
             "SELECT id, title, icon, color, position, created_at, updated_at FROM boards ORDER BY position ASC, created_at ASC"
         );
         return apiJson({ boards: result.rows });
-    } catch (e) {
+    } catch (e: unknown) {
         logger.log("error", {
             event: "api.boards.get.failed",
             domain: "tasks",
@@ -66,7 +66,7 @@ export const POST: APIRoute = async ({ request }) => {
         });
 
         return apiJson({ id, title, icon, color, position, created_at: now, updated_at: now }, 201);
-    } catch (e) {
+    } catch (e: unknown) {
         logger.log("error", {
             event: "api.boards.post.failed",
             domain: "tasks",

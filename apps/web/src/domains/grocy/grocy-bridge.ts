@@ -13,6 +13,7 @@
  */
 import { createLogger, defaultRedactionPatterns } from "@meitheal/domain-observability";
 import { GrocyAdapter, type GrocyChore, type GrocyTask } from "@meitheal/integration-core";
+import type { Client } from "@libsql/client";
 import { choreToTask, taskToTask, shoppingListToTask } from "./grocy-mapper.js";
 
 const logger = createLogger({
@@ -490,8 +491,7 @@ async function getClient() {
 
 /** Fix #4: Batch-load existing confirmations for a set of entity IDs. */
 async function batchLoadConfirmations(
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  client: any,
+  client: Client,
   entityType: string,
   entityIds: string[],
 ): Promise<Map<string, { taskId: string; syncUpdatedAt: number; taskUpdatedAt: number }>> {
@@ -712,8 +712,7 @@ async function cleanStaleTasks(seenEntityKeys: Set<string>): Promise<void> {
 
 // ═══════ Table Bootstrap ═══════
 
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
-async function ensureGrocySyncTable(client: any): Promise<void> {
+async function ensureGrocySyncTable(client: Client): Promise<void> {
   await client.execute({
     sql: `CREATE TABLE IF NOT EXISTS grocy_sync_confirmations (
       confirmation_id TEXT PRIMARY KEY,
