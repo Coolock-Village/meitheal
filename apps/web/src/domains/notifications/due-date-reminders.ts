@@ -321,15 +321,8 @@ async function checkDueDates(): Promise<void> {
       if (sentReminders.has(dedupKey)) continue;
       sentReminders.add(dedupKey);
 
-      // F18: Bulk-prune when over limit
-      if (sentReminders.size > MAX_TRACKED_REMINDERS) {
-        const iter = sentReminders.values();
-        for (let i = 0; i < PRUNE_BATCH_SIZE; i++) {
-          const key = iter.next().value;
-          if (key) sentReminders.delete(key);
-          else break;
-        }
-      }
+      // Evict oldest entries when Set grows past cap (memory safety)
+      evictSentReminders();
 
       const title = String(task.title || "Untitled task");
       const ticketKey = formatTicketKey(task.ticket_number != null ? Number(task.ticket_number) : null) ?? "Task";
