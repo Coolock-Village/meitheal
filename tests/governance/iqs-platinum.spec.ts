@@ -223,4 +223,12 @@ test.describe('IQS Platinum', () => {
     const manifest = readJSON('manifest.json');
     expect(manifest.quality_scale).toBe('platinum');
   });
+
+  test('backup-platform: backup.py implements pre/post hooks', () => {
+    expect(fileExists('backup.py')).toBe(true);
+    const src = readPython('backup.py');
+    expect(src).toContain('async def async_pre_backup');
+    expect(src).toContain('async def async_post_backup');
+    expect(src).toContain('hass: HomeAssistant');
+  });
 });

@@ -29,7 +29,9 @@ map:
   - homeassistant_config:rw
 tmpfs: true
 watchdog: http://[HOST]:[PORT:3000]/api/health
-backup: cold
+backup: hot
+backup_pre: /etc/services.d/meitheal/backup-pre.sh
+backup_post: /etc/services.d/meitheal/backup-post.sh
 backup_exclude:
   - "*.log"
   - "*.tmp"

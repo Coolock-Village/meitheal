@@ -63,6 +63,9 @@ COPY --from=builder /build/meitheal-hub/run.sh /run.sh
 COPY --from=builder /build/meitheal-hub/run-local.sh /run-local.sh
 RUN chmod +x /run.sh /run-local.sh
 
+# Copy rootfs overlay (backup scripts, service definitions)
+COPY --from=builder /build/meitheal-hub/rootfs/ /
+
 # Ensure data directory exists
 RUN mkdir -p /data
 
