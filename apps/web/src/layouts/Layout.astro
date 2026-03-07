@@ -64,7 +64,7 @@ Astro.response.headers.set("X-Content-Type-Options", "nosniff");
 ---
 
 <!doctype html>
-<html lang={locale}>
+<html lang={locale} dir="ltr">
   <head>
     <!-- Ingress-aware fetch: prefix /api/ paths with HA ingress path -->
     <script is:inline>
@@ -243,15 +243,22 @@ Astro.response.headers.set("X-Content-Type-Options", "nosniff");
         if (!accent) return;
         var root = document.documentElement.style;
         root.setProperty("--accent", accent);
-        // Compute hover (darken 10%)
-        root.setProperty(
-          "--accent-hover",
-          "color-mix(in srgb, " + accent + " 85%, #000)",
-        );
-        root.setProperty(
-          "--accent-light",
-          "color-mix(in srgb, " + accent + " 12%, transparent)",
-        );
+        // P3-3: Set fallback values first (for WebViews without color-mix support)
+        root.setProperty("--accent-hover", accent);
+        root.setProperty("--accent-light", accent);
+        // Compute hover (darken 10%) — overrides fallback on supporting browsers
+        try {
+          root.setProperty(
+            "--accent-hover",
+            "color-mix(in srgb, " + accent + " 85%, #000)",
+          );
+          root.setProperty(
+            "--accent-light",
+            "color-mix(in srgb, " + accent + " 12%, transparent)",
+          );
+        } catch (e) {
+          // Older WebViews — fallback values already set above
+        }
         root.setProperty("--border-focus", accent);
       })();
     </script>
@@ -1667,6 +1674,8 @@ Astro.response.headers.set("X-Content-Type-Options", "nosniff");
           "task-detail-overlay",
         ) as HTMLDivElement;
         let currentTaskId: string | null = null;
+        // P3-4/P22: Focus management — restore focus to trigger element on panel close
+        let _previouslyFocused: Element | null = null;
         let _settingsFields: Array<{
           name: string;
           type: string;
@@ -1678,10 +1687,17 @@ Astro.response.headers.set("X-Content-Type-Options", "nosniff");
           tdOverlay?.classList.add("hidden");
           currentTaskId = null;
           history.pushState(null, "", window.location.pathname);
+          // P3-4: Restore focus to the element that triggered the panel
+          if (_previouslyFocused && _previouslyFocused instanceof HTMLElement) {
+            _previouslyFocused.focus();
+            _previouslyFocused = null;
+          }
         }
 
         async function openTaskDetail(taskId: string) {
           if (!tdOverlay) return;
+          // P3-4: Store focus origin for restore on close
+          _previouslyFocused = document.activeElement;
           currentTaskId = taskId;
           tdOverlay.classList.remove("hidden");
 

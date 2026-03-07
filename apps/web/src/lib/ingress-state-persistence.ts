@@ -138,7 +138,16 @@ export function initStatePersistence(): void {
     saveNavigationState(path, 0);
   });
 
-  // Save state just before the page unloads (navigating away from Meitheal)
+  // P1-5: visibilitychange is more reliable than beforeunload in HA iframe
+  // context — iOS WKWebView and some Android WebViews don't fire beforeunload
+  // when the ingress iframe is destroyed. visibilitychange fires consistently.
+  document.addEventListener("visibilitychange", () => {
+    if (document.visibilityState === "hidden") {
+      saveNavigationState(window.location.pathname, window.scrollY);
+    }
+  });
+
+  // Save state just before the page unloads (fallback for non-iframe contexts)
   window.addEventListener("beforeunload", () => {
     saveNavigationState(window.location.pathname, window.scrollY);
   });
