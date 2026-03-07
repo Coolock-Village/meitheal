@@ -28,7 +28,7 @@ try {
   );
   // Favorites
   const favResult = await client.execute(
-    "SELECT id, title, status, priority, due_date, is_favorite FROM tasks WHERE is_favorite = 1 AND status != 'complete' AND status != 'done' ORDER BY updated_at DESC LIMIT 5",
+    "SELECT id, title, status, priority, due_date, is_favorite FROM tasks WHERE is_favorite = 1 AND status != 'complete' ORDER BY updated_at DESC LIMIT 5",
   );
   favorites = favResult.rows as Record<string, unknown>[];
   tasks = result.rows as Record<string, unknown>[];
@@ -37,7 +37,7 @@ try {
   const openResult = await client.execute(
     `SELECT id, title, status, priority, due_date, assigned_to, board_id, ticket_number, task_type
      FROM tasks
-     WHERE status NOT IN ('complete', 'done')
+     WHERE status NOT IN ('complete')
      ORDER BY priority ASC, due_date ASC NULLS LAST, updated_at DESC
      LIMIT 15`,
   );
@@ -57,7 +57,7 @@ try {
   }
 
   const overdueResult = await client.execute({
-    sql: "SELECT COUNT(*) as cnt FROM tasks WHERE due_date IS NOT NULL AND due_date < ? AND status != 'complete' AND status != 'done'",
+    sql: "SELECT COUNT(*) as cnt FROM tasks WHERE due_date IS NOT NULL AND due_date < ? AND status != 'complete'",
     args: [new Date().toISOString()],
   });
   stats.overdue = Number(
@@ -388,9 +388,7 @@ import { getPriorityColor } from "../lib/priority-config";
         ) : (
           tasks.map((task) => {
             const p = Number(task.priority ?? 3);
-            const isDone =
-              String(task.status) === "complete" ||
-              String(task.status) === "complete";
+            const isDone = String(task.status) === "complete";
             const taskColor = task.color
               ? String(task.color)
               : p === 1

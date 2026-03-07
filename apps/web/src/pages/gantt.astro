@@ -132,7 +132,7 @@ const epics = ganttTasks.filter(t => String(t.task_type) === 'epic');
 
         // Helper to render a task row
         const renderTaskRow = (task: typeof ganttTasks[0], indent = 0) => {
-          const isDone = String(task.status) === 'complete' || String(task.status) === 'done';
+          const isDone = String(task.status) === 'complete';
           const r = currentRow++;
           return (
             <>
