@@ -1,16 +1,16 @@
 {
   "source": "GitHub Actions CI perf-budgets job — main branch",
-  "captured_at": "2026-03-02",
+  "captured_at": "2026-03-07",
   "runner": "ubuntu-24.04 / node 22",
   "sample_runs": 19,
-  "rationale": "Budget raised to 800KB: growth from 319KB to 752KB is from self-hosting Inter (variable, ~100KB) and JetBrains Mono (400+500 weights, ~200KB) via @fontsource. Previously loaded from Google Fonts CDN (not counted in client bytes). Self-hosting eliminates external dependency and ad-blocker interference.",
+  "rationale": "Budget raised to 900KiB: growth from 752KB to 855KB is from page-lifecycle module, i18n expansion (backlog/cancelled), CSS badge classes, comment DOM-safe rendering. All intentional.",
   "observed_max": {
-    "clientBytes": 751809,
+    "clientBytes": 855327,
     "rssKb": 200000,
     "p95Ms": 30.0
   },
   "budgets": {
-    "clientBytesMax": 819200,
+    "clientBytesMax": 921600,
     "rssKbMax": 262144,
     "p95MsMax": 250
   }

@@ -41,6 +41,7 @@ let connection: Connection | null = null;
 let connecting = false;
 let lastError: string | null = null;
 let reconnectAttempts = 0;
+let reconnectTimer: ReturnType<typeof setTimeout> | null = null; // Guard against rapid reconnect races
 const MAX_RECONNECT_DELAY_MS = 30_000;
 
 // ── Public API ──
@@ -205,7 +206,9 @@ export async function getHAConnection(): Promise<Connection | null> {
     });
 
     const delay = Math.min(1000 * Math.pow(2, reconnectAttempts), MAX_RECONNECT_DELAY_MS);
-    setTimeout(() => { connection = null; connecting = false; getHAConnection().catch(() => {}); }, delay);
+    // Cancel any pending reconnect to prevent timer accumulation on rapid failures
+    if (reconnectTimer) clearTimeout(reconnectTimer);
+    reconnectTimer = setTimeout(() => { reconnectTimer = null; connection = null; connecting = false; getHAConnection().catch(() => {}); }, delay);
     return null;
   } finally {
     connecting = false;

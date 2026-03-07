@@ -43,6 +43,19 @@ const PRUNE_BATCH_SIZE = 50; // Bulk-prune when over limit (F18)
 let intervalHandle: ReturnType<typeof setInterval> | null = null;
 let processing = false;
 const sentReminders = new Set<string>(); // "taskId:YYYY-MM-DD" — prevents duplicates
+const SENT_REMINDERS_MAX = 1000; // Cap to prevent unbounded memory growth
+
+/** Evict oldest 25% when Set exceeds max size (FIFO via insertion order). */
+function evictSentReminders(): void {
+  if (sentReminders.size <= SENT_REMINDERS_MAX) return;
+  const evictCount = Math.floor(SENT_REMINDERS_MAX * 0.25);
+  let removed = 0;
+  for (const key of sentReminders) {
+    if (removed >= evictCount) break;
+    sentReminders.delete(key);
+    removed++;
+  }
+}
 let schemaEnsured = false; // Skip repeated ensureSchema after first run (F1)
 
 // ── Cached module refs (F2) ──

@@ -39,7 +39,7 @@ export async function safeFetch(
   options: SafeFetchOptions = {},
 ): Promise<Response> {
   const { timeoutMs = DEFAULT_TIMEOUT_MS, ...fetchOptions } = options;
-  const endpoint = typeof url === "string" ? url.split("?")[0] : url.pathname;
+  const endpoint = typeof url === "string" ? (url.split("?")[0] ?? url) : url.pathname;
 
   // Flood protection — reject if too many concurrent requests to same endpoint
   const current = inflight.get(endpoint) ?? 0;

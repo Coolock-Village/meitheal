@@ -133,6 +133,10 @@ export async function ensureSchema(): Promise<void> {
 
   const client = getClient();
 
+  // WAL mode: enables concurrent reads during writes — critical for addon
+  // context where SSR page loads and background syncs can overlap.
+  await client.execute("PRAGMA journal_mode=WAL");
+
   await client.execute(`
     CREATE TABLE IF NOT EXISTS tasks (
       id TEXT PRIMARY KEY,
@@ -461,6 +465,9 @@ export async function ensureSchema(): Promise<void> {
     await client.execute("ALTER TABLE tasks ADD COLUMN kanban_position INTEGER");
   }
   await client.execute("CREATE INDEX IF NOT EXISTS tasks_kanban_position_idx ON tasks(status, kanban_position)");
+
+  // Composite index for kanban board queries — filters by both board_id and status
+  await client.execute("CREATE INDEX IF NOT EXISTS tasks_board_status_idx ON tasks(board_id, status)");
 
   // Custom (non-HA) users — for families sharing one HA instance
   await client.execute(`
