@@ -329,6 +329,23 @@
     min-height: 44px;
     font-size: 16px;
   }
+/* P2-5: On touch devices, show kanban card actions always (no hover) */
+.kanban-card-actions {
+  opacity: 1 !important;
+  pointer-events: auto !important;
+  transform: translateY(0) !important;
+}
+
+/* P3-2: Prevent accidental nav clicks while scrolling sidebar */
+.sidebar-scroll {
+  touch-action: pan-y;
+}
+
+/* P2-4: GPU compositing hints for animated elements on touch */
+.animate-slide-in,
+.kanban-card {
+  will-change: transform;
+}
 }
 
 /* High contrast mode */
