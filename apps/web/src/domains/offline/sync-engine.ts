@@ -43,6 +43,7 @@ const SYNC_TAG = "meitheal-background-sync"
 const MAX_RETRIES = 3
 const RETRY_DELAYS_MS = [1_000, 4_000, 16_000]
 const PERIODIC_SYNC_MS = 30_000
+const FETCH_TIMEOUT_MS = 10_000
 
 // --- Sync Engine ---
 
@@ -161,22 +162,33 @@ async function executeOperation(
 ): Promise<Response> {
   const url = `${baseUrl}/api/v1/${op.table}`
   const payload = JSON.parse(op.payload) as Record<string, unknown>
+  const controller = new AbortController()
+  const timeout = setTimeout(() => controller.abort(), FETCH_TIMEOUT_MS)
 
-  switch (op.operation) {
-    case "create":
-      return fetch(url, {
-        method: "POST",
-        headers: { "content-type": "application/json" },
-        body: JSON.stringify(payload),
-      })
-    case "update":
-      return fetch(`${url}/${op.entityId}`, {
-        method: "PUT",
-        headers: { "content-type": "application/json" },
-        body: JSON.stringify(payload),
-      })
-    case "delete":
-      return fetch(`${url}/${op.entityId}`, { method: "DELETE" })
+  try {
+    switch (op.operation) {
+      case "create":
+        return await fetch(url, {
+          method: "POST",
+          headers: { "content-type": "application/json" },
+          body: JSON.stringify(payload),
+          signal: controller.signal,
+        })
+      case "update":
+        return await fetch(`${url}/${op.entityId}`, {
+          method: "PUT",
+          headers: { "content-type": "application/json" },
+          body: JSON.stringify(payload),
+          signal: controller.signal,
+        })
+      case "delete":
+        return await fetch(`${url}/${op.entityId}`, {
+          method: "DELETE",
+          signal: controller.signal,
+        })
+    }
+  } finally {
+    clearTimeout(timeout)
   }
 }
 
@@ -212,6 +224,11 @@ export function startPeriodicSync(intervalMs: number = PERIODIC_SYNC_MS): void {
       processSyncQueue().catch((err) => console.error("[sync-engine] Periodic sync failed:", err))
     }
   }, intervalMs)
+
+  // Ensure cleanup on page unload to prevent orphan timers
+  if (typeof window !== "undefined") {
+    window.addEventListener("beforeunload", () => stopPeriodicSync(), { once: true })
+  }
 }
 
 export function stopPeriodicSync(): void {

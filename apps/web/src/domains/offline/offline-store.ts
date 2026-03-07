@@ -93,13 +93,21 @@ async function getDb(): Promise<IDBDatabase> {
 export async function putTask(task: OfflineTask): Promise<void> {
   if (navigator.storage && navigator.storage.estimate) {
     try {
-      const { usage } = await navigator.storage.estimate()
+      const { usage, quota } = await navigator.storage.estimate()
       const usageMB = (usage || 0) / (1024 * 1024)
-      if (usageMB > 100) {
-        console.warn(`[offline-store] Storage usage (${usageMB.toFixed(2)} MB) exceeds 100MB threshold`)
+      const quotaMB = (quota || 0) / (1024 * 1024)
+      const usagePct = quota ? ((usage || 0) / quota) * 100 : 0
+
+      if (usagePct > 90) {
+        console.error(`[offline-store] Storage critically full (${usagePct.toFixed(1)}% of ${quotaMB.toFixed(0)}MB) — rejecting write`)
+        throw new Error("IndexedDB storage quota exceeded (>90%)")
       }
-    } catch {
-      // ignore
+      if (usageMB > 50) {
+        console.warn(`[offline-store] Storage usage high (${usageMB.toFixed(2)} MB) — consider cleanup`)
+      }
+    } catch (e) {
+      // Only re-throw quota errors, ignore estimate() failures
+      if (e instanceof Error && e.message.includes("quota")) throw e
     }
   }
   const db = await getDb()

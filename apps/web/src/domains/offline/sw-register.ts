@@ -76,11 +76,16 @@ export async function registerServiceWorker(): Promise<ServiceWorkerRegistration
     // 60s was too aggressive for HA addon context where updates
     // are infrequent. 5 min balances responsiveness with efficiency.
     // @kcs Audit item #31 — update interval tuning.
-    setInterval(() => {
+    const updateCheckInterval = setInterval(() => {
       registration.update().catch(() => {
         // Silent fail — update check is best-effort
       })
     }, 300_000)
+
+    // Clean up interval on page unload to prevent memory leak
+    window.addEventListener("beforeunload", () => {
+      clearInterval(updateCheckInterval)
+    }, { once: true })
 
     // Listen for new SW waiting (update available)
     registration.addEventListener("updatefound", () => {
