@@ -5,6 +5,7 @@ import {
   ensureSchema,
   getPersistenceClient,
 } from "@domains/tasks/persistence/store";
+import { STATUS } from "../lib/status-config";
 
 const { weekStart = "monday" } = Astro.locals;
 
@@ -66,7 +67,7 @@ try {
     sql: `SELECT due_date, COUNT(*) as cnt, GROUP_CONCAT(COALESCE(color, ''), ',') as colors
           FROM tasks
           WHERE due_date >= ? AND due_date <= ?
-            AND status NOT IN ('complete')
+            AND status NOT IN ('${STATUS.COMPLETE}')
           GROUP BY due_date`,
     args: [monthStart, monthEnd],
   });

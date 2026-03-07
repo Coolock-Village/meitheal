@@ -5,6 +5,7 @@ import {
   ensureSchema,
   getPersistenceClient,
 } from "@domains/tasks/persistence/store";
+import { STATUS } from "../lib/status-config";
 interface DayGroup {
   date: string;
   label: string;
@@ -29,7 +30,7 @@ try {
   const result = await client.execute({
     sql: `SELECT * FROM tasks
           WHERE due_date >= ? AND due_date <= ?
-            AND status NOT IN ('complete')
+            AND status NOT IN ('${STATUS.COMPLETE}')
           ORDER BY due_date ASC, priority DESC, created_at ASC`,
     args: [todayStr, endStr],
   });

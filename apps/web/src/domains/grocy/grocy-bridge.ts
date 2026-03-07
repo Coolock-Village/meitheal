@@ -12,6 +12,7 @@
  * @bounded-context integration
  */
 import { createLogger, defaultRedactionPatterns } from "@meitheal/domain-observability";
+import { STATUS } from "../../lib/status-config";
 import { GrocyAdapter, type GrocyChore, type GrocyTask } from "@meitheal/integration-core";
 import type { Client } from "@libsql/client";
 import { choreToTask, taskToTask, shoppingListToTask } from "./grocy-mapper.js";
@@ -641,7 +642,7 @@ async function mergeShoppingList(
   if (existing.rows.length > 0) {
     const taskId = existing.rows[0]!.task_id as string;
     await client.execute({
-      sql: `UPDATE tasks SET title = ?, description = ?, status = 'pending', updated_at = ? WHERE id = ?`,
+      sql: `UPDATE tasks SET title = ?, description = ?, status = '${STATUS.PENDING}', updated_at = ? WHERE id = ?`,
       args: [taskData.title, taskData.description, nowMs, taskId],
     });
     await client.execute({
@@ -657,7 +658,7 @@ async function mergeShoppingList(
             labels, framework_payload, calendar_sync_state, board_id,
             custom_fields, task_type, idempotency_key, request_id,
             created_at, updated_at)
-          VALUES (?, ?, ?, 'pending', 3, NULL, ?, '{}', 'synced', 'default', '{}', 'task', ?, ?, ?, ?)`,
+          VALUES (?, ?, ?, '${STATUS.PENDING}', 3, NULL, ?, '{}', 'synced', 'default', '{}', 'task', ?, ?, ?, ?)`,
     args: [
       taskId, taskData.title, taskData.description,
       JSON.stringify(taskData.labels),
@@ -692,7 +693,7 @@ async function cleanStaleTasks(seenEntityKeys: Set<string>): Promise<void> {
     if (!seenEntityKeys.has(key)) {
       // This entity no longer exists in Grocy — archive the task
       await client.execute({
-        sql: `UPDATE tasks SET status = 'complete', updated_at = ? WHERE id = ? AND status != 'complete'`,
+        sql: `UPDATE tasks SET status = '${STATUS.COMPLETE}', updated_at = ? WHERE id = ? AND status != '${STATUS.COMPLETE}'`,
         args: [nowMs, taskId],
       });
       await client.execute({

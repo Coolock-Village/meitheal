@@ -16,6 +16,7 @@
  */
 import { onEntityChange, listCalendarEvents, createCalendarEvent, updateCalendarEvent, deleteCalendarEvent } from "../ha";
 import { createLogger, defaultRedactionPatterns } from "@meitheal/domain-observability";
+import { STATUS } from "../../lib/status-config";
 
 const logger = createLogger({
   service: "meitheal-web", env: process.env.NODE_ENV ?? "development",
@@ -444,7 +445,7 @@ async function _syncEntityFromHAInner(entityId: string, state: EntitySyncState |
           if (!currentUids.has(eventUid)) {
             const taskId = String(row.task_id);
             await client.execute({
-              sql: `UPDATE tasks SET status = 'complete', updated_at = ? WHERE id = ? AND status != 'complete'`,
+              sql: `UPDATE tasks SET status = '${STATUS.COMPLETE}', updated_at = ? WHERE id = ? AND status != '${STATUS.COMPLETE}'`,
               args: [Date.now(), taskId],
             });
             logger.log("info", {

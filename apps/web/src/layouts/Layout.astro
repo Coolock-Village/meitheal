@@ -2061,7 +2061,9 @@ Astro.response.headers.set("X-Content-Type-Options", "nosniff");
                       allSettings.custom_fields as string,
                     );
                     if (Array.isArray(parsed)) _settingsFields = parsed;
-                  } catch (e) {}
+                  } catch {
+                    /* malformed custom_fields JSON — use defaults */
+                  }
                 }
               }
             } catch {}

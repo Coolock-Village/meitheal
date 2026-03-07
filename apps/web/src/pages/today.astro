@@ -5,6 +5,7 @@ import {
   ensureSchema,
   getPersistenceClient,
 } from "@domains/tasks/persistence/store";
+import { STATUS } from "../lib/status-config";
 let overdueTasks: Record<string, unknown>[] = [];
 let todayTasks: Record<string, unknown>[] = [];
 let noDueTasks: Record<string, unknown>[] = [];
@@ -17,7 +18,7 @@ try {
   const overdueResult = await client.execute({
     sql: `SELECT * FROM tasks
           WHERE due_date IS NOT NULL AND due_date < ?
-            AND status NOT IN ('complete')
+            AND status NOT IN ('${STATUS.COMPLETE}')
           ORDER BY due_date ASC`,
     args: [today],
   });
@@ -26,7 +27,7 @@ try {
   const todayResult = await client.execute({
     sql: `SELECT * FROM tasks
           WHERE due_date = ?
-            AND status NOT IN ('complete')
+            AND status NOT IN ('${STATUS.COMPLETE}')
           ORDER BY priority DESC, created_at ASC`,
     args: [today],
   });
@@ -35,7 +36,7 @@ try {
   const noDueResult = await client.execute({
     sql: `SELECT * FROM tasks
           WHERE due_date IS NULL
-            AND status NOT IN ('complete')
+            AND status NOT IN ('${STATUS.COMPLETE}')
           ORDER BY priority DESC, created_at DESC
           LIMIT 10`,
     args: [],

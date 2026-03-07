@@ -28,7 +28,7 @@ try {
   );
   // Favorites
   const favResult = await client.execute(
-    "SELECT id, title, status, priority, due_date, is_favorite FROM tasks WHERE is_favorite = 1 AND status != 'complete' ORDER BY updated_at DESC LIMIT 5",
+    `SELECT id, title, status, priority, due_date, is_favorite FROM tasks WHERE is_favorite = 1 AND status != '${STATUS.COMPLETE}' ORDER BY updated_at DESC LIMIT 5`,
   );
   favorites = favResult.rows as Record<string, unknown>[];
   tasks = result.rows as Record<string, unknown>[];
@@ -37,7 +37,7 @@ try {
   const openResult = await client.execute(
     `SELECT id, title, status, priority, due_date, assigned_to, board_id, ticket_number, task_type
      FROM tasks
-     WHERE status NOT IN ('complete')
+     WHERE status NOT IN ('${STATUS.COMPLETE}')
      ORDER BY priority ASC, due_date ASC NULLS LAST, updated_at DESC
      LIMIT 15`,
   );
@@ -57,7 +57,7 @@ try {
   }
 
   const overdueResult = await client.execute({
-    sql: "SELECT COUNT(*) as cnt FROM tasks WHERE due_date IS NOT NULL AND due_date < ? AND status != 'complete'",
+    sql: `SELECT COUNT(*) as cnt FROM tasks WHERE due_date IS NOT NULL AND due_date < ? AND status != '${STATUS.COMPLETE}'`,
     args: [new Date().toISOString()],
   });
   stats.overdue = Number(
@@ -80,7 +80,7 @@ try {
 }
 
 import { PRIORITY_LABELS } from "../lib/priority-config";
-import { STATUS_LABELS as statusLabels } from "../lib/status-config";
+import { STATUS_LABELS as statusLabels, STATUS } from "../lib/status-config";
 const priorityLabels = PRIORITY_LABELS;
 
 // Vikunja-inspired: time-of-day greeting

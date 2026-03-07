@@ -2938,7 +2938,9 @@ const locale: Locale = cookieLocale === "ga" ? "ga" : "en";
                 }
               }
             }
-          } catch (err) {}
+          } catch {
+            /* CalDAV credentials are optional — don't block settings restore */
+          }
         }
         if (s.calendar_write_back) {
           const wb = document.getElementById(

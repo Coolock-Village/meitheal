@@ -7,6 +7,7 @@ import {
   ensureSchema,
   getPersistenceClient,
 } from "@domains/tasks/persistence/store";
+import { STATUS } from "../lib/status-config";
 
 interface TaskRecord {
   id: string;
@@ -132,7 +133,7 @@ const epics = ganttTasks.filter(t => String(t.task_type) === 'epic');
 
         // Helper to render a task row
         const renderTaskRow = (task: typeof ganttTasks[0], indent = 0) => {
-          const isDone = String(task.status) === 'complete';
+          const isDone = String(task.status) === STATUS.COMPLETE;
           const r = currentRow++;
           return (
             <>
