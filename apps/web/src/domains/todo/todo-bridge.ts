@@ -25,6 +25,7 @@ import {
   meithealStatusToHA,
   buildDueServiceData,
   type HATodoItem,
+  type MeithealStatus,
 } from "./todo-status-mapper";
 
 const logger = createLogger({
@@ -408,7 +409,7 @@ export async function pushTaskToTodoList(
     if (existing.rows.length > 0) {
       // Update existing HA todo item
       const uid = existing.rows[0]!.ha_todo_uid as string;
-      const haStatus = meithealStatusToHA(status as "todo" | "in_progress" | "done");
+      const haStatus = meithealStatusToHA(status as MeithealStatus | string);
       const dueData = buildDueServiceData(dueDate);
 
       // Use the stored summary (original title) as the item identifier for HA's

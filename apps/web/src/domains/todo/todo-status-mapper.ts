@@ -3,21 +3,22 @@
  *
  * Maps between HA TodoItem shape and Meitheal task shape.
  * HA uses 2-state status (needs_action | completed).
- * Meitheal uses 3-state status (todo | in_progress | done).
+ * Meitheal uses 4-state canonical status (backlog | pending | active | complete).
  *
  * Mapping rules:
- *   HA needs_action  → Meitheal todo
- *   HA completed     → Meitheal done
- *   Meitheal todo        → HA needs_action
- *   Meitheal in_progress → HA needs_action (no HA equivalent)
- *   Meitheal done        → HA completed
+ *   HA needs_action  → Meitheal pending
+ *   HA completed     → Meitheal complete
+ *   Meitheal backlog     → HA needs_action
+ *   Meitheal pending     → HA needs_action
+ *   Meitheal active      → HA needs_action (no HA equivalent)
+ *   Meitheal complete    → HA completed
  *
  * @domain todo
  * @bounded-context integration
  */
 
 export type HAStatus = "needs_action" | "completed";
-export type MeithealStatus = "todo" | "in_progress" | "done";
+export type MeithealStatus = "backlog" | "pending" | "active" | "complete";
 
 export interface HATodoItem {
   uid?: string;
@@ -42,14 +43,19 @@ export interface MeithealTaskShape {
 
 export function haStatusToMeitheal(haStatus: HAStatus): MeithealStatus {
   switch (haStatus) {
-    case "needs_action": return "todo";
-    case "completed": return "done";
-    default: return "todo";
+    case "needs_action": return "pending";
+    case "completed": return "complete";
+    default: return "pending";
   }
 }
 
-export function meithealStatusToHA(meithealStatus: MeithealStatus): HAStatus {
+export function meithealStatusToHA(meithealStatus: MeithealStatus | string): HAStatus {
   switch (meithealStatus) {
+    case "backlog": return "needs_action";
+    case "pending": return "needs_action";
+    case "active": return "needs_action";
+    case "complete": return "completed";
+    // Legacy aliases — graceful fallback
     case "todo": return "needs_action";
     case "in_progress": return "needs_action";
     case "done": return "completed";

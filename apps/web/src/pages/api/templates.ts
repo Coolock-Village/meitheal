@@ -69,7 +69,7 @@ export const POST: APIRoute = async ({ request }) => {
         sql: `INSERT INTO tasks (id, title, description, status, priority, labels, task_type,
               recurrence_rule, checklists, custom_fields, board_id, framework_payload,
               calendar_sync_state, idempotency_key, request_id, created_at, updated_at)
-              VALUES (?, ?, ?, 'todo', ?, ?, ?, ?, ?, ?, ?, '{}', 'pending', ?, ?, ?, ?)`,
+              VALUES (?, ?, ?, 'pending', ?, ?, ?, ?, ?, ?, ?, '{}', 'pending', ?, ?, ?, ?)`,
         args: [
           taskId,
           String(template.title ?? "Untitled"),

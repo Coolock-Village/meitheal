@@ -21,7 +21,7 @@ export const GET: APIRoute = async () => {
             FROM tasks
             WHERE reminder_at IS NOT NULL
               AND reminder_at <= ?
-              AND status NOT IN ('complete', 'done')
+              AND status NOT IN ('complete')
             ORDER BY reminder_at ASC
             LIMIT 50`,
       args: [now],

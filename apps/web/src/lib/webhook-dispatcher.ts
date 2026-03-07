@@ -143,7 +143,7 @@ export async function dispatchTaskEvent(eventType: string, payload: Record<strin
         fireHAEvent(haEventType, eventData).catch(() => {});
 
         // Also fire "completed" event when a task is updated to done status
-        if (eventType === "task.updated" && payload.status === "done") {
+        if (eventType === "task.updated" && payload.status === "complete") {
           fireHAEvent("meitheal_task_completed", {
             ...eventData,
             completed_at: new Date().toISOString(),

@@ -104,6 +104,14 @@ const priorityClasses: Record<number, string> = {
             <option value="medium">{t("tasks.rice_medium", locale)}</option>
             <option value="low">{t("tasks.rice_low", locale)}</option>
           </select>
+          <select
+            class="form-select filter-select"
+            id="table-filter-user"
+            aria-label="Filter by assigned user"
+          >
+            <option value="">All users</option>
+            <option value="__unassigned__">Unassigned</option>
+          </select>
           <button type="button" class="filter-clear-btn" id="clear-filters">
             {t("tasks.clear_filters", locale)}
           </button>
@@ -192,6 +200,7 @@ const priorityClasses: Record<number, string> = {
                     data-board={task.board_id}
                     data-status={task.status}
                     data-priority={String(task.priority)}
+                    data-assigned={String(task.assigned_to ?? "")}
                     data-title={task.title.toLowerCase()}
                     data-search={searchText}
                     class={`table-row ${task.is_done ? "row-done" : ""}`}

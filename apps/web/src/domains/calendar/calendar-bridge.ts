@@ -381,7 +381,7 @@ async function _syncEntityFromHAInner(entityId: string, state: EntitySyncState |
                     labels, framework_payload, calendar_sync_state, board_id,
                     custom_fields, task_type, idempotency_key, request_id,
                     ticket_number, created_at, updated_at)
-                  VALUES (?, ?, ?, 'todo', 3, ?, ?, '{}', 'synced', 'default',
+                  VALUES (?, ?, ?, 'pending', 3, ?, ?, '{}', 'synced', 'default',
                     '{}', 'task', ?, ?,
                     (SELECT COALESCE(MAX(ticket_number), 0) + 1 FROM tasks),
                     ?, ?)`,
@@ -444,7 +444,7 @@ async function _syncEntityFromHAInner(entityId: string, state: EntitySyncState |
           if (!currentUids.has(eventUid)) {
             const taskId = String(row.task_id);
             await client.execute({
-              sql: `UPDATE tasks SET status = 'done', updated_at = ? WHERE id = ? AND status != 'done'`,
+              sql: `UPDATE tasks SET status = 'complete', updated_at = ? WHERE id = ? AND status != 'complete'`,
               args: [Date.now(), taskId],
             });
             logger.log("info", {

@@ -171,7 +171,7 @@ export async function pushToActiveSyncs(
   // tasks that originated from Grocy. The inbound creates the task; the outbound
   // completes it. That's the bidirectional contract — no loop because Grocy
   // doesn't re-create completed chores/tasks.
-  if (status === "done") {
+  if (status === "complete") {
     try {
       const { getActiveGrocySyncConfig, pushCompletionToGrocy } = await import("@domains/grocy");
       const grocyConfig = getActiveGrocySyncConfig();

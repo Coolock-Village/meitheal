@@ -161,7 +161,7 @@ export async function getTasksForView(): Promise<TaskViewResult> {
       // Count
       counts.total++;
       if (isDone) counts.complete++;
-      else if (status === "active" || status === "in_progress") counts.active++;
+      else if (status === "active") counts.active++;
       else counts.pending++;
       if (overdue) counts.overdue++;
 

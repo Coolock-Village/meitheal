@@ -104,7 +104,7 @@ function getMeithealTools(): WebMCPTool[] {
           query: { type: "string", description: "Free text search" },
           status: {
             type: "string",
-            enum: ["backlog", "todo", "in_progress", "done", "cancelled"],
+            enum: ["backlog", "pending", "active", "complete"],
           },
           priority: {
             type: "integer",
@@ -152,7 +152,7 @@ function getMeithealTools(): WebMCPTool[] {
           taskId: { type: "integer", description: "Task ID to update" },
           status: {
             type: "string",
-            enum: ["backlog", "todo", "in_progress", "done", "cancelled"],
+            enum: ["backlog", "pending", "active", "complete"],
             description: "New status",
           },
         },

@@ -641,7 +641,7 @@ async function mergeShoppingList(
   if (existing.rows.length > 0) {
     const taskId = existing.rows[0]!.task_id as string;
     await client.execute({
-      sql: `UPDATE tasks SET title = ?, description = ?, status = 'todo', updated_at = ? WHERE id = ?`,
+      sql: `UPDATE tasks SET title = ?, description = ?, status = 'pending', updated_at = ? WHERE id = ?`,
       args: [taskData.title, taskData.description, nowMs, taskId],
     });
     await client.execute({
@@ -657,7 +657,7 @@ async function mergeShoppingList(
             labels, framework_payload, calendar_sync_state, board_id,
             custom_fields, task_type, idempotency_key, request_id,
             created_at, updated_at)
-          VALUES (?, ?, ?, 'todo', 3, NULL, ?, '{}', 'synced', 'default', '{}', 'task', ?, ?, ?, ?)`,
+          VALUES (?, ?, ?, 'pending', 3, NULL, ?, '{}', 'synced', 'default', '{}', 'task', ?, ?, ?, ?)`,
     args: [
       taskId, taskData.title, taskData.description,
       JSON.stringify(taskData.labels),
@@ -692,7 +692,7 @@ async function cleanStaleTasks(seenEntityKeys: Set<string>): Promise<void> {
     if (!seenEntityKeys.has(key)) {
       // This entity no longer exists in Grocy — archive the task
       await client.execute({
-        sql: `UPDATE tasks SET status = 'done', updated_at = ? WHERE id = ? AND status != 'done'`,
+        sql: `UPDATE tasks SET status = 'complete', updated_at = ? WHERE id = ? AND status != 'complete'`,
         args: [nowMs, taskId],
       });
       await client.execute({

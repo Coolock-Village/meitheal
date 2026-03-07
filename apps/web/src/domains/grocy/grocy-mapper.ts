@@ -47,7 +47,7 @@ export function choreToTask(chore: GrocyChore): MeithealTaskData {
   return {
     title: chore.choreName,
     description: description || null,
-    status: chore.isOverdue ? "todo" : "todo",
+    status: chore.isOverdue ? "pending" : "pending",
     priority: chore.isOverdue ? 1 : 3,
     dueDate: chore.nextEstimatedExecutionTime?.split(" ")[0] ?? null,
     labels,
@@ -81,7 +81,7 @@ export function taskToTask(task: GrocyTask, categoryName?: string): MeithealTask
   return {
     title: task.name,
     description: task.description,
-    status: task.done ? "done" : "todo",
+    status: task.done ? "complete" : "pending",
     priority: 3,
     dueDate: task.dueDate,
     labels,
@@ -119,7 +119,7 @@ export function shoppingListToTask(
   return {
     title: `🛒 Go Shopping (${itemCount} item${itemCount !== 1 ? "s" : ""})`,
     description,
-    status: "todo",
+    status: "pending",
     priority: 3,
     dueDate: null,
     labels: ["grocy-shopping", "synced from grocy"],

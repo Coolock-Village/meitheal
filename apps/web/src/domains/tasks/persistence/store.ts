@@ -139,7 +139,7 @@ export async function ensureSchema(): Promise<void> {
       endeavor_id TEXT,
       title TEXT NOT NULL,
       description TEXT,
-      status TEXT NOT NULL DEFAULT 'todo',
+      status TEXT NOT NULL DEFAULT 'pending',
       framework_payload TEXT NOT NULL DEFAULT '{}',
       calendar_sync_state TEXT NOT NULL DEFAULT 'pending',
       idempotency_key TEXT NOT NULL UNIQUE,
@@ -490,6 +490,12 @@ export async function ensureSchema(): Promise<void> {
   `);
   await client.execute("CREATE INDEX IF NOT EXISTS task_links_source_idx ON task_links(source_task_id)");
   await client.execute("CREATE INDEX IF NOT EXISTS task_links_target_idx ON task_links(target_task_id)");
+
+  // UX unification: normalize legacy status values → canonical 4 (backlog/pending/active/complete)
+  // Idempotent: only updates rows that still have legacy values
+  await client.execute("UPDATE tasks SET status = 'pending' WHERE status = 'todo'");
+  await client.execute("UPDATE tasks SET status = 'active' WHERE status = 'in_progress'");
+  await client.execute("UPDATE tasks SET status = 'complete' WHERE status = 'done'");
 
   ensured = true;
 

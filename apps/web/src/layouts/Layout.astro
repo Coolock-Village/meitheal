@@ -50,8 +50,8 @@ try {
     const s = String(r.status);
     const c = Number(r.cnt);
     taskCounts.total += c;
-    if (s === "active" || s === "in_progress") taskCounts.active += c;
-    if (s === "pending" || s === "todo") taskCounts.pending += c;
+    if (s === "active") taskCounts.active += c;
+    if (s === "pending" || s === "backlog") taskCounts.pending += c;
   }
 } catch {
   /* DB not available */
@@ -512,8 +512,7 @@ Astro.response.headers.set("X-Content-Type-Options", "nosniff");
                   <option value="backlog">Backlog</option>
                   <option value="pending">Pending</option>
                   <option value="active">Active</option>
-                  <option value="in_progress">In Progress</option>
-                  <option value="done">Done</option>
+                  <option value="complete">Complete</option>
                 </select>
                 <select
                   id="td-task-type"
@@ -1511,7 +1510,7 @@ Astro.response.headers.set("X-Content-Type-Options", "nosniff");
 
           // Apply board filter to visible items
           function isDoneStatus(s: string) {
-            return s === "done" || s === "cancelled";
+            return s === "complete" || s === "cancelled";
           }
 
           // strategic lens payload integration
@@ -2033,8 +2032,7 @@ Astro.response.headers.set("X-Content-Type-Options", "nosniff");
               favBtn.textContent = isFav
                 ? "★ Favorited"
                 : "⭐ Add to Favorites";
-            const isDone =
-              String(t.status) === "done" || String(t.status) === "complete";
+            const isDone = String(t.status) === "complete";
             const tdToggleDone = document.getElementById("td-toggle-done");
             if (tdToggleDone)
               tdToggleDone.textContent = isDone
@@ -2487,7 +2485,7 @@ Astro.response.headers.set("X-Content-Type-Options", "nosniff");
           .getElementById("td-status")
           ?.addEventListener("change", (e) => {
             saveTD("status", (e.target as HTMLSelectElement).value);
-            const isDone = (e.target as HTMLSelectElement).value === "done";
+            const isDone = (e.target as HTMLSelectElement).value === "complete";
             const doneBtn = document.getElementById("td-toggle-done");
             if (doneBtn)
               doneBtn.textContent = isDone
@@ -3313,13 +3311,16 @@ Astro.response.headers.set("X-Content-Type-Options", "nosniff");
             const statusEl = document.getElementById(
               "td-status",
             ) as HTMLSelectElement;
-            const newStatus = statusEl.value === "done" ? "pending" : "done";
+            const newStatus =
+              statusEl.value === "complete" ? "pending" : "complete";
             statusEl.value = newStatus;
             saveTD("status", newStatus);
             const tdDoneBtn = document.getElementById("td-toggle-done");
             if (tdDoneBtn)
               tdDoneBtn.textContent =
-                newStatus === "done" ? "↩ Mark as Undone" : "✓ Mark as Done";
+                newStatus === "complete"
+                  ? "↩ Mark as Undone"
+                  : "✓ Mark as Done";
           });
 
         // Toggle favorite

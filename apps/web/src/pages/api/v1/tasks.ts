@@ -32,9 +32,9 @@ export const GET: APIRoute = async ({ url }) => {
     if (filterDone) {
       const doneValue = url.searchParams.get("filter_value") ?? "";
       if (doneValue === "true") {
-        conditions.push("(status = 'complete' OR status = 'done')");
+        conditions.push("status = 'complete'");
       } else {
-        conditions.push("status != 'complete' AND status != 'done'");
+        conditions.push("status != 'complete'");
       }
     }
 

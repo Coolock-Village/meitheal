@@ -240,7 +240,9 @@ const totalTasks = days.reduce((sum, d) => sum + d.tasks.length, 0);
           await fetch(`${window.__ingress_path || ""}/api/tasks/${id}`, {
             method: "PATCH",
             headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({ status: cb.checked ? "done" : "pending" }),
+            body: JSON.stringify({
+              status: cb.checked ? "complete" : "pending",
+            }),
           });
           const item = cb.closest(".task-item") as HTMLElement | null;
           if (cb.checked && item) {
