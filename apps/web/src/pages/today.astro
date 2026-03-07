@@ -17,7 +17,7 @@ try {
   const overdueResult = await client.execute({
     sql: `SELECT * FROM tasks
           WHERE due_date IS NOT NULL AND due_date < ?
-            AND status NOT IN ('complete', 'done')
+            AND status NOT IN ('complete')
           ORDER BY due_date ASC`,
     args: [today],
   });
@@ -26,7 +26,7 @@ try {
   const todayResult = await client.execute({
     sql: `SELECT * FROM tasks
           WHERE due_date = ?
-            AND status NOT IN ('complete', 'done')
+            AND status NOT IN ('complete')
           ORDER BY priority DESC, created_at ASC`,
     args: [today],
   });
@@ -35,7 +35,7 @@ try {
   const noDueResult = await client.execute({
     sql: `SELECT * FROM tasks
           WHERE due_date IS NULL
-            AND status NOT IN ('complete', 'done')
+            AND status NOT IN ('complete')
           ORDER BY priority DESC, created_at DESC
           LIMIT 10`,
     args: [],
@@ -112,6 +112,7 @@ const typeIcons: Record<string, string> = {
           {overdueTasks.map((task) => {
             const p = Number(task.priority ?? 3);
             const tt = String(task.task_type ?? "task");
+            const status = String(task.status ?? "pending");
             return (
               <div
                 class="task-item"
@@ -144,6 +145,13 @@ const typeIcons: Record<string, string> = {
                     {String(task.due_date)}
                   </div>
                 </div>
+                <span class={`status-badge status-badge--${status}`}>
+                  {status === "active"
+                    ? "Active"
+                    : status === "backlog"
+                      ? "Backlog"
+                      : "Pending"}
+                </span>
                 {task.recurrence_rule && (
                   <span
                     style="font-size: 11px; color: var(--text-muted);"
@@ -203,6 +211,7 @@ const typeIcons: Record<string, string> = {
             const p = Number(task.priority ?? 3);
             const tt = String(task.task_type ?? "task");
             const progress = Number(task.progress ?? 0);
+            const status = String(task.status ?? "pending");
             return (
               <div
                 class="task-item"
@@ -249,6 +258,13 @@ const typeIcons: Record<string, string> = {
                     style={`width: 4px; height: 24px; border-radius: 2px; background: ${String(task.color)}; flex-shrink: 0;`}
                   />
                 )}
+                <span class={`status-badge status-badge--${status}`}>
+                  {status === "active"
+                    ? "Active"
+                    : status === "backlog"
+                      ? "Backlog"
+                      : "Pending"}
+                </span>
                 {task.recurrence_rule && (
                   <span
                     style="font-size: 11px; color: var(--text-muted);"
@@ -294,6 +310,7 @@ const typeIcons: Record<string, string> = {
           {noDueTasks.map((task) => {
             const p = Number(task.priority ?? 3);
             const tt = String(task.task_type ?? "task");
+            const status = String(task.status ?? "pending");
             return (
               <div
                 class="task-item"
@@ -323,6 +340,13 @@ const typeIcons: Record<string, string> = {
                     {String(task.title)}
                   </div>
                 </div>
+                <span class={`status-badge status-badge--${status}`}>
+                  {status === "active"
+                    ? "Active"
+                    : status === "backlog"
+                      ? "Backlog"
+                      : "Pending"}
+                </span>
                 {task.assigned_to && (
                   <span
                     class="assignee-badge"
@@ -354,6 +378,29 @@ const typeIcons: Record<string, string> = {
   }
   .task-done .task-item {
     opacity: 0.5;
+  }
+  .status-badge {
+    display: inline-block;
+    font-size: 10px;
+    font-weight: 600;
+    padding: 2px 8px;
+    border-radius: 8px;
+    text-transform: uppercase;
+    letter-spacing: 0.3px;
+    white-space: nowrap;
+    flex-shrink: 0;
+  }
+  .status-badge--pending {
+    background: rgba(59, 130, 246, 0.12);
+    color: #3b82f6;
+  }
+  .status-badge--active {
+    background: rgba(34, 197, 94, 0.12);
+    color: #22c55e;
+  }
+  .status-badge--backlog {
+    background: rgba(148, 163, 184, 0.12);
+    color: #94a3b8;
   }
 </style>
 

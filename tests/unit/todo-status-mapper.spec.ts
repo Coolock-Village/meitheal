@@ -2,30 +2,42 @@ import { expect, test } from "@playwright/test";
 
 /**
  * Unit tests for todo-status-mapper.ts
- * Tests HA ↔ Meitheal status mapping, due date format detection,
- * and round-trip consistency.
+ * Tests HA ↔ Meitheal status mapping with canonical 4-state model,
+ * due date format detection, and round-trip consistency.
  */
 
 // Inline mapper functions — Playwright tests can't import Astro path aliases.
 
 type HAStatus = "needs_action" | "completed";
-type MeithealStatus = "todo" | "in_progress" | "done";
+type MeithealStatus = "backlog" | "pending" | "active" | "complete";
+
+const CANONICAL_STATUSES: MeithealStatus[] = ["backlog", "pending", "active", "complete"];
+const LEGACY_ALIASES: Record<string, MeithealStatus> = {
+  todo: "pending",
+  in_progress: "active",
+  done: "complete",
+};
 
 function haStatusToMeitheal(haStatus: HAStatus): MeithealStatus {
   switch (haStatus) {
-    case "needs_action": return "todo";
-    case "completed": return "done";
-    default: return "todo";
+    case "needs_action": return "pending";
+    case "completed": return "complete";
+    default: return "pending";
   }
 }
 
-function meithealStatusToHA(meithealStatus: MeithealStatus): HAStatus {
-  switch (meithealStatus) {
-    case "todo": return "needs_action";
-    case "in_progress": return "needs_action";
-    case "done": return "completed";
+function meithealStatusToHA(status: MeithealStatus | string): HAStatus {
+  // Normalize legacy aliases first
+  const canonical = LEGACY_ALIASES[status] ?? status;
+  switch (canonical) {
+    case "complete": return "completed";
     default: return "needs_action";
   }
+}
+
+function normalizeStatus(raw: string): MeithealStatus {
+  if (CANONICAL_STATUSES.includes(raw as MeithealStatus)) return raw as MeithealStatus;
+  return LEGACY_ALIASES[raw] ?? "pending";
 }
 
 function isDueDateTime(due: string): boolean {
@@ -38,26 +50,68 @@ function buildDueServiceData(due?: string | null): Record<string, string> {
   return { due_date: due };
 }
 
-// ── Status Mapping ──
+// ── Canonical Status Mapping ──
 
-test("haStatusToMeitheal: needs_action → todo", () => {
-  expect(haStatusToMeitheal("needs_action")).toBe("todo");
+test("haStatusToMeitheal: needs_action → pending", () => {
+  expect(haStatusToMeitheal("needs_action")).toBe("pending");
 });
 
-test("haStatusToMeitheal: completed → done", () => {
-  expect(haStatusToMeitheal("completed")).toBe("done");
+test("haStatusToMeitheal: completed → complete", () => {
+  expect(haStatusToMeitheal("completed")).toBe("complete");
 });
 
-test("meithealStatusToHA: todo → needs_action", () => {
+test("meithealStatusToHA: backlog → needs_action", () => {
+  expect(meithealStatusToHA("backlog")).toBe("needs_action");
+});
+
+test("meithealStatusToHA: pending → needs_action", () => {
+  expect(meithealStatusToHA("pending")).toBe("needs_action");
+});
+
+test("meithealStatusToHA: active → needs_action", () => {
+  expect(meithealStatusToHA("active")).toBe("needs_action");
+});
+
+test("meithealStatusToHA: complete → completed", () => {
+  expect(meithealStatusToHA("complete")).toBe("completed");
+});
+
+// ── Legacy Alias Handling ──
+
+test("meithealStatusToHA: legacy 'todo' → needs_action", () => {
   expect(meithealStatusToHA("todo")).toBe("needs_action");
 });
 
-test("meithealStatusToHA: in_progress → needs_action", () => {
+test("meithealStatusToHA: legacy 'in_progress' → needs_action", () => {
   expect(meithealStatusToHA("in_progress")).toBe("needs_action");
 });
 
-test("meithealStatusToHA: done → completed", () => {
+test("meithealStatusToHA: legacy 'done' → completed", () => {
   expect(meithealStatusToHA("done")).toBe("completed");
+});
+
+// ── Normalize Status ──
+
+test("normalizeStatus: canonical values pass through", () => {
+  for (const s of CANONICAL_STATUSES) {
+    expect(normalizeStatus(s)).toBe(s);
+  }
+});
+
+test("normalizeStatus: todo → pending", () => {
+  expect(normalizeStatus("todo")).toBe("pending");
+});
+
+test("normalizeStatus: in_progress → active", () => {
+  expect(normalizeStatus("in_progress")).toBe("active");
+});
+
+test("normalizeStatus: done → complete", () => {
+  expect(normalizeStatus("done")).toBe("complete");
+});
+
+test("normalizeStatus: unknown → pending", () => {
+  expect(normalizeStatus("garbage")).toBe("pending");
 });
 
 // ── Due Date Detection ──
@@ -102,18 +156,24 @@ test("buildDueServiceData: datetime returns due_datetime", () => {
 
 // ── Round-trip Consistency ──
 
-test("round-trip: todo → HA → meitheal", () => {
-  expect(haStatusToMeitheal(meithealStatusToHA("todo"))).toBe("todo");
+test("round-trip: pending → HA → meitheal", () => {
+  expect(haStatusToMeitheal(meithealStatusToHA("pending"))).toBe("pending");
 });
 
-test("round-trip: done → HA → meitheal", () => {
-  expect(haStatusToMeitheal(meithealStatusToHA("done"))).toBe("done");
+test("round-trip: complete → HA → meitheal", () => {
+  expect(haStatusToMeitheal(meithealStatusToHA("complete"))).toBe("complete");
 });
 
-test("round-trip: in_progress is lossy (→ needs_action → todo)", () => {
-  const ha = meithealStatusToHA("in_progress");
+test("round-trip: active is lossy (→ needs_action → pending)", () => {
+  const ha = meithealStatusToHA("active");
   expect(ha).toBe("needs_action");
-  expect(haStatusToMeitheal(ha)).toBe("todo");
+  expect(haStatusToMeitheal(ha)).toBe("pending");
+});
+
+test("round-trip: backlog is lossy (→ needs_action → pending)", () => {
+  const ha = meithealStatusToHA("backlog");
+  expect(ha).toBe("needs_action");
+  expect(haStatusToMeitheal(ha)).toBe("pending");
 });
 
 test("round-trip: HA needs_action → meitheal → HA", () => {

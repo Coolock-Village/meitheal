@@ -130,15 +130,19 @@ const priorityClasses: Record<number, string> = {
                 </th>
                 <th scope="col" class="sortable col-key" data-col="key">
                   Key
+                  <span class="sort-indicator" />
                 </th>
                 <th scope="col" class="sortable col-title" data-col="title">
                   {t("table.col_title", locale)}
+                  <span class="sort-indicator" />
                 </th>
                 <th scope="col" class="sortable col-type" data-col="type">
                   Type
+                  <span class="sort-indicator" />
                 </th>
                 <th scope="col" class="sortable col-status" data-col="status">
                   {t("table.col_status", locale)}
+                  <span class="sort-indicator" />
                 </th>
                 <th
                   scope="col"
@@ -147,6 +151,7 @@ const priorityClasses: Record<number, string> = {
                   data-numeric="true"
                 >
                   {t("table.col_priority", locale)}
+                  <span class="sort-indicator" />
                 </th>
                 <th
                   scope="col"
@@ -154,6 +159,7 @@ const priorityClasses: Record<number, string> = {
                   data-col="due_date"
                 >
                   {t("table.col_due_date", locale)}
+                  <span class="sort-indicator" />
                 </th>
                 <th
                   scope="col"
@@ -162,6 +168,7 @@ const priorityClasses: Record<number, string> = {
                   data-numeric="true"
                 >
                   {t("table.col_rice", locale)}
+                  <span class="sort-indicator" />
                 </th>
                 <th
                   scope="col"
@@ -251,17 +258,14 @@ const priorityClasses: Record<number, string> = {
                       >
                         <option
                           value="pending"
-                          selected={
-                            task.status === "pending" || task.status === "todo"
-                          }
+                          selected={task.status === "pending"}
                         >
                           {t("task_status.pending", locale)}
                         </option>
                         <option
                           value="active"
                           selected={
-                            task.status === "active" ||
-                            task.status === "in_progress"
+                            task.status === "active" || task.status === "active"
                           }
                         >
                           {t("task_status.active", locale)}
@@ -430,6 +434,27 @@ const priorityClasses: Record<number, string> = {
     // Filtering — parity with tasks page, shared localStorage key
     // =============================================================================
 
+    // Populate user filter dropdown from data-assigned attributes
+    (function populateUserFilter() {
+      const userSelect = document.getElementById(
+        "table-filter-user",
+      ) as HTMLSelectElement;
+      if (!userSelect) return;
+      const users = new Set<string>();
+      document.querySelectorAll("#task-table tbody tr").forEach((row) => {
+        const assigned = (row as HTMLElement).dataset.assigned;
+        if (assigned) users.add(assigned);
+      });
+      Array.from(users)
+        .sort()
+        .forEach((user) => {
+          const opt = document.createElement("option");
+          opt.value = user;
+          opt.textContent = user.replace(/^(ha_|custom_)/, "");
+          userSelect.appendChild(opt);
+        });
+    })();
+
     function applyTableFilters() {
       const searchVal =
         (
@@ -444,16 +469,15 @@ const priorityClasses: Record<number, string> = {
       const riceFilter =
         (document.getElementById("table-filter-rice") as HTMLSelectElement)
           ?.value ?? "";
+      const userFilter =
+        (document.getElementById("table-filter-user") as HTMLSelectElement)
+          ?.value ?? "";
 
       document.querySelectorAll("#task-table tbody tr").forEach((row) => {
         const el = row as HTMLElement;
         const title = el.dataset.search ?? el.dataset.title ?? "";
         const matchSearch = !searchVal || title.includes(searchVal);
-        const matchStatus =
-          !statusFilter ||
-          el.dataset.status === statusFilter ||
-          (statusFilter === "complete" &&
-            (el.dataset.status === "done" || el.dataset.status === "complete"));
+        const matchStatus = !statusFilter || el.dataset.status === statusFilter;
         const matchPriority =
           !priorityFilter || el.dataset.priority === priorityFilter;
 
@@ -470,8 +494,15 @@ const priorityClasses: Record<number, string> = {
           }
         }
 
+        let matchUser = true;
+        if (userFilter === "__unassigned__") {
+          matchUser = !el.dataset.assigned;
+        } else if (userFilter) {
+          matchUser = el.dataset.assigned === userFilter;
+        }
+
         const visible =
-          matchSearch && matchStatus && matchPriority && matchRice;
+          matchSearch && matchStatus && matchPriority && matchRice && matchUser;
         el.style.display = visible ? "" : "none";
       });
 
@@ -495,6 +526,9 @@ const priorityClasses: Record<number, string> = {
         rice:
           (document.getElementById("table-filter-rice") as HTMLSelectElement)
             ?.value ?? "",
+        user:
+          (document.getElementById("table-filter-user") as HTMLSelectElement)
+            ?.value ?? "",
       };
       localStorage.setItem(FILTER_KEY, JSON.stringify(state));
 
@@ -513,6 +547,7 @@ const priorityClasses: Record<number, string> = {
       "table-filter-status",
       "table-filter-priority",
       "table-filter-rice",
+      "table-filter-user",
     ].forEach((id) => {
       const el = document.getElementById(id);
       if (!el) return;
@@ -534,6 +569,9 @@ const priorityClasses: Record<number, string> = {
       (
         document.getElementById("table-filter-rice") as HTMLSelectElement
       ).value = "";
+      (
+        document.getElementById("table-filter-user") as HTMLSelectElement
+      ).value = "";
       applyTableFilters();
     });
 
@@ -544,7 +582,8 @@ const priorityClasses: Record<number, string> = {
         urlParams.has("search") ||
         urlParams.has("status") ||
         urlParams.has("priority") ||
-        urlParams.has("rice");
+        urlParams.has("rice") ||
+        urlParams.has("user");
 
       const source = hasUrlFilters
         ? {
@@ -552,6 +591,7 @@ const priorityClasses: Record<number, string> = {
             status: urlParams.get("status") ?? "",
             priority: urlParams.get("priority") ?? "",
             rice: urlParams.get("rice") ?? "",
+            user: urlParams.get("user") ?? "",
           }
         : JSON.parse(localStorage.getItem(FILTER_KEY) ?? "{}");
 
@@ -570,7 +610,17 @@ const priorityClasses: Record<number, string> = {
         (
           document.getElementById("table-filter-rice") as HTMLSelectElement
         ).value = source.rice;
-      if (source.search || source.status || source.priority || source.rice)
+      if (source.user)
+        (
+          document.getElementById("table-filter-user") as HTMLSelectElement
+        ).value = source.user;
+      if (
+        source.search ||
+        source.status ||
+        source.priority ||
+        source.rice ||
+        source.user
+      )
         applyTableFilters();
     } catch {
       /* ignore */
@@ -641,7 +691,7 @@ const priorityClasses: Record<number, string> = {
           );
           if (field === "status") {
             const row = el.closest("tr");
-            if (el.value === "complete" || el.value === "done") {
+            if (el.value === "complete") {
               row?.classList.add("row-done");
             } else {
               row?.classList.remove("row-done");
@@ -779,7 +829,7 @@ const priorityClasses: Record<number, string> = {
               "select.inline-select",
             ) as HTMLSelectElement;
             if (select) select.value = newStatus;
-            if (newStatus === "complete" || newStatus === "done") {
+            if (newStatus === "complete") {
               row?.classList.add("row-done");
             } else {
               row?.classList.remove("row-done");
@@ -833,10 +883,16 @@ const priorityClasses: Record<number, string> = {
         if (!tbody || !col) return;
         const rows = Array.from(tbody.querySelectorAll("tr"));
         const asc = !(th as HTMLElement).classList.contains("sort-asc");
-        document
-          .querySelectorAll(".sortable")
-          .forEach((h) => h.classList.remove("sort-asc", "sort-desc"));
+        document.querySelectorAll(".sortable").forEach((h) => {
+          h.classList.remove("sort-asc", "sort-desc");
+          const indicator = h.querySelector(".sort-indicator");
+          if (indicator) indicator.textContent = "";
+        });
         (th as HTMLElement).classList.add(asc ? "sort-asc" : "sort-desc");
+        const sortIndicator = (th as HTMLElement).querySelector(
+          ".sort-indicator",
+        );
+        if (sortIndicator) sortIndicator.textContent = asc ? " ▲" : " ▼";
 
         rows.sort((a, b) => {
           let aVal: string;
@@ -1034,5 +1090,17 @@ const priorityClasses: Record<number, string> = {
     font-weight: 700;
     letter-spacing: 0.5px;
     cursor: default;
+  }
+  .sortable {
+    cursor: pointer;
+    user-select: none;
+  }
+  .sortable:hover {
+    background: var(--bg-hover);
+  }
+  .sort-indicator {
+    font-size: 10px;
+    color: var(--accent);
+    margin-left: 2px;
   }
 </style>

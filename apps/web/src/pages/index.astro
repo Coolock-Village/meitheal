@@ -51,8 +51,8 @@ try {
     const s = String(r.status);
     const c = Number(r.cnt);
     stats.total += c;
-    if (s === "active" || s === "in_progress") stats.active += c;
-    if (s === "complete" || s === "done") stats.completed += c;
+    if (s === "active") stats.active += c;
+    if (s === "complete") stats.completed += c;
     else stats.open += c;
   }
 
@@ -390,7 +390,7 @@ import { getPriorityColor } from "../lib/priority-config";
             const p = Number(task.priority ?? 3);
             const isDone =
               String(task.status) === "complete" ||
-              String(task.status) === "done";
+              String(task.status) === "complete";
             const taskColor = task.color
               ? String(task.color)
               : p === 1
@@ -428,7 +428,7 @@ import { getPriorityColor } from "../lib/priority-config";
                   </div>
                   <div class="bento-card-footer">
                     <span
-                      class={`task-badge badge-${isDone ? "done" : String(task.status)}`}
+                      class={`task-badge badge-${isDone ? "complete" : String(task.status)}`}
                     >
                       {statusLabels[String(task.status)] ?? String(task.status)}
                     </span>

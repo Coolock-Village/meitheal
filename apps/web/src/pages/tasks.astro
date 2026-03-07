@@ -306,9 +306,12 @@ const { tasks, counts, customFieldDefs } = await getTasksForView();
       if (!ok) return;
 
       try {
-        const res = await fetch(`${window.__ingress_path || ""}/api/tasks/${id}`, {
-          method: "DELETE",
-        });
+        const res = await fetch(
+          `${window.__ingress_path || ""}/api/tasks/${id}`,
+          {
+            method: "DELETE",
+          },
+        );
         if (res.ok || res.status === 404) {
           showToast("common.task_deleted");
           setTimeout(() => window.location.reload(), 800);
@@ -374,9 +377,12 @@ const { tasks, counts, customFieldDefs } = await getTasksForView();
       const id = (btn as HTMLElement).dataset.id;
       if (!id) return;
       try {
-        const dupRes = await fetch(`${window.__ingress_path || ""}/api/tasks/${id}/duplicate`, {
-          method: "POST",
-        });
+        const dupRes = await fetch(
+          `${window.__ingress_path || ""}/api/tasks/${id}/duplicate`,
+          {
+            method: "POST",
+          },
+        );
         if (dupRes.ok) {
           showToast("common.task_created");
           setTimeout(() => window.location.reload(), 500);
@@ -465,8 +471,7 @@ const { tasks, counts, customFieldDefs } = await getTasksForView();
       const matchStatus =
         !statusFilter ||
         el.dataset.status === statusFilter ||
-        (statusFilter === "complete" &&
-          (el.dataset.status === "done" || el.dataset.status === "complete"));
+        (statusFilter === "complete" && el.dataset.status === "complete");
       const matchPriority =
         !priorityFilter || el.dataset.priority === priorityFilter;
 

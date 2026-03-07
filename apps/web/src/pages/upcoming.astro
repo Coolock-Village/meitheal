@@ -29,7 +29,7 @@ try {
   const result = await client.execute({
     sql: `SELECT * FROM tasks
           WHERE due_date >= ? AND due_date <= ?
-            AND status NOT IN ('complete', 'done')
+            AND status NOT IN ('complete')
           ORDER BY due_date ASC, priority DESC, created_at ASC`,
     args: [todayStr, endStr],
   });
@@ -147,6 +147,7 @@ const totalTasks = days.reduce((sum, d) => sum + d.tasks.length, 0);
               {day.tasks.map((task) => {
                 const p = Number(task.priority ?? 3);
                 const tt = String(task.task_type ?? "task");
+                const status = String(task.status ?? "pending");
                 return (
                   <div
                     class="task-item"
@@ -176,6 +177,13 @@ const totalTasks = days.reduce((sum, d) => sum + d.tasks.length, 0);
                         {String(task.title)}
                       </div>
                     </div>
+                    <span class={`status-badge status-badge--${status}`}>
+                      {status === "active"
+                        ? "Active"
+                        : status === "backlog"
+                          ? "Backlog"
+                          : "Pending"}
+                    </span>
                     {task.color && (
                       <span
                         style={`width: 4px; height: 20px; border-radius: 2px; background: ${String(task.color)}; flex-shrink: 0;`}
@@ -225,6 +233,29 @@ const totalTasks = days.reduce((sum, d) => sum + d.tasks.length, 0);
   .task-item:focus-visible {
     outline: 2px solid var(--accent);
     outline-offset: -2px;
+  }
+  .status-badge {
+    display: inline-block;
+    font-size: 10px;
+    font-weight: 600;
+    padding: 2px 8px;
+    border-radius: 8px;
+    text-transform: uppercase;
+    letter-spacing: 0.3px;
+    white-space: nowrap;
+    flex-shrink: 0;
+  }
+  .status-badge--pending {
+    background: rgba(59, 130, 246, 0.12);
+    color: #3b82f6;
+  }
+  .status-badge--active {
+    background: rgba(34, 197, 94, 0.12);
+    color: #22c55e;
+  }
+  .status-badge--backlog {
+    background: rgba(148, 163, 184, 0.12);
+    color: #94a3b8;
   }
 </style>
 

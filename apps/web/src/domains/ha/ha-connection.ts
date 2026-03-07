@@ -124,7 +124,7 @@ export async function getHAConnection(): Promise<Connection | null> {
         fetch(`http://127.0.0.1:${process.env.PORT || 3000}/api/tasks/${encodeURIComponent(taskId)}`, {
           method: "PUT",
           headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ status: "done" })
+          body: JSON.stringify({ status: "complete" })
         }).catch((err: unknown) => {
           logger.log("error", {
             event: "ha.notification.action_failed", domain: "ha", component: "ha-connection",

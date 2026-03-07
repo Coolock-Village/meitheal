@@ -67,7 +67,7 @@ async function resolveTask(taskId: string): Promise<TaskWithExtras> {
             id: t.id ?? taskId,
             title: t.title ?? "Untitled",
             description: t.description ?? "",
-            status: t.status ?? "todo",
+            status: t.status ?? "pending",
             dueDate: t.due_date ?? null,
             labels: t.labels ?? "",
             createdAt: t.created_at ?? new Date().toISOString(),

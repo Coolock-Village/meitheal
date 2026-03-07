@@ -123,7 +123,7 @@ export async function checkOverdueTasks(tasks: TaskForCheck[]): Promise<void> {
 
   for (const task of tasks) {
     if (notified.has(task.id)) continue
-    if (task.status === "done" || task.status === "complete") continue
+    if (task.status === "complete") continue
 
     const due = new Date(task.dueDate)
     if (due < now) {
@@ -155,7 +155,7 @@ export async function checkUpcomingReminders(tasks: TaskForCheck[]): Promise<voi
 
   for (const task of tasks) {
     if (notified.has(task.id)) continue
-    if (task.status === "done" || task.status === "complete") continue
+    if (task.status === "complete") continue
 
     const due = new Date(task.dueDate)
     if (due > now && due <= oneHourFromNow) {

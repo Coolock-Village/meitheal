@@ -28,7 +28,7 @@ export const GET: APIRoute = async ({ url }) => {
     const conditions: string[] = [];
     const args: InValue[] = [];
 
-    const filterDone = url.searchParams.get("filter_by")?.includes("done");
+    const filterDone = url.searchParams.get("filter_by")?.includes("complete");
     if (filterDone) {
       const doneValue = url.searchParams.get("filter_value") ?? "";
       if (doneValue === "true") {
@@ -59,7 +59,7 @@ export const GET: APIRoute = async ({ url }) => {
     const tasks = result.rows.map((row) => {
       const r = row as Record<string, unknown>;
       const status = String(r.status ?? "");
-      const isDone = status === "complete" || status === "done";
+      const isDone = status === "complete";
       return {
         id: Number(String(r.id).replace(/-/g, "").slice(0, 8)) || 0, // Numeric ID compat
         uid: String(r.id),

@@ -14,7 +14,7 @@ export interface OfflineTask {
   id: string
   title: string
   description: string
-  status: "pending" | "in_progress" | "done"
+  status: "backlog" | "pending" | "active" | "complete"
   dueDate: string | null
   updatedAt: string
   createdAt: string

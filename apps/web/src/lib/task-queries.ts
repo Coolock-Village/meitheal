@@ -152,7 +152,7 @@ export async function getTasksForView(): Promise<TaskViewResult> {
     const tasks: TaskViewItem[] = rows.map((row) => {
       const status = String(row.status ?? "pending");
       const priority = Number(row.priority ?? 3);
-      const isDone = status === "complete" || status === "done";
+      const isDone = status === "complete";
       const dueDate = row.due_date ? String(row.due_date) : null;
       const fp = safeParseJson<Record<string, unknown>>(row.framework_payload, {});
       const rice = calculateRice(fp);

@@ -43,7 +43,7 @@ const MCP_TOOLS = [
       type: "object" as const,
       properties: {
         query: { type: "string", description: "Search keyword" },
-        status: { type: "string", enum: ["backlog", "todo", "in_progress", "done", "cancelled"] },
+        status: { type: "string", enum: ["backlog", "pending", "active", "complete"] },
         priority: { type: "integer", minimum: 1, maximum: 5 },
         assigned_to: { type: "string", description: "Filter by assigned user ID" },
       },
@@ -69,7 +69,7 @@ const MCP_TOOLS = [
       properties: {
         id: { type: "string", description: "Task UUID" },
         title: { type: "string" },
-        status: { type: "string", enum: ["backlog", "todo", "in_progress", "done", "cancelled"] },
+        status: { type: "string", enum: ["backlog", "pending", "active", "complete"] },
         priority: { type: "integer", minimum: 1, maximum: 5 },
         due_date: { type: "string", format: "date" },
         description: { type: "string" },
@@ -320,7 +320,7 @@ async function executeTool(
         const res = await fetch(`${baseUrl}/api/tasks/${args.id}`, {
           method: "PUT",
           headers: { "content-type": "application/json" },
-          body: JSON.stringify({ status: "done" }),
+          body: JSON.stringify({ status: "complete" }),
         });
         return { status: "completed", ...(await res.json().catch(() => ({}))) };
       }
@@ -335,7 +335,7 @@ async function executeTool(
           await fetch(`${baseUrl}/api/tasks/${match.id}`, {
             method: "PUT",
             headers: { "content-type": "application/json" },
-            body: JSON.stringify({ status: "done" }),
+            body: JSON.stringify({ status: "complete" }),
           });
           return { status: "completed", id: match.id, title: match.title };
         }
@@ -404,7 +404,7 @@ async function executeTool(
 
       const items = (data.tasks ?? []).filter(
         (t) =>
-          t.status !== "done" &&
+          t.status !== "complete" &&
           t.due_date &&
           t.due_date.slice(0, 10) >= today &&
           t.due_date.slice(0, 10) <= cutoffStr
@@ -435,13 +435,13 @@ async function executeTool(
     }
 
     case "getOverdueTasks": {
-      const res = await fetch(`${baseUrl}/api/tasks?status=todo`);
+      const res = await fetch(`${baseUrl}/api/tasks`);
       const data = (await res.json().catch(() => ({ tasks: [] }))) as {
         tasks: Array<{ id: string; title: string; status: string; due_date: string; priority: number }>
       };
       const now = new Date().toISOString().slice(0, 10);
       const overdue = (data.tasks ?? []).filter(
-        (t) => t.status !== "done" && t.due_date && t.due_date.slice(0, 10) < now
+        (t) => t.status !== "complete" && t.due_date && t.due_date.slice(0, 10) < now
       ).map((t) => ({ id: t.id, title: t.title, due_date: t.due_date, priority: t.priority }));
       return { tasks: overdue, count: overdue.length };
     }
@@ -453,7 +453,7 @@ async function executeTool(
       };
       const today = new Date().toISOString().slice(0, 10);
       const tasks = (data.tasks ?? []).filter(
-        (t) => t.status !== "done" && t.due_date && (
+        (t) => t.status !== "complete" && t.due_date && (
           t.due_date.slice(0, 10) === today || t.due_date.slice(0, 10) < today
         )
       ).map((t) => ({
@@ -470,9 +470,9 @@ async function executeTool(
       };
       const all = data.tasks ?? [];
       const now = new Date().toISOString().slice(0, 10);
-      const done = all.filter((t) => t.status === "done").length;
-      const overdue = all.filter((t) => t.status !== "done" && t.due_date && t.due_date.slice(0, 10) < now).length;
-      return { total: all.length, active: all.length - done, overdue, done };
+      const done = all.filter((t) => t.status === "complete").length;
+      const overdue = all.filter((t) => t.status !== "complete" && t.due_date && t.due_date.slice(0, 10) < now).length;
+      return { total: all.length, active: all.length - done, overdue, completed: done };
     }
 
     case "batchComplete": {
@@ -485,7 +485,7 @@ async function executeTool(
       const titles = Array.isArray(args.titles) ? args.titles.map((t: unknown) => String(t).toLowerCase()) : null;
 
       const targets = (data.tasks ?? []).filter((t) => {
-        if (t.status === "done") return false;
+        if (t.status === "complete") return false;
         if (titles && !titles.includes(t.title.toLowerCase())) return false;
         if (label && !(t.labels ?? []).some((l) => l.toLowerCase() === label)) return false;
         if (maxPri !== null && t.priority > maxPri) return false;
@@ -499,7 +499,7 @@ async function executeTool(
           await fetch(`${baseUrl}/api/tasks/${t.id}`, {
             method: "PUT",
             headers: { "content-type": "application/json" },
-            body: JSON.stringify({ status: "done" }),
+            body: JSON.stringify({ status: "complete" }),
           });
           completed.push(t.title);
         } catch { /* skip */ }

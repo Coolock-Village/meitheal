@@ -65,7 +65,7 @@ try {
   if (completedCutoffMs > 0) {
     allTasks = allTasks.filter((t) => {
       const status = String(t.status ?? "").toLowerCase();
-      if (status === "complete" || status === "done") {
+      if (status === "complete") {
         return Number(t.updated_at ?? 0) >= completedCutoffMs;
       }
       return true;
@@ -131,7 +131,7 @@ if (columns.length === 0) {
       key: "pending",
       label: "Todo",
       icon: "📋",
-      includes: ["pending", "todo"],
+      includes: ["pending"],
       builtIn: true,
       wipLimit: 0,
     },
@@ -140,7 +140,7 @@ if (columns.length === 0) {
       key: "active",
       label: "In Progress",
       icon: "⚡",
-      includes: ["active", "in_progress"],
+      includes: ["active"],
       builtIn: true,
       wipLimit: 0,
     },
@@ -149,7 +149,7 @@ if (columns.length === 0) {
       key: "complete",
       label: "Done",
       icon: "✅",
-      includes: ["complete", "done"],
+      includes: ["complete"],
       builtIn: true,
       wipLimit: 0,
     },
