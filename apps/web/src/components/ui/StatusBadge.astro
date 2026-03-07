@@ -12,19 +12,17 @@ const { status } = Astro.props;
 const cookieLocale = Astro.cookies.get("meitheal-locale")?.value;
 const locale: Locale = cookieLocale === "ga" ? "ga" : "en";
 
-const isDone = status === "complete" || status === "done";
+const isDone = status === "complete";
 const statusLabels: Record<string, string> = {
   pending: t("task_status.pending", locale),
   active: t("task_status.active", locale),
-  in_progress: t("task_status.active", locale),
   complete: t("task_status.complete", locale),
-  done: t("task_status.complete", locale),
-  todo: t("task_status.pending", locale),
 };
 
 const label = statusLabels[status] ?? status;
-const badgeClass = isDone ? "done" : status;
+const badgeClass = isDone ? "complete" : status;
 ---
+
 <span class={`task-badge badge-${badgeClass}`}>
   {label}
 </span>

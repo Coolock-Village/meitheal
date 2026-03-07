@@ -342,7 +342,7 @@ const { tasks, counts, customFieldDefs } = await getTasksForView();
         setTimeout(() => taskItem?.classList.remove("task-celebrate"), 600);
         titleEl?.classList.add("done");
         if (badge) {
-          badge.className = "task-badge badge-done";
+          badge.className = "task-badge badge-complete";
           badge.textContent = "Complete";
         }
       } else {
