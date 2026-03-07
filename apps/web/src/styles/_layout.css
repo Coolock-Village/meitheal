@@ -158,6 +158,12 @@
       cursor: default;
     }
 
+        /* Clickable stat cards — navigational links to filtered views */
+        a.stat-card-link {
+          cursor: pointer;
+          text-decoration: none;
+          color: inherit;
+        }
     .stat-card:hover {
       @apply bg-bg-card/95;
       transform: translateY(-2px) scale(1.02);

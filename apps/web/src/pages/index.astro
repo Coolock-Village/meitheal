@@ -15,7 +15,7 @@ const locale: Locale = cookieLocale === "ga" ? "ga" : "en";
 let tasks: Record<string, unknown>[] = [];
 let favorites: Record<string, unknown>[] = [];
 let openTasks: Record<string, unknown>[] = [];
-let stats = { total: 0, active: 0, completed: 0, overdue: 0 };
+let stats = { total: 0, open: 0, active: 0, completed: 0, overdue: 0 };
 const boardMap: Record<string, { name: string; color: string }> = {
   default: { name: "Default", color: "#6366F1" },
 };
@@ -53,6 +53,7 @@ try {
     stats.total += c;
     if (s === "active" || s === "in_progress") stats.active += c;
     if (s === "complete" || s === "done") stats.completed += c;
+    else stats.open += c;
   }
 
   const overdueResult = await client.execute({
@@ -78,21 +79,9 @@ try {
   // DB not available — show empty state
 }
 
-const priorityLabels: Record<number, string> = {
-  1: t("priority.critical", locale),
-  2: t("priority.high", locale),
-  3: t("priority.medium", locale),
-  4: t("priority.low", locale),
-  5: t("priority.minimal", locale),
-};
-const statusLabels: Record<string, string> = {
-  pending: t("task_status.pending", locale),
-  active: t("task_status.active", locale),
-  in_progress: t("task_status.active", locale),
-  complete: t("task_status.complete", locale),
-  done: t("task_status.complete", locale),
-  todo: t("task_status.pending", locale),
-};
+import { PRIORITY_LABELS } from "../lib/priority-config";
+import { STATUS_LABELS as statusLabels } from "../lib/status-config";
+const priorityLabels = PRIORITY_LABELS;
 
 // Vikunja-inspired: time-of-day greeting
 const hour = new Date().getHours();
@@ -124,6 +113,8 @@ const greetingHint =
     : stats.active > 0
       ? `— ${stats.active} in progress`
       : "✦";
+
+import { getPriorityColor } from "../lib/priority-config";
 ---
 
 <Layout title={`Meitheal — ${greeting}!`}>
@@ -131,14 +122,14 @@ const greetingHint =
     >{greeting}! {
       stats.overdue > 0 ? (
         <a
-          href="#stat-overdue"
+          href="/tasks?status=overdue"
           class="text-text-muted text-base font-normal hover:text-danger transition-colors no-underline hover:underline"
         >
           {greetingHint}
         </a>
       ) : stats.active > 0 ? (
         <a
-          href="#stat-active"
+          href="/tasks?status=active"
           class="text-text-muted text-base font-normal hover:text-accent transition-colors no-underline hover:underline"
         >
           {greetingHint}
@@ -158,15 +149,20 @@ const greetingHint =
   >
 
   <div class="stats-grid">
-    <div class="stat-card" title="All tasks across every board and status">
+    <a
+      href="/tasks"
+      class="stat-card stat-card-link"
+      title="Open tasks — not yet completed"
+    >
       <span class="stat-icon">📋</span>
       <div>
-        <div class="stat-value">{stats.total}</div>
-        <div class="stat-label">{t("dashboard.total_tasks", locale)}</div>
+        <div class="stat-value">{stats.open}</div>
+        <div class="stat-label">Open</div>
       </div>
-    </div>
-    <div
-      class="stat-card stat-card-entrance"
+    </a>
+    <a
+      href="/tasks?status=active"
+      class="stat-card stat-card-link stat-card-entrance"
       id="stat-active"
       title="Tasks currently in progress or active"
     >
@@ -175,17 +171,22 @@ const greetingHint =
         <div class="stat-value">{stats.active}</div>
         <div class="stat-label">{t("dashboard.active", locale)}</div>
       </div>
-    </div>
-    <div class="stat-card" title="Tasks marked as done">
+    </a>
+    <a
+      href="/tasks?status=complete"
+      class="stat-card stat-card-link"
+      title="Tasks marked as done"
+    >
       <span class="stat-icon">✅</span>
       <div>
         <div class="stat-value">{stats.completed}</div>
         <div class="stat-label">{t("dashboard.completed", locale)}</div>
       </div>
-    </div>
-    <div
+    </a>
+    <a
+      href="/tasks?status=overdue"
       id="stat-overdue"
-      class={`stat-card stat-card-entrance ${stats.overdue > 0 ? "stat-card-danger" : ""}`}
+      class={`stat-card stat-card-link stat-card-entrance ${stats.overdue > 0 ? "stat-card-danger" : ""}`}
       title="Tasks past their due date across all boards"
     >
       <span class="stat-icon">⏰</span>
@@ -198,7 +199,7 @@ const greetingHint =
         </div>
         <div class="stat-label">{t("dashboard.overdue", locale)}</div>
       </div>
-    </div>
+    </a>
   </div>
 
   {
@@ -229,17 +230,7 @@ const greetingHint =
               <div class="task-title">
                 <span
                   class="priority-dot"
-                  style={`color: ${
-                    Number(fav.priority) === 1
-                      ? "#ef4444"
-                      : Number(fav.priority) === 2
-                        ? "#f97316"
-                        : Number(fav.priority) === 4
-                          ? "#22c55e"
-                          : Number(fav.priority) === 5
-                            ? "#6b7280"
-                            : "#eab308"
-                  }`}
+                  style={`color: ${getPriorityColor(Number(fav.priority ?? 3))}`}
                 >
                   ●
                 </span>
@@ -288,11 +279,11 @@ const greetingHint =
     </form>
   </div>
 
-  <!-- My Open Tasks -->
+  <!-- Open Tasks -->
   <div class="card" style="margin-bottom: 20px;" id="my-open-tasks-card">
     <div class="card-header">
       <div>
-        <div class="card-title">🎯 My open tasks</div>
+        <div class="card-title" id="open-tasks-title">🎯 Open Tasks</div>
         <div class="card-subtitle" id="my-open-count">
           {openTasks.length} open task{openTasks.length !== 1 ? "s" : ""}
         </div>
@@ -305,8 +296,11 @@ const greetingHint =
         >
           <option value="all">All users</option>
         </select>
-        <a href="/kanban" class="btn btn-ghost" style="font-size: 12px;"
-          >Kanban →</a
+        <a
+          href="/kanban"
+          class="btn btn-ghost"
+          id="kanban-link"
+          style="font-size: 12px;">Kanban →</a
         >
       </div>
     </div>
@@ -319,16 +313,7 @@ const greetingHint =
         ) : (
           openTasks.map((task) => {
             const p = Number(task.priority ?? 3);
-            const priColor =
-              p === 1
-                ? "#ef4444"
-                : p === 2
-                  ? "#f97316"
-                  : p === 4
-                    ? "#22c55e"
-                    : p === 5
-                      ? "#6b7280"
-                      : "#eab308";
+            const priColor = getPriorityColor(p);
             const ticketNum = task.ticket_number
               ? `MTH-${String(task.ticket_number).padStart(3, "0")}`
               : null;
@@ -692,6 +677,29 @@ const greetingHint =
           });
         if (openCount)
           openCount.textContent = `${visible} open task${visible !== 1 ? "s" : ""}`;
+
+        // Dynamic title based on filter selection (#10, #28)
+        const titleEl = document.getElementById("open-tasks-title");
+        const kanbanLink = document.getElementById(
+          "kanban-link",
+        ) as HTMLAnchorElement | null;
+        if (titleEl) {
+          if (val === "all" || val === "__unassigned__") {
+            titleEl.textContent = "🎯 Open Tasks";
+          } else {
+            const selectedOpt = openSelect.options[openSelect.selectedIndex];
+            const name = selectedOpt?.textContent || val;
+            titleEl.textContent = `🎯 ${name}'s Tasks`;
+          }
+        }
+        // Kanban link carries user filter
+        if (kanbanLink) {
+          const bp = (window as any).__ingress_path || "";
+          kanbanLink.href =
+            val === "all"
+              ? `${bp}/kanban`
+              : `${bp}/kanban?user=${encodeURIComponent(val)}`;
+        }
       }
 
       openSelect.addEventListener("change", () => {

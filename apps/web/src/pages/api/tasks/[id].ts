@@ -7,6 +7,7 @@ import { dispatchTaskEvent } from "../../../lib/webhook-dispatcher";
 import { logApiError } from "../../../lib/api-logger";
 import { VALID_TASK_TYPES } from "@meitheal/domain-tasks";
 import type { TaskType } from "@meitheal/domain-tasks";
+import { normalizeStatus, isDoneStatus } from "../../../lib/status-config";
 
 /** GET /api/tasks/[id], PUT /api/tasks/[id], DELETE /api/tasks/[id] */
 
@@ -120,7 +121,8 @@ export const PUT: APIRoute = async ({ params, request }) => {
         status: 400, headers: { "content-type": "application/json" },
       });
     }
-    sanitized.status = st;
+    // Normalize aliases to canonical values (todo→pending, in_progress→active, done→complete)
+    sanitized.status = normalizeStatus(st);
   }
   if (typeof body.priority === "number") {
     sanitized.priority = Math.min(5, Math.max(1, Math.round(body.priority)));
@@ -415,8 +417,7 @@ export const PUT: APIRoute = async ({ params, request }) => {
     }
   }
 
-  // F7: Module-scope done statuses (avoid allocation on every PUT)
-  const doneStatuses = new Set(["done", "complete", "completed"]);
+  // F7: Use shared isDoneStatus for canonical done detection
 
   // Fetch open task count for iOS badge (fire-and-forget, cached per-request)
   let openTaskBadge: number | undefined;
@@ -424,7 +425,7 @@ export const PUT: APIRoute = async ({ params, request }) => {
     if (openTaskBadge !== undefined) return openTaskBadge;
     try {
       const countResult = await client.execute({
-        sql: "SELECT COUNT(*) as cnt FROM tasks WHERE status NOT IN ('done', 'complete', 'completed')",
+        sql: "SELECT COUNT(*) as cnt FROM tasks WHERE status NOT IN ('complete')",
         args: [],
       });
       openTaskBadge = Number((countResult.rows[0] as Record<string, unknown>).cnt) || 0;
@@ -488,7 +489,7 @@ export const PUT: APIRoute = async ({ params, request }) => {
 
   // Auto-dismiss all notifications when task is marked done/complete
   if (notifEnabled && sanitized.status !== undefined) {
-    if (doneStatuses.has(String(sanitized.status)) && !doneStatuses.has(String(oldTask?.status ?? ""))) {
+    if (isDoneStatus(String(sanitized.status)) && !isDoneStatus(String(oldTask?.status ?? ""))) {
       // F13: Clear urgent, assignment, AND due-date reminder notification tags
       dismissMobileNotification(`meitheal_urgent_${resolvedId}`);
       dismissMobileNotification(`meitheal_assigned_${resolvedId}`);

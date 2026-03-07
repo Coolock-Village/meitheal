@@ -45,20 +45,11 @@ try {
   /* DB not available */
 }
 
-const priorityLabels: Record<number, string> = {
-  1: "Lowest",
-  2: "Low",
-  3: "Medium",
-  4: "High",
-  5: "Highest",
-};
-const priorityColors: Record<number, string> = {
-  1: "#6b7280",
-  2: "#6366F1",
-  3: "#3b82f6",
-  4: "#f59e0b",
-  5: "#ef4444",
-};
+import {
+  PRIORITY_LABELS as priorityLabels,
+  PRIORITY_COLORS as priorityColors,
+} from "../lib/priority-config";
+
 const typeIcons: Record<string, string> = {
   epic: "🎯",
   story: "📖",

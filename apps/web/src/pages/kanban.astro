@@ -161,19 +161,14 @@ if (backlogMode === "hidden" || backlogMode === "disabled") {
   columns = columns.filter((col) => col.key !== "backlog");
 }
 
+import { PRIORITY_COLORS as priorityColors } from "../lib/priority-config";
+
 const priorityLabels: Record<number, string> = {
   1: t("priority.critical", locale),
   2: t("priority.high", locale),
   3: t("priority.medium", locale),
   4: t("priority.low", locale),
   5: t("priority.minimal", locale),
-};
-const priorityColors: Record<number, string> = {
-  1: "#ef4444",
-  2: "#f59e0b",
-  3: "#3b82f6",
-  4: "#6366F1",
-  5: "#6b7280",
 };
 
 // Phase 20: Agile type metadata
