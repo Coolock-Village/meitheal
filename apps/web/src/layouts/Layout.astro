@@ -692,11 +692,21 @@ Astro.response.headers.set("X-Content-Type-Options", "nosniff");
                         style="width: auto; min-width: 120px;"
                         aria-label="Link type"
                       >
-                        <option value="related_to">Related to</option>
-                        <option value="blocked_by">Blocked by</option>
-                        <option value="blocks">Blocks</option>
-                        <option value="duplicates">Duplicates</option>
-                        <option value="duplicated_by">Duplicated by</option>
+                        <option value="related_to"
+                          >{t("link_types.related_to", locale)}</option
+                        >
+                        <option value="blocked_by"
+                          >{t("link_types.blocked_by", locale)}</option
+                        >
+                        <option value="blocks"
+                          >{t("link_types.blocks", locale)}</option
+                        >
+                        <option value="duplicates"
+                          >{t("link_types.duplicates", locale)}</option
+                        >
+                        <option value="duplicated_by"
+                          >{t("link_types.duplicated_by", locale)}</option
+                        >
                       </select>
                       <div class="relative flex-1">
                         <input
@@ -2341,15 +2351,30 @@ Astro.response.headers.set("X-Content-Type-Options", "nosniff");
                 created_at: string;
               }>;
             };
-            container.innerHTML = (data.comments || [])
-              .map(
-                (c) =>
-                  `<div class="bg-bg-card rounded-md p-3 border border-border">
-              <div class="flex justify-between text-xs text-text-muted mb-1"><span>${c.author}</span><span>${new Date(c.created_at).toLocaleString()}</span></div>
-              <div class="text-sm text-text-primary">${c.content}</div>
-            </div>`,
-              )
-              .join("");
+            container.innerHTML = "";
+            for (const c of data.comments || []) {
+              const wrapper = document.createElement("div");
+              wrapper.className =
+                "bg-bg-card rounded-md p-3 border border-border";
+
+              const meta = document.createElement("div");
+              meta.className =
+                "flex justify-between text-xs text-text-muted mb-1";
+              const authorSpan = document.createElement("span");
+              authorSpan.textContent = c.author;
+              const dateSpan = document.createElement("span");
+              dateSpan.textContent = new Date(c.created_at).toLocaleString();
+              meta.appendChild(authorSpan);
+              meta.appendChild(dateSpan);
+
+              const body = document.createElement("div");
+              body.className = "text-sm text-text-primary";
+              body.textContent = c.content;
+
+              wrapper.appendChild(meta);
+              wrapper.appendChild(body);
+              container.appendChild(wrapper);
+            }
           } catch {
             container.innerHTML = "";
           }
