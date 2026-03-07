@@ -275,15 +275,14 @@ async function syncEntityFromHA(entityId: string): Promise<{ created: number; up
   syncingEntities.add(entityId);
 
   try {
-    return await _syncEntityFromHAInner(entityId);
+    return await _syncEntityFromHAInner(entityId, state ?? null);
   } finally {
     syncingEntities.delete(entityId);
   }
 }
 
 /** Inner sync logic — always called within concurrency guard */
-async function _syncEntityFromHAInner(entityId: string): Promise<{ created: number; updated: number; total: number }> {
-  const state = activeSyncs.get(entityId);
+async function _syncEntityFromHAInner(entityId: string, state: EntitySyncState | null): Promise<{ created: number; updated: number; total: number }> {
 
   // Backoff: skip sync after 5 consecutive failures (reset via stopSingleEntitySync or manual)
   if (state && state.consecutiveFailures >= 5) {
@@ -474,7 +473,7 @@ async function _syncEntityFromHAInner(entityId: string): Promise<{ created: numb
       event: "calendar.sync.from_ha", domain: "calendar", component: "calendar-bridge",
       request_id: SYS_REQ,
       message: `Calendar sync complete for ${entityId}: ${created} created, ${updated} updated, ${skipped} skipped from ${events.length} events`,
-      metadata: { entity_id: entityId, event_count: events.length, created, updated, skipped },
+      metadata: { entity_id: entityId, sync_mode: state?.config.syncMode ?? "bidirectional", event_count: events.length, created, updated, skipped },
     });
 
     return { created, updated, total: events.length };

@@ -8,18 +8,21 @@
 | Property | Value |
 |----------|-------|
 | Adapter | `HomeAssistantCalendarAdapter` in `integration-core/` |
-| Bridge | `calendar-bridge.ts` — bidirectional sync (HA→tasks, tasks→HA) |
+| Bridge | `calendar-bridge.ts` — directional sync (HA↔tasks) with per-entity mode |
 | Auth | `SUPERVISOR_TOKEN` (auto) or `HA_BASE_URL` + `HA_TOKEN` |
 | Endpoint | `POST /api/services/calendar/create_event` |
 | API Routes | `GET/POST /api/ha/calendars`, `GET/POST /api/integrations/calendar/sync` |
+| Sync Direction | Per-entity `syncMode`: `import` (HA→Meitheal), `export` (Meitheal→HA), `bidirectional` (both). Default: `bidirectional` |
+| Direction Storage | `calendar_sync_mode` (global default) + `calendar_sync_modes` (per-entity JSON map: `{entity_id: mode}`) |
 | Sync Range | Past 7 days → next 30 days |
-| Dedup | `calendar_confirmations` table (keyed by `provider_event_id`) |
-| Write-back | Pushes task due dates as HA events prefixed `[Meitheal]`, description includes "Added from Meitheal" attribution |
-| Multi-select | Toggle cards per calendar entity; saved as `calendar_entities` JSON array |
+| Dedup | `calendar_confirmations` table (keyed by `provider_event_id`), `[Meitheal]` prefix loop prevention |
+| Write-back | Pushes task due dates as HA events prefixed `[Meitheal]`, description includes "Added from Meitheal" attribution. Only active for export/bidirectional modes |
+| Multi-select | Toggle cards per calendar entity with inline direction selector; saved as `calendar_entities` JSON array |
+| CPU Optimization | Export-only entities skip polling, entity-change subscription, and initial sync (push-on-save only) |
 | Timeout | 8s, retryable on 429/5xx |
 | Idempotency | `x-meitheal-idempotency-key` header |
-| Settings UI | Settings → Integrations → Calendar Sync (enable/disable all, count badge, empty state) |
-| Sync metadata | Tracks `lastSyncAt`, `lastSyncEventCount`, `lastSyncError` |
+| Settings UI | Settings → Integrations → Calendar Sync (enable/disable all, count badge, global + per-card direction selector, explainer dialog) |
+| Sync metadata | Tracks `lastSyncAt`, `lastSyncEventCount`, `lastSyncError`, `syncMode` |
 
 ## Home Assistant Todo Sync
 
