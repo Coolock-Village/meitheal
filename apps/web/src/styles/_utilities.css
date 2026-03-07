@@ -149,18 +149,18 @@
 /* Skeleton loading — restored from pre-split global.css */
 .skeleton {
   background: var(--bg-hover);
-  border-radius: 0.25rem;
+  border-radius: var(--radius-xs);
   animation: pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
 }
 
 .skeleton-text {
   height: 1rem;
-  border-radius: 0.25rem;
+  border-radius: var(--radius-xs);
   width: 75%;
   margin-bottom: 0.5rem;
 }
 
 .skeleton-card {
   height: 5rem;
-  border-radius: 0.5rem;
+  border-radius: var(--radius-md);
 }

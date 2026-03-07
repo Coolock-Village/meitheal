@@ -24,7 +24,7 @@
       rgba(107, 114, 128, 0.08) 75%);
   background-size: 200% 100%;
   animation: skeleton-pulse 1.5s ease-in-out infinite;
-  border-radius: 4px;
+  border-radius: var(--radius-xs);
   color: transparent !important;
 }
 
@@ -167,7 +167,7 @@ tbody tr:nth-child(n+6),
     align-items: center;
     gap: 0.5rem;
   padding: 0.75rem 1rem;
-  border-radius: 0.5rem;
+  border-radius: var(--radius-md);
   font-size: 0.875rem;
   font-weight: 500;
   box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
