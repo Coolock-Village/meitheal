@@ -68,12 +68,34 @@ export function getEntitiesByDomain(domain: string): HassEntity[] {
 export function getCalendarEntities(): HassEntity[] { return getEntitiesByDomain("calendar"); }
 export function getTodoEntities(): HassEntity[] { return getEntitiesByDomain("todo"); }
 
+const MAX_LISTENERS_PER_ENTITY = 50;
+const MAX_ENTITY_SUBSCRIPTIONS = 500;
+
 export function onEntityChange(entityId: string, callback: (entity: HassEntity) => void): () => void {
+  // Defensive cap — prevent unbounded listener growth in long-running processes
+  if (changeListeners.size >= MAX_ENTITY_SUBSCRIPTIONS && !changeListeners.has(entityId)) {
+    logger.log("warn", {
+      event: "ha.entity.listener_cap_reached", domain: "ha", component: "ha-entities",
+      request_id: SYS_REQ, message: `Entity subscription cap reached (${MAX_ENTITY_SUBSCRIPTIONS}) — rejecting listener for ${entityId}`,
+    });
+    return () => {}; // no-op unsubscribe
+  }
+
   if (!changeListeners.has(entityId)) changeListeners.set(entityId, new Set());
-  changeListeners.get(entityId)!.add(callback);
+  const listeners = changeListeners.get(entityId)!;
+
+  if (listeners.size >= MAX_LISTENERS_PER_ENTITY) {
+    logger.log("warn", {
+      event: "ha.entity.listener_cap_per_entity", domain: "ha", component: "ha-entities",
+      request_id: SYS_REQ, message: `Listener cap per entity reached (${MAX_LISTENERS_PER_ENTITY}) for ${entityId}`,
+    });
+    return () => {};
+  }
+
+  listeners.add(callback);
   return () => {
-    const listeners = changeListeners.get(entityId);
-    if (listeners) { listeners.delete(callback); if (listeners.size === 0) changeListeners.delete(entityId); }
+    const l = changeListeners.get(entityId);
+    if (l) { l.delete(callback); if (l.size === 0) changeListeners.delete(entityId); }
   };
 }
 
