@@ -75,4 +75,7 @@ RUN mkdir -p /data
 HEALTHCHECK --interval=30s --timeout=5s --start-period=15s --retries=3 \
   CMD curl -fsS http://127.0.0.1:3000/api/health || exit 1
 
-CMD ["/run.sh"]
+# NOTE: No CMD — s6-overlay (PID 1 in HA base images) discovers
+# /etc/services.d/meitheal/run which exec's /run.sh.
+# Adding CMD would cause a double-start since s6 runs both
+# services.d longrun processes AND the CMD concurrently.
