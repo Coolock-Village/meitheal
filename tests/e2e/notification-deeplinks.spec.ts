@@ -71,7 +71,9 @@ test.describe("Notification Deep Links", () => {
 
     expect(notificationData.clickAction).toBe(fullDeepLink);
     expect(notificationData.url).toBe(fullDeepLink);
-    expect(notificationData.actions[0]).toEqual({
+
+    const uriAction = notificationData.actions[0] as { action: string; title: string; uri: string };
+    expect(uriAction).toEqual({
       action: "URI",
       title: "Open Task",
       uri: fullDeepLink,
@@ -80,7 +82,7 @@ test.describe("Notification Deep Links", () => {
     // All URLs should be absolute
     expect(notificationData.clickAction).toMatch(/^https?:\/\//);
     expect(notificationData.url).toMatch(/^https?:\/\//);
-    expect(notificationData.actions[0].uri).toMatch(/^https?:\/\//);
+    expect(uriAction.uri).toMatch(/^https?:\/\//);
   });
 
   test("standalone mode: no deep link when ingress path is unavailable", () => {

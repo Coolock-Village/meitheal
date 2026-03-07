@@ -146,7 +146,10 @@ async function main() {
       const start = performance.now();
       const response = await fetch(`${baseUrl}/api/tasks/create`, {
         method: "POST",
-        headers: { "content-type": "application/json" },
+        headers: {
+          "content-type": "application/json",
+          "origin": baseUrl,
+        },
         body: JSON.stringify({ title: `perf-check-${index}` })
       });
       const end = performance.now();
