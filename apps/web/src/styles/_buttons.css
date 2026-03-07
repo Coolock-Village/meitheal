@@ -78,6 +78,65 @@
   box-shadow: var(--shadow-sm);
 }
 
+/* B1: Touch ripple effect for primary buttons */
+.btn-primary {
+  position: relative;
+  overflow: hidden;
+}
+
+.btn-primary::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: radial-gradient(circle at 50% 50%, rgba(255, 255, 255, 0.3) 0%, transparent 60%);
+  transform: scale(0);
+  opacity: 0;
+  transition: transform 0.5s ease, opacity 0.3s ease;
+  pointer-events: none;
+}
+
+.btn-primary:active::before {
+  transform: scale(2.5);
+  opacity: 1;
+  transition: transform 0.15s ease-out, opacity 0s;
+}
+
+/* B1: Success/error flash feedback */
+@keyframes btn-success-flash {
+  0% {
+    box-shadow: 0 0 0 0 var(--color-success);
+  }
+
+  50% {
+    box-shadow: 0 0 0 4px rgba(16, 185, 129, 0.3);
+  }
+
+  100% {
+    box-shadow: 0 0 0 0 transparent;
+  }
+}
+
+@keyframes btn-error-flash {
+  0% {
+    box-shadow: 0 0 0 0 var(--danger);
+  }
+
+  50% {
+    box-shadow: 0 0 0 4px rgba(239, 68, 68, 0.3);
+  }
+
+  100% {
+    box-shadow: 0 0 0 0 transparent;
+  }
+}
+
+.btn-flash-success {
+  animation: btn-success-flash 0.6s ease;
+}
+
+.btn-flash-error {
+  animation: btn-error-flash 0.6s ease;
+}
 /* Loading spinner for async ops */
 /* ===== Loading Spinner for Async Ops (Wave 7) ===== */
 @keyframes spin {

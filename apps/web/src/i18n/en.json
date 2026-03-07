@@ -26,10 +26,12 @@
         "checking": "Checking..."
     },
     "task_status": {
+        "backlog": "Backlog",
         "pending": "Pending",
         "active": "Active",
         "in_progress": "In Progress",
         "complete": "Complete",
+        "cancelled": "Cancelled",
         "done": "Done",
         "todo": "To Do"
     },

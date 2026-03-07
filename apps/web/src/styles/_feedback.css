@@ -210,3 +210,90 @@ tbody tr:nth-child(n+6),
   background: var(--color-warning);
   color: white;
 }
+
+/* B5: Kanban column skeleton placeholder */
+.skeleton-column {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  padding: 12px;
+  border-radius: var(--radius-lg);
+  background: var(--bg-secondary);
+  border: 1px dashed var(--border);
+  min-height: 120px;
+}
+
+.skeleton-cell {
+  height: 16px;
+  border-radius: var(--radius-xs);
+  animation: skeleton-pulse 1.5s ease-in-out infinite;
+  background: linear-gradient(90deg,
+      rgba(107, 114, 128, 0.08) 25%,
+      rgba(107, 114, 128, 0.18) 50%,
+      rgba(107, 114, 128, 0.08) 75%);
+  background-size: 200% 100%;
+}
+
+/* B6: Page-level fade-in for Astro ViewTransitions */
+@keyframes page-fade-in {
+  from {
+    opacity: 0;
+    transform: translateY(4px);
+  }
+
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.main-content {
+  animation: page-fade-in 0.3s ease-out;
+}
+
+/* B6: Status change celebration */
+@keyframes status-celebrate {
+  0% {
+    transform: scale(1);
+  }
+
+  30% {
+    transform: scale(1.15);
+  }
+
+  60% {
+    transform: scale(0.95);
+  }
+
+  100% {
+    transform: scale(1);
+  }
+}
+
+.status-celebrate {
+  animation: status-celebrate 0.4s cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+
+/* B9: Calendar today cell pulse */
+@keyframes today-pulse {
+
+  0%,
+  100% {
+    box-shadow: 0 0 0 0 var(--accent);
+  }
+
+  50% {
+    box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.15);
+  }
+}
+
+.cal-day.today {
+  animation: today-pulse 2s ease-in-out 1;
+  border-color: var(--accent);
+}
+
+.cal-day:hover {
+  background: var(--bg-hover);
+  cursor: pointer;
+  transition: background 0.15s ease;
+}

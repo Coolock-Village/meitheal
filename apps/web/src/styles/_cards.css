@@ -13,6 +13,12 @@
 
   .card:hover {
     @apply shadow-md border-border-focus/50;
+    transform: translateY(-2px);
+    }
+    
+    .card:focus-within {
+      @apply shadow-md border-border-focus/60;
+      box-shadow: 0 4px 16px rgba(0, 0, 0, 0.2), 0 0 0 1px var(--accent-light, rgba(99, 102, 241, 0.1));
   }
 
   .card-header {
@@ -42,6 +48,9 @@
     @apply bg-info/10 text-blue-400 border-info/20;
   }
 
+    .badge-backlog {
+      @apply bg-gray-500/10 text-gray-400 border-gray-500/20;
+    }
   .badge-active,
   .badge-in_progress {
     @apply bg-warning/10 text-amber-400 border-warning/30;
@@ -52,6 +61,9 @@
     @apply bg-accent/10 text-accent border-accent/20;
   }
 
+    .badge-cancelled {
+      @apply bg-danger/10 text-red-400 border-danger/20;
+    }
   /* --- Filter bar --- */
   .filter-bar {
     @apply flex gap-3 items-center flex-wrap mb-4;

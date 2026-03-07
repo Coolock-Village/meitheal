@@ -32,10 +32,25 @@
   .form-input:focus,
   .form-select:focus {
     @apply outline-none border-accent ring-2 ring-accent/20 bg-bg-input/80;
+    box-shadow: 0 0 0 3px var(--accent-light, rgba(99, 102, 241, 0.1));
   }
 
   .form-input::placeholder {
     @apply text-text-muted;
+    transition: opacity 0.15s ease;
+    }
+    
+    /* B3: Hide placeholder on focus for cleaner typing experience */
+    .form-input:focus::placeholder {
+      opacity: 0.4;
+    }
+    
+    /* B3: Textarea auto-resize (modern browsers) */
+    textarea.form-input {
+      field-sizing: content;
+      min-height: 80px;
+      max-height: 300px;
+      resize: vertical;
   }
 
         .form-input:disabled,

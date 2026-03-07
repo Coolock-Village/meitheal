@@ -26,10 +26,12 @@
         "checking": "Ag Seiceáil..."
     },
     "task_status": {
+        "backlog": "Riaráiste",
         "pending": "Ar Feitheamh",
         "active": "Gníomhach",
         "in_progress": "Ar Siúl",
         "complete": "Críochnaithe",
+        "cancelled": "Curtha ar Ceal",
         "done": "Déanta",
         "todo": "Le Déanamh"
     },
