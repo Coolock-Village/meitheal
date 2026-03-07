@@ -8,6 +8,7 @@ import {
 } from "@meitheal/integration-core";
 import { createTaskAndSyncCalendar, type CalendarDefaults } from "@domains/tasks/task-sync-service";
 import { sanitize } from "../../../lib/sanitize";
+import { apiJson, apiError } from "../../../lib/api-response";
 
 const logger = createLogger({
   service: "meitheal-web",
@@ -98,10 +99,7 @@ export const POST: APIRoute = async ({ request }) => {
   const title = sanitize(rawTitle).trim();
 
   if (!title) {
-    return new Response(JSON.stringify({ error: "title is required" }), {
-      status: 400,
-      headers: { "content-type": "application/json" }
-    });
+    return apiError("title is required", 400);
   }
 
   const requestId = request.headers.get("x-request-id") ?? crypto.randomUUID();
@@ -115,14 +113,10 @@ export const POST: APIRoute = async ({ request }) => {
   if (typeof body.assigned_to === "string" && body.assigned_to.trim().length > 0) {
     const rawAssigned = body.assigned_to.trim();
     if (rawAssigned.length > 255) {
-      return new Response(JSON.stringify({ error: "assigned_to exceeds max length (255)" }), {
-        status: 400, headers: { "content-type": "application/json" },
-      });
+      return apiError("assigned_to exceeds max length (255)", 400);
     }
     if (!/^(ha_|custom_)/.test(rawAssigned)) {
-      return new Response(JSON.stringify({ error: "assigned_to must start with 'ha_' or 'custom_'" }), {
-        status: 400, headers: { "content-type": "application/json" },
-      });
+      return apiError("assigned_to must start with 'ha_' or 'custom_'", 400);
     }
     assignedTo = rawAssigned;
   }
@@ -175,23 +169,17 @@ export const POST: APIRoute = async ({ request }) => {
       : "Created task and processed calendar sync"
   });
 
-  return new Response(
-    JSON.stringify({
-      task: result.task,
-      events: result.events,
-      integration: {
-        calendarSyncState: result.integration.calendarSyncState,
-        confirmationId: result.integration.confirmationId,
-        errorCode: result.integration.errorCode,
-        retryAfterSeconds: result.integration.retryAfterSeconds
-      },
-      requestId,
-      idempotencyKey,
-      idempotentReplay: result.idempotentReplay
-    }),
-    {
-      status: result.idempotentReplay ? 200 : 201,
-      headers: { "content-type": "application/json" }
-    }
-  );
+  return apiJson({
+    task: result.task,
+    events: result.events,
+    integration: {
+      calendarSyncState: result.integration.calendarSyncState,
+      confirmationId: result.integration.confirmationId,
+      errorCode: result.integration.errorCode,
+      retryAfterSeconds: result.integration.retryAfterSeconds
+    },
+    requestId,
+    idempotencyKey,
+    idempotentReplay: result.idempotentReplay
+  }, result.idempotentReplay ? 200 : 201);
 };
