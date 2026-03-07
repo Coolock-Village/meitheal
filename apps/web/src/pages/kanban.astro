@@ -973,10 +973,18 @@ const typeConfig: Record<
         const id = btn.dataset.id;
         if (!id) return;
         try {
+          // P1-2: Double-submit prevention
+          const dupBtn = btn as HTMLButtonElement;
+          dupBtn.disabled = true;
+          dupBtn.classList.add("btn-loading");
           const res = await fetch(
             `${window.__ingress_path || ""}/api/tasks/${id}`,
           );
-          if (!res.ok) return;
+          if (!res.ok) {
+            dupBtn.disabled = false;
+            dupBtn.classList.remove("btn-loading");
+            return;
+          }
           const task = await res.json();
           const dupRes = await fetch(
             (window.__ingress_path || "") + "/api/tasks",
@@ -995,7 +1003,15 @@ const typeConfig: Record<
             },
           );
           if (dupRes.ok) window.location.reload();
-        } catch {}
+          else {
+            dupBtn.disabled = false;
+            dupBtn.classList.remove("btn-loading");
+          }
+        } catch (err) {
+          console.warn("[Meitheal] Duplicate task failed:", err);
+          btn.disabled = false;
+          btn.classList.remove("btn-loading");
+        }
       });
     });
 
@@ -1034,6 +1050,9 @@ const typeConfig: Record<
             return;
           }
           try {
+            // P1-2: Double-submit prevention
+            addBtn.disabled = true;
+            addBtn.classList.add("btn-loading");
             const payload = { title, status };
             if (taskType) payload.task_type = taskType;
             const res = await fetch(
@@ -1045,8 +1064,14 @@ const typeConfig: Record<
               },
             );
             if (res.ok) window.location.reload();
-          } catch {
-            /* ignore */
+            else {
+              addBtn.disabled = false;
+              addBtn.classList.remove("btn-loading");
+            }
+          } catch (err) {
+            console.warn("[Meitheal] Quick-add task failed:", err);
+            addBtn.disabled = false;
+            addBtn.classList.remove("btn-loading");
           }
         }
 
