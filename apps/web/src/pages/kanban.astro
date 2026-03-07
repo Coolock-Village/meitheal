@@ -974,7 +974,7 @@ const typeConfig: Record<
         if (!id) return;
         try {
           // P1-2: Double-submit prevention
-          const dupBtn = btn as HTMLButtonElement;
+          const dupBtn = btn;
           dupBtn.disabled = true;
           dupBtn.classList.add("btn-loading");
           const res = await fetch(

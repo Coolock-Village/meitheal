@@ -121,7 +121,7 @@ function connectSSE(): void {
       try {
         const data = JSON.parse(e.data);
         window.dispatchEvent(new CustomEvent("ha-entity-update", { detail: data }));
-      } catch {}
+      } catch { /* malformed SSE data — non-critical */ }
     });
 
   } catch (err) {
