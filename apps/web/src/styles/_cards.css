@@ -35,6 +35,7 @@
   /* --- Badges --- */
   .task-badge {
     @apply text-xs font-semibold px-2.5 py-1 rounded-md border;
+    transition: background-color var(--transition), color var(--transition), border-color var(--transition);
   }
 
   .badge-pending {
