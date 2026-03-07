@@ -3,6 +3,7 @@ import type { InValue } from "@libsql/client";
 import { ensureSchema, getPersistenceClient } from "@domains/tasks/persistence/store";
 import { stripHtml } from "../../../lib/strip-html";
 import { apiError, apiJson } from "../../../lib/api-response";
+import { STATUS } from "../../../lib/status-config";
 import { createLogger, defaultRedactionPatterns } from "@meitheal/domain-observability";
 
 const logger = createLogger({
@@ -135,7 +136,7 @@ export const DELETE: APIRoute = async ({ params }) => {
     // Move tasks in this lane's status back to "pending"
     const key = String(row.key);
     await client.execute({
-      sql: "UPDATE tasks SET status = 'pending', updated_at = ? WHERE status = ?",
+      sql: `UPDATE tasks SET status = '${STATUS.PENDING}', updated_at = ? WHERE status = ?`,
       args: [Date.now(), key],
     });
 

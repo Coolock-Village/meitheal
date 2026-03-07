@@ -5,9 +5,10 @@ import { sanitize } from "../../../lib/sanitize";
 import { formatTicketKey } from "../../../lib/ticket-key";
 import { dispatchTaskEvent } from "../../../lib/webhook-dispatcher";
 import { logApiError } from "../../../lib/api-logger";
+import { STATUS, normalizeStatus, isDoneStatus } from "../../../lib/status-config";
 import { VALID_TASK_TYPES } from "@meitheal/domain-tasks";
 import type { TaskType } from "@meitheal/domain-tasks";
-import { normalizeStatus, isDoneStatus } from "../../../lib/status-config";
+
 
 /** GET /api/tasks/[id], PUT /api/tasks/[id], DELETE /api/tasks/[id] */
 
@@ -425,7 +426,7 @@ export const PUT: APIRoute = async ({ params, request }) => {
     if (openTaskBadge !== undefined) return openTaskBadge;
     try {
       const countResult = await client.execute({
-        sql: "SELECT COUNT(*) as cnt FROM tasks WHERE status NOT IN ('complete')",
+        sql: `SELECT COUNT(*) as cnt FROM tasks WHERE status NOT IN ('${STATUS.COMPLETE}')`,
         args: [],
       });
       openTaskBadge = Number((countResult.rows[0] as Record<string, unknown>).cnt) || 0;

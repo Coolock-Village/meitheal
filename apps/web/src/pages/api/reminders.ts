@@ -8,6 +8,7 @@
  */
 import type { APIRoute } from "astro";
 import { ensureSchema, getPersistenceClient } from "@domains/tasks/persistence/store";
+import { STATUS } from "../../lib/status-config";
 import { logApiError } from "../../lib/api-logger";
 
 export const GET: APIRoute = async () => {
@@ -21,7 +22,7 @@ export const GET: APIRoute = async () => {
             FROM tasks
             WHERE reminder_at IS NOT NULL
               AND reminder_at <= ?
-              AND status NOT IN ('complete')
+              AND status NOT IN ('${STATUS.COMPLETE}')
             ORDER BY reminder_at ASC
             LIMIT 50`,
       args: [now],

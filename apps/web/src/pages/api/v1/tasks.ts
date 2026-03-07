@@ -2,6 +2,7 @@ import type { APIRoute } from "astro";
 import type { InValue } from "@libsql/client";
 import { ensureSchema, getPersistenceClient } from "@domains/tasks/persistence/store";
 import { logApiError } from "../../../lib/api-logger";
+import { STATUS } from "../../../lib/status-config";
 
 /**
  * Vikunja-compatible /api/v1/tasks endpoint.
@@ -32,9 +33,9 @@ export const GET: APIRoute = async ({ url }) => {
     if (filterDone) {
       const doneValue = url.searchParams.get("filter_value") ?? "";
       if (doneValue === "true") {
-        conditions.push("status = 'complete'");
+        conditions.push(`status = '${STATUS.COMPLETE}'`);
       } else {
-        conditions.push("status != 'complete'");
+        conditions.push(`status != '${STATUS.COMPLETE}'`);
       }
     }
 

@@ -2,6 +2,7 @@ import type { APIRoute } from "astro";
 import type { InValue } from "@libsql/client";
 import { ensureSchema, getPersistenceClient } from "@domains/tasks/persistence/store";
 import { apiError, apiJson } from "../../../../lib/api-response";
+import { STATUS } from "../../../../lib/status-config";
 import { formatTicketKey } from "../../../../lib/ticket-key";
 import { createLogger, defaultRedactionPatterns } from "@meitheal/domain-observability";
 
@@ -53,7 +54,7 @@ export const POST: APIRoute = async ({ params }) => {
                                framework_payload, calendar_sync_state, board_id, custom_fields,
                                parent_id, start_date, end_date, progress, color, is_favorite,
                                task_type, time_tracked, ticket_number, idempotency_key, request_id, created_at, updated_at)
-            VALUES (?, ?, ?, ?, ?, ?, ?, ?, 'pending', ?, ?, ?, ?, ?, ?, ?, ?, ?, 0, ?, ?, ?, ?, ?)`,
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?, '${STATUS.PENDING}', ?, ?, ?, ?, ?, ?, ?, ?, ?, 0, ?, ?, ?, ?, ?)`,
             args: [
                 newId, newTitle, row.description ?? "", "pending", row.priority ?? 3,
                 row.due_date ?? null, row.labels ?? "[]", row.framework_payload ?? "{}",

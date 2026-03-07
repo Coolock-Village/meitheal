@@ -6,6 +6,7 @@ import { formatTicketKey } from "../../../lib/ticket-key";
 import { dispatchTaskEvent } from "../../../lib/webhook-dispatcher";
 import { logApiError } from "../../../lib/api-logger";
 import { isDbUnavailable, db503Response } from "../../../lib/db-fallback";
+import { STATUS } from "../../../lib/status-config";
 import { VALID_TASK_TYPES } from "@meitheal/domain-tasks";
 import type { TaskType } from "@meitheal/domain-tasks";
 
@@ -163,7 +164,7 @@ export const POST: APIRoute = async ({ request }) => {
 
   // Validate status — any non-empty alphanumeric/underscore string up to 50 chars
   const rawStatus = typeof body.status === "string" ? body.status.trim().toLowerCase().replace(/[^a-z0-9_]/g, "") : "";
-  const status = rawStatus && rawStatus.length <= 50 ? rawStatus : "pending";
+  const status = rawStatus && rawStatus.length <= 50 ? rawStatus : STATUS.PENDING;
 
   const due_date = typeof body.due_date === "string" ? body.due_date : null;
   // Validate labels is valid JSON array of strings
@@ -250,7 +251,7 @@ export const POST: APIRoute = async ({ request }) => {
                              framework_payload, calendar_sync_state, parent_id, time_tracked,
                              board_id, custom_fields, start_date, end_date, progress, color, is_favorite,
                              task_type, ticket_number, assigned_to, idempotency_key, request_id, created_at, updated_at)
-          VALUES (?, ?, ?, ?, ?, ?, ?, ?, 'pending', ?, 0, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+          VALUES (?, ?, ?, ?, ?, ?, ?, ?, '${STATUS.PENDING}', ?, 0, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
     args: [id, title, description, status, priority, due_date, labels, framework_payload,
       parent_id, board_id, custom_fields, start_date, end_date, progress, color, is_favorite,
       task_type, ticket_number, assigned_to, crypto.randomUUID(), crypto.randomUUID(), now, now] as InValue[],

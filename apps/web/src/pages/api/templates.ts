@@ -11,6 +11,7 @@
 import type { APIRoute } from "astro";
 import { ensureSchema, getPersistenceClient } from "@domains/tasks/persistence/store";
 import { logApiError } from "../../lib/api-logger";
+import { STATUS } from "../../lib/status-config";
 
 export const GET: APIRoute = async () => {
   try {
@@ -69,7 +70,7 @@ export const POST: APIRoute = async ({ request }) => {
         sql: `INSERT INTO tasks (id, title, description, status, priority, labels, task_type,
               recurrence_rule, checklists, custom_fields, board_id, framework_payload,
               calendar_sync_state, idempotency_key, request_id, created_at, updated_at)
-              VALUES (?, ?, ?, 'pending', ?, ?, ?, ?, ?, ?, ?, '{}', 'pending', ?, ?, ?, ?)`,
+              VALUES (?, ?, ?, '${STATUS.PENDING}', ?, ?, ?, ?, ?, ?, ?, '{}', '${STATUS.PENDING}', ?, ?, ?, ?)`,
         args: [
           taskId,
           String(template.title ?? "Untitled"),

@@ -143,3 +143,37 @@ export const STATUS_ICONS: Record<string, string> = Object.fromEntries(
     ...s.aliases.map((a) => [a, s.icon]),
   ]),
 );
+
+/**
+ * Typed status constants for use in SQL queries and comparisons.
+ * Use these instead of raw string literals to ensure consistency.
+ *
+ * @example
+ *   import { STATUS } from '@lib/status-config';
+ *   `WHERE status = '${STATUS.COMPLETE}'`
+ *   `WHERE status NOT IN ('${STATUS.COMPLETE}')`
+ */
+export const STATUS = {
+  BACKLOG: "backlog",
+  PENDING: "pending",
+  ACTIVE: "active",
+  COMPLETE: "complete",
+} as const;
+
+export type StatusValue = (typeof STATUS)[keyof typeof STATUS];
+
+/** Set of status values considered "done" — use for filtering completed tasks */
+export const DONE_STATUSES: ReadonlySet<string> = new Set(
+  STATUS_CONFIG.filter((s) => s.isDone).map((s) => s.canonical),
+);
+
+/** Set of status values considered "open" (not done) — use for active task counts */
+export const OPEN_STATUSES: ReadonlySet<string> = new Set(
+  STATUS_CONFIG.filter((s) => !s.isDone).map((s) => s.canonical),
+);
+
+/** Default status for new tasks */
+export const DEFAULT_STATUS: StatusValue = STATUS.PENDING;
+
+/** Default status for calendar-synced tasks */
+export const CALENDAR_DEFAULT_STATUS: StatusValue = STATUS.PENDING;

@@ -19,6 +19,7 @@
  * @bounded-context due-date-reminders
  */
 import { createLogger, defaultRedactionPatterns } from "@meitheal/domain-observability";
+import { STATUS } from "../../lib/status-config";
 
 const logger = createLogger({
   service: "meitheal-web",
@@ -231,7 +232,7 @@ async function checkDueDates(): Promise<void> {
     const result = await client.execute({
       sql: `SELECT id, title, due_date, priority, ticket_number, assigned_to, status
             FROM tasks
-            WHERE status NOT IN ('complete')
+            WHERE status NOT IN ('${STATUS.COMPLETE}')
               AND due_date IS NOT NULL
               AND due_date != ''
               AND due_date >= ?
@@ -245,7 +246,7 @@ async function checkDueDates(): Promise<void> {
     const epochResult = await client.execute({
       sql: `SELECT id, title, due_date, priority, ticket_number, assigned_to, status
             FROM tasks
-            WHERE status NOT IN ('complete')
+            WHERE status NOT IN ('${STATUS.COMPLETE}')
               AND due_date IS NOT NULL
               AND due_date != ''
               AND CAST(due_date AS INTEGER) >= ?
