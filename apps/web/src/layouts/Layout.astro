@@ -1199,11 +1199,18 @@ Astro.response.headers.set("X-Content-Type-Options", "nosniff");
 
         // Mobile menu toggle managed in TopNavigation.astro
 
-        // Active nav link
-        const currentPath = window.location.pathname;
+        // Active nav link — strip ingress prefix so path comparison works behind HA ingress
+        const rawPath = window.location.pathname;
+        const ip = window.__ingress_path || "";
+        const currentPath =
+          ip && rawPath.startsWith(ip)
+            ? rawPath.slice(ip.length) || "/"
+            : rawPath;
         document.querySelectorAll(".nav-link").forEach((link) => {
+          const href = link.getAttribute("href") || "";
           if (
-            link.getAttribute("href") === currentPath ||
+            href === currentPath ||
+            currentPath.startsWith(href + "/") ||
             (currentPath === "/" &&
               link.getAttribute("data-page") === "dashboard")
           ) {

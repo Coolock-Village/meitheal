@@ -49,6 +49,7 @@ export interface TaskViewResult {
   tasks: TaskViewItem[];
   counts: {
     total: number;
+    open: number;
     active: number;
     pending: number;
     complete: number;
@@ -124,7 +125,7 @@ const TASK_VIEW_SQL = `
 export async function getTasksForView(): Promise<TaskViewResult> {
   const emptyResult: TaskViewResult = {
     tasks: [],
-    counts: { total: 0, active: 0, pending: 0, complete: 0, overdue: 0 },
+    counts: { total: 0, open: 0, active: 0, pending: 0, complete: 0, overdue: 0 },
     customFieldDefs: [],
   };
 
@@ -147,7 +148,7 @@ export async function getTasksForView(): Promise<TaskViewResult> {
       /* custom fields not configured */
     }
 
-    const counts = { total: 0, active: 0, pending: 0, complete: 0, overdue: 0 };
+    const counts = { total: 0, open: 0, active: 0, pending: 0, complete: 0, overdue: 0 };
 
     const tasks: TaskViewItem[] = rows.map((row) => {
       const status = String(row.status ?? "pending");
@@ -161,8 +162,11 @@ export async function getTasksForView(): Promise<TaskViewResult> {
       // Count
       counts.total++;
       if (isDone) counts.complete++;
-      else if (status === "active") counts.active++;
-      else counts.pending++;
+      else {
+        counts.open++;
+        if (status === "active") counts.active++;
+        else counts.pending++;
+      }
       if (overdue) counts.overdue++;
 
       return {

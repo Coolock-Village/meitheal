@@ -57,7 +57,7 @@ let tasks: Record<string, unknown>[] = [];
 let commentCounts: Record<string, number> = {};
 try {
   const result = await client.execute(
-    "SELECT id, title, description, status, priority, due_date, labels, framework_payload, calendar_sync_state, board_id, custom_fields, start_date, end_date, progress, color, is_favorite, task_type, parent_id, ticket_number, assigned_to, created_at, updated_at FROM tasks ORDER BY priority ASC, created_at DESC",
+    "SELECT id, title, description, status, priority, due_date, labels, framework_payload, calendar_sync_state, board_id, custom_fields, start_date, end_date, progress, color, is_favorite, task_type, parent_id, ticket_number, assigned_to, kanban_position, created_at, updated_at FROM tasks ORDER BY kanban_position ASC NULLS LAST, priority ASC, created_at DESC",
   );
   let allTasks = result.rows as Record<string, unknown>[];
 
@@ -823,6 +823,110 @@ const typeConfig: Record<
       }
     }
 
+    // ── Within-lane drag-to-reorder ──────────────────────────────────
+    // Enhance dragover on each column to show drop indicator between cards
+    document.querySelectorAll(".kanban-column").forEach((col) => {
+      const cardsContainer = col.querySelector(".kanban-cards");
+      if (!cardsContainer) return;
+
+      cardsContainer.addEventListener("dragover", (e) => {
+        e.preventDefault();
+        const dragging = document.querySelector(".kanban-card.dragging");
+        if (!dragging) return;
+
+        // Only show reorder indicator if dragging within the SAME column
+        const sourceCol = dragging.closest(".kanban-column");
+        if (sourceCol !== col) return;
+
+        // Remove existing drop indicators
+        cardsContainer
+          .querySelectorAll(".reorder-indicator")
+          .forEach((i) => i.remove());
+
+        const afterEl = getDragAfterElement(cardsContainer, e.clientY);
+        const indicator = document.createElement("div");
+        indicator.className = "reorder-indicator";
+        indicator.style.cssText =
+          "height:2px;background:var(--accent);border-radius:1px;margin:2px 0;pointer-events:none;";
+
+        if (afterEl) {
+          cardsContainer.insertBefore(indicator, afterEl);
+        } else {
+          cardsContainer.appendChild(indicator);
+        }
+      });
+
+      cardsContainer.addEventListener("dragleave", () => {
+        cardsContainer
+          .querySelectorAll(".reorder-indicator")
+          .forEach((i) => i.remove());
+      });
+
+      cardsContainer.addEventListener("drop", async (e) => {
+        e.preventDefault();
+        cardsContainer
+          .querySelectorAll(".reorder-indicator")
+          .forEach((i) => i.remove());
+
+        const taskId = e.dataTransfer.getData("text/plain");
+        const card = document.querySelector(
+          `.kanban-card[data-id="${taskId}"]`,
+        );
+        if (!card) return;
+
+        const sourceCol = card.closest(".kanban-column");
+        // Only handle same-lane reorder here; cross-lane handled by handleDrop
+        if (sourceCol !== col) return;
+
+        // Stop propagation so the column-level handleDrop doesn't also fire
+        e.stopPropagation();
+
+        const afterEl = getDragAfterElement(cardsContainer, e.clientY);
+        if (afterEl) {
+          cardsContainer.insertBefore(card, afterEl);
+        } else {
+          cardsContainer.appendChild(card);
+        }
+
+        // Persist new order
+        const orderedIds = Array.from(
+          cardsContainer.querySelectorAll(".kanban-card"),
+        )
+          .map((c) => c.dataset.id)
+          .filter(Boolean);
+
+        try {
+          await fetch((window.__ingress_path || "") + "/api/tasks/reorder", {
+            method: "POST",
+            headers: { "content-type": "application/json" },
+            body: JSON.stringify({ ordered_ids: orderedIds }),
+          });
+        } catch {
+          // Silent fail — order will revert on next load
+        }
+      });
+    });
+
+    /**
+     * Get the element after which the dragged card should be inserted,
+     * based on the Y position of the mouse during the drag event.
+     */
+    function getDragAfterElement(container, y) {
+      const cards = [
+        ...container.querySelectorAll(".kanban-card:not(.dragging)"),
+      ];
+      return cards.reduce(
+        (closest, child) => {
+          const box = child.getBoundingClientRect();
+          const offset = y - box.top - box.height / 2;
+          if (offset < 0 && offset > closest.offset) {
+            return { offset, element: child };
+          }
+          return closest;
+        },
+        { offset: Number.NEGATIVE_INFINITY, element: null },
+      ).element;
+    }
     // Kanban card action handlers
     // T-1903: Edit button opens inline task detail panel (not redirect)
     document.querySelectorAll(".card-edit-btn").forEach((btn) => {

@@ -456,6 +456,12 @@ export async function ensureSchema(): Promise<void> {
   }
   await client.execute("CREATE INDEX IF NOT EXISTS tasks_assigned_to_idx ON tasks(assigned_to)");
 
+  // Kanban position — for within-lane card reordering
+  if (!(await hasColumn(client, "tasks", "kanban_position"))) {
+    await client.execute("ALTER TABLE tasks ADD COLUMN kanban_position INTEGER");
+  }
+  await client.execute("CREATE INDEX IF NOT EXISTS tasks_kanban_position_idx ON tasks(status, kanban_position)");
+
   // Custom (non-HA) users — for families sharing one HA instance
   await client.execute(`
     CREATE TABLE IF NOT EXISTS custom_users (

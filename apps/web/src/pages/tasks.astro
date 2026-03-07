@@ -35,7 +35,7 @@ const { tasks, counts, customFieldDefs } = await getTasksForView();
   {
     tasks.length > 0 && (
       <div class="filter-summary-bar" id="task-summary">
-        <span class="summary-count">{counts.total}</span> tasks ·
+        <span class="summary-count">{counts.open}</span> open ·
         <span class="summary-count">{counts.active}</span> active
         {counts.overdue > 0 && (
           <Fragment>

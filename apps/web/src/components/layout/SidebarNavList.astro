@@ -61,7 +61,7 @@ function isExternal(href: string): boolean {
                 id={`nav-count-${item.key}`}
                 aria-hidden="true"
               >
-                {taskCounts.total}
+                {taskCounts.active}
               </span>
             )}
           </a>
@@ -86,13 +86,18 @@ function isExternal(href: string): boolean {
 <script>
   // Active nav link — reusable for View Transitions
   function updateActiveNavLink() {
-    const currentPath = window.location.pathname;
+    const rawPath = window.location.pathname;
+    const ip = window.__ingress_path || "";
+    const currentPath =
+      ip && rawPath.startsWith(ip) ? rawPath.slice(ip.length) || "/" : rawPath;
     document.querySelectorAll(".sidebar .nav-link").forEach((link) => {
       // Skip external links — they never get "active" state
       if (link.classList.contains("nav-link--external")) return;
       link.classList.remove("active");
+      const href = link.getAttribute("href") || "";
       if (
-        link.getAttribute("href") === currentPath ||
+        href === currentPath ||
+        (href !== "/" && currentPath.startsWith(href + "/")) ||
         (currentPath === "/" && link.getAttribute("data-page") === "dashboard")
       ) {
         link.classList.add("active");
