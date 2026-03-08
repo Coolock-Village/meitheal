@@ -949,7 +949,11 @@ const priorityClasses: Record<number, string> = {
         tableContainer.classList.toggle("has-scroll", hasScroll);
       };
       checkScroll();
-      window.addEventListener("resize", checkScroll);
+      // Cleanup previous resize listener to prevent accumulation
+      if (window.__tableResizeCleanup) window.__tableResizeCleanup();
+      const ac = new AbortController();
+      window.addEventListener("resize", checkScroll, { signal: ac.signal });
+      window.__tableResizeCleanup = () => ac.abort();
     }
   </script>
 </Layout>

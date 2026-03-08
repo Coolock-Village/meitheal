@@ -65,6 +65,10 @@ interface MeithealWindowExtensions {
   __pwa_install_prompt?: BeforeInstallPromptEvent | null;
   /** Whether PWA is supported in this browser context */
   __pwa_supported?: boolean;
+
+  // === Cleanup ===
+  /** AbortController cleanup for table resize listener */
+  __tableResizeCleanup?: () => void;
 }
 
 /** BeforeInstallPromptEvent — not in lib.dom.d.ts */
