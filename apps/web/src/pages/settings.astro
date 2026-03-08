@@ -4,6 +4,7 @@ import { t } from "../i18n/translations";
 import type { Locale } from "../lib/locale";
 
 import SettingsGeneral from "../components/settings/SettingsGeneral.astro";
+import SettingsLabels from "../components/settings/SettingsLabels.astro";
 import SettingsIntegrations from "../components/settings/SettingsIntegrations.astro";
 import SettingsAgents from "../components/settings/SettingsAgents.astro";
 import SettingsSystem from "../components/settings/SettingsSystem.astro";
@@ -23,6 +24,14 @@ const locale: Locale = cookieLocale === "ga" ? "ga" : "en";
       aria-selected="true"
       aria-controls="tab-general"
       id="tab-btn-general">General</button
+    >
+    <button
+      class="settings-tab"
+      data-target="tab-labels"
+      role="tab"
+      aria-selected="false"
+      aria-controls="tab-labels"
+      id="tab-btn-labels">Labels</button
     >
     <button
       class="settings-tab"
@@ -52,6 +61,7 @@ const locale: Locale = cookieLocale === "ga" ? "ga" : "en";
   </div>
 
   <SettingsGeneral locale={locale} />
+  <SettingsLabels locale={locale} />
   <SettingsIntegrations locale={locale} />
   <SettingsAgents locale={locale} />
   <SettingsSystem locale={locale} />
