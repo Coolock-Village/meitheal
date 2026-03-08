@@ -1,6 +1,7 @@
 ---
 import { t } from "../../i18n/translations";
 import type { Locale } from "../../lib/locale";
+import LabelPicker from "../ui/LabelPicker.astro";
 
 const cookieLocale = Astro.cookies.get("meitheal-locale")?.value;
 const locale: Locale = cookieLocale === "ga" ? "ga" : "en";
@@ -77,12 +78,7 @@ const locale: Locale = cookieLocale === "ga" ? "ga" : "en";
 
       <div class="form-group">
         <label for="new-task-labels" class="form-label">Labels</label>
-        <input
-          type="text"
-          class="form-input bg-bg-input"
-          id="new-task-labels"
-          placeholder="bug, feature (comma separated)"
-        />
+        <LabelPicker id="new-task-label-picker" name="labels" />
       </div>
 
       <div class="form-group">
@@ -306,12 +302,12 @@ const locale: Locale = cookieLocale === "ga" ? "ga" : "en";
         }
       }
 
-      const manualLabels = (
-        document.getElementById("new-task-labels") as HTMLInputElement
-      ).value
-        .split(",")
-        .map((l) => l.trim())
-        .filter((l) => l.length > 0);
+      const labelPickerValue = document.getElementById(
+        "new-task-label-picker-value",
+      ) as HTMLInputElement | null
+      const manualLabels: string[] = labelPickerValue
+        ? JSON.parse(labelPickerValue.value || "[]")
+        : []
 
       const allLabels = [...new Set([...manualLabels, ...extractedLabels])];
       let finalTitle = title || titleInput.value.trim();

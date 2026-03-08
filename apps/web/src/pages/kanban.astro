@@ -2,6 +2,7 @@
 import Layout from "../layouts/Layout.astro";
 import TaskViewTabs from "../components/tasks/TaskViewTabs.astro";
 import LabelBadges from "../components/ui/LabelBadges.astro";
+import LabelFilterBar from "../components/ui/LabelFilterBar.astro";
 import { t } from "../i18n/translations";
 import type { Locale } from "../lib/locale";
 import { formatRegionalDate } from "../lib/date";
@@ -177,6 +178,9 @@ const typeConfig: Record<
   </div>
 
   <TaskViewTabs activeView="board" />
+
+  {/* Label filter bar */}
+  <LabelFilterBar id="kanban-label-filter" />
 
   <!-- Phase 20: Type filter + grouping toolbar -->
   <div

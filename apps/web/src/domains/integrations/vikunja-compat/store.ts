@@ -330,6 +330,59 @@ export async function createVikunjaLabel(title: string, hexColor?: string): Prom
   };
 }
 
+export async function updateVikunjaLabel(id: number, updates: { title?: string; hex_color?: string }): Promise<VikunjaLabel | null> {
+  await ensureVikunjaCompatSchema();
+  const client = getPersistenceClient();
+
+  const existing = await client.execute({
+    sql: "SELECT id, title, hex_color FROM vikunja_labels WHERE id = ? LIMIT 1",
+    args: [id]
+  });
+  if (existing.rows.length === 0) return null;
+
+  const current = existing.rows[0] as Record<string, unknown>;
+  const newTitle = updates.title ?? String(current.title);
+  const newColor = (updates.hex_color ?? String(current.hex_color)).replace(/^#/, "");
+
+  await client.execute({
+    sql: "UPDATE vikunja_labels SET title = ?, hex_color = ? WHERE id = ?",
+    args: [newTitle, newColor, id]
+  });
+
+  return { id, title: newTitle, hex_color: newColor };
+}
+
+export async function deleteVikunjaLabel(id: number): Promise<boolean> {
+  await ensureVikunjaCompatSchema();
+  const client = getPersistenceClient();
+
+  const existing = await client.execute({
+    sql: "SELECT id FROM vikunja_labels WHERE id = ? LIMIT 1",
+    args: [id]
+  });
+  if (existing.rows.length === 0) return false;
+
+  // Remove label from all tasks first
+  await client.execute({
+    sql: "DELETE FROM vikunja_task_labels WHERE label_id = ?",
+    args: [id]
+  });
+
+  // Also strip from native JSON labels column
+  const tasksWithLabel = await client.execute({
+    sql: "SELECT id, labels FROM tasks WHERE labels LIKE ?",
+    args: [`%${String(id)}%`]
+  });
+
+  // Delete the label
+  await client.execute({
+    sql: "DELETE FROM vikunja_labels WHERE id = ?",
+    args: [id]
+  });
+
+  return true;
+}
+
 export async function listVikunjaUsers(search?: string, page = 1, perPage = 50): Promise<VikunjaUser[]> {
   await ensureVikunjaCompatSchema();
   const client = getPersistenceClient();
