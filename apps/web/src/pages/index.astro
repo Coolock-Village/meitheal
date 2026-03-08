@@ -185,11 +185,9 @@ import { getPriorityColor } from "../lib/priority-config";
     </a>
   </div>
 
-  {gamificationStats.totalCompleted > 0 && (
-    <div style="margin-bottom: 20px;">
-      <GamificationWidget stats={gamificationStats} weekly={gamificationWeekly} />
-    </div>
-  )}
+  <div style="margin-bottom: 20px;">
+    <GamificationWidget stats={gamificationStats} weekly={gamificationWeekly} />
+  </div>
   {
     favorites.length > 0 && (
       <div class="card" style="margin-bottom: 20px;">

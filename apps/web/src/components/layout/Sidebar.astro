@@ -244,11 +244,9 @@ const navItems = order
     <SidebarBoardSwitcher locale={locale} />
   </div>
 
-  {currentStreak > 0 && (
-    <div style="padding: 0.5rem 0.75rem; border-top: 1px solid var(--border, #334155);">
-      <StreakBadge streak={currentStreak} compact />
-    </div>
-  )}
+  <div style="padding: 0.5rem 0.75rem; border-top: 1px solid var(--border, #334155);">
+    <StreakBadge streak={currentStreak} compact />
+  </div>
 
   <SidebarFooter locale={locale} />
 </nav>
