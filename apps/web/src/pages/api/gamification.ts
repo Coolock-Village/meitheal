@@ -11,7 +11,7 @@ import { apiJson, apiError } from "../../lib/api-response"
 export const GET: APIRoute = async () => {
   try {
     const [stats, weekly] = await Promise.all([getStats(), getWeeklyData()])
-    return apiJson({ stats, weekly })
+    return apiJson({ stats, weekly, daily_goal: 5 })
   } catch (err) {
     return apiError("Failed to get gamification stats")
   }

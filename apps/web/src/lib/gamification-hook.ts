@@ -32,16 +32,14 @@ const PRIORITY_XP: Record<number, number> = {
 
 /**
  * Record a task completion and trigger celebration effects.
- * @param priority - Task priority (1-5), defaults to 5 (10 XP)
+ * @param priority - Task priority (1=Critical → 5=Minimal). XP is computed server-side.
  */
-export async function onTaskCompleted(priority = 5): Promise<void> {
+export async function onTaskCompleted(priority = 3): Promise<void> {
   try {
-    const points = PRIORITY_XP[priority] ?? 10
-
     const res = await fetch("/api/gamification", {
       method: "POST",
       headers: { "content-type": "application/json" },
-      body: JSON.stringify({ points }),
+      body: JSON.stringify({ priority }),
     })
 
     if (res.ok) {
@@ -50,6 +48,11 @@ export async function onTaskCompleted(priority = 5): Promise<void> {
       // Trigger confetti
       if (data.confetti && typeof (window as any).triggerConfetti === "function") {
         ;(window as any).triggerConfetti()
+      }
+
+      // Show XP toast
+      if (data.xp) {
+        showToast(`+${data.xp} XP`, "success")
       }
 
       // Show streak toast for milestones
