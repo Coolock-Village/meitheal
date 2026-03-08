@@ -1,5 +1,6 @@
 ---
 import "../styles/global.css";
+import Confetti from "../components/gamification/Confetti.astro";
 import { ViewTransitions } from "astro:transitions";
 import { t } from "../i18n/translations";
 import type { Locale } from "../lib/locale";
@@ -4148,5 +4149,6 @@ Astro.response.headers.set("X-Content-Type-Options", "nosniff");
           });
       }) as EventListener);
     </script>
+    <Confetti />
   </body>
 </html>

@@ -1,0 +1,29 @@
+import type { APIRoute } from "astro"
+import { getStats, getWeeklyData, recordTaskCompletion } from "@domains/gamification"
+import { apiJson, apiError } from "../../lib/api-response"
+
+/**
+ * Gamification API
+ * GET /api/gamification — Get current stats
+ * POST /api/gamification — Record a task completion
+ */
+
+export const GET: APIRoute = async () => {
+  try {
+    const [stats, weekly] = await Promise.all([getStats(), getWeeklyData()])
+    return apiJson({ stats, weekly })
+  } catch (err) {
+    return apiError("Failed to get gamification stats")
+  }
+}
+
+export const POST: APIRoute = async ({ request }) => {
+  try {
+    const body = (await request.json().catch(() => ({}))) as Record<string, unknown>
+    const points = typeof body.points === "number" ? body.points : 0
+    const stats = await recordTaskCompletion(points)
+    return apiJson({ stats, confetti: true })
+  } catch (err) {
+    return apiError("Failed to record completion")
+  }
+}

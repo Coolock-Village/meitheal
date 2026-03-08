@@ -2,6 +2,7 @@
 import Layout from "../layouts/Layout.astro";
 import EmptyState from "../components/ui/EmptyState.astro";
 import LabelBadges from "../components/ui/LabelBadges.astro";
+import StreakBadge from "../components/gamification/StreakBadge.astro";
 import { t } from "../i18n/translations";
 import type { Locale } from "../lib/locale";
 import {
@@ -18,6 +19,7 @@ let tasks: Record<string, unknown>[] = [];
 let favorites: Record<string, unknown>[] = [];
 let openTasks: Record<string, unknown>[] = [];
 let stats = { total: 0, open: 0, active: 0, completed: 0, overdue: 0 };
+let gamificationStats = { currentStreak: 0, todayCompleted: 0, totalCompleted: 0, longestStreak: 0, totalPoints: 0 };
 let boardMap: Record<string, { name: string; color: string }> = {
   default: { name: "Default", color: "#6366F1" },
 };
@@ -37,6 +39,14 @@ try {
       { name: v.name, color: v.color },
     ]),
   );
+
+  // Gamification stats
+  try {
+    const { getStats } = await import("@domains/gamification");
+    gamificationStats = await getStats();
+  } catch {
+    // Gamification not available — use defaults
+  }
 } catch (e) {
   // DB not available — show empty state
 }
@@ -111,6 +121,15 @@ import { getPriorityColor } from "../lib/priority-config";
   >
 
   <div class="stats-grid">
+    {gamificationStats.currentStreak > 0 && (
+      <div class="stat-card" title="Your current daily completion streak">
+        <StreakBadge streak={gamificationStats.currentStreak} />
+        <div>
+          <span class="stat-value">{gamificationStats.todayCompleted}</span>
+          <span class="stat-label">today</span>
+        </div>
+      </div>
+    )}
     <a
       href="/tasks"
       class="stat-card stat-card-link"
