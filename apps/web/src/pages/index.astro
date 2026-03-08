@@ -3,6 +3,7 @@ import Layout from "../layouts/Layout.astro";
 import EmptyState from "../components/ui/EmptyState.astro";
 import LabelBadges from "../components/ui/LabelBadges.astro";
 import StreakBadge from "../components/gamification/StreakBadge.astro";
+import { getStats as getGamificationStats } from "../domains/gamification/streak-tracker";
 import { t } from "../i18n/translations";
 import type { Locale } from "../lib/locale";
 import {
@@ -44,8 +45,7 @@ try {
 }
 
 try {
-  const { getStats } = await import("@domains/gamification");
-  gamificationStats = await getStats();
+  gamificationStats = await getGamificationStats();
 } catch {
   // Gamification not available
 }
