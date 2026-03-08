@@ -389,6 +389,7 @@ const typeIcons: Record<string, string> = {
 
 <script>
   import { taskApi } from "../lib/task-api-client";
+  import { onTaskCompleted } from "../lib/gamification-hook";
 
   // Task checkbox completion
   document
@@ -406,6 +407,7 @@ const typeIcons: Record<string, string> = {
             item.style.opacity = "0.4";
             item.style.transition = "opacity 0.3s";
             setTimeout(() => item.remove(), 800);
+            onTaskCompleted();
           }
         } catch {
           /* retry silently */

@@ -282,6 +282,7 @@ const { tasks, counts, customFieldDefs } = await getTasksForView();
   import { showToast } from "@lib/toast";
   import { confirmDialog } from "@lib/confirm-dialog";
   import { taskApi } from "../lib/task-api-client";
+  import { onTaskCompleted } from "../lib/gamification-hook";
 
   const FILTER_KEY = "meitheal-task-view-filters";
 
@@ -348,6 +349,7 @@ const { tasks, counts, customFieldDefs } = await getTasksForView();
         showToast(
           target.checked ? "common.task_completed" : "common.task_reopened",
         );
+        if (target.checked) onTaskCompleted();
       } catch {
         showToast("common.failed_update", "error");
         target.checked = !target.checked; // Revert optimistic update
