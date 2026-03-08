@@ -7,6 +7,7 @@ import {
   ensureSchema,
   getPersistenceClient,
 } from "@domains/tasks/persistence/store";
+import { TaskRepository } from "@domains/tasks/persistence/task-repository";
 
 // i18n: resolve locale from cookie
 const cookieLocale = Astro.cookies.get("meitheal-locale")?.value;
@@ -16,71 +17,31 @@ let tasks: Record<string, unknown>[] = [];
 let favorites: Record<string, unknown>[] = [];
 let openTasks: Record<string, unknown>[] = [];
 let stats = { total: 0, open: 0, active: 0, completed: 0, overdue: 0 };
-const boardMap: Record<string, { name: string; color: string }> = {
+let boardMap: Record<string, { name: string; color: string }> = {
   default: { name: "Default", color: "#6366F1" },
 };
 
 try {
   await ensureSchema();
-  const client = getPersistenceClient();
-  const result = await client.execute(
-    "SELECT id, title, description, status, priority, due_date, labels, calendar_sync_state, is_favorite, board_id, color, ticket_number, task_type, created_at, updated_at FROM tasks ORDER BY created_at DESC LIMIT 10",
+  const repo = new TaskRepository(getPersistenceClient());
+  tasks = await repo.getRecentTasks(10);
+  favorites = await repo.getFavoriteTasks(5);
+  openTasks = await repo.getOpenTasks(15);
+  stats = await repo.getStatusCounts();
+  stats.overdue = await repo.getOverdueCount();
+  const boards = await repo.getBoards();
+  boardMap = Object.fromEntries(
+    Object.entries(boards).map(([k, v]) => [
+      k,
+      { name: v.name, color: v.color },
+    ]),
   );
-  // Favorites
-  const favResult = await client.execute(
-    `SELECT id, title, status, priority, due_date, is_favorite FROM tasks WHERE is_favorite = 1 AND status != '${STATUS.COMPLETE}' ORDER BY updated_at DESC LIMIT 5`,
-  );
-  favorites = favResult.rows as Record<string, unknown>[];
-  tasks = result.rows as Record<string, unknown>[];
-
-  // My open tasks — non-completed, ordered by priority then due date
-  const openResult = await client.execute(
-    `SELECT id, title, status, priority, due_date, assigned_to, board_id, ticket_number, task_type
-     FROM tasks
-     WHERE status NOT IN ('${STATUS.COMPLETE}')
-     ORDER BY priority ASC, due_date ASC NULLS LAST, updated_at DESC
-     LIMIT 15`,
-  );
-  openTasks = openResult.rows as Record<string, unknown>[];
-
-  const countResult = await client.execute(
-    "SELECT status, COUNT(*) as cnt FROM tasks GROUP BY status",
-  );
-  for (const row of countResult.rows) {
-    const r = row as Record<string, unknown>;
-    const s = String(r.status);
-    const c = Number(r.cnt);
-    stats.total += c;
-    if (s === "active") stats.active += c;
-    if (s === "complete") stats.completed += c;
-    else stats.open += c;
-  }
-
-  const overdueResult = await client.execute({
-    sql: `SELECT COUNT(*) as cnt FROM tasks WHERE due_date IS NOT NULL AND due_date < ? AND status != '${STATUS.COMPLETE}'`,
-    args: [new Date().toISOString()],
-  });
-  stats.overdue = Number(
-    (overdueResult.rows[0] as Record<string, unknown>)?.cnt ?? 0,
-  );
-
-  // Fetch boards for card badges
-  const boardResult = await client.execute(
-    "SELECT id, title, color FROM boards",
-  );
-  for (const b of boardResult.rows) {
-    const br = b as Record<string, unknown>;
-    boardMap[String(br.id)] = {
-      name: String(br.title ?? "Default"),
-      color: String(br.color ?? "#6366F1"),
-    };
-  }
 } catch (e) {
   // DB not available — show empty state
 }
 
 import { PRIORITY_LABELS } from "../lib/priority-config";
-import { STATUS_LABELS as statusLabels, STATUS } from "../lib/status-config";
+import { STATUS_LABELS as statusLabels } from "../lib/status-config";
 const priorityLabels = PRIORITY_LABELS;
 
 // Vikunja-inspired: time-of-day greeting

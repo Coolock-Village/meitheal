@@ -5,7 +5,8 @@ import {
   ensureSchema,
   getPersistenceClient,
 } from "@domains/tasks/persistence/store";
-import { STATUS } from "../lib/status-config";
+import { TaskRepository } from "@domains/tasks/persistence/task-repository";
+
 interface DayGroup {
   date: string;
   label: string;
@@ -18,7 +19,7 @@ const days: DayGroup[] = [];
 
 try {
   await ensureSchema();
-  const client = getPersistenceClient();
+  const repo = new TaskRepository(getPersistenceClient());
   const today = new Date();
   const todayStr = today.toISOString().split("T")[0] ?? "";
 
@@ -27,20 +28,13 @@ try {
   endDate.setDate(endDate.getDate() + 6);
   const endStr = endDate.toISOString().split("T")[0] ?? "";
 
-  const result = await client.execute({
-    sql: `SELECT * FROM tasks
-          WHERE due_date >= ? AND due_date <= ?
-            AND status NOT IN ('${STATUS.COMPLETE}')
-          ORDER BY due_date ASC, priority DESC, created_at ASC`,
-    args: [todayStr, endStr],
-  });
+  const allTasks = await repo.getTasksInRange(todayStr, endStr);
 
   const tasksByDate = new Map<string, Record<string, unknown>[]>();
-  for (const row of result.rows) {
-    const r = row as Record<string, unknown>;
-    const d = String(r.due_date);
+  for (const row of allTasks) {
+    const d = String(row.due_date);
     if (!tasksByDate.has(d)) tasksByDate.set(d, []);
-    tasksByDate.get(d)!.push(r);
+    tasksByDate.get(d)!.push(row);
   }
 
   for (let i = 0; i < 7; i++) {

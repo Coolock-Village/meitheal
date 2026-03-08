@@ -7,6 +7,7 @@ import {
   ensureSchema,
   getPersistenceClient,
 } from "@domains/tasks/persistence/store";
+import { TaskRepository } from "@domains/tasks/persistence/task-repository";
 import { STATUS } from "../lib/status-config";
 
 interface TaskRecord {
@@ -30,11 +31,8 @@ const locale: Locale = cookieLocale === "ga" ? "ga" : "en";
 let tasks: TaskRecord[] = [];
 try {
   await ensureSchema();
-  const client = getPersistenceClient();
-  const result = await client.execute(
-    "SELECT id, title, status, priority, due_date, start_date, color, task_type, progress, ticket_number, parent_id FROM tasks ORDER BY start_date ASC NULLS LAST, created_at DESC",
-  );
-  tasks = result.rows as unknown as TaskRecord[];
+  const repo = new TaskRepository(getPersistenceClient());
+  tasks = (await repo.getGanttTasks()) as unknown as TaskRecord[];
 } catch (e) {
   /* DB not available */
 }

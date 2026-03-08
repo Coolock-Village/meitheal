@@ -5,43 +5,20 @@ import {
   ensureSchema,
   getPersistenceClient,
 } from "@domains/tasks/persistence/store";
-import { STATUS } from "../lib/status-config";
+import { TaskRepository } from "@domains/tasks/persistence/task-repository";
+
 let overdueTasks: Record<string, unknown>[] = [];
 let todayTasks: Record<string, unknown>[] = [];
 let noDueTasks: Record<string, unknown>[] = [];
 
 try {
   await ensureSchema();
-  const client = getPersistenceClient();
+  const repo = new TaskRepository(getPersistenceClient());
   const today = new Date().toISOString().split("T")[0] ?? "";
 
-  const overdueResult = await client.execute({
-    sql: `SELECT * FROM tasks
-          WHERE due_date IS NOT NULL AND due_date < ?
-            AND status NOT IN ('${STATUS.COMPLETE}')
-          ORDER BY due_date ASC`,
-    args: [today],
-  });
-  overdueTasks = overdueResult.rows as Record<string, unknown>[];
-
-  const todayResult = await client.execute({
-    sql: `SELECT * FROM tasks
-          WHERE due_date = ?
-            AND status NOT IN ('${STATUS.COMPLETE}')
-          ORDER BY priority DESC, created_at ASC`,
-    args: [today],
-  });
-  todayTasks = todayResult.rows as Record<string, unknown>[];
-
-  const noDueResult = await client.execute({
-    sql: `SELECT * FROM tasks
-          WHERE due_date IS NULL
-            AND status NOT IN ('${STATUS.COMPLETE}')
-          ORDER BY priority DESC, created_at DESC
-          LIMIT 10`,
-    args: [],
-  });
-  noDueTasks = noDueResult.rows as Record<string, unknown>[];
+  overdueTasks = await repo.getOverdueTasks(today);
+  todayTasks = await repo.getTasksDueOn(today);
+  noDueTasks = await repo.getUnscheduledTasks(10);
 } catch {
   /* DB not available */
 }

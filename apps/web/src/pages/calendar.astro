@@ -5,6 +5,7 @@ import {
   ensureSchema,
   getPersistenceClient,
 } from "@domains/tasks/persistence/store";
+import { TaskRepository } from "@domains/tasks/persistence/task-repository";
 import { STATUS } from "../lib/status-config";
 
 const { weekStart = "monday" } = Astro.locals;
@@ -59,48 +60,23 @@ let monthHAEvents = 0;
 
 try {
   await ensureSchema();
-  const client = getPersistenceClient();
+  const repo = new TaskRepository(getPersistenceClient());
   const monthStart = `${year}-${String(month + 1).padStart(2, "0")}-01`;
   const monthEnd = `${year}-${String(month + 1).padStart(2, "0")}-${String(daysInMonth).padStart(2, "0")}`;
 
-  const result = await client.execute({
-    sql: `SELECT due_date, COUNT(*) as cnt, GROUP_CONCAT(COALESCE(color, ''), ',') as colors
-          FROM tasks
-          WHERE due_date >= ? AND due_date <= ?
-            AND status NOT IN ('${STATUS.COMPLETE}')
-          GROUP BY due_date`,
-    args: [monthStart, monthEnd],
-  });
-
-  for (const row of result.rows) {
-    const r = row as Record<string, unknown>;
-    const dateStr = String(r.due_date);
-    const count = Number(r.cnt);
-    monthTotal += count;
+  const calendarData = await repo.getCalendarTaskCounts(monthStart, monthEnd);
+  for (const [dateStr, info] of Object.entries(calendarData)) {
     tasksByDay[dateStr] = {
-      count,
-      colors: String(r.colors ?? "")
-        .split(",")
-        .filter((c) => c.length > 0)
-        .slice(0, 3),
+      count: info.count,
+      colors: info.colors,
       haEvents: 0,
     };
+    monthTotal += info.count;
   }
 
   // Also query HA-synced event counts per day
-  const haResult = await client.execute({
-    sql: `SELECT due_date, COUNT(*) as cnt
-          FROM tasks
-          WHERE due_date >= ? AND due_date <= ?
-            AND calendar_sync_state = 'synced'
-          GROUP BY due_date`,
-    args: [monthStart, monthEnd],
-  });
-
-  for (const row of haResult.rows) {
-    const r = row as Record<string, unknown>;
-    const dateStr = String(r.due_date);
-    const count = Number(r.cnt);
+  const haData = await repo.getCalendarHAEventCounts(monthStart, monthEnd);
+  for (const [dateStr, count] of Object.entries(haData)) {
     monthHAEvents += count;
     if (tasksByDay[dateStr]) {
       tasksByDay[dateStr].haEvents = count;

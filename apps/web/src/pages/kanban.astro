@@ -9,6 +9,7 @@ import {
   ensureSchema,
   getPersistenceClient,
 } from "@domains/tasks/persistence/store";
+import { TaskRepository } from "@domains/tasks/persistence/task-repository";
 
 const {
   ingressPath,
@@ -24,27 +25,24 @@ const cookieLocale = Astro.cookies.get("meitheal-locale")?.value;
 const locale: Locale = cookieLocale === "ga" ? "ga" : "en";
 
 await ensureSchema();
-const client = getPersistenceClient();
+const repo = new TaskRepository(getPersistenceClient());
 
 // Completed task auto-hide: read retention setting (default 30 days, 0 = never hide)
 let completedAutoHideDays = 30;
 // Backlog mode: visible (default) | hidden | disabled
 let backlogMode = "visible";
 try {
-  const settingsResult = await client.execute({
-    sql: "SELECT key, value FROM settings WHERE key IN ('completed_auto_hide_days', 'backlog_mode')",
-    args: [],
-  });
-  for (const row of settingsResult.rows) {
-    const r = row as Record<string, unknown>;
-    const k = String(r.key);
-    if (k === "completed_auto_hide_days") {
-      const val = Number(JSON.parse(String(r.value)));
-      if (!isNaN(val) && val >= 0) completedAutoHideDays = val;
-    } else if (k === "backlog_mode") {
-      const val = JSON.parse(String(r.value));
-      if (val === "hidden" || val === "disabled") backlogMode = val;
-    }
+  const settings = await repo.getSettings([
+    "completed_auto_hide_days",
+    "backlog_mode",
+  ]);
+  if (settings.completed_auto_hide_days) {
+    const val = Number(JSON.parse(settings.completed_auto_hide_days));
+    if (!isNaN(val) && val >= 0) completedAutoHideDays = val;
+  }
+  if (settings.backlog_mode) {
+    const val = JSON.parse(settings.backlog_mode);
+    if (val === "hidden" || val === "disabled") backlogMode = val;
   }
 } catch {
   /* settings table may not exist yet — use defaults */
@@ -56,10 +54,7 @@ const completedCutoffMs =
 let tasks: Record<string, unknown>[] = [];
 let commentCounts: Record<string, number> = {};
 try {
-  const result = await client.execute(
-    "SELECT id, title, description, status, priority, due_date, labels, framework_payload, calendar_sync_state, board_id, custom_fields, start_date, end_date, progress, color, is_favorite, task_type, parent_id, ticket_number, assigned_to, kanban_position, created_at, updated_at FROM tasks ORDER BY kanban_position ASC NULLS LAST, priority ASC, created_at DESC",
-  );
-  let allTasks = result.rows as Record<string, unknown>[];
+  let allTasks = await repo.getKanbanTasks();
 
   // Filter out completed tasks older than retention window (kanban-only; table view shows all)
   if (completedCutoffMs > 0) {
@@ -74,13 +69,7 @@ try {
   tasks = allTasks;
   // Comment count aggregation (competitor parity: Jira/Asana/Linear show comment counts)
   try {
-    const ccResult = await client.execute(
-      "SELECT task_id, COUNT(*) as cnt FROM comments GROUP BY task_id",
-    );
-    for (const row of ccResult.rows) {
-      const r = row as Record<string, unknown>;
-      commentCounts[String(r.task_id)] = Number(r.cnt);
-    }
+    commentCounts = await repo.getCommentCounts();
   } catch {
     /* comments table may not exist yet */
   }
@@ -98,18 +87,7 @@ let columns: {
   id: string;
 }[] = [];
 try {
-  const laneResult = await client.execute(
-    "SELECT id, key, label, icon, position, wip_limit, includes, built_in FROM kanban_lanes ORDER BY position ASC",
-  );
-  columns = laneResult.rows.map((r: Record<string, unknown>) => ({
-    id: String(r.id),
-    key: String(r.key),
-    label: String(r.label),
-    icon: String(r.icon),
-    includes: JSON.parse(String(r.includes ?? "[]")),
-    builtIn: Number(r.built_in ?? 0) === 1,
-    wipLimit: Number(r.wip_limit ?? 0),
-  }));
+  columns = await repo.getKanbanLanes();
 } catch {
   /* fallback to defaults */
 }
