@@ -219,7 +219,7 @@ export function startPeriodicSync(intervalMs: number = PERIODIC_SYNC_MS): void {
   periodicTimer = setInterval(() => {
     if (navigator.onLine) {
       cleanupExpiredSyncOps().then(removed => {
-        if (removed > 0) console.log(`[sync-engine] Cleaned up ${removed} expired sync operations`)
+        if (removed > 0) console.debug(`[sync-engine] Cleaned up ${removed} expired sync operations`)
       }).catch(err => console.error("[sync-engine] Cleanup failed:", err))
       processSyncQueue().catch((err) => console.error("[sync-engine] Periodic sync failed:", err))
     }

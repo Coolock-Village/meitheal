@@ -448,7 +448,7 @@ const locale: Locale = cookieLocale === "ga" ? "ga" : "en";
           if (raw) {
             sidebarConfig = typeof raw === "string" ? JSON.parse(raw) : raw;
           }
-        } catch {}
+        } catch { /* non-fatal */ }
 
         let orderItems =
           Array.isArray(sidebarConfig.order) && sidebarConfig.order.length > 0

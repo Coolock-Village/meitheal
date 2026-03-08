@@ -1100,7 +1100,7 @@ const typeConfig: Record<
           const data = await res.json();
           return data.lanes || [];
         }
-      } catch {}
+      } catch { /* non-fatal */ }
       return [];
     }
 
@@ -1140,7 +1140,7 @@ const typeConfig: Record<
               body: JSON.stringify({ wip_limit: wipLimit }),
             });
             window.location.reload();
-          } catch {}
+          } catch { /* non-fatal */ }
         });
       });
 
@@ -1161,7 +1161,7 @@ const typeConfig: Record<
                 },
               );
               window.location.reload();
-            } catch {}
+            } catch { /* non-fatal */ }
           }
         });
       });
@@ -1182,7 +1182,7 @@ const typeConfig: Record<
               method: "DELETE",
             });
             window.location.reload();
-          } catch {}
+          } catch { /* non-fatal */ }
         });
       });
 
@@ -1299,7 +1299,7 @@ const typeConfig: Record<
           document.getElementById("toast-container")?.appendChild(t);
           setTimeout(() => t.remove(), 3000);
         }
-      } catch {}
+      } catch { /* non-fatal */ }
     });
 
     // T-1907: Search filters Kanban cards in real-time

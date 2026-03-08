@@ -2312,14 +2312,14 @@ const { locale } = Astro.props;
       }
       try {
         localStorage.setItem("meitheal:n8n-mode", mode);
-      } catch {}
+      } catch { /* non-fatal */ }
     }
 
     // Restore persisted mode
     try {
       const saved = localStorage.getItem("meitheal:n8n-mode");
       if (saved === "standalone") setMode("standalone");
-    } catch {}
+    } catch { /* non-fatal */ }
 
     autoBtn.addEventListener("click", () => setMode("auto"));
     standaloneBtn.addEventListener("click", () => setMode("standalone"));

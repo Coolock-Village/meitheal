@@ -2159,7 +2159,7 @@ Astro.response.headers.set("X-Content-Type-Options", "nosniff");
                   }
                 }
               }
-            } catch {}
+            } catch { /* non-fatal */ }
 
             // Attach Strategic Lens Evaluator Payload Hook
             if (window.attachStrategicLens) {
@@ -4050,7 +4050,7 @@ Astro.response.headers.set("X-Content-Type-Options", "nosniff");
                   timestamp: Date.now(),
                 }),
               );
-            } catch {}
+            } catch { /* non-fatal */ }
           }
 
           // Save on every page load / Astro navigation

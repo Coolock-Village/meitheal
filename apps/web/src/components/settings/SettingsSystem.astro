@@ -1055,7 +1055,7 @@ const version =
         ].forEach((k) => {
           try {
             localStorage.removeItem(k);
-          } catch {}
+          } catch { /* non-fatal */ }
         });
         showTroubleshootResult(
           `✓ Cleared ${deleted} offline database(s) and sync state.`,
