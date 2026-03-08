@@ -68,3 +68,116 @@ function removeToast(toast: HTMLElement): void {
     toast.style.transform = "translateX(100%)";
     setTimeout(() => toast.remove(), 300);
 }
+
+/**
+ * UX-01: Show an undo toast for destructive actions.
+ * If the user clicks "Undo" within `timeout` ms, `onUndo` is called.
+ * Otherwise, the action is committed via `onCommit` (if provided).
+ *
+ * @param message - User-facing message (e.g. "Task deleted")
+ * @param onUndo - Called when user clicks Undo
+ * @param onCommit - Called when timeout expires without undo
+ * @param timeout - Undo window in ms (default: 5000)
+ */
+export function showUndoToast(
+    message: string,
+    onUndo: () => void,
+    onCommit?: () => void,
+    timeout = 5000,
+): void {
+    let container = document.getElementById("toast-container");
+    if (!container) {
+        container = document.createElement("div");
+        container.id = "toast-container";
+        container.className = "toast-container";
+        document.body.appendChild(container);
+    }
+
+    while (container.children.length >= MAX_VISIBLE_TOASTS) {
+        container.firstElementChild?.remove();
+    }
+
+    let undone = false;
+    const toast = document.createElement("div");
+    toast.className = "toast success";
+    toast.setAttribute("role", "alert");
+    toast.setAttribute("aria-live", "polite");
+
+    const text = document.createElement("span");
+    text.textContent = message;
+    toast.appendChild(text);
+
+    const undoBtn = document.createElement("button");
+    undoBtn.className = "toast-undo";
+    undoBtn.textContent = "Undo";
+    undoBtn.setAttribute("aria-label", "Undo action");
+    undoBtn.addEventListener("click", () => {
+        undone = true;
+        onUndo();
+        removeToast(toast);
+    });
+    toast.appendChild(undoBtn);
+
+    container.appendChild(toast);
+
+    setTimeout(() => {
+        if (!undone) {
+            onCommit?.();
+            removeToast(toast);
+        }
+    }, timeout);
+}
+
+/**
+ * UX-02: Show an error toast with a retry button.
+ *
+ * @param message - Error message
+ * @param onRetry - Called when user clicks Retry
+ */
+export function showRetryToast(
+    message: string,
+    onRetry: () => void,
+): void {
+    let container = document.getElementById("toast-container");
+    if (!container) {
+        container = document.createElement("div");
+        container.id = "toast-container";
+        container.className = "toast-container";
+        document.body.appendChild(container);
+    }
+
+    while (container.children.length >= MAX_VISIBLE_TOASTS) {
+        container.firstElementChild?.remove();
+    }
+
+    const toast = document.createElement("div");
+    toast.className = "toast error";
+    toast.setAttribute("role", "alert");
+    toast.setAttribute("aria-live", "assertive");
+
+    const text = document.createElement("span");
+    text.textContent = message;
+    toast.appendChild(text);
+
+    const retryBtn = document.createElement("button");
+    retryBtn.className = "toast-undo"; // reuses undo styling
+    retryBtn.textContent = "Retry";
+    retryBtn.setAttribute("aria-label", "Retry action");
+    retryBtn.addEventListener("click", () => {
+        removeToast(toast);
+        onRetry();
+    });
+    toast.appendChild(retryBtn);
+
+    const dismiss = document.createElement("button");
+    dismiss.className = "toast-dismiss";
+    dismiss.setAttribute("aria-label", "Dismiss notification");
+    dismiss.textContent = "×";
+    dismiss.addEventListener("click", () => removeToast(toast));
+    toast.appendChild(dismiss);
+
+    container.appendChild(toast);
+
+    // Retry toasts stay for 8s — user needs time to read + decide
+    setTimeout(() => removeToast(toast), 8000);
+}
