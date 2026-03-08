@@ -31,12 +31,8 @@ export const POST: APIRoute = async ({ request }) => {
     // If no URL provided, try to detect Grocy addon via Supervisor
     if (!grocyUrl) {
       try {
-        const supervisorToken = process.env.SUPERVISOR_TOKEN;
-        if (supervisorToken) {
-          const addonsRes = await fetch("http://supervisor/addons", {
-            headers: { Authorization: `Bearer ${supervisorToken}` },
-          });
-          if (addonsRes.ok) {
+        const addonsRes = await supervisorFetch("/addons");
+        if (addonsRes?.ok) {
             const addonsData = (await addonsRes.json()) as {
               data?: { addons?: { slug: string; ingress_url?: string; state?: string }[] };
             };

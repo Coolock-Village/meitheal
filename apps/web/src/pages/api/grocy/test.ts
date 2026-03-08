@@ -10,6 +10,7 @@
 import type { APIRoute } from "astro";
 import { GrocyAdapter } from "@meitheal/integration-core";
 import { logApiError } from "../../../lib/api-logger";
+import { supervisorFetch } from "../../../lib/supervisor-fetch";
 
 /**
  * POST /api/grocy/test
@@ -37,21 +38,16 @@ export const POST: APIRoute = async ({ request }) => {
     // For auto-detected installs, resolve URL via Supervisor if not provided
     if (autoDetected && !url) {
       try {
-        const supervisorToken = process.env.SUPERVISOR_TOKEN;
-        if (supervisorToken) {
-          const addonsRes = await fetch("http://supervisor/addons", {
-            headers: { Authorization: `Bearer ${supervisorToken}` },
-          });
-          if (addonsRes.ok) {
-            const addonsData = (await addonsRes.json()) as {
-              data?: { addons?: { slug: string; ingress_url?: string; state?: string }[] };
-            };
-            const grocy = addonsData.data?.addons?.find(
-              (a) => a.slug.includes("grocy") && a.state === "started"
-            );
-            if (grocy?.ingress_url) {
-              url = `http://supervisor${grocy.ingress_url}`;
-            }
+        const addonsRes = await supervisorFetch("/addons");
+        if (addonsRes?.ok) {
+          const addonsData = (await addonsRes.json()) as {
+            data?: { addons?: { slug: string; ingress_url?: string; state?: string }[] };
+          };
+          const grocy = addonsData.data?.addons?.find(
+            (a) => a.slug.includes("grocy") && a.state === "started"
+          );
+          if (grocy?.ingress_url) {
+            url = `http://supervisor${grocy.ingress_url}`;
           }
         }
       } catch { /* Supervisor detection failed */ }

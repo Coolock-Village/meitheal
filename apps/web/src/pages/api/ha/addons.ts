@@ -11,6 +11,7 @@
  */
 import type { APIRoute } from "astro";
 import { logApiError, logApiWarn } from "../../../lib/api-logger";
+import { supervisorFetch } from "../../../lib/supervisor-fetch";
 
 interface SupervisorAddon {
   slug: string;
@@ -22,21 +23,14 @@ interface SupervisorAddon {
 }
 
 export const GET: APIRoute = async () => {
-  const token = process.env.SUPERVISOR_TOKEN;
-  if (!token) {
-    return new Response(
-      JSON.stringify({ addons: [], message: "Not running as HA addon" }),
-      { status: 200, headers: { "Content-Type": "application/json" } },
-    );
-  }
-
   try {
-    const res = await fetch("http://supervisor/addons", {
-      headers: {
-        Authorization: `Bearer ${token}`,
-        "Content-Type": "application/json",
-      },
-    });
+    const res = await supervisorFetch("/addons");
+    if (!res) {
+      return new Response(
+        JSON.stringify({ addons: [], message: "Not running as HA addon" }),
+        { status: 200, headers: { "Content-Type": "application/json" } },
+      );
+    }
 
     if (!res.ok) {
       // 403/401 = addon lacks sufficient hassio_role for /addons endpoint.

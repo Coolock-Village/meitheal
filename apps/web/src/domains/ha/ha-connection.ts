@@ -22,6 +22,7 @@ import { createLogger, defaultRedactionPatterns } from "@meitheal/domain-observa
 
 // Polyfill WebSocket for Node.js server-side usage
 import WebSocket from "ws";
+import { supervisorFetch } from "../../lib/supervisor-fetch";
 (globalThis as Record<string, unknown>).WebSocket = WebSocket;
 
 const logger = createLogger({
@@ -265,10 +266,8 @@ export async function getIngressEntry(): Promise<string | null> {
   if (!token) return null;
 
   try {
-    const res = await fetch("http://supervisor/addons/self/info", {
-      headers: { Authorization: `Bearer ${token}` },
-    });
-    if (!res.ok) return null;
+    const res = await supervisorFetch("/addons/self/info");
+    if (!res || !res.ok) return null;
     const data = await res.json() as { data?: { ingress_entry?: string } };
     cachedIngressEntry = data?.data?.ingress_entry ?? null;
     logger.log("info", {

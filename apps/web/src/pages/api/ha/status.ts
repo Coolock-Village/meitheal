@@ -14,16 +14,13 @@
 import type { APIRoute } from "astro";
 import { getHAConnectionStatus, getHAConfig } from "../../../domains/ha";
 import { logApiError } from "../../../lib/api-logger";
+import { supervisorFetch } from "../../../lib/supervisor-fetch";
 
 /** Fetch addon self-info from Supervisor internal proxy */
 async function getAddonSelfInfo(): Promise<Record<string, unknown> | null> {
-  const token = process.env.SUPERVISOR_TOKEN;
-  if (!token) return null;
   try {
-    const res = await fetch("http://supervisor/addons/self/info", {
-      headers: { Authorization: `Bearer ${token}`, "Content-Type": "application/json" },
-    });
-    if (!res.ok) return null;
+    const res = await supervisorFetch("/addons/self/info");
+    if (!res || !res.ok) return null;
     const json = await res.json() as { data?: Record<string, unknown> };
     return json.data ?? null;
   } catch {
