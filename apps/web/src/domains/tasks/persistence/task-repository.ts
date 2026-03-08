@@ -12,7 +12,7 @@
  *   const tasks = await repo.getRecentTasks(10);
  */
 
-import type { Client, InStatement } from "@libsql/client";
+import type { Client } from "@libsql/client";
 import { STATUS } from "../../../lib/status-config";
 
 // ── Types ──────────────────────────────────────────────────────────────────

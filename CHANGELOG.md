@@ -2,6 +2,35 @@
 
 All notable changes to Meitheal are documented in this file.
 
+## [0.1.95] — 2026-03-08
+
+### Added
+
+- **`supervisor-fetch.ts`** — shared Supervisor proxy fetch with 8s AbortController timeout + auto token injection
+- **`TaskRepository`** — repository pattern for all SSR task queries (335 lines, 15+ methods)
+- **StatusBadge** — `backlog` + `cancelled` status support, `isDone` includes cancelled
+- **CSS badge classes** — `.badge-backlog` (gray), `.badge-cancelled` (red/danger)
+- **i18n keys** — `task_status.backlog`, `task_status.cancelled` in en.json + ga.json
+
+### Security
+
+- **XSS fix** — comment rendering migrated from innerHTML to DOM API (textContent)
+- **i18n link types** — hardcoded English labels replaced with `t()` calls
+- **Supervisor timeout** — 5 Supervisor proxy fetches now have 8s timeout protection
+
+### Fixed
+
+- **safe-fetch.ts** — 5 TypeScript errors (`string|undefined` → nullish coalescing)
+- **Perf budget** — baseline bumped from 819KB to 921KB (intentional growth)
+- **grocy/test.ts** — unsafe `rows[0].value` → `rows[0]?.value` optional chaining
+- **tasks/create.ts** — migrated to `apiJson`/`apiError` helpers
+
+### Changed
+
+- 5 Supervisor proxy fetches migrated to shared utility (ha/status, ha/addons, ha-connection, grocy/test, grocy/auto-key)
+- All JSON.parse calls verified in try/catch
+- All setInterval/setTimeout have typed refs with cleanup
+
 ## [Unreleased]
 
 ### Added
