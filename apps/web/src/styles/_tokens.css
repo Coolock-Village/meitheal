@@ -222,6 +222,24 @@
       --accent-hover: var(--primary-color, #4F46E5);
       --border-focus: var(--primary-color, #6366F1);
   }
+
+  /* --- A11Y-07: High Contrast Mode --- */
+  @media (prefers-contrast: more) {
+    :root {
+      --text-muted: #94A3B8;
+      --border: #475569;
+      --shadow-sm: 0 1px 3px rgba(0, 0, 0, 0.5);
+      --shadow-md: 0 4px 12px rgba(0, 0, 0, 0.6);
+      --accent-light: rgba(99, 102, 241, 0.25);
+    }
+
+    [data-theme="light"] {
+      --text-muted: #475569;
+      --border: #94A3B8;
+      --shadow-sm: 0 1px 3px rgba(0, 0, 0, 0.15);
+      --shadow-md: 0 4px 12px rgba(0, 0, 0, 0.2);
+    }
+  }
 }
 
 /* --- Page Transition Loading Bar --- */
