@@ -1,6 +1,7 @@
 ---
 import Layout from "../layouts/Layout.astro";
 import EmptyState from "../components/ui/EmptyState.astro";
+import LabelBadges from "../components/ui/LabelBadges.astro";
 import { t } from "../i18n/translations";
 import type { Locale } from "../lib/locale";
 import {
@@ -404,13 +405,7 @@ import { getPriorityColor } from "../lib/priority-config";
                     )}
                   </div>
                   {task.labels && String(task.labels) !== "[]" && (
-                    <div class="bento-card-labels">
-                      {JSON.parse(String(task.labels))
-                        .slice(0, 2)
-                        .map((label: string) => (
-                          <span class="label-chip">{label}</span>
-                        ))}
-                    </div>
+                    <LabelBadges labels={String(task.labels)} compact max={2} />
                   )}
                 </div>
                 <div class="bento-card-actions">

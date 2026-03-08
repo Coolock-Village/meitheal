@@ -1,6 +1,7 @@
 ---
 import Layout from "../layouts/Layout.astro";
 import EmptyState from "../components/ui/EmptyState.astro";
+import LabelBadges from "../components/ui/LabelBadges.astro";
 import {
   ensureSchema,
   getPersistenceClient,
@@ -171,6 +172,7 @@ const totalTasks = days.reduce((sum, d) => sum + d.tasks.length, 0);
                         </span>
                         {String(task.title)}
                       </div>
+                      <LabelBadges labels={task.labels as string} compact max={3} />
                     </div>
                     <span class={`status-badge status-badge--${status}`}>
                       {status === "active"

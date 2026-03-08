@@ -1,6 +1,7 @@
 ---
 import Layout from "../layouts/Layout.astro";
 import TaskViewTabs from "../components/tasks/TaskViewTabs.astro";
+import LabelBadges from "../components/ui/LabelBadges.astro";
 import { t } from "../i18n/translations";
 import type { Locale } from "../lib/locale";
 import { formatRegionalDate } from "../lib/date";
@@ -564,50 +565,7 @@ const typeConfig: Record<
                       </div>
                     )}
                     {/* Labels */}
-                    {(() => {
-                      try {
-                        const lbls = JSON.parse(String(task.labels ?? "[]"));
-                        if (Array.isArray(lbls) && lbls.length > 0) {
-                          return (
-                            <div class="kanban-labels">
-                              {lbls.map(
-                                (
-                                  l:
-                                    | string
-                                    | {
-                                        name: string;
-                                        color?: string;
-                                        hex_color?: string;
-                                      },
-                                ) => {
-                                  const labelName =
-                                    typeof l === "string" ? l : l.name;
-                                  const labelColor =
-                                    typeof l === "object"
-                                      ? l.hex_color || l.color || ""
-                                      : "";
-                                  return (
-                                    <span
-                                      class="label-chip"
-                                      style={
-                                        labelColor
-                                          ? `background: ${labelColor}20; color: ${labelColor}; border-color: ${labelColor}40;`
-                                          : ""
-                                      }
-                                    >
-                                      {labelName}
-                                    </span>
-                                  );
-                                },
-                              )}
-                            </div>
-                          );
-                        }
-                      } catch {
-                        /* skip */
-                      }
-                      return null;
-                    })()}
+                    <LabelBadges labels={task.labels as string} compact max={4} />
                     {/* Custom fields */}
                     {(() => {
                       try {

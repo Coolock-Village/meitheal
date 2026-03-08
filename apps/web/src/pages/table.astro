@@ -4,6 +4,7 @@ import TaskViewTabs from "../components/tasks/TaskViewTabs.astro";
 import EmptyState from "../components/ui/EmptyState.astro";
 import TaskTypeIcon from "../components/ui/TaskTypeIcon.astro";
 import RiceBadge from "../components/ui/RiceBadge.astro";
+import LabelBadges from "../components/ui/LabelBadges.astro";
 import { t } from "../i18n/translations";
 import type { Locale } from "../lib/locale";
 import { formatRegionalDate } from "../lib/date";
@@ -182,6 +183,9 @@ const priorityClasses: Record<number, string> = {
                 </th>
                 <th scope="col" class="col-assigned" title="Assigned To">
                   👤
+                </th>
+                <th scope="col" class="col-labels">
+                  Labels
                 </th>
                 <th scope="col" class="col-actions">
                   {t("table.col_actions", locale)}
@@ -376,6 +380,9 @@ const priorityClasses: Record<number, string> = {
                       ) : (
                         <span class="text-muted">—</span>
                       )}
+                    </td>
+                    <td class="col-labels">
+                      <LabelBadges labels={task.labels as unknown as string} compact max={3} />
                     </td>
                     <td class="cell-center">
                       <button
