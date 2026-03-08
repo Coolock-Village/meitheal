@@ -110,8 +110,8 @@
 
   .delete-row {
     @apply bg-transparent border-none cursor-pointer text-text-muted text-sm p-1 rounded transition-colors;
-    min-width: 32px;
-      min-height: 32px;
+    min-width: 44px;
+      min-height: 44px;
       display: inline-flex;
       align-items: center;
       justify-content: center;
