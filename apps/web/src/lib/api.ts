@@ -92,7 +92,7 @@ export async function apiMutate<T>(
         accept: "application/json",
         ...options?.headers,
       },
-      body: body !== undefined ? JSON.stringify(body) : undefined,
+      body: body !== undefined ? JSON.stringify(body) : null,
     })
 
     if (res.ok) {

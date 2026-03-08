@@ -110,6 +110,7 @@ let scrollTimer: ReturnType<typeof setTimeout> | null = null;
 /**
  * Initialize the state persistence system.
  * Call once on page load. Safe to call multiple times (idempotent).
+ * MP-01: All listeners use AbortController signal for cleanup.
  */
 export function initStatePersistence(): void {
   if (typeof window === "undefined") return;
@@ -120,6 +121,10 @@ export function initStatePersistence(): void {
   // Save the current page on every load (including initial)
   saveNavigationState(currentPath, 0);
 
+  // MP-01: AbortController for listener cleanup on page transitions
+  const controller = new AbortController();
+  const { signal } = controller;
+
   // Debounced scroll tracking
   window.addEventListener(
     "scroll",
@@ -129,14 +134,14 @@ export function initStatePersistence(): void {
         saveNavigationState(window.location.pathname, window.scrollY);
       }, SCROLL_DEBOUNCE_MS);
     },
-    { passive: true },
+    { passive: true, signal },
   );
 
   // Astro client-side navigation: save state on page transitions
   document.addEventListener("astro:page-load", () => {
     const path = window.location.pathname;
     saveNavigationState(path, 0);
-  });
+  }, { signal });
 
   // P1-5: visibilitychange is more reliable than beforeunload in HA iframe
   // context — iOS WKWebView and some Android WebViews don't fire beforeunload
@@ -145,10 +150,12 @@ export function initStatePersistence(): void {
     if (document.visibilityState === "hidden") {
       saveNavigationState(window.location.pathname, window.scrollY);
     }
-  });
+  }, { signal });
 
   // Save state just before the page unloads (fallback for non-iframe contexts)
+  // Also abort the controller to clean up all listeners
   window.addEventListener("beforeunload", () => {
     saveNavigationState(window.location.pathname, window.scrollY);
+    controller.abort();
   });
 }
