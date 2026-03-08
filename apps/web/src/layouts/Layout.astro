@@ -1677,6 +1677,7 @@ Astro.response.headers.set("X-Content-Type-Options", "nosniff");
         import { marked } from "marked";
         import { sanitize } from "@lib/sanitize";
         import { onTaskCompleted } from "@lib/gamification-hook";
+        import { createFocusTrap } from "@lib/focus-trap";
 
         // Use lifecycle signal for all global listeners in this module
         const __signal = pageLifecycle.signal;
@@ -3712,20 +3713,23 @@ Astro.response.headers.set("X-Content-Type-Options", "nosniff");
         ) as HTMLDivElement;
         const cpTasks = document.getElementById("cp-tasks") as HTMLDivElement;
         let cpAllTasks: Array<{ id: string; title: string }> = [];
+        const cpFocusTrap = cpOverlay ? createFocusTrap(cpOverlay) : null;
 
         function openCP() {
           cpOverlay?.classList.remove("hidden");
+          cpFocusTrap?.activate();
           cpSearch?.focus();
           // Load tasks for search
           fetch((window.__ingress_path || "") + "/api/tasks?limit=200")
             .then((r) => r.json())
-            .then((d: { tasks: Array<{ id: string; title: string }> }) => {
-              cpAllTasks = d.tasks || [];
+            .then((data: { tasks: Array<{ id: string; title: string }> }) => {
+              cpAllTasks = data.tasks || [];
             })
             .catch(() => {});
         }
 
         function closeCP() {
+          cpFocusTrap?.deactivate();
           cpOverlay?.classList.add("hidden");
           if (cpSearch) cpSearch.value = "";
           cpTasksSection?.classList.add("hidden");
@@ -3926,16 +3930,29 @@ Astro.response.headers.set("X-Content-Type-Options", "nosniff");
       </div>
 
       <script>
+        import { createFocusTrap } from "@lib/focus-trap";
+
         // Shortcut modal: close on overlay click or close button
         const shortcutOverlay = document.getElementById("shortcut-modal");
+        const shortcutTrap = shortcutOverlay ? createFocusTrap(shortcutOverlay) : null;
+
+        function openShortcutModal() {
+          shortcutOverlay?.classList.remove("hidden");
+          shortcutTrap?.activate();
+        }
+
+        function closeShortcutModal() {
+          shortcutTrap?.deactivate();
+          shortcutOverlay?.classList.add("hidden");
+        }
+
         shortcutOverlay?.addEventListener("click", (e) => {
-          if (e.target === shortcutOverlay)
-            shortcutOverlay.classList.add("hidden");
+          if (e.target === shortcutOverlay) closeShortcutModal();
         });
         document
           .getElementById("shortcut-modal-close")
           ?.addEventListener("click", () => {
-            shortcutOverlay?.classList.add("hidden");
+            closeShortcutModal();
           });
 
         // ───── Service Worker Registration ─────
