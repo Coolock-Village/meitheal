@@ -424,6 +424,7 @@ const priorityClasses: Record<number, string> = {
   <script>
     import { showToast } from "@lib/toast";
     import { confirmDialog } from "@lib/confirm-dialog";
+    import { taskApi } from "../lib/task-api-client";
 
     const FILTER_KEY = "meitheal-task-view-filters";
 
@@ -648,11 +649,7 @@ const priorityClasses: Record<number, string> = {
         if (value === original) return;
 
         try {
-          await fetch(`${window.__ingress_path || ""}/api/tasks/${id}`, {
-            method: "PUT",
-            headers: { "content-type": "application/json" },
-            body: JSON.stringify({ [field]: value }),
-          });
+          await taskApi.updateTask(id, { [field]: value });
           el.dataset.original = value; // Update stored original
           showToast("common.updated");
         } catch {
@@ -679,11 +676,7 @@ const priorityClasses: Record<number, string> = {
         const field = el.dataset.field;
         try {
           const value = field === "priority" ? Number(el.value) : el.value;
-          await fetch(`${window.__ingress_path || ""}/api/tasks/${id}`, {
-            method: "PUT",
-            headers: { "content-type": "application/json" },
-            body: JSON.stringify({ [field!]: value }),
-          });
+          await taskApi.updateTask(id!, { [field!]: value });
           showToast(
             field === "priority"
               ? "table.priority_updated"
@@ -761,9 +754,7 @@ const priorityClasses: Record<number, string> = {
         });
         if (!ok) return;
         try {
-          await fetch(`${window.__ingress_path || ""}/api/tasks/${id}`, {
-            method: "DELETE",
-          });
+          await taskApi.deleteTask(id!);
           showToast("common.task_deleted");
           (btn as HTMLElement).closest("tr")?.remove();
         } catch {
@@ -812,14 +803,7 @@ const priorityClasses: Record<number, string> = {
         const checked = document.querySelectorAll(".row-check:checked");
         try {
           const promises = Array.from(checked).map((cb) =>
-            fetch(
-              `${window.__ingress_path || ""}/api/tasks/${(cb as HTMLElement).dataset.id}`,
-              {
-                method: "PUT",
-                headers: { "content-type": "application/json" },
-                body: JSON.stringify({ status: newStatus }),
-              },
-            ),
+            taskApi.updateTask((cb as HTMLElement).dataset.id!, { status: newStatus }),
           );
           await Promise.all(promises);
           showToast(`${checked.length} tasks updated`);
@@ -855,12 +839,7 @@ const priorityClasses: Record<number, string> = {
         if (!ok) return;
         try {
           const promises = Array.from(checked).map((cb) =>
-            fetch(
-              `${window.__ingress_path || ""}/api/tasks/${(cb as HTMLElement).dataset.id}`,
-              {
-                method: "DELETE",
-              },
-            ),
+            taskApi.deleteTask((cb as HTMLElement).dataset.id!),
           );
           await Promise.all(promises);
           showToast(`${checked.length} tasks deleted`);

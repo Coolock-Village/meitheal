@@ -69,6 +69,19 @@ export const GET: APIRoute = async ({ url }) => {
     args.push(assignedTo);
   }
 
+  // Label filter — matches tasks whose inline JSON labels array contains the value
+  const label = url.searchParams.get("label");
+  if (label) {
+    conditions.push("EXISTS (SELECT 1 FROM json_each(tasks.labels) WHERE json_each.value = ?)");
+    args.push(label);
+  }
+
+  // Favorite filter
+  const favoriteParam = url.searchParams.get("favorite");
+  if (favoriteParam === "1") {
+    conditions.push("is_favorite = 1");
+  }
+
   if (conditions.length > 0) {
     const where = ` WHERE ${conditions.join(" AND ")}`;
     sql += where;

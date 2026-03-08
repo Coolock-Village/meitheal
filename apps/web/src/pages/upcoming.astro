@@ -255,6 +255,8 @@ const totalTasks = days.reduce((sum, d) => sum + d.tasks.length, 0);
 </style>
 
 <script>
+  import { taskApi } from "../lib/task-api-client"
+
   // Task checkbox completion
   document
     .querySelectorAll<HTMLInputElement>(".task-checkbox")
@@ -263,12 +265,8 @@ const totalTasks = days.reduce((sum, d) => sum + d.tasks.length, 0);
         const id = cb.dataset.id;
         if (!id) return;
         try {
-          await fetch(`${window.__ingress_path || ""}/api/tasks/${id}`, {
-            method: "PATCH",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({
-              status: cb.checked ? "complete" : "pending",
-            }),
+          await taskApi.updateTask(id, {
+            status: cb.checked ? "complete" : "pending",
           });
           const item = cb.closest(".task-item") as HTMLElement | null;
           if (cb.checked && item) {

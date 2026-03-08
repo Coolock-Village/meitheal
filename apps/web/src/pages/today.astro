@@ -383,6 +383,8 @@ const typeIcons: Record<string, string> = {
 </style>
 
 <script>
+  import { taskApi } from "../lib/task-api-client";
+
   // Task checkbox completion
   document
     .querySelectorAll<HTMLInputElement>(".task-checkbox")
@@ -391,12 +393,8 @@ const typeIcons: Record<string, string> = {
         const id = cb.dataset.id;
         if (!id) return;
         try {
-          await fetch(`${window.__ingress_path || ""}/api/tasks/${id}`, {
-            method: "PATCH",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({
-              status: cb.checked ? "complete" : "pending",
-            }),
+          await taskApi.updateTask(id, {
+            status: cb.checked ? "complete" : "pending",
           });
           const item = cb.closest(".task-item") as HTMLElement | null;
           if (cb.checked && item) {
@@ -448,12 +446,8 @@ const typeIcons: Record<string, string> = {
     if (!text) return;
 
     try {
-      const res = await fetch((window.__ingress_path || "") + "/api/tasks", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ title: text }),
-      });
-      if (res.ok) {
+      const result = await taskApi.createTask({ title: text });
+      if (result) {
         if (quickInput) quickInput.value = "";
         if (quickFeedback) quickFeedback.style.display = "none";
         window.location.reload();

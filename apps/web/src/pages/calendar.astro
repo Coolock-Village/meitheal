@@ -404,6 +404,8 @@ for (let week = 0; week < 6; week++) {
 </style>
 
 <script>
+  import { taskApi } from "../lib/task-api-client"
+
   // Click calendar day to navigate to tasks filtered by date
   document
     .querySelectorAll<HTMLElement>(".cal-cell[data-date]")
@@ -431,14 +433,11 @@ for (let week = 0; week < 6; week++) {
       btn.textContent = "⏳ Syncing...";
       btn.disabled = true;
       try {
-        const res = await fetch(
-          (window.__ingress_path || "") + "/api/integrations/calendar/sync",
-          {
-            method: "POST",
-            headers: { "content-type": "application/json" },
-            body: JSON.stringify({ action: "sync" }),
-          },
-        );
+        const res = await taskApi.raw("/api/integrations/calendar/sync", {
+          method: "POST",
+          headers: { "content-type": "application/json" },
+          body: JSON.stringify({ action: "sync" }),
+        });
         const data = (await res.json()) as { ok: boolean; message?: string };
         if (data.ok) {
           // Reload to refresh event counts

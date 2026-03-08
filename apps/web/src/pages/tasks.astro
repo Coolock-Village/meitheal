@@ -284,6 +284,7 @@ const { tasks, counts, customFieldDefs } = await getTasksForView();
 <script>
   import { showToast } from "@lib/toast";
   import { confirmDialog } from "@lib/confirm-dialog";
+  import { taskApi } from "../lib/task-api-client";
 
   const FILTER_KEY = "meitheal-task-view-filters";
 
@@ -306,18 +307,9 @@ const { tasks, counts, customFieldDefs } = await getTasksForView();
       if (!ok) return;
 
       try {
-        const res = await fetch(
-          `${window.__ingress_path || ""}/api/tasks/${id}`,
-          {
-            method: "DELETE",
-          },
-        );
-        if (res.ok || res.status === 404) {
-          showToast("common.task_deleted");
-          setTimeout(() => window.location.reload(), 800);
-        } else {
-          showToast("common.failed_delete", "error");
-        }
+        await taskApi.deleteTask(id);
+        showToast("common.task_deleted");
+        setTimeout(() => window.location.reload(), 800);
       } catch {
         showToast("common.failed_delete", "error");
       }
@@ -355,11 +347,7 @@ const { tasks, counts, customFieldDefs } = await getTasksForView();
       }
 
       try {
-        await fetch(`${window.__ingress_path || ""}/api/tasks/${id}`, {
-          method: "PUT",
-          headers: { "content-type": "application/json" },
-          body: JSON.stringify({ status: newStatus }),
-        });
+        await taskApi.updateTask(id!, { status: newStatus });
         showToast(
           target.checked ? "common.task_completed" : "common.task_reopened",
         );
@@ -377,18 +365,9 @@ const { tasks, counts, customFieldDefs } = await getTasksForView();
       const id = (btn as HTMLElement).dataset.id;
       if (!id) return;
       try {
-        const dupRes = await fetch(
-          `${window.__ingress_path || ""}/api/tasks/${id}/duplicate`,
-          {
-            method: "POST",
-          },
-        );
-        if (dupRes.ok) {
-          showToast("common.task_created");
-          setTimeout(() => window.location.reload(), 500);
-        } else {
-          showToast("common.failed", "error");
-        }
+        await taskApi.duplicateTask(id);
+        showToast("common.task_created");
+        setTimeout(() => window.location.reload(), 500);
       } catch {
         showToast("common.failed", "error");
       }
@@ -627,11 +606,7 @@ const { tasks, counts, customFieldDefs } = await getTasksForView();
       el.textContent = newFav ? "★" : "☆";
       el.title = newFav ? "★ Favorited" : "☆ Favorite";
       try {
-        await fetch(`${window.__ingress_path || ""}/api/tasks/${id}`, {
-          method: "PUT",
-          headers: { "content-type": "application/json" },
-          body: JSON.stringify({ is_favorite: newFav }),
-        });
+        await taskApi.updateTask(id, { is_favorite: newFav ? 1 : 0 });
       } catch {
         // Revert on error
         el.classList.toggle("is-fav", isFav);

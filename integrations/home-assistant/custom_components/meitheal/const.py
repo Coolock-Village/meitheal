@@ -13,6 +13,7 @@ PLATFORMS = [Platform.TODO, Platform.SENSOR]
 # dynamically discovered via /addons/self/info at boot and passed
 # through Supervisor discovery. These are fallbacks for manual setup.
 DEFAULT_HOST = "local-meitheal"
+DEFAULT_HOST_STANDALONE = "localhost"
 LEGACY_HOST = "local-meitheal-hub"
 # Full list of hostnames to try during connection test (manual setup only).
 # Ordered by likelihood: local install first, then common repo-hash patterns.

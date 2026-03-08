@@ -450,6 +450,7 @@ import { getPriorityColor } from "../lib/priority-config";
 
   <script>
     import { showToast } from "@lib/toast";
+    import { taskApi } from "../lib/task-api-client";
 
     // Quick add form
     document
@@ -493,30 +494,17 @@ import { getPriorityColor } from "../lib/priority-config";
 
         try {
           const activeBoard = window.__activeBoard ?? "default";
-          const res = await fetch(
-            (window.__ingress_path || "") + "/api/tasks",
-            {
-              method: "POST",
-              headers: { "content-type": "application/json" },
-              body: JSON.stringify({
-                title,
-                board_id: activeBoard === "all" ? "default" : activeBoard,
-              }),
-            },
-          );
-          if (res.ok) {
-            showToast("common.task_created");
-            // Green flash on form
-            const form = document.getElementById("quick-add-form");
-            form?.classList.add("flash-success");
-            setTimeout(() => form?.classList.remove("flash-success"), 600);
-          } else {
-            const data = await res.json();
-            showToast(data.error || "common.failed_create", "error");
-            newCard.remove(); // Revert on error
-          }
-        } catch {
-          showToast("common.network_error", "error");
+          await taskApi.createTask({
+            title,
+            board_id: activeBoard === "all" ? "default" : activeBoard,
+          });
+          showToast("common.task_created");
+          // Green flash on form
+          const form = document.getElementById("quick-add-form");
+          form?.classList.add("flash-success");
+          setTimeout(() => form?.classList.remove("flash-success"), 600);
+        } catch (err) {
+          showToast((err as Error).message || "common.failed_create", "error");
           newCard.remove();
         }
       });
@@ -549,11 +537,7 @@ import { getPriorityColor } from "../lib/priority-config";
         }
 
         try {
-          await fetch(`${window.__ingress_path || ""}/api/tasks/${id}`, {
-            method: "PUT",
-            headers: { "content-type": "application/json" },
-            body: JSON.stringify({ status: newStatus }),
-          });
+          await taskApi.updateTask(id!, { status: newStatus });
           showToast(
             target.checked ? "common.task_completed" : "common.task_reopened",
           );
@@ -590,34 +574,27 @@ import { getPriorityColor } from "../lib/priority-config";
     const openList = document.getElementById("my-open-list");
     const openCount = document.getElementById("my-open-count");
     if (openSelect && openList) {
-      const bp = (window as any).__ingress_path || "";
-      fetch(`${bp}/api/users`)
-        .then((r) => r.json())
-        .then(
-          (data: {
-            users?: { id: string; name?: string; display_name?: string }[];
-          }) => {
-            const users = data.users || [];
-            users.forEach((u) => {
-              const opt = document.createElement("option");
-              opt.value = u.id;
-              opt.textContent = u.display_name || u.name || u.id;
-              openSelect.appendChild(opt);
-            });
-            // Add "Unassigned" option
-            const unOpt = document.createElement("option");
-            unOpt.value = "__unassigned__";
-            unOpt.textContent = "Unassigned";
-            openSelect.appendChild(unOpt);
+      taskApi.listUsers()
+        .then((users: any[]) => {
+          users.forEach((u: any) => {
+            const opt = document.createElement("option");
+            opt.value = u.id;
+            opt.textContent = u.display_name || u.name || u.id;
+            openSelect.appendChild(opt);
+          });
+          // Add "Unassigned" option
+          const unOpt = document.createElement("option");
+          unOpt.value = "__unassigned__";
+          unOpt.textContent = "Unassigned";
+          openSelect.appendChild(unOpt);
 
-            // Restore saved
-            const saved = localStorage.getItem(
-              "meitheal-dashboard-user-filter",
-            );
-            if (saved) openSelect.value = saved;
-            applyOpenFilter();
-          },
-        )
+          // Restore saved
+          const saved = localStorage.getItem(
+            "meitheal-dashboard-user-filter",
+          );
+          if (saved) openSelect.value = saved;
+          applyOpenFilter();
+        })
         .catch(() => {});
 
       function applyOpenFilter() {

@@ -23,6 +23,7 @@
 @import './_avatar.css';
 @import './_search.css';
 @import './_modal.css';
+@import './_labels.css';
 
 /* 4. Cross-cutting concerns */
 @import './_responsive.css';
