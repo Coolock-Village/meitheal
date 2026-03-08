@@ -1,118 +1,92 @@
-# Meitheal Codebase Hardening — Roadmap
+# Code Quality & UX Happiness — Roadmap
+
+**Project:** Meitheal Quality & UX Happiness Sprint
+**Phases:** 5
+**Requirements:** 17
+**Date:** 2026-03-08
+
+---
 
 ## Progress
 
-| # | Phase | Status | Plans | Date |
-|---|-------|--------|-------|------|
-| 1 | Quick Wins | Complete | 1 | 2026-03-07 |
-| 2 | TaskRepository Extraction | Planned | – | – |
-| 3 | TaskApiClient Wrapper | Planned | – | – |
-| 4 | Silent Catch Audit | Planned | – | – |
-| 5 | Client Script Extraction | Planned | – | – |
-| 6 | Shared Components | Planned | – | – |
-| 7 | Performance & Bulk API | Planned | – | – |
+| # | Phase | Status | Date |
+|---|-------|--------|------|
+| 1 | Accessibility Foundation | Pending | |
+| 2 | Code Hygiene & Safety | Pending | |
+| 3 | Memory & Performance Guard | Pending | |
+| 4 | UX Polish & Happiness | Pending | |
+| 5 | Mobile & Touch Quality | Pending | |
 
 ---
 
-## [x] Phase 1: Quick Wins ✅ (2026-03-07)
+## Phase 1: Accessibility Foundation
 
-**Goal:** Apply low-risk, high-value fixes identified by the 50-persona audit.
+**Goal:** All users — including keyboard-only, screen reader, and motion-sensitive users — can fully interact with Meitheal.
 
-**Requirements:** R-AUDIT-01 through R-AUDIT-05
+**Requirements:** A11Y-01, A11Y-02, A11Y-03, A11Y-04, A11Y-05
 
 **Success Criteria:**
-1. `sentReminders` Set capped at 1000 entries with FIFO eviction
-2. SQLite WAL mode enabled via `PRAGMA journal_mode=WAL`
-3. Composite index `tasks(board_id, status)` added
-4. Reconnect timer guard prevents orphaned timers in `ha-connection.ts`
-5. Typecheck passes with 0 errors
+1. `@media (prefers-reduced-motion: reduce)` disables all CSS transforms and reduces animation durations
+2. Tab key cycles within command palette; Escape closes it; focus doesn't escape
+3. Opening new task modal puts focus on the title input
+4. Skip-to-content link is the first focusable element on every page
+5. Every icon-only button has a descriptive `aria-label`
 
 ---
 
-## [ ] Phase 2: TaskRepository Extraction
+## Phase 2: Code Hygiene & Safety
 
-**Goal:** Centralize all task database queries behind a typed `TaskRepository` abstraction, eliminating 6 pages' inline SQL and enforcing DDD boundaries.
+**Goal:** Eliminate silent error swallowing, remove debug traces, create shared abstractions, and harden against XSS.
 
-**Requirements:** R-AUDIT-06, R-AUDIT-07
+**Requirements:** CQ-01, CQ-02, CQ-03, CQ-04
 
 **Success Criteria:**
-1. `TaskRepository` class exists in `domains/tasks/task-repository.ts`
-2. Zero `getPersistenceClient()` imports in any `.astro` page file
-3. All task queries parameterized and type-safe via repository methods
-4. All 274 E2E tests pass with no regressions
-5. Build passes
+1. Zero empty `catch {}` blocks in codebase (grep returns 0)
+2. Zero `console.log` in production code (grep returns 0)
+3. Shared `@lib/api.ts` exists and is used by at least 3 callers
+4. No `innerHTML` assignment with user-controlled data
 
 ---
 
-## [ ] Phase 3: TaskApiClient Wrapper
+## Phase 3: Memory & Performance Guard
 
-**Goal:** Create a shared client-side fetch wrapper (`TaskApiClient`) that handles ingress path resolution, CSRF headers, and error handling — replacing 63 inline `fetch()` calls.
+**Goal:** Prevent memory leaks from orphaned timers and listeners, and bound all caches.
 
-**Requirements:** R-AUDIT-08
+**Requirements:** MP-01, MP-02, MP-03, MP-04
 
 **Success Criteria:**
-1. `lib/task-api-client.ts` exists with `get`, `post`, `put`, `patch`, `delete` methods
-2. All client-side `fetch()` calls use the shared client
-3. CSRF header automatically included on mutations
-4. Ingress path resolved once, not per-call
-5. Build passes
+1. `ingress-state-persistence.ts` listeners are cleaned up via AbortController on page transitions
+2. SW update interval is cleared on page unload
+3. HA reconnect timeout is tracked and cancelled on successful reconnect
+4. All `new Map()` instances have documented max-size or TTL eviction
 
 ---
 
-## [ ] Phase 4: Silent Catch Audit
+## Phase 4: UX Polish & Happiness
 
-**Goal:** Audit all empty/silent catch blocks and add appropriate error handling — structured logging for server-side, `console.warn` for client-side, intent comments for intentionally silent catches.
+**Goal:** Reduce frustration and increase delight through undo, retry, optimistic updates, and loading feedback.
 
-**Requirements:** R-AUDIT-09
+**Requirements:** UX-01, UX-02, UX-03, UX-04
 
 **Success Criteria:**
-1. Zero uncommented empty `catch {}` blocks in `.ts` files
-2. Server-side catches use structured `logger.warn/error`
-3. Client-side catches use `console.warn` minimum
-4. Intentionally silent catches have `/* reason */` comments
-5. Build passes
+1. Deleting a task shows undo toast; clicking undo restores it
+2. Failed fetch calls render an inline error with a "Retry" button
+3. Kanban drag/drop immediately reflects the new position (rolls back if API fails)
+4. A thin loading bar/indicator shows during Astro page transitions
 
 ---
 
-## [ ] Phase 5: Client Script Extraction
+## Phase 5: Mobile & Touch Quality
 
-**Goal:** Extract heavy inline `<script>` blocks from monolith pages into separate `.ts` modules for better code organization and potential code splitting.
+**Goal:** Every touch interaction meets platform expectations and accessibility standards.
 
-**Requirements:** R-AUDIT-10, R-AUDIT-11
+**Requirements:** MT-01, MT-02, MT-03
 
 **Success Criteria:**
-1. `kanban.astro` `<script>` → `kanban-client.ts` (~1,400 lines extracted)
-2. `table.astro` `<script>` → `table-client.ts` (~500 lines extracted)
-3. `settings.astro` decomposed into sub-components
-4. All 274 E2E tests pass
-5. Build passes
+1. Delete button passes 44×44px minimum touch target audit
+2. Swipe right from left edge opens sidebar on mobile
+3. All custom interactive elements are keyboard-focusable
 
 ---
 
-## [ ] Phase 6: Shared Components
-
-**Goal:** Extract duplicated UI patterns into reusable Astro components.
-
-**Requirements:** R-AUDIT-12, R-AUDIT-13
-
-**Success Criteria:**
-1. `TaskCard.astro` component used by kanban, index, today, upcoming
-2. `TaskListItem.astro` component used by tasks, today, upcoming
-3. `StatusPicker.astro` shared across kanban, table, edit modal
-4. `PriorityPicker.astro` shared across kanban, table, edit modal
-5. Zero visual regressions — identical rendered output
-
----
-
-## [ ] Phase 7: Performance & Bulk API
-
-**Goal:** Optimize database access patterns and add bulk operations endpoint.
-
-**Requirements:** R-AUDIT-14, R-AUDIT-15
-
-**Success Criteria:**
-1. Multi-query pages use `client.batch()` (index, today)
-2. `POST /api/tasks/bulk` endpoint exists for batch operations
-3. Table view bulk actions use single API call instead of serial fetches
-4. AI/strategy modules lazy-loaded via dynamic import
-5. Build passes
+*Roadmap: 2026-03-08 — quality-ux-happiness sprint*

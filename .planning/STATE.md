@@ -1,33 +1,26 @@
-# Meitheal Hardening Sprint — State
+# Meitheal Quality & UX Happiness Sprint — State
 
 ## Current Position
 
-**Phase:** 3 of 7
-**Status:** Ready for discuss/plan
-**Last Completed:** Phase 2 (TaskRepository Extraction) — 2026-03-08
+**Phase:** 1 of 5
+**Status:** Ready for execution
+**Last Completed:** GSD initialization — 2026-03-08
 
 ## Decisions
 
-- WAL mode enabled (Phase 1)
-- Composite index added for kanban queries (Phase 1)
-- Reconnect timer guard added (Phase 1)
-- sentReminders capped at 1000 with FIFO eviction (Phase 1)
-- Typecheck errors resolved (kanban.astro type assertion) (Phase 1)
-- TaskRepository class pattern chosen over functional module (Phase 2)
-- All 6 view pages migrated to repository pattern (Phase 2)
+- Focus on accessibility, code hygiene, memory safety, UX polish, mobile quality
+- Component decomposition (Layout/kanban/settings monolith splitting) is OUT OF SCOPE — separate initiative
+- Inline SQL migration is OUT OF SCOPE — separate initiative
+- All 17 requirements scoped from 50-persona quality/UX audit
 
 ## Issues
 
-- Pre-existing governance test failure (version consistency)
-- 226 silent catch blocks remain (Phase 4)
-- ~~6 pages with inline SQL (Phase 2)~~ — RESOLVED
+- 380 addEventListener vs 3 removeEventListener (mostly mitigated by MPA architecture)
+- 11 inline SQL in pages (deferred to separate initiative)
+- Layout.astro at 4152 lines (deferred to separate initiative)
 
 ## Sessions
 
-### 2026-03-07 Session 1
-- **Stopped at:** Phase 1 complete, Phase 2 ready for planning
-- **Resume:** `.planning/ROADMAP.md` Phase 2
-
 ### 2026-03-08 Session 1
-- **Stopped at:** Phase 2 complete, Phase 3 ready for planning
-- **Resume:** `.planning/ROADMAP.md` Phase 3
+- **Stopped at:** GSD initialization complete, Phase 1 ready for execution
+- **Resume:** `.planning/ROADMAP.md` Phase 1
