@@ -1,84 +1,78 @@
-# Code Quality & UX Happiness — Requirements
+# Gamification + Labels — Requirements
 
-**Project:** Meitheal Quality & UX Happiness Sprint
-**Version:** v1 (derived from 50-persona audit)
+**Project:** Meitheal Gamification + Labels Sprint
+**Version:** v1 (derived from gap analysis)
 **Date:** 2026-03-08
 
 ---
 
-## Accessibility (A11Y)
+## Labels — Completion (LBL)
 
-- [x] **A11Y-01**: All animations respect `prefers-reduced-motion` (disable transforms, reduce durations)
+- [ ] **LBL-01**: Extract reusable `LabelPicker.astro` component using existing CSS classes (`.label-picker`, `.label-picker__dropdown`)
   - Phase: 1
-- [x] **A11Y-02**: Command palette has proper focus trap (Tab cycling, Escape closes)
+- [ ] **LBL-02**: Extract reusable `LabelBadges.astro` component from inline kanban rendering
   - Phase: 1
-- [x] **A11Y-03**: New task modal auto-focuses first input on open
+- [ ] **LBL-03**: Label badges visible on Today page task cards
   - Phase: 1
-- [x] **A11Y-04**: Skip-to-content link present for keyboard users
+- [ ] **LBL-04**: Label badges visible on Upcoming page task cards
   - Phase: 1
-- [x] **A11Y-05**: All icon-only buttons have `aria-label` attributes
+- [ ] **LBL-05**: Label badges visible on Table view rows
   - Phase: 1
-
-## Code Quality (CQ)
-
-- [x] **CQ-01**: All 11 empty `catch {}` blocks replaced with `console.warn` or error handling
+- [ ] **LBL-06**: Label filter bar on Kanban page using existing CSS (`.label-filter`, `.label-filter__chip`)
   - Phase: 2
-- [x] **CQ-02**: All `console.log` in production code removed or replaced with structured logger
+- [ ] **LBL-07**: Label filter bar on Table page
   - Phase: 2
-- [x] **CQ-03**: Shared API fetch utility created at `@lib/api.ts` with typed response handling
+- [ ] **LBL-08**: `LabelPicker` autocomplete from existing labels (fetch from `/api/labels`)
   - Phase: 2
-- [x] **CQ-04**: innerHTML instances audited and replaced with textContent/DOM API where user data is rendered
+- [ ] **LBL-09**: `PUT /api/labels/:id` endpoint for renaming/recoloring labels
   - Phase: 2
-
-## Memory & Performance (MP)
-
-- [x] **MP-01**: `ingress-state-persistence.ts` listeners use AbortController signal for cleanup
+- [ ] **LBL-10**: `DELETE /api/labels/:id` endpoint for removing labels
+  - Phase: 2
+- [ ] **LBL-11**: Label management UI in Settings page (list, rename, recolor, delete)
   - Phase: 3
-- [x] **MP-02**: SW update check interval has clearInterval on page unload
-  - Phase: 3
-- [x] **MP-03**: HA reconnect setTimeout has cancel mechanism to prevent orphaned timers
-  - Phase: 3
-- [x] **MP-04**: All unbounded `new Map()` caches have max-size eviction or TTL
+- [ ] **LBL-12**: Replace NewTaskModal raw `<input>` with `LabelPicker` component
+  - Phase: 2
+- [ ] **LBL-13**: i18n strings for label UI in `en.json` and `ga.json`
   - Phase: 3
 
-## UI/UX Polish (UX)
+## Gamification — Foundation (GAM)
 
-- [x] **UX-01**: Destructive actions (delete task) have undo toast with timeout
+- [ ] **GAM-01**: Confetti/celebration CSS animation on task completion
   - Phase: 4
-- [x] **UX-02**: Failed API calls show error UI with retry button
+- [ ] **GAM-02**: `domains/gamification/` bounded context with streak tracking
   - Phase: 4
-- [x] **UX-03**: Kanban drag/drop uses optimistic updates (show change instantly, rollback on failure)
+- [ ] **GAM-03**: Daily completion streak counter (reset on missed day) with DB schema (`gamification_stats` table)
   - Phase: 4
-- [x] **UX-04**: Page navigation loading bar visible during transitions
+- [ ] **GAM-04**: Streak badge visible on dashboard/sidebar
   - Phase: 4
-
-## Mobile & Touch (MT)
-
-- [x] **MT-01**: Delete row button meets 44×44px minimum touch target
+- [ ] **GAM-05**: XP points system (weighted by priority: P1=5x, P5=1x) with running total
   - Phase: 5
-- [x] **MT-02**: Mobile sidebar supports swipe-to-open/close gesture
+- [ ] **GAM-06**: Daily task goal (configurable target, progress ring/bar on dashboard)
   - Phase: 5
-- [x] **MT-03**: All interactive custom elements have `tabindex="0"` for keyboard access
+- [ ] **GAM-07**: Weekly completed tasks chart on dashboard (last 7 days bar chart)
+  - Phase: 5
+- [ ] **GAM-08**: `GET /api/gamification/stats` endpoint returning streaks, points, daily progress
   - Phase: 5
 
 ## Scope
 
 ### v1 (this sprint)
-All requirements above
+All requirements above (LBL-01 through LBL-13, GAM-01 through GAM-08)
 
 ### v2 (deferred)
-- High-contrast mode styles
-- Confetti on "all tasks complete"
-- Task detail panel drag-to-resize
-- Auto-capitalization on mobile inputs
-- First-use onboarding wizard
-- WebSocket keep-alive ping mechanism
+- Unify dual label system (native JSON + Vikunja compat relational)
+- Achievements/badges system
+- Productivity stats dashboard page
+- Bulk label operations (multi-select add/remove)
+- Leaderboard (multi-user)
+- Rewards/incentives system (custom rewards)
+- Label hierarchy (parent/child labels)
 
 ### Out of Scope
-- Component extraction (Layout, settings, kanban monolith splitting — separate initiative)
-- Inline SQL migration to domain service layer — separate initiative
-- Page script extraction to TypeScript modules — separate initiative
+- Component decomposition (Layout monolith splitting — separate initiative)
+- Inline SQL migration — separate initiative
+- Social gamification (party challenges, etc.)
 
 ---
 
-*Requirements audit: 2026-03-08 — quality-ux-happiness sprint*
+*Requirements: 2026-03-08 — gamification + labels gap analysis sprint*

@@ -1,8 +1,8 @@
-# Code Quality & UX Happiness — Roadmap
+# Gamification + Labels — Roadmap
 
-**Project:** Meitheal Quality & UX Happiness Sprint
+**Project:** Meitheal Gamification + Labels Sprint
 **Phases:** 5
-**Requirements:** 17
+**Requirements:** 21
 **Date:** 2026-03-08
 
 ---
@@ -11,82 +11,81 @@
 
 | # | Phase | Status | Date |
 |---|-------|--------|------|
-| 1 | Accessibility Foundation | Pending | |
-| 2 | Code Hygiene & Safety | Pending | |
-| 3 | Memory & Performance Guard | Pending | |
-| 4 | UX Polish & Happiness | Pending | |
-| 5 | Mobile & Touch Quality | Pending | |
+| 1 | Label Components | Pending | |
+| 2 | Label Interaction | Pending | |
+| 3 | Label Management | Pending | |
+| 4 | Gamification Core | Pending | |
+| 5 | Gamification Depth | Pending | |
 
 ---
 
-## Phase 1: Accessibility Foundation
+## Phase 1: Label Components
 
-**Goal:** All users — including keyboard-only, screen reader, and motion-sensitive users — can fully interact with Meitheal.
+**Goal:** Extract reusable label components and display labels consistently across all views.
 
-**Requirements:** A11Y-01, A11Y-02, A11Y-03, A11Y-04, A11Y-05
+**Requirements:** LBL-01, LBL-02, LBL-03, LBL-04, LBL-05
 
 **Success Criteria:**
-1. `@media (prefers-reduced-motion: reduce)` disables all CSS transforms and reduces animation durations
-2. Tab key cycles within command palette; Escape closes it; focus doesn't escape
-3. Opening new task modal puts focus on the title input
-4. Skip-to-content link is the first focusable element on every page
-5. Every icon-only button has a descriptive `aria-label`
+1. `LabelPicker.astro` component exists and renders the `.label-picker` dropdown with typeahead
+2. `LabelBadges.astro` component renders colored label chips and is used on Kanban, Today, Upcoming, and Table views
+3. Labels pass visual regression — existing kanban label rendering is identical before/after component extraction
 
 ---
 
-## Phase 2: Code Hygiene & Safety
+## Phase 2: Label Interaction
 
-**Goal:** Eliminate silent error swallowing, remove debug traces, create shared abstractions, and harden against XSS.
+**Goal:** Enable users to filter, search, and manage labels in task workflows.
 
-**Requirements:** CQ-01, CQ-02, CQ-03, CQ-04
+**Requirements:** LBL-06, LBL-07, LBL-08, LBL-09, LBL-10, LBL-12
 
 **Success Criteria:**
-1. Zero empty `catch {}` blocks in codebase (grep returns 0)
-2. Zero `console.log` in production code (grep returns 0)
-3. Shared `@lib/api.ts` exists and is used by at least 3 callers
-4. No `innerHTML` assignment with user-controlled data
+1. Label filter bar on Kanban and Table pages filters visible tasks by selected label(s)
+2. `LabelPicker` shows autocomplete dropdown populated from `/api/labels`
+3. `PUT /api/labels/:id` renames/recolors a label and returns updated record
+4. `DELETE /api/labels/:id` removes a label and strips it from all tasks
+5. NewTaskModal uses `LabelPicker` component instead of raw `<input>`
 
 ---
 
-## Phase 3: Memory & Performance Guard
+## Phase 3: Label Management
 
-**Goal:** Prevent memory leaks from orphaned timers and listeners, and bound all caches.
+**Goal:** Provide a dedicated UI for managing all labels and ensure full i18n coverage.
 
-**Requirements:** MP-01, MP-02, MP-03, MP-04
+**Requirements:** LBL-11, LBL-13
 
 **Success Criteria:**
-1. `ingress-state-persistence.ts` listeners are cleaned up via AbortController on page transitions
-2. SW update interval is cleared on page unload
-3. HA reconnect timeout is tracked and cancelled on successful reconnect
-4. All `new Map()` instances have documented max-size or TTL eviction
+1. Settings → Labels tab shows all labels with rename, recolor, and delete actions
+2. All label-related strings in `en.json` and `ga.json`
+3. Labels CRUD works end-to-end from Settings UI through API to DB
 
 ---
 
-## Phase 4: UX Polish & Happiness
+## Phase 4: Gamification Core
 
-**Goal:** Reduce frustration and increase delight through undo, retry, optimistic updates, and loading feedback.
+**Goal:** Introduce gamification with completion celebrations and daily streaks.
 
-**Requirements:** UX-01, UX-02, UX-03, UX-04
+**Requirements:** GAM-01, GAM-02, GAM-03, GAM-04
 
 **Success Criteria:**
-1. Deleting a task shows undo toast; clicking undo restores it
-2. Failed fetch calls render an inline error with a "Retry" button
-3. Kanban drag/drop immediately reflects the new position (rolls back if API fails)
-4. A thin loading bar/indicator shows during Astro page transitions
+1. Completing a task triggers a confetti/celebration animation (CSS-only, respects `prefers-reduced-motion`)
+2. `domains/gamification/` bounded context exists with `streak-tracker.ts`
+3. `gamification_stats` DB table tracks daily completion counts and current streak
+4. Streak badge visible in sidebar footer showing current streak count + fire emoji
 
 ---
 
-## Phase 5: Mobile & Touch Quality
+## Phase 5: Gamification Depth
 
-**Goal:** Every touch interaction meets platform expectations and accessibility standards.
+**Goal:** Add XP points system, daily goals, progress visualization, and gamification API.
 
-**Requirements:** MT-01, MT-02, MT-03
+**Requirements:** GAM-05, GAM-06, GAM-07, GAM-08
 
 **Success Criteria:**
-1. Delete button passes 44×44px minimum touch target audit
-2. Swipe right from left edge opens sidebar on mobile
-3. All custom interactive elements are keyboard-focusable
+1. Tasks award XP on completion, weighted by priority (P1=50XP, P2=40XP, P3=30XP, P4=20XP, P5=10XP)
+2. Configurable daily task goal with progress ring on dashboard
+3. Weekly bar chart showing tasks completed per day (last 7 days)
+4. `GET /api/gamification/stats` returns `{ streak, points, daily_completed, daily_goal, weekly_data }`
 
 ---
 
-*Roadmap: 2026-03-08 — quality-ux-happiness sprint*
+*Roadmap: 2026-03-08 — gamification + labels sprint*
