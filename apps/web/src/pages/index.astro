@@ -3,7 +3,8 @@ import Layout from "../layouts/Layout.astro";
 import EmptyState from "../components/ui/EmptyState.astro";
 import LabelBadges from "../components/ui/LabelBadges.astro";
 import StreakBadge from "../components/gamification/StreakBadge.astro";
-import { getStats as getGamificationStats } from "../domains/gamification/streak-tracker";
+import GamificationWidget from "../components/gamification/GamificationWidget.astro";
+import { getStats as getGamificationStats, getWeeklyData as getGamificationWeekly } from "../domains/gamification/streak-tracker";
 import { t } from "../i18n/translations";
 import type { Locale } from "../lib/locale";
 import {
@@ -21,6 +22,7 @@ let favorites: Record<string, unknown>[] = [];
 let openTasks: Record<string, unknown>[] = [];
 let stats = { total: 0, open: 0, active: 0, completed: 0, overdue: 0 };
 let gamificationStats = { currentStreak: 0, todayCompleted: 0, totalCompleted: 0, longestStreak: 0, totalPoints: 0 };
+let gamificationWeekly: Array<{ date: string; completedCount: number; streakCount: number; points: number }> = [];
 let boardMap: Record<string, { name: string; color: string }> = {
   default: { name: "Default", color: "#6366F1" },
 };
@@ -46,6 +48,7 @@ try {
 
 try {
   gamificationStats = await getGamificationStats();
+  gamificationWeekly = await getGamificationWeekly();
 } catch {
   // Gamification not available
 }
@@ -182,6 +185,11 @@ import { getPriorityColor } from "../lib/priority-config";
     </a>
   </div>
 
+  {gamificationStats.totalCompleted > 0 && (
+    <div style="margin-bottom: 20px;">
+      <GamificationWidget stats={gamificationStats} weekly={gamificationWeekly} />
+    </div>
+  )}
   {
     favorites.length > 0 && (
       <div class="card" style="margin-bottom: 20px;">

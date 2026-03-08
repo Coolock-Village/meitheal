@@ -214,6 +214,7 @@ const priorityClasses: Record<number, string> = {
                     data-status={task.status}
                     data-priority={String(task.priority)}
                     data-assigned={String(task.assigned_to ?? "")}
+                    data-labels={JSON.stringify(task.labels ?? [])}
                     data-title={task.title.toLowerCase()}
                     data-search={searchText}
                     class={`table-row ${task.is_done ? "row-done" : ""}`}
@@ -437,6 +438,14 @@ const priorityClasses: Record<number, string> = {
 
     const FILTER_KEY = "meitheal-task-view-filters";
 
+    // Label filter state — updated by LabelFilterBar events
+    let activeLabelFilter: string[] = [];
+
+    document.addEventListener("meitheal:label-filter", ((e: CustomEvent) => {
+      activeLabelFilter = e.detail?.labels ?? [];
+      applyTableFilters();
+    }) as EventListener);
+
     // Numeric columns for proper sorting
     const NUMERIC_COLS = new Set(["priority", "rice"]);
 
@@ -511,8 +520,24 @@ const priorityClasses: Record<number, string> = {
           matchUser = el.dataset.assigned === userFilter;
         }
 
+        // Label filter matching
+        let matchLabel = true;
+        if (activeLabelFilter.length > 0) {
+          try {
+            const rowLabels = JSON.parse(el.dataset.labels ?? "[]") as (string | { name: string })[];
+            const labelNames = rowLabels.map((l) =>
+              (typeof l === "string" ? l : l.name ?? "").toLowerCase()
+            );
+            matchLabel = activeLabelFilter.some((f) =>
+              labelNames.includes(f.toLowerCase())
+            );
+          } catch {
+            matchLabel = false;
+          }
+        }
+
         const visible =
-          matchSearch && matchStatus && matchPriority && matchRice && matchUser;
+          matchSearch && matchStatus && matchPriority && matchRice && matchUser && matchLabel;
         el.style.display = visible ? "" : "none";
       });
 

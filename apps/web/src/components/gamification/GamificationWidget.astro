@@ -1,0 +1,256 @@
+---
+/**
+ * GamificationWidget — Dashboard progress ring + weekly bar chart
+ *
+ * @domain gamification
+ * @bounded-context gamification
+ *
+ * Server-side rendered widget showing:
+ * 1. Circular progress ring for daily task goal
+ * 2. Weekly bar chart (last 7 days completion counts)
+ * 3. XP total and streak info
+ *
+ * @prop stats - Gamification stats from getStats()
+ * @prop weekly - Weekly data from getWeeklyData()
+ * @prop dailyGoal - Configurable daily task completion goal (default: 5)
+ */
+interface Props {
+  stats: {
+    currentStreak: number
+    longestStreak: number
+    todayCompleted: number
+    totalCompleted: number
+    totalPoints: number
+  }
+  weekly: Array<{
+    date: string
+    completedCount: number
+    streakCount: number
+    points: number
+  }>
+  dailyGoal?: number
+}
+
+const {
+  stats,
+  weekly,
+  dailyGoal = 5,
+} = Astro.props
+
+const progress = Math.min(stats.todayCompleted / dailyGoal, 1)
+const circumference = 2 * Math.PI * 42
+const dashOffset = circumference * (1 - progress)
+const maxCompleted = Math.max(...weekly.map(d => d.completedCount), dailyGoal)
+
+function dayLabel(dateStr: string): string {
+  const d = new Date(dateStr + "T00:00:00")
+  return d.toLocaleDateString("en", { weekday: "short" })
+}
+---
+
+<div class="gamification-widget">
+  {/* Progress Ring */}
+  <div class="gam-progress">
+    <svg viewBox="0 0 100 100" class="gam-ring" aria-hidden="true">
+      <circle cx="50" cy="50" r="42" class="gam-ring__bg" />
+      <circle
+        cx="50" cy="50" r="42"
+        class="gam-ring__fill"
+        style={`stroke-dasharray: ${circumference}; stroke-dashoffset: ${dashOffset};`}
+      />
+    </svg>
+    <div class="gam-ring__text">
+      <span class="gam-ring__count">{stats.todayCompleted}</span>
+      <span class="gam-ring__label">/ {dailyGoal}</span>
+    </div>
+  </div>
+
+  {/* Stats row */}
+  <div class="gam-stats-row">
+    <div class="gam-stat">
+      <span class="gam-stat__value">{stats.totalPoints}</span>
+      <span class="gam-stat__label">XP</span>
+    </div>
+    <div class="gam-stat">
+      <span class="gam-stat__value">{stats.totalCompleted}</span>
+      <span class="gam-stat__label">Total</span>
+    </div>
+    <div class="gam-stat">
+      <span class="gam-stat__value">{stats.longestStreak}</span>
+      <span class="gam-stat__label">Best</span>
+    </div>
+  </div>
+
+  {/* Weekly bar chart */}
+  <div class="gam-weekly">
+    <div class="gam-weekly__title">This Week</div>
+    <div class="gam-weekly__chart">
+      {weekly.map(day => {
+        const height = maxCompleted > 0 ? (day.completedCount / maxCompleted) * 100 : 0
+        const isToday = day.date === new Date().toISOString().split("T")[0]
+        return (
+          <div class="gam-bar-col">
+            <div class="gam-bar-wrapper">
+              <div
+                class={`gam-bar ${isToday ? "gam-bar--today" : ""}`}
+                style={`height: ${Math.max(height, 4)}%;`}
+                title={`${dayLabel(day.date)}: ${day.completedCount} task${day.completedCount !== 1 ? "s" : ""}`}
+              />
+            </div>
+            <span class={`gam-bar-label ${isToday ? "gam-bar-label--today" : ""}`}>
+              {dayLabel(day.date)}
+            </span>
+          </div>
+        )
+      })}
+    </div>
+  </div>
+</div>
+
+<style>
+  .gamification-widget {
+    display: flex;
+    flex-direction: column;
+    gap: 1rem;
+    padding: 1rem;
+    background: var(--card-bg, #1a1a2e);
+    border-radius: 12px;
+    border: 1px solid var(--border-color, #2a2a4a);
+  }
+
+  /* Progress ring */
+  .gam-progress {
+    position: relative;
+    width: 100px;
+    height: 100px;
+    margin: 0 auto;
+  }
+
+  .gam-ring {
+    width: 100%;
+    height: 100%;
+    transform: rotate(-90deg);
+  }
+
+  .gam-ring__bg {
+    fill: none;
+    stroke: var(--border-color, #2a2a4a);
+    stroke-width: 6;
+  }
+
+  .gam-ring__fill {
+    fill: none;
+    stroke: var(--accent, #6366f1);
+    stroke-width: 6;
+    stroke-linecap: round;
+    transition: stroke-dashoffset 0.6s ease;
+  }
+
+  .gam-ring__text {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    text-align: center;
+    line-height: 1;
+  }
+
+  .gam-ring__count {
+    font-size: 1.5rem;
+    font-weight: 700;
+    color: var(--text-primary, #e0e0e0);
+    font-variant-numeric: tabular-nums;
+  }
+
+  .gam-ring__label {
+    display: block;
+    font-size: 0.7rem;
+    color: var(--text-muted, #888);
+    margin-top: 0.125rem;
+  }
+
+  /* Stats row */
+  .gam-stats-row {
+    display: flex;
+    justify-content: space-around;
+    gap: 0.5rem;
+  }
+
+  .gam-stat {
+    text-align: center;
+  }
+
+  .gam-stat__value {
+    display: block;
+    font-size: 1.125rem;
+    font-weight: 700;
+    color: var(--text-primary, #e0e0e0);
+    font-variant-numeric: tabular-nums;
+  }
+
+  .gam-stat__label {
+    font-size: 0.6875rem;
+    color: var(--text-muted, #888);
+    text-transform: uppercase;
+    letter-spacing: 0.03em;
+  }
+
+  /* Weekly bar chart */
+  .gam-weekly__title {
+    font-size: 0.75rem;
+    font-weight: 600;
+    color: var(--text-muted, #888);
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+  }
+
+  .gam-weekly__chart {
+    display: flex;
+    align-items: flex-end;
+    gap: 4px;
+    height: 60px;
+  }
+
+  .gam-bar-col {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 2px;
+  }
+
+  .gam-bar-wrapper {
+    width: 100%;
+    height: 48px;
+    display: flex;
+    align-items: flex-end;
+  }
+
+  .gam-bar {
+    width: 100%;
+    border-radius: 3px 3px 0 0;
+    background: var(--accent, #6366f1);
+    opacity: 0.5;
+    transition: height 0.3s ease, opacity 0.15s;
+    min-height: 2px;
+  }
+
+  .gam-bar:hover {
+    opacity: 0.8;
+  }
+
+  .gam-bar--today {
+    opacity: 1;
+    background: linear-gradient(to top, var(--accent, #6366f1), hsl(250 80% 70%));
+  }
+
+  .gam-bar-label {
+    font-size: 0.5625rem;
+    color: var(--text-muted, #888);
+  }
+
+  .gam-bar-label--today {
+    color: var(--accent, #6366f1);
+    font-weight: 600;
+  }
+</style>

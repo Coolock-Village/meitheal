@@ -437,5 +437,32 @@
         "link_created": "Link created",
         "link_removed": "Link removed",
         "load_links_retry": "Failed to load links. Tap to retry."
+    },
+    "labels": {
+        "title": "Labels",
+        "manage_labels": "Manage Labels",
+        "manage_subtitle": "Create, edit, and remove labels used to categorize tasks",
+        "create": "Create",
+        "name_placeholder": "Label name",
+        "no_labels": "No labels yet. Create one above!",
+        "delete_confirm": "Delete label? This will remove it from all tasks.",
+        "label_created": "Label created",
+        "label_deleted": "Label deleted",
+        "label_updated": "Label updated",
+        "failed_create": "Failed to create label",
+        "failed_delete": "Failed to delete label",
+        "filter_all": "All labels",
+        "filter_active": "Active filter"
+    },
+    "gamification": {
+        "streak": "day streak",
+        "streak_plural": "day streak",
+        "streak_milestone": "🔥 {count} day streak!",
+        "today_completed": "completed today",
+        "total_points": "Total XP",
+        "daily_goal": "Daily Goal",
+        "weekly_chart": "This Week",
+        "xp_earned": "+{points} XP",
+        "level": "Level {level}"
     }
 }
