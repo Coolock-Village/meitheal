@@ -18,6 +18,7 @@
  */
 import type { APIRoute } from "astro";
 import { logApiError } from "../../../lib/api-logger";
+import { supervisorFetch } from "../../../lib/supervisor-fetch";
 
 export const POST: APIRoute = async ({ request }) => {
   try {
@@ -33,15 +34,14 @@ export const POST: APIRoute = async ({ request }) => {
       try {
         const addonsRes = await supervisorFetch("/addons");
         if (addonsRes?.ok) {
-            const addonsData = (await addonsRes.json()) as {
-              data?: { addons?: { slug: string; ingress_url?: string; state?: string }[] };
-            };
-            const grocy = addonsData.data?.addons?.find(
-              (a) => a.slug.includes("grocy") && a.state === "started"
-            );
-            if (grocy?.ingress_url) {
-              grocyUrl = `http://supervisor${grocy.ingress_url}`;
-            }
+          const addonsData = (await addonsRes.json()) as {
+            data?: { addons?: { slug: string; ingress_url?: string; state?: string }[] };
+          };
+          const grocy = addonsData.data?.addons?.find(
+            (a) => a.slug.includes("grocy") && a.state === "started"
+          );
+          if (grocy?.ingress_url) {
+            grocyUrl = `http://supervisor${grocy.ingress_url}`;
           }
         }
       } catch { /* auto-detect failed — need manual URL */ }

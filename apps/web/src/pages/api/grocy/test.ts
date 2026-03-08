@@ -64,7 +64,7 @@ export const POST: APIRoute = async ({ request }) => {
           args: [],
         });
         if (row.rows.length > 0 && row.rows[0]?.value) {
-          apiKey = String(row.rows[0].value);
+          apiKey = String(row.rows[0]?.value);
         }
       } catch { /* Settings lookup failed */ }
     }
