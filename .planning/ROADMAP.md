@@ -4,6 +4,7 @@
 **Phases:** 5
 **Requirements:** 21
 **Date:** 2026-03-08
+**Status:** ✅ COMPLETE
 
 ---
 
@@ -11,81 +12,82 @@
 
 | # | Phase | Status | Date |
 |---|-------|--------|------|
-| 1 | Label Components | Pending | |
-| 2 | Label Interaction | Pending | |
-| 3 | Label Management | Pending | |
-| 4 | Gamification Core | Pending | |
-| 5 | Gamification Depth | Pending | |
+| 1 | Label Components | ✅ Complete | 2026-03-08 |
+| 2 | Label Interaction | ✅ Complete | 2026-03-08 |
+| 3 | Label Management | ✅ Complete | 2026-03-08 |
+| 4 | Gamification Core | ✅ Complete | 2026-03-08 |
+| 5 | Gamification Depth | ✅ Complete | 2026-03-08 |
 
 ---
 
-## Phase 1: Label Components
+## Phase 1: Label Components ✅
 
 **Goal:** Extract reusable label components and display labels consistently across all views.
 
 **Requirements:** LBL-01, LBL-02, LBL-03, LBL-04, LBL-05
 
-**Success Criteria:**
-1. `LabelPicker.astro` component exists and renders the `.label-picker` dropdown with typeahead
-2. `LabelBadges.astro` component renders colored label chips and is used on Kanban, Today, Upcoming, and Table views
-3. Labels pass visual regression — existing kanban label rendering is identical before/after component extraction
+**Delivered:**
+- `LabelBadges.astro` — renders colored label chips (JSON/string/object support, compact mode, max limit)
+- `LabelPicker.astro` — typeahead autocomplete from `/api/labels` with create-inline
+- Labels visible on tasks, index, today, upcoming, and table views
+- kanban: existing inline rendering preserved (is:inline constraint)
 
 ---
 
-## Phase 2: Label Interaction
+## Phase 2: Label Interaction ✅
 
 **Goal:** Enable users to filter, search, and manage labels in task workflows.
 
 **Requirements:** LBL-06, LBL-07, LBL-08, LBL-09, LBL-10, LBL-12
 
-**Success Criteria:**
-1. Label filter bar on Kanban and Table pages filters visible tasks by selected label(s)
-2. `LabelPicker` shows autocomplete dropdown populated from `/api/labels`
-3. `PUT /api/labels/:id` renames/recolors a label and returns updated record
-4. `DELETE /api/labels/:id` removes a label and strips it from all tasks
-5. NewTaskModal uses `LabelPicker` component instead of raw `<input>`
+**Delivered:**
+- `LabelFilterBar.astro` on Kanban and Table pages with `meitheal:label-filter` events
+- LabelPicker autocomplete from `/api/labels`
+- `PUT /api/labels/:id` and `DELETE /api/labels/:id` endpoints
+- `updateVikunjaLabel` / `deleteVikunjaLabel` store functions
+- NewTaskModal uses LabelPicker component
 
 ---
 
-## Phase 3: Label Management
+## Phase 3: Label Management ✅
 
 **Goal:** Provide a dedicated UI for managing all labels and ensure full i18n coverage.
 
 **Requirements:** LBL-11, LBL-13
 
-**Success Criteria:**
-1. Settings → Labels tab shows all labels with rename, recolor, and delete actions
-2. All label-related strings in `en.json` and `ga.json`
-3. Labels CRUD works end-to-end from Settings UI through API to DB
+**Delivered:**
+- `SettingsLabels.astro` — Settings → Labels tab with CRUD
+- i18n strings in `en.json` and `ga.json` (labels, label_placeholder, labels_hint)
 
 ---
 
-## Phase 4: Gamification Core
+## Phase 4: Gamification Core ✅
 
 **Goal:** Introduce gamification with completion celebrations and daily streaks.
 
 **Requirements:** GAM-01, GAM-02, GAM-03, GAM-04
 
-**Success Criteria:**
-1. Completing a task triggers a confetti/celebration animation (CSS-only, respects `prefers-reduced-motion`)
-2. `domains/gamification/` bounded context exists with `streak-tracker.ts`
-3. `gamification_stats` DB table tracks daily completion counts and current streak
-4. Streak badge visible in sidebar footer showing current streak count + fire emoji
+**Delivered:**
+- `Confetti.astro` — CSS-only celebration animation (respects `prefers-reduced-motion`)
+- `domains/gamification/streak-tracker.ts` — bounded context with DB schema
+- `gamification_stats` table (date, completed_count, streak_count, points)
+- `StreakBadge.astro` in dashboard stats grid
+- Fixed Layout.astro missing `document.` prefix bug
 
 ---
 
-## Phase 5: Gamification Depth
+## Phase 5: Gamification Depth ✅
 
 **Goal:** Add XP points system, daily goals, progress visualization, and gamification API.
 
 **Requirements:** GAM-05, GAM-06, GAM-07, GAM-08
 
-**Success Criteria:**
-1. Tasks award XP on completion, weighted by priority (P1=50XP, P2=40XP, P3=30XP, P4=20XP, P5=10XP)
-2. Configurable daily task goal with progress ring on dashboard
-3. Weekly bar chart showing tasks completed per day (last 7 days)
-4. `GET /api/gamification/stats` returns `{ streak, points, daily_completed, daily_goal, weekly_data }`
+**Delivered:**
+- `onTaskCompleted()` hook wired into tasks, today, and Layout task-detail panel
+- Priority-weighted XP: P1=50, P2=40, P3=30, P4=20, P5=10
+- `GamificationWidget.astro` — progress ring, XP stats, weekly bar chart
+- `/api/gamification` — GET stats + POST completions
 
 ---
 
-*Roadmap: 2026-03-08 — gamification + labels sprint*
+*Sprint completed: 2026-03-08*

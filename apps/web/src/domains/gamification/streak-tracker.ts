@@ -12,12 +12,36 @@
  * - completed_count: tasks completed that day
  * - streak_count: consecutive days streak as of that date
  * - points: XP earned that day (Phase 5)
+ *
+ * @kcs Priority-to-XP mapping (GAM-05):
+ * P1 (Critical) = 50 XP, P2 (High) = 40 XP, P3 (Medium) = 30 XP,
+ * P4 (Low) = 20 XP, P5 (Minimal) = 10 XP
  */
 
 import {
   ensureSchema,
   getPersistenceClient,
 } from "@domains/tasks/persistence/store"
+
+/**
+ * XP points awarded per priority level.
+ * Higher priority = more reward for completing it.
+ */
+const PRIORITY_XP: Record<number, number> = {
+  1: 50,
+  2: 40,
+  3: 30,
+  4: 20,
+  5: 10,
+}
+
+/**
+ * Resolve XP points from a priority value.
+ * Falls back to 30 XP (medium) for unknown priorities.
+ */
+export function getXpForPriority(priority: number): number {
+  return PRIORITY_XP[priority] ?? 30
+}
 
 export interface GamificationStats {
   currentStreak: number

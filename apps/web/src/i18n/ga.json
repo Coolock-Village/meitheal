@@ -433,5 +433,32 @@
         "link_created": "Nasc cruthaithe",
         "link_removed": "Nasc bainte",
         "load_links_retry": "Theip ar naisc a lódáil. Tapáil chun atriail."
+    },
+    "labels": {
+        "title": "Lipéid",
+        "manage_labels": "Bainistigh Lipéid",
+        "manage_subtitle": "Cruthaigh, cuir in eagar, agus bain lipéid a úsáidtear chun tascanna a chatagóiriú",
+        "create": "Cruthaigh",
+        "name_placeholder": "Ainm an lipéid",
+        "no_labels": "Gan lipéid fós. Cruthaigh ceann thuas!",
+        "delete_confirm": "Scrios lipéad? Bainfear é ó gach tasc.",
+        "label_created": "Lipéad cruthaithe",
+        "label_deleted": "Lipéad scriosta",
+        "label_updated": "Lipéad nuashonraithe",
+        "failed_create": "Theip ar chruthú an lipéid",
+        "failed_delete": "Theip ar scriosadh an lipéid",
+        "filter_all": "Gach lipéad",
+        "filter_active": "Scagaire gníomhach"
+    },
+    "gamification": {
+        "streak": "lá ar stríoc",
+        "streak_plural": "lá ar stríoc",
+        "streak_milestone": "🔥 {count} lá ar stríoc!",
+        "today_completed": "críochnaithe inniu",
+        "total_points": "XP Iomlán",
+        "daily_goal": "Sprioc Laethúil",
+        "weekly_chart": "An tSeachtain Seo",
+        "xp_earned": "+{points} XP",
+        "level": "Leibhéal {level}"
     }
 }

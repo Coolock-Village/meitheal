@@ -1,5 +1,5 @@
 import type { APIRoute } from "astro"
-import { getStats, getWeeklyData, recordTaskCompletion } from "@domains/gamification"
+import { getStats, getWeeklyData, recordTaskCompletion, getXpForPriority } from "@domains/gamification"
 import { apiJson, apiError } from "../../lib/api-response"
 
 /**
@@ -20,9 +20,10 @@ export const GET: APIRoute = async () => {
 export const POST: APIRoute = async ({ request }) => {
   try {
     const body = (await request.json().catch(() => ({}))) as Record<string, unknown>
-    const points = typeof body.points === "number" ? body.points : 0
+    const priority = typeof body.priority === "number" ? body.priority : 3
+    const points = getXpForPriority(priority)
     const stats = await recordTaskCompletion(points)
-    return apiJson({ stats, confetti: true })
+    return apiJson({ stats, confetti: true, xp: points })
   } catch (err) {
     return apiError("Failed to record completion")
   }

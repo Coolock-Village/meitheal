@@ -9,6 +9,7 @@ export {
   recordTaskCompletion,
   getStats,
   getWeeklyData,
+  getXpForPriority,
   ensureGamificationSchema,
   resetGamificationForTests,
   type GamificationStats,
