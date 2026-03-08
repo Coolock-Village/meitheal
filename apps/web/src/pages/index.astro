@@ -491,15 +491,22 @@ import { getPriorityColor } from "../lib/priority-config";
         const newCard = document.createElement("div");
         newCard.className = "bento-card";
         newCard.dataset.board = activeBoard === "all" ? "default" : activeBoard;
-        newCard.innerHTML = `
-          <div class="bento-card-stripe" style="background: #eab308"></div>
-          <div class="bento-card-body">
-            <div class="bento-card-title">${title}</div>
-            <div class="bento-card-footer">
-              <span class="task-badge badge-pending">Pending</span>
-            </div>
-          </div>
-        `;
+        const stripe = document.createElement("div");
+        stripe.className = "bento-card-stripe";
+        stripe.style.background = "#eab308";
+        const body = document.createElement("div");
+        body.className = "bento-card-body";
+        const titleEl = document.createElement("div");
+        titleEl.className = "bento-card-title";
+        titleEl.textContent = title;
+        const footer = document.createElement("div");
+        footer.className = "bento-card-footer";
+        const badge = document.createElement("span");
+        badge.className = "task-badge badge-pending";
+        badge.textContent = "Pending";
+        footer.appendChild(badge);
+        body.append(titleEl, footer);
+        newCard.append(stripe, body);
         newCard.style.animation = "fade-in 300ms ease";
         taskList?.prepend(newCard);
         input.value = "";

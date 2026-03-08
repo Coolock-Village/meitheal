@@ -1636,7 +1636,16 @@ const typeConfig: Record<
               header.className = "swimlane-header";
               const label =
                 icons[key] || (mode === "board" ? `📋 ${key}` : defaultLabel);
-              header.innerHTML = `<span class="swimlane-toggle">▼</span><span class="swimlane-label">${label}</span><span class="swimlane-count">${cards.length}</span>`;
+              const toggleSpan = document.createElement("span");
+              toggleSpan.className = "swimlane-toggle";
+              toggleSpan.textContent = "▼";
+              const labelSpan = document.createElement("span");
+              labelSpan.className = "swimlane-label";
+              labelSpan.textContent = label;
+              const countSpan = document.createElement("span");
+              countSpan.className = "swimlane-count";
+              countSpan.textContent = String(cards.length);
+              header.append(toggleSpan, labelSpan, countSpan);
 
               // Collapse toggle
               header.addEventListener("click", () => {
