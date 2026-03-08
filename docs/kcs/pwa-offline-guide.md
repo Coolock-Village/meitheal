@@ -32,14 +32,9 @@ Meitheal leverages modern browser APIs for a native-like experience:
 | Notifications + Permissions | `domains/offline/notifications.ts` | Task reminders, overdue alerts |
 | Web Locks | `domains/offline/sync-lock.ts` | Single-tab sync queue safety |
 | BroadcastChannel | `domains/offline/tab-sync.ts` | Cross-tab state sync |
-| Web Share | `lib/web-share.ts` | Native OS share dialog |
 | Clipboard | `lib/clipboard.ts` | Copy task URL/markdown |
-| Vibration | `lib/haptics.ts` | Tactile feedback on mobile |
 | IntersectionObserver | `lib/lazy-load.ts` | Deferred rendering |
-| Screen Wake Lock | `lib/wake-lock.ts` | Keep screen on in focus mode |
-| PerformanceObserver | `lib/perf-observer.ts` | Web Vitals (LCP/FID/CLS) |
 | prefers-color-scheme | `lib/theme-watcher.ts` | OS dark/light detection |
-| ResizeObserver | `lib/responsive-observer.ts` | Adaptive sidebar collapse |
 | Badging | `Layout.astro` | Pending task count on app icon |
 | Page Visibility | `sync-engine.ts` | Throttle sync when tab hidden |
 | StorageManager | `offline-store.ts` | Quota monitoring |

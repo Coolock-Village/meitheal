@@ -92,7 +92,7 @@ When WebMCP is enabled in Settings, the following tools are registered:
 
 ### How It Works
 
-The WebMCP provider (`src/lib/webmcp-provider.ts`) registers tools using the browser's `navigator.ai.createModelContextProvider()` API. Tools are lazy-loaded and only registered if:
+The WebMCP provider was planned at `src/lib/webmcp-provider.ts` and would register tools using the browser's `navigator.ai.createModelContextProvider()` API. The module was removed in a dead code sweep (v0.1.98) as the API is not yet available in stable Chrome. Tools will be re-implemented when the API graduates from EPP. Registration criteria:
 
 1. The browser supports the API (feature detection)
 2. WebMCP is enabled in Settings
