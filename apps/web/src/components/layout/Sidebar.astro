@@ -5,10 +5,12 @@ import Icon from "../ui/Icon.astro";
 import SidebarNavList from "./SidebarNavList.astro";
 import SidebarBoardSwitcher from "./SidebarBoardSwitcher.astro";
 import SidebarFooter from "./SidebarFooter.astro";
+import StreakBadge from "../gamification/StreakBadge.astro";
 import {
   ensureSchema,
   getPersistenceClient,
 } from "@domains/tasks/persistence/store";
+import { getStats as getGamificationStats } from "@domains/gamification";
 
 const currentPath = Astro.url.pathname;
 export interface Props {
@@ -92,6 +94,15 @@ let sidebarConfig: SidebarConfig = {
   upcoming: true,
   calendar: true,
 };
+
+/** Fetch streak data for sidebar badge */
+let currentStreak = 0;
+try {
+  const stats = await getGamificationStats();
+  currentStreak = stats.currentStreak;
+} catch {
+  /* gamification schema may not exist yet */
+}
 
 try {
   await ensureSchema();
@@ -232,6 +243,12 @@ const navItems = order
     <SidebarNavList navItems={navItems} taskCounts={taskCounts} />
     <SidebarBoardSwitcher locale={locale} />
   </div>
+
+  {currentStreak > 0 && (
+    <div style="padding: 0.5rem 0.75rem; border-top: 1px solid var(--border, #334155);">
+      <StreakBadge streak={currentStreak} compact />
+    </div>
+  )}
 
   <SidebarFooter locale={locale} />
 </nav>

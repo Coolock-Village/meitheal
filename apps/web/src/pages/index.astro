@@ -39,16 +39,15 @@ try {
       { name: v.name, color: v.color },
     ]),
   );
-
-  // Gamification stats
-  try {
-    const { getStats } = await import("@domains/gamification");
-    gamificationStats = await getStats();
-  } catch {
-    // Gamification not available — use defaults
-  }
 } catch (e) {
-  // DB not available — show empty state
+  // DB not available - show empty state
+}
+
+try {
+  const { getStats } = await import("@domains/gamification");
+  gamificationStats = await getStats();
+} catch {
+  // Gamification not available
 }
 
 import { PRIORITY_LABELS } from "../lib/priority-config";

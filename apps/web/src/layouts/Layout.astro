@@ -1676,6 +1676,7 @@ Astro.response.headers.set("X-Content-Type-Options", "nosniff");
         import { pageLifecycle } from "@lib/page-lifecycle";
         import { marked } from "marked";
         import { sanitize } from "@lib/sanitize";
+        import { onTaskCompleted } from "@lib/gamification-hook";
 
         // Use lifecycle signal for all global listeners in this module
         const __signal = pageLifecycle.signal;
@@ -2599,11 +2600,12 @@ Astro.response.headers.set("X-Content-Type-Options", "nosniff");
             });
           });
 
-        document
-          .getElementById("td-status")
+          document.getElementById("td-status")
           ?.addEventListener("change", (e) => {
-            saveTD("status", (e.target as HTMLSelectElement).value);
-            const isDone = (e.target as HTMLSelectElement).value === "complete";
+            const newVal = (e.target as HTMLSelectElement).value;
+            saveTD("status", newVal);
+            const isDone = newVal === "complete";
+            if (isDone) onTaskCompleted();
             const doneBtn = document.getElementById("td-toggle-done");
             if (doneBtn)
               doneBtn.textContent = isDone

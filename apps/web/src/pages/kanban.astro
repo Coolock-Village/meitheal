@@ -758,6 +758,16 @@ const typeConfig: Record<
           headers: { "content-type": "application/json" },
           body: JSON.stringify(payload),
         });
+
+        // Gamification: confetti + record completion when dropped to complete
+        if (newStatus === "complete") {
+          if (typeof window.triggerConfetti === "function") window.triggerConfetti();
+          fetch("/api/gamification", {
+            method: "POST",
+            headers: { "content-type": "application/json" },
+            body: JSON.stringify({ points: 10 }),
+          }).catch(function() {});
+        }
       } catch {
         // Revert on failure — reload to get server state
         window.location.reload();
