@@ -24,3 +24,10 @@
 ### 2026-03-08 Session 1
 - **Stopped at:** GSD initialization complete, Phase 1 ready for execution
 - **Resume:** `.planning/ROADMAP.md` Phase 1
+
+### 2026-03-08 Session 2 — Phase 2 pre-work: fetch→taskApi migration
+- **Commit:** `dbb50f5` — 13 files, +586/-362
+- **Migrated:** 6 pages (18 raw fetches → `taskApi`): upcoming, index, calendar, tasks, table, today
+- **Deleted:** `api.ts` (dead code)
+- **Deferred:** `kanban.astro` (`<script is:inline>` blocks ES imports — separate initiative)
+- **Verification:** build ✅, typecheck 0 errors ✅, 274 tests passed ✅
