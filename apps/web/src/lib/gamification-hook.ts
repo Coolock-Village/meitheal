@@ -5,30 +5,15 @@
  * @bounded-context gamification
  *
  * @kcs This module provides a client-side function that:
- * 1. POSTs to /api/gamification to record the completion with priority-weighted XP
- * 2. Triggers confetti animation via window.triggerConfetti()
- * 3. Optionally shows a toast notification with streak info
- *
- * XP weights by priority (GAM-06):
- *   P1 (Urgent) = 50 XP
- *   P2 (High)   = 40 XP
- *   P3 (Medium) = 30 XP
- *   P4 (Low)    = 20 XP
- *   P5 (None)   = 10 XP
+ * 1. POSTs to /api/gamification with task priority
+ * 2. Server computes weighted XP (P1=50, P2=40, P3=30, P4=20, P5=10)
+ * 3. Triggers confetti animation via window.triggerConfetti()
+ * 4. Shows XP earned and streak milestone toasts
  *
  * Import this in any page script that handles task completion events.
  */
 
 import { showToast } from "@lib/toast"
-
-/** XP awarded per priority level (1=urgent, 5=none/default) */
-const PRIORITY_XP: Record<number, number> = {
-  1: 50,
-  2: 40,
-  3: 30,
-  4: 20,
-  5: 10,
-}
 
 /**
  * Record a task completion and trigger celebration effects.
@@ -46,8 +31,8 @@ export async function onTaskCompleted(priority = 3): Promise<void> {
       const data = await res.json()
 
       // Trigger confetti
-      if (data.confetti && typeof (window as any).triggerConfetti === "function") {
-        ;(window as any).triggerConfetti()
+      if (data.confetti && typeof window.triggerConfetti === "function") {
+        window.triggerConfetti()
       }
 
       // Show XP toast

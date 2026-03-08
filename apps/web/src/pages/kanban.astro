@@ -1453,13 +1453,16 @@ const typeConfig: Record<
 
       // =============================================
       // Label filter — listens for LabelFilterBar events
+      // Guard: remove any previous listener to prevent stacking on ViewTransition re-exec
       // =============================================
       var activeLabelFilter = [];
 
-      document.addEventListener("meitheal:label-filter", function (e) {
+      function __handleLabelFilter(e) {
         activeLabelFilter = (e.detail && e.detail.labels) || [];
         applyLabelFilter();
-      });
+      }
+      document.removeEventListener("meitheal:label-filter", __handleLabelFilter);
+      document.addEventListener("meitheal:label-filter", __handleLabelFilter);
 
       function applyLabelFilter() {
         document.querySelectorAll(".flat-card").forEach(function (c) {

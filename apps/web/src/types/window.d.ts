@@ -56,6 +56,10 @@ interface MeithealWindowExtensions {
   /** Attaches strategic lens overlay to a task card */
   attachStrategicLens?: (taskId: string, element: HTMLElement) => void;
 
+  // === Gamification ===
+  /** Triggers confetti animation (registered by Confetti.astro) */
+  triggerConfetti?: () => void;
+
   // === PWA ===
   /** Stored beforeinstallprompt event for PWA install */
   __pwa_install_prompt?: BeforeInstallPromptEvent | null;
