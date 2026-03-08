@@ -5,6 +5,7 @@ import EmptyState from "../components/ui/EmptyState.astro";
 import TaskTypeIcon from "../components/ui/TaskTypeIcon.astro";
 import RiceBadge from "../components/ui/RiceBadge.astro";
 import LabelBadges from "../components/ui/LabelBadges.astro";
+import LabelFilterBar from "../components/ui/LabelFilterBar.astro";
 import { t } from "../i18n/translations";
 import type { Locale } from "../lib/locale";
 import { formatRegionalDate } from "../lib/date";
@@ -118,6 +119,7 @@ const priorityClasses: Record<number, string> = {
           </button>
         </div>
 
+        <LabelFilterBar id="table-label-filter" />
         <div class="table-container">
           <table class="data-table" id="task-table">
             <thead>
