@@ -401,6 +401,11 @@ export async function ensureSchema(): Promise<void> {
     await client.execute("ALTER TABLE tasks ADD COLUMN recurrence_anchor TEXT NOT NULL DEFAULT 'due_date'");
   }
 
+  // Phase 12: Assignee rotation mode for recurring tasks
+  if (!(await hasColumn(client, "tasks", "rotation_mode"))) {
+    await client.execute("ALTER TABLE tasks ADD COLUMN rotation_mode TEXT");
+  }
+
   // Phase 31: In-task checklists — JSON array of {text, done} items
   if (!(await hasColumn(client, "tasks", "checklists"))) {
     await client.execute("ALTER TABLE tasks ADD COLUMN checklists TEXT NOT NULL DEFAULT '[]'");
