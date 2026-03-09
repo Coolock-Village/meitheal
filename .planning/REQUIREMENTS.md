@@ -1,78 +1,102 @@
-# Gamification + Labels — Requirements
+# Core Feature Completion — Requirements
 
-**Project:** Meitheal Gamification + Labels Sprint
-**Version:** v1 (derived from gap analysis)
-**Date:** 2026-03-08
+**Project:** Meitheal Core Feature Completion Sprint
+**Version:** v1 (derived from gap analysis + CONCERNS.md audit)
+**Date:** 2026-03-09
 
 ---
 
-## Labels — Completion (LBL)
+## Subtask Tree UI (SUB)
 
-- [ ] **LBL-01**: Extract reusable `LabelPicker.astro` component using existing CSS classes (`.label-picker`, `.label-picker__dropdown`)
-  - Phase: 1
-- [ ] **LBL-02**: Extract reusable `LabelBadges.astro` component from inline kanban rendering
-  - Phase: 1
-- [ ] **LBL-03**: Label badges visible on Today page task cards
-  - Phase: 1
-- [ ] **LBL-04**: Label badges visible on Upcoming page task cards
-  - Phase: 1
-- [ ] **LBL-05**: Label badges visible on Table view rows
-  - Phase: 1
-- [ ] **LBL-06**: Label filter bar on Kanban page using existing CSS (`.label-filter`, `.label-filter__chip`)
-  - Phase: 2
-- [ ] **LBL-07**: Label filter bar on Table page
-  - Phase: 2
-- [ ] **LBL-08**: `LabelPicker` autocomplete from existing labels (fetch from `/api/labels`)
-  - Phase: 2
-- [ ] **LBL-09**: `PUT /api/labels/:id` endpoint for renaming/recoloring labels
-  - Phase: 2
-- [ ] **LBL-10**: `DELETE /api/labels/:id` endpoint for removing labels
-  - Phase: 2
-- [ ] **LBL-11**: Label management UI in Settings page (list, rename, recolor, delete)
-  - Phase: 3
-- [ ] **LBL-12**: Replace NewTaskModal raw `<input>` with `LabelPicker` component
-  - Phase: 2
-- [ ] **LBL-13**: i18n strings for label UI in `en.json` and `ga.json`
-  - Phase: 3
+- [ ] **SUB-01**: Subtask indent/tree display in Table view — child tasks indented under parent with expand/collapse
+- [ ] **SUB-02**: Subtask count badge on Kanban cards — show "3/5 subtasks" chip when task has children
+- [ ] **SUB-03**: "Add subtask" action in task detail panel — create child task with parent_id auto-set
+- [ ] **SUB-04**: Subtask progress bar on parent task — visual completion percentage based on done subtasks
+- [ ] **SUB-05**: Subtask list in task detail panel — show child tasks with inline checkbox completion
+- [ ] **SUB-06**: Drag-to-nest in Table view — drag a task onto another to make it a subtask
 
-## Gamification — Foundation (GAM)
+## Recurrence Picker (REC)
 
-- [ ] **GAM-01**: Confetti/celebration CSS animation on task completion
-  - Phase: 4
-- [ ] **GAM-02**: `domains/gamification/` bounded context with streak tracking
-  - Phase: 4
-- [ ] **GAM-03**: Daily completion streak counter (reset on missed day) with DB schema (`gamification_stats` table)
-  - Phase: 4
-- [ ] **GAM-04**: Streak badge visible on dashboard/sidebar
-  - Phase: 4
-- [ ] **GAM-05**: XP points system (weighted by priority: P1=5x, P5=1x) with running total
-  - Phase: 5
-- [ ] **GAM-06**: Daily task goal (configurable target, progress ring/bar on dashboard)
-  - Phase: 5
-- [ ] **GAM-07**: Weekly completed tasks chart on dashboard (last 7 days bar chart)
-  - Phase: 5
-- [ ] **GAM-08**: `GET /api/gamification/stats` endpoint returning streaks, points, daily progress
-  - Phase: 5
+- [ ] **REC-01**: RecurrencePicker Astro component — select daily/weekly/monthly/yearly/custom
+- [ ] **REC-02**: Wire RecurrencePicker into NewTaskModal — set recurrence_rule on task creation
+- [ ] **REC-03**: Wire RecurrencePicker into task detail edit panel — modify recurrence on existing tasks
+- [ ] **REC-04**: Recurrence badge on task cards across all views — visual indicator (🔁 icon)
+- [ ] **REC-05**: Auto-create next occurrence on task completion — clone task with next due date when recurring task completed
+- [ ] **REC-06**: Recurrence rule parser — human-readable display ("Every Monday", "Monthly on the 15th")
+
+## Checklist UI (CHK)
+
+- [ ] **CHK-01**: Checklist section in task detail panel — render checklist items with checkboxes
+- [ ] **CHK-02**: Add/remove checklist items inline — text input to append new items
+- [ ] **CHK-03**: Checklist progress indicator on task cards — show "2/5" or progress bar
+- [ ] **CHK-04**: Reorder checklist items via drag-and-drop in detail panel
+- [ ] **CHK-05**: Wire checklists into NewTaskModal — add checklist items during task creation
+- [ ] **CHK-06**: Save/load checklists from task templates — template system preserves checklist items
+
+## SQL Migration (SQL)
+
+- [ ] **SQL-01**: Create `@meitheal/domain-tasks` query module with typed functions for task CRUD (findAll, findById, create, update, delete)
+- [ ] **SQL-02**: Create board query module — board CRUD functions in domain package
+- [ ] **SQL-03**: Create label query module — label CRUD functions in domain package
+- [ ] **SQL-04**: Migrate `/api/tasks/index.ts` and `/api/tasks/[id].ts` to use domain query functions
+- [ ] **SQL-05**: Migrate `/api/boards/*` routes to use domain query functions
+- [ ] **SQL-06**: Migrate `/api/labels*` routes to use domain query functions
+- [ ] **SQL-07**: Migrate remaining API routes (comments, activity, templates, gamification) to domain queries
+- [ ] **SQL-08**: Migrate export routes to use domain queries where applicable
+
+## Page Decomposition (PGD)
+
+- [ ] **PGD-01**: Extract Kanban `is:inline` script (~800 lines) into `lib/kanban-controller.ts`
+- [ ] **PGD-02**: Extract Table `is:inline` script (~500 lines) into `lib/table-controller.ts`
+- [ ] **PGD-03**: Extract Dashboard `is:inline` script (~300 lines) into `lib/dashboard-controller.ts`
+- [ ] **PGD-04**: Extract Settings `is:inline` scripts into per-tab modules (`lib/settings-general.ts`, etc.)
+- [ ] **PGD-05**: Extract Layout.astro inline scripts into `lib/layout-controller.ts` — command palette, shortcuts, health
+
+## Smart Today (SMT)
+
+- [ ] **SMT-01**: "Suggested" section on Today page — shows overdue + high-priority tasks not yet on today's list
+- [ ] **SMT-02**: Quick-add-to-today action — one-click to move suggested task to today's focus
+- [ ] **SMT-03**: Daily summary stats — completed/remaining/overdue counts at top of Today page
+
+## Version Sync Automation (VER)
+
+- [ ] **VER-01**: Create `scripts/check-version-sync.mjs` — validates config.yaml, run.sh, sw.js versions match
+- [ ] **VER-02**: Add version sync check to CI pipeline — fails if versions don't match
+- [ ] **VER-03**: Create `scripts/bump-version.mjs` — updates all 3 files atomically with new version
 
 ## Scope
 
 ### v1 (this sprint)
-All requirements above (LBL-01 through LBL-13, GAM-01 through GAM-08)
+All requirements above (SUB-01 through VER-03) — 35 requirements total
 
 ### v2 (deferred)
-- Unify dual label system (native JSON + Vikunja compat relational)
-- Achievements/badges system
-- Productivity stats dashboard page
-- Bulk label operations (multi-select add/remove)
-- Leaderboard (multi-user)
-- Rewards/incentives system (custom rewards)
-- Label hierarchy (parent/child labels)
+- NLP quick add ("Buy milk tomorrow at 3pm #errands")
+- Calendar drag-to-reschedule
+- Pomodoro timer (HA timer entity integration)
+- Time tracking UI (timer start/stop against `time_tracked` column)
+- File attachments on tasks
+- Yearly contribution heatmap
+- Drizzle ORM adoption or removal
+- Dual label system unification
+- Layout.astro full decomposition (beyond script extraction)
 
 ### Out of Scope
-- Component decomposition (Layout monolith splitting — separate initiative)
-- Inline SQL migration — separate initiative
-- Social gamification (party challenges, etc.)
+- New authentication system (HA handles auth)
+- Mobile native apps (PWA is sufficient)
+- Social/multiplayer features (leaderboards, parties)
+- Cloudflare Workers deployment (apps/api/)
 
 ---
 
-*Requirements: 2026-03-08 — gamification + labels gap analysis sprint*
+## Traceability
+
+| Phase | Requirements |
+|-------|-------------|
+| 1 | SUB-01, SUB-02, SUB-03, SUB-04, SUB-05, SUB-06 |
+| 2 | REC-01, REC-02, REC-03, REC-04, REC-05, REC-06 |
+| 3 | CHK-01, CHK-02, CHK-03, CHK-04, CHK-05, CHK-06 |
+| 4 | SQL-01, SQL-02, SQL-03, SQL-04, SQL-05, SQL-06, SQL-07, SQL-08 |
+| 5 | PGD-01, PGD-02, PGD-03, PGD-04, PGD-05 |
+| 6 | SMT-01, SMT-02, SMT-03, VER-01, VER-02, VER-03 |
+
+*Requirements: 2026-03-09 — core feature completion sprint*
