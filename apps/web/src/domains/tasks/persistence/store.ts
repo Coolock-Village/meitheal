@@ -406,6 +406,11 @@ export async function ensureSchema(): Promise<void> {
     await client.execute("ALTER TABLE tasks ADD COLUMN rotation_mode TEXT");
   }
 
+  // Phase 7: NFC tag ID for physical tag-to-task completion
+  if (!(await hasColumn(client, "tasks", "nfc_tag_id"))) {
+    await client.execute("ALTER TABLE tasks ADD COLUMN nfc_tag_id TEXT");
+  }
+
   // Phase 31: In-task checklists — JSON array of {text, done} items
   if (!(await hasColumn(client, "tasks", "checklists"))) {
     await client.execute("ALTER TABLE tasks ADD COLUMN checklists TEXT NOT NULL DEFAULT '[]'");

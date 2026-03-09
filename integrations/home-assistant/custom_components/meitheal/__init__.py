@@ -35,6 +35,7 @@ from .const import (
     DOMAIN,
     PLATFORMS,
     SERVICE_COMPLETE_TASK,
+    SERVICE_COMPLETE_TASK_BY_TAG,
     SERVICE_CREATE_TASK,
     SERVICE_GET_OVERDUE_TASKS,
     SERVICE_SEARCH_TASKS,
@@ -69,6 +70,12 @@ SEARCH_TASKS_SCHEMA = vol.Schema(
     {
         vol.Required("query"): cv.string,
         vol.Optional("status"): vol.In(["backlog", "todo", "in_progress", "done"]),
+    }
+)
+
+COMPLETE_TASK_BY_TAG_SCHEMA = vol.Schema(
+    {
+        vol.Required("tag_id"): cv.string,
     }
 )
 
@@ -219,6 +226,27 @@ async def async_setup_entry(hass: HomeAssistant, entry: MeithealConfigEntry) -> 
         supports_response=SupportsResponse.ONLY,
     )
 
+    # Phase 7: NFC tag completion service
+    async def handle_complete_task_by_tag(call: ServiceCall) -> None:
+        """Handle meitheal.complete_task_by_tag service call."""
+        try:
+            await coordinator.async_complete_task_by_tag(
+                tag_id=call.data["tag_id"],
+            )
+        except Exception as err:
+            raise HomeAssistantError(
+                translation_domain=DOMAIN,
+                translation_key="nfc_complete_failed",
+                translation_placeholders={"error": str(err)},
+            ) from err
+
+    hass.services.async_register(
+        DOMAIN,
+        SERVICE_COMPLETE_TASK_BY_TAG,
+        handle_complete_task_by_tag,
+        schema=COMPLETE_TASK_BY_TAG_SCHEMA,
+    )
+
     # Register LLM API — makes Meitheal tasks available to all HA conversation agents
     # Requires HA 2026.3+ with homeassistant.helpers.llm
     if _HAS_LLM_API:
@@ -303,5 +331,6 @@ async def async_unload_entry(hass: HomeAssistant, entry: MeithealConfigEntry) ->
         hass.services.async_remove(DOMAIN, SERVICE_SYNC_TODO)
         hass.services.async_remove(DOMAIN, SERVICE_SEARCH_TASKS)
         hass.services.async_remove(DOMAIN, SERVICE_GET_OVERDUE_TASKS)
+        hass.services.async_remove(DOMAIN, SERVICE_COMPLETE_TASK_BY_TAG)
         hass.services.async_remove(DOMAIN, "notify_overdue")
     return unload_ok

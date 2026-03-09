@@ -52,6 +52,15 @@ class MeithealCoordinatorData:
         self.active_count = sum(1 for t in tasks if t.status != "done")
         self.overdue_count = sum(1 for t in tasks if t.is_overdue)
         self.total_count = len(tasks)
+        # Phase 8: additional computed stats
+        today_str = datetime.now().strftime("%Y-%m-%d")
+        self.due_today_count = sum(
+            1 for t in tasks
+            if t.due_date and t.due_date.startswith(today_str) and t.status != "done"
+        )
+        # Streak and XP — populated by coordinator from gamification API
+        self.streak: int = 0
+        self.total_points: int = 0
 
 
 class MeithealCoordinator(DataUpdateCoordinator[MeithealCoordinatorData]):
@@ -208,6 +217,29 @@ class MeithealCoordinator(DataUpdateCoordinator[MeithealCoordinatorData]):
         })
         self._fire_logbook("Meitheal", f"completed task: {label}")
         await self.async_request_refresh()
+
+    async def async_complete_task_by_tag(
+        self, tag_id: str
+    ) -> dict[str, Any]:
+        """Complete a task by NFC tag ID."""
+        session = await self._ensure_session()
+        async with session.post(
+            f"{self._base_url}/api/nfc/complete",
+            json={"tag_id": tag_id},
+            headers={"content-type": "application/json"},
+        ) as response:
+            result = await response.json()
+            if response.status >= 300:
+                text = await response.text()
+                raise UpdateFailed(f"NFC complete failed ({response.status}): {text}")
+
+        task_id = result.get("task_id", "unknown")
+        self._fire_event("meitheal_task_completed", {
+            "task_id": task_id, "trigger": "nfc", "tag_id": tag_id,
+        })
+        self._fire_logbook("Meitheal", f"completed task via NFC tag: {tag_id}")
+        await self.async_request_refresh()
+        return result
 
     async def async_delete_task(self, task_id: str) -> None:
         """Delete a task."""

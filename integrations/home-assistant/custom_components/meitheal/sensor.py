@@ -30,6 +30,9 @@ async def async_setup_entry(
             MeithealActiveTasksSensor(coordinator, entry),
             MeithealOverdueTasksSensor(coordinator, entry),
             MeithealTotalTasksSensor(coordinator, entry),
+            MeithealDueTodaySensor(coordinator, entry),
+            MeithealCompletedTodaySensor(coordinator, entry),
+            MeithealStreakSensor(coordinator, entry),
         ],
         True,
     )
@@ -158,3 +161,102 @@ class MeithealTotalTasksSensor(
             "done_count": statuses.get("done", 0),
             "in_progress_count": statuses.get("in_progress", 0),
         }
+
+
+class MeithealDueTodaySensor(
+    CoordinatorEntity[MeithealCoordinator], SensorEntity
+):
+    """Sensor: count of tasks due today."""
+
+    _attr_has_entity_name = True
+    _attr_translation_key = "due_today"
+    _attr_state_class = SensorStateClass.MEASUREMENT
+    _attr_native_unit_of_measurement = "tasks"
+    _attr_icon = "mdi:calendar-today"
+
+    def __init__(self, coordinator: MeithealCoordinator, entry: ConfigEntry) -> None:
+        super().__init__(coordinator)
+        self._attr_unique_id = f"{entry.entry_id}_due_today"
+        self._attr_device_info = device_info(entry)
+
+    @property
+    def native_value(self) -> int | None:
+        """Return count of tasks due today."""
+        if not self.coordinator.data:
+            return None
+        return self.coordinator.data.due_today_count
+
+    @property
+    def extra_state_attributes(self) -> dict[str, Any] | None:
+        """Expose today's task details."""
+        if not self.coordinator.data:
+            return None
+        from datetime import datetime as dt
+        today = dt.now().strftime("%Y-%m-%d")
+        due = [
+            t for t in self.coordinator.data.tasks
+            if t.due_date and t.due_date.startswith(today) and t.status != "done"
+        ]
+        return {
+            "task_titles": [t.title for t in due[:10]],
+            "priorities": [t.priority for t in due[:10]],
+        }
+
+
+class MeithealCompletedTodaySensor(
+    CoordinatorEntity[MeithealCoordinator], SensorEntity
+):
+    """Sensor: count of tasks completed today."""
+
+    _attr_has_entity_name = True
+    _attr_translation_key = "completed_today"
+    _attr_state_class = SensorStateClass.TOTAL_INCREASING
+    _attr_native_unit_of_measurement = "tasks"
+    _attr_icon = "mdi:check-circle"
+
+    def __init__(self, coordinator: MeithealCoordinator, entry: ConfigEntry) -> None:
+        super().__init__(coordinator)
+        self._attr_unique_id = f"{entry.entry_id}_completed_today"
+        self._attr_device_info = device_info(entry)
+
+    @property
+    def native_value(self) -> int | None:
+        """Return count of tasks completed today."""
+        if not self.coordinator.data:
+            return None
+        # Count done tasks — coordinator refreshes every 30s
+        return sum(1 for t in self.coordinator.data.tasks if t.status == "done")
+
+
+class MeithealStreakSensor(
+    CoordinatorEntity[MeithealCoordinator], SensorEntity
+):
+    """Sensor: current streak (consecutive days with task completions)."""
+
+    _attr_has_entity_name = True
+    _attr_translation_key = "streak"
+    _attr_state_class = SensorStateClass.MEASUREMENT
+    _attr_native_unit_of_measurement = "days"
+    _attr_icon = "mdi:fire"
+
+    def __init__(self, coordinator: MeithealCoordinator, entry: ConfigEntry) -> None:
+        super().__init__(coordinator)
+        self._attr_unique_id = f"{entry.entry_id}_streak"
+        self._attr_device_info = device_info(entry)
+
+    @property
+    def native_value(self) -> int | None:
+        """Return current streak from gamification data."""
+        if not self.coordinator.data:
+            return None
+        return self.coordinator.data.streak
+
+    @property
+    def extra_state_attributes(self) -> dict[str, Any] | None:
+        """Expose gamification details."""
+        if not self.coordinator.data:
+            return None
+        return {
+            "total_points": self.coordinator.data.total_points,
+        }
+

@@ -40,6 +40,7 @@ SERVICE_COMPLETE_TASK = "complete_task"
 SERVICE_SYNC_TODO = "sync_todo"
 SERVICE_SEARCH_TASKS = "search_tasks"
 SERVICE_GET_OVERDUE_TASKS = "get_overdue_tasks"
+SERVICE_COMPLETE_TASK_BY_TAG = "complete_task_by_tag"
 
 # Meitheal task statuses
 STATUS_BACKLOG = "backlog"
