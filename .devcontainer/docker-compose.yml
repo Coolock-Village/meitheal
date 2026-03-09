@@ -60,24 +60,26 @@ services:
       retries: 5
 
   nodered:
-    image: nodered/node-red:latest
+    image: docker.io/nodered/node-red:latest
     restart: unless-stopped
     ports:
       - "1880:1880"
     environment:
       TZ: ${TZ:-Europe/Dublin}
       NODE_RED_CREDENTIAL_SECRET: ${NODE_RED_CREDENTIAL_SECRET:-dev-secret}
+    # Settings mounted to /opt/nodered/ to avoid Podman named-volume overlay conflict
+    entrypoint: ["/bin/sh", "-c", "cp /opt/nodered/package.json /data/package.json 2>/dev/null; exec node-red --settings /opt/nodered/settings.js"]
     volumes:
       - nodered-data:/data
-      - ./nodered/settings.js:/data/settings.js:ro
-      - ./nodered/package.json:/data/package.json:ro
+      - ./nodered/settings.js:/opt/nodered/settings.js:ro,Z
+      - ./nodered/package.json:/opt/nodered/package.json:ro,Z
     networks:
       - meitheal-dev
     healthcheck:
       test: [ "CMD", "curl", "-fsS", "http://127.0.0.1:1880/" ]
       interval: 15s
       timeout: 5s
-      start_period: 20s
+      start_period: 30s
       retries: 5
 
 volumes:
