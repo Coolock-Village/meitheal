@@ -396,6 +396,11 @@ export async function ensureSchema(): Promise<void> {
     await client.execute("ALTER TABLE tasks ADD COLUMN recurrence_rule TEXT");
   }
 
+  // Phase 6: Rolling recurrence anchor — 'due_date' (fixed) or 'completion_date' (rolling)
+  if (!(await hasColumn(client, "tasks", "recurrence_anchor"))) {
+    await client.execute("ALTER TABLE tasks ADD COLUMN recurrence_anchor TEXT NOT NULL DEFAULT 'due_date'");
+  }
+
   // Phase 31: In-task checklists — JSON array of {text, done} items
   if (!(await hasColumn(client, "tasks", "checklists"))) {
     await client.execute("ALTER TABLE tasks ADD COLUMN checklists TEXT NOT NULL DEFAULT '[]'");

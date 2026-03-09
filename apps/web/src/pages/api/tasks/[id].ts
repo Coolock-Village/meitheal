@@ -220,6 +220,14 @@ export const PUT: APIRoute = async ({ params, request }) => {
     }
   }
 
+  // Phase 6: Recurrence anchor (due_date or completion_date)
+  if (typeof body.recurrence_anchor === "string") {
+    const anchor = body.recurrence_anchor.trim().toLowerCase()
+    if (anchor === "due_date" || anchor === "completion_date") {
+      sanitized.recurrence_anchor = anchor
+    }
+  }
+
   if (Object.keys(sanitized).length === 0) {
     return new Response(JSON.stringify({ error: "No fields to update" }), {
       status: 400,
@@ -408,7 +416,8 @@ export const PUT: APIRoute = async ({ params, request }) => {
     }
   }
 
-  // Phase 1: Recurrence auto-create — clone task with next due date on completion
+  // Phase 1 + Phase 6: Recurrence auto-create — clone task with next due date on completion
+  // Rolling recurrence: uses completion date (today) as base instead of original due date
   if (sanitized.status !== undefined && isDoneStatus(String(sanitized.status)) && !isDoneStatus(String(oldTask?.status ?? ""))) {
     try {
       const recTask = await repo.getRecurrenceData(resolvedId)
@@ -416,7 +425,17 @@ export const PUT: APIRoute = async ({ params, request }) => {
         const { parseRRule, getNextOccurrence } = await import("../../../domains/tasks/recurrence")
         const rule = parseRRule(String(recTask.recurrence_rule))
         if (!rule) throw new Error(`Cannot parse recurrence rule: ${recTask.recurrence_rule}`)
-        const baseDateStr = recTask.due_date ? String(recTask.due_date) : new Date().toISOString().split("T")[0]!
+
+        // Rolling vs fixed: determine base date for next occurrence
+        const anchor = String(recTask.recurrence_anchor ?? "due_date")
+        let baseDateStr: string
+        if (anchor === "completion_date") {
+          // Rolling recurrence: interval starts from today (completion date)
+          baseDateStr = new Date().toISOString().split("T")[0]!
+        } else {
+          // Fixed recurrence: interval starts from the original due date
+          baseDateStr = recTask.due_date ? String(recTask.due_date) : new Date().toISOString().split("T")[0]!
+        }
         const baseDate = new Date(baseDateStr)
         const nextDate = getNextOccurrence(rule, baseDate)
         if (nextDate) {
@@ -435,6 +454,20 @@ export const PUT: APIRoute = async ({ params, request }) => {
       }
     } catch (err) {
       logApiError("recurrence-auto-create", "Failed to create next recurring occurrence", err)
+    }
+
+    // Phase 6: Cascade completion — complete all subtasks when parent is completed
+    try {
+      const cascadedCount = await repo.cascadeComplete(resolvedId)
+      if (cascadedCount > 0) {
+        // Fire events for each cascaded child
+        const childIds = await repo.getChildrenIds(resolvedId)
+        for (const childId of childIds) {
+          dispatchTaskEvent("task.updated", { id: childId, status: STATUS.COMPLETE }).catch(() => {})
+        }
+      }
+    } catch (err) {
+      logApiError("cascade-complete", "Failed to cascade-complete subtasks", err)
     }
   }
 
