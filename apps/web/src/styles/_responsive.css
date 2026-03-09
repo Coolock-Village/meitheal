@@ -341,9 +341,12 @@
   touch-action: pan-y;
 }
 
-/* P2-4: GPU compositing hints for animated elements on touch */
-.animate-slide-in,
-.kanban-card {
+/* P2-4: GPU compositing only during active drag (permanent will-change removed
+   to prevent GPU memory leak with many cards — see _kanban.css .kanban-card.dragging) */
+.kanban-card.dragging {
+  will-change: transform;
+}
+.animate-slide-in {
   will-change: transform;
 }
 }
@@ -366,5 +369,65 @@
 
   .task-progress-fill {
     background: Highlight;
+  }
+
+  /* P3: Expanded high-contrast coverage */
+  .kanban-card {
+    border: 1px solid ButtonText;
+  }
+
+  .kanban-column {
+    border: 1px solid ButtonText;
+  }
+
+  .card-action-btn,
+  .btn,
+  button {
+    border: 1px solid ButtonText;
+  }
+
+  input,
+  select,
+  textarea {
+    border: 1px solid ButtonText;
+  }
+
+  .sidebar a.active,
+  .sidebar a:focus {
+    outline: 2px solid Highlight;
+  }
+
+  .modal-inner,
+  .lane-mgmt-inner {
+    border: 2px solid ButtonText;
+  }
+
+  .badge,
+  .kanban-count {
+    border: 1px solid ButtonText;
+  }
+}
+
+/* ===== Tablet breakpoint (768px-1024px) ===== */
+@media (min-width: 769px) and (max-width: 1024px) {
+  .kanban-column {
+    min-width: 220px;
+    max-width: 260px;
+  }
+
+  .stats-grid {
+    grid-template-columns: repeat(2, 1fr) !important;
+  }
+
+  .sidebar {
+    width: 200px;
+  }
+
+  .main-content {
+    margin-left: 200px;
+  }
+
+  body.sidebar-collapsed .main-content {
+    margin-left: 0;
   }
 }

@@ -441,6 +441,10 @@ Astro.response.headers.set("X-Content-Type-Options", "nosniff");
         // Keyboard shortcut: Ctrl+B / Cmd+B
         document.addEventListener("keydown", function (e) {
           if ((e.ctrlKey || e.metaKey) && e.key === "b") {
+            // Don't hijack Ctrl+B (bold) when user is editing text
+            var tag = (e.target || {}).tagName || "";
+            var editable = (e.target || {}).contentEditable === "true";
+            if (["INPUT", "TEXTAREA", "SELECT"].indexOf(tag) !== -1 || editable) return;
             e.preventDefault();
             toggleSidebar();
           }
