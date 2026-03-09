@@ -1,6 +1,7 @@
 import type { APIRoute } from "astro"
 import { ensureSchema, getPersistenceClient } from "@domains/tasks/persistence/store"
 import { TaskRepository } from "@domains/tasks/persistence/task-repository"
+import { normalizeStatus } from "@lib/status-config"
 
 /**
  * iCal Export — VCALENDAR with VTODO entries
@@ -67,8 +68,8 @@ export const GET: APIRoute = async () => {
       const icalPriority = mapPriority(priority)
       lines.push(`PRIORITY:${icalPriority}`)
 
-      // Status mapping
-      const icalStatus = mapStatus(status)
+      // Status mapping — normalize legacy values first, then map to iCal
+      const icalStatus = mapStatus(normalizeStatus(status))
       lines.push(`STATUS:${icalStatus}`)
 
       // Percent complete based on task progress
@@ -137,17 +138,15 @@ function mapPriority(p: number): number {
 }
 
 function mapStatus(s: string): string {
+  // Expects canonical statuses (backlog, pending, active, complete)
+  // Legacy values are normalized upstream via normalizeStatus()
   switch (s) {
     case "complete":
-    case "done":
       return "COMPLETED"
     case "active":
-    case "in_progress":
       return "IN-PROCESS"
     case "backlog":
-      return "NEEDS-ACTION"
     case "pending":
-    case "todo":
     default:
       return "NEEDS-ACTION"
   }
