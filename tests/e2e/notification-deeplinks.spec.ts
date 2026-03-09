@@ -13,12 +13,12 @@ test.describe("Notification Deep Links", () => {
   test("ingress-aware URLs should prefix paths correctly", () => {
     // Unit test for URL construction logic
     const ingressPath = "/api/hassio_ingress/abc123";
-    const baseUrl = "https://ha.home.arpa:8123";
+    const baseUrl = "https://ha.internal:8123";
     const path = "/kanban";
 
     // Full deep link for mobile push
     const fullDeepLink = `${baseUrl}${ingressPath}${path}`;
-    expect(fullDeepLink).toBe("https://ha.home.arpa:8123/api/hassio_ingress/abc123/kanban");
+    expect(fullDeepLink).toBe("https://ha.internal:8123/api/hassio_ingress/abc123/kanban");
     expect(fullDeepLink).toMatch(/^https?:\/\//);
 
     // Relative link for sidebar persistent_notification
@@ -28,7 +28,7 @@ test.describe("Notification Deep Links", () => {
   });
 
   test("deep link URL must not have double slashes in path", () => {
-    const baseUrl = "https://ha.home.arpa:8123/";
+    const baseUrl = "https://ha.internal:8123/";
     const ingressPath = "/api/hassio_ingress/abc123";
 
     // getHABaseUrl strips trailing slashes from baseUrl
@@ -54,7 +54,7 @@ test.describe("Notification Deep Links", () => {
     // - data.actions[].uri for action buttons
     // All must be full URLs or relative /lovelace paths
 
-    const baseUrl = "https://ha.home.arpa:8123";
+    const baseUrl = "https://ha.internal:8123";
     const ingressPath = "/api/hassio_ingress/abc123";
     const fullDeepLink = `${baseUrl}${ingressPath}/kanban`;
 
@@ -86,7 +86,7 @@ test.describe("Notification Deep Links", () => {
   });
 
   test("standalone mode: no deep link when ingress path is unavailable", () => {
-    const baseUrl = "https://ha.home.arpa:8123";
+    const baseUrl = "https://ha.internal:8123";
     const ingressPath: string | null = null;
 
     const fullDeepLink = (baseUrl && ingressPath)

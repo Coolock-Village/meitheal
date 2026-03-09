@@ -291,7 +291,7 @@ let cachedBaseUrl: string | null = null;
 /**
  * Get the HA instance base URL (external preferred, internal fallback).
  * Used to construct full deep link URLs for mobile notifications.
- * Returns e.g. "https://ha.home.arpa:8123" or null if unavailable.
+ * Returns e.g. "https://ha.internal:8123" or null if unavailable.
  *
  * @domain ha
  * @kcs HA Companion app requires full URLs (scheme+host) for clickAction/url.

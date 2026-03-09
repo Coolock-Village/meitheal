@@ -20,7 +20,7 @@ test("csrf validation allows HA ingress requests even with host mismatch", () =>
   const allowed = isCsrfAllowed({
     behindIngress: true,
     isDev: false,
-    origin: "http://ha.home.arpa:8123",
+    origin: "http://ha.internal:8123",
     referer: null,
     host: "addon:3000",
   });

@@ -117,7 +117,7 @@ test("resolveIngressContext infers ingress path from request URL when header mis
   const ctx = resolveIngressContext(
     new Headers(),
     false,
-    "http://ha.home.arpa:8123/api/hassio_ingress/abc123/table"
+    "http://ha.internal:8123/api/hassio_ingress/abc123/table"
   );
   expect(ctx.ingressPath).toBe("/api/hassio_ingress/abc123");
   expect(ctx.behindIngress).toBeTruthy();
