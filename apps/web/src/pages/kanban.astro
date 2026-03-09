@@ -789,10 +789,11 @@ const typeConfig: Record<
         // Gamification: confetti + record completion when dropped to complete
         if (newStatus === "complete") {
           if (typeof window.triggerConfetti === "function") window.triggerConfetti();
+          var cardPriority = parseInt(card.dataset.priority ?? "3", 10) || 3;
           fetch("/api/gamification", {
             method: "POST",
             headers: { "content-type": "application/json" },
-            body: JSON.stringify({ points: 10 }),
+            body: JSON.stringify({ priority: cardPriority }),
           }).catch(function() {});
         }
       } catch {
@@ -2073,7 +2074,7 @@ const typeConfig: Record<
     background: var(--bg-secondary);
     border-radius: var(--radius-md);
     min-width: 280px;
-    flex: 1;
+    flex: 1 0 280px;
     display: flex;
     flex-direction: column;
     max-height: 100%;

@@ -101,6 +101,9 @@ export async function initHAIntegrations(): Promise<void> {
     // Step 3: Read saved todo sync settings and auto-start
     await autoStartTodoSync();
 
+    // Step 3.1: One-time cleanup of corrupt task titles from HA todo sync
+    await cleanupCorruptTitleData();
+
     // Step 4: Read saved calendar sync settings and auto-start
     await autoStartCalendarSync();
 
@@ -556,3 +559,34 @@ async function autoStartDueDateReminders(): Promise<void> {
     });
   }
 }
+
+/**
+ * One-time cleanup of corrupt task titles from HA todo sync.
+ * Strips recursive MTH-NN prefixes and trailing DUE repetitions.
+ * Idempotent — safe to call multiple times (no-ops on clean data).
+ */
+async function cleanupCorruptTitleData(): Promise<void> {
+  try {
+    const { cleanupCorruptTitles } = await import("@lib/cleanup-corrupt-titles");
+    const cleaned = await cleanupCorruptTitles();
+    if (cleaned > 0) {
+      logger.log("info", {
+        event: "ha.startup.title_cleanup.complete",
+        domain: "tasks",
+        component: "ha-startup",
+        request_id: SYS_REQ,
+        message: `Cleaned ${cleaned} corrupt task titles`,
+        metadata: { cleaned },
+      });
+    }
+  } catch (err) {
+    logger.log("error", {
+      event: "ha.startup.title_cleanup.failed",
+      domain: "tasks",
+      component: "ha-startup",
+      request_id: SYS_REQ,
+      message: `Title cleanup failed: ${err}`,
+    });
+  }
+}
+

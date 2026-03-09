@@ -123,7 +123,8 @@
 
   /* --- Main content area --- */
   .main-content {
-    @apply ml-0 md:ml-sidebar flex-1 flex flex-col min-h-screen;
+    @apply ml-0 md:ml-sidebar flex-1 flex flex-col;
+    height: 100vh;
     min-width: 0;
     /* prevent flex children from expanding beyond viewport */
       overflow-x: hidden;

@@ -36,6 +36,8 @@ const logger = createLogger({
 const SYS_REQ = "ha-system";
 const NO_SYNC_LABEL = "no-sync";
 
+import { sanitizeTodoTitle } from "@lib/cleanup-corrupt-titles";
+
 /** Strip outbound attribution text so it doesn't show in Meitheal's own UI. */
 function stripMeithealAttribution(desc: string | null | undefined): string | null {
   if (!desc) return null;
@@ -276,7 +278,7 @@ async function mergeHATodoItems(entityId: string, items: HATodoItem[]): Promise<
             updated_at = ?
           WHERE id = ?`,
           args: [
-            item.summary,
+            sanitizeTodoTitle(item.summary),
             meithealStatus,
             item.due ?? null,
             stripMeithealAttribution(item.description),
@@ -322,7 +324,7 @@ async function mergeHATodoItems(entityId: string, items: HATodoItem[]): Promise<
                   '{}', 'task', ?, ?, ?, ?, ?)`,
           args: [
             taskId,
-            item.summary,
+            sanitizeTodoTitle(item.summary),
             stripMeithealAttribution(item.description) ?? "",
             meithealStatus,
             item.due ?? null,

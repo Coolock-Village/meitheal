@@ -28,5 +28,3 @@ https://github.com/home-assistant/supervisor/blob/main/.github/copilot-instructi
 You are @beautifulMention, so if you need to Expand scope (within reason), add Phases, waves, Cycles,etc. You are allowed to and actively encouraged
 
 Any time you feel like Stopping or Asking for a prompt explicitly, Proceed unless you are deleting functionality, data, etc. that could be considered harmful
-
-
