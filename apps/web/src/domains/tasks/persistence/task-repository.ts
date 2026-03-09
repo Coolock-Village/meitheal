@@ -2,17 +2,19 @@
  * TaskRepository — centralized domain service for all task-related database queries.
  * @domain Task Management
  *
- * Eliminates inline SQL across page files (index, kanban, calendar, gantt, today, upcoming)
- * by providing typed, parameterized query methods. All methods accept the persistence client
- * as their first argument, following the existing stateless pattern.
+ * Provides typed, parameterized query methods for both reads and writes.
+ * Read methods serve Astro page files (dashboard, kanban, calendar, etc.).
+ * Write methods serve API routes (tasks CRUD, recurrence, activity logging).
  *
  * @example
  *   import { TaskRepository } from '@domains/tasks/persistence/task-repository';
  *   const repo = new TaskRepository(getPersistenceClient());
  *   const tasks = await repo.getRecentTasks(10);
+ *   const created = await repo.createTask({ id: '...', title: 'New', ... });
  */
 
 import type { Client } from "@libsql/client";
+import type { InValue } from "@libsql/client";
 import { STATUS } from "../../../lib/status-config";
 
 // ── Types ──────────────────────────────────────────────────────────────────
@@ -331,5 +333,372 @@ export class TaskRepository {
       args: [startDate, endDate, STATUS.COMPLETE],
     });
     return result.rows as TaskRow[];
+  }
+
+  // ── Write Methods (API routes) ────────────────────────────────────────
+
+  /**
+   * Resolve a task identifier to its UUID.
+   * Accepts UUID or MTH-N ticket key format.
+   */
+  async resolveTaskId(idOrKey: string): Promise<{ id: string; updated_at: unknown } | null> {
+    let parsedTicketNum: number | null = null;
+    if (idOrKey.toUpperCase().startsWith("MTH-")) {
+      parsedTicketNum = parseInt(idOrKey.slice(4), 10);
+    }
+    const result = await this.client.execute({
+      sql: "SELECT id, updated_at FROM tasks WHERE id = ? OR ticket_number = ? LIMIT 1",
+      args: [idOrKey, parsedTicketNum],
+    });
+    if (result.rows.length === 0) return null;
+    const row = result.rows[0] as Record<string, unknown>;
+    return { id: String(row.id), updated_at: row.updated_at };
+  }
+
+  /** Retrieve a single task by ID/ticket key, with parent info JOINed */
+  async findById(idOrKey: string): Promise<TaskRow | null> {
+    let parsedTicketNum: number | null = null;
+    if (idOrKey.toUpperCase().startsWith("MTH-")) {
+      parsedTicketNum = parseInt(idOrKey.slice(4), 10);
+    }
+    const result = await this.client.execute({
+      sql: `SELECT t.id, t.title, t.description, t.status, t.priority, t.due_date, t.labels,
+                   t.framework_payload, t.calendar_sync_state, t.board_id, t.custom_fields,
+                   t.parent_id, t.time_tracked, t.start_date, t.end_date, t.progress, t.color,
+                   t.is_favorite, t.task_type, t.ticket_number, t.assigned_to, t.checklists,
+                   t.recurrence_rule, t.created_at, t.updated_at,
+                   p.title as parent_title, p.task_type as parent_task_type, p.ticket_number as parent_ticket_number
+            FROM tasks t
+            LEFT JOIN tasks p ON t.parent_id = p.id
+            WHERE t.id = ? OR t.ticket_number = ? LIMIT 1`,
+      args: [idOrKey, parsedTicketNum],
+    });
+    return (result.rows[0] as TaskRow) ?? null;
+  }
+
+  /** List tasks with optional filters, pagination, and sorting. */
+  async findAll(opts: {
+    status?: string;
+    boardId?: string;
+    taskType?: string;
+    parentId?: string;
+    search?: string;
+    assignedTo?: string;
+    label?: string;
+    favorite?: boolean;
+    sort?: string;
+    order?: "ASC" | "DESC";
+    limit?: number;
+    offset?: number;
+  }): Promise<{ tasks: TaskRow[]; total: number }> {
+    const validSorts = ["created_at", "updated_at", "title", "status", "priority", "due_date"];
+    const sortCol = validSorts.includes(opts.sort ?? "") ? opts.sort! : "created_at";
+    const order = opts.order ?? "DESC";
+    const limit = Math.min(500, Math.max(1, opts.limit ?? 100));
+    const offset = Math.max(0, opts.offset ?? 0);
+
+    const conditions: string[] = [];
+    const args: InValue[] = [];
+
+    if (opts.status) { conditions.push("status = ?"); args.push(opts.status); }
+    if (opts.boardId) { conditions.push("board_id = ?"); args.push(opts.boardId); }
+    if (opts.taskType) { conditions.push("task_type = ?"); args.push(opts.taskType); }
+    if (opts.parentId) { conditions.push("parent_id = ?"); args.push(opts.parentId); }
+    if (opts.search) { conditions.push("(title LIKE ? OR description LIKE ?)"); args.push(`%${opts.search}%`, `%${opts.search}%`); }
+    if (opts.assignedTo) { conditions.push("assigned_to = ?"); args.push(opts.assignedTo); }
+    if (opts.label) { conditions.push("EXISTS (SELECT 1 FROM json_each(tasks.labels) WHERE json_each.value = ?)"); args.push(opts.label); }
+    if (opts.favorite) { conditions.push("is_favorite = 1"); }
+
+    const where = conditions.length > 0 ? ` WHERE ${conditions.join(" AND ")}` : "";
+
+    const selectSql = `SELECT id, title, description, status, priority, due_date, labels,
+                              framework_payload, calendar_sync_state, parent_id, time_tracked,
+                              board_id, custom_fields, start_date, end_date, progress, color,
+                              is_favorite, task_type, ticket_number, assigned_to, created_at, updated_at
+                       FROM tasks${where}
+                       ORDER BY ${sortCol} ${order} LIMIT ${limit} OFFSET ${offset}`;
+    const countSql = `SELECT COUNT(*) as cnt FROM tasks${where}`;
+
+    const [result, countResult] = await Promise.all([
+      this.client.execute({ sql: selectSql, args }),
+      this.client.execute({ sql: countSql, args }),
+    ]);
+
+    const total = Number((countResult.rows[0] as Record<string, unknown>)?.cnt ?? 0);
+    return { tasks: result.rows as TaskRow[], total };
+  }
+
+  /** Get the next sequential ticket number for MTH-N key assignment */
+  async getNextTicketNumber(): Promise<number> {
+    const result = await this.client.execute("SELECT COALESCE(MAX(ticket_number), 0) + 1 AS next_num FROM tasks");
+    return Number((result.rows[0] as Record<string, unknown>)?.next_num ?? 1);
+  }
+
+  /** Look up the default assignee from app_settings (nullable) */
+  async getDefaultAssignee(): Promise<string | null> {
+    try {
+      const result = await this.client.execute(
+        "SELECT value FROM app_settings WHERE key = 'default_assignee' LIMIT 1"
+      );
+      if (result.rows.length > 0) {
+        return String((result.rows[0] as Record<string, unknown>).value);
+      }
+    } catch { /* ignore — default is optional */ }
+    return null;
+  }
+
+  /** Look up a parent task's type for nesting validation */
+  async getParentTaskType(parentId: string): Promise<string | null> {
+    const result = await this.client.execute({
+      sql: "SELECT task_type FROM tasks WHERE id = ? LIMIT 1",
+      args: [parentId],
+    });
+    if (result.rows.length === 0) return null;
+    return String((result.rows[0] as Record<string, unknown>).task_type ?? "task");
+  }
+
+  /**
+   * Insert a new task. Caller is responsible for validation and ID generation.
+   * @returns The inserted row ID.
+   */
+  async createTask(data: {
+    id: string; title: string; description: string; status: string;
+    priority: number; due_date: string | null; labels: string;
+    framework_payload: string; parent_id: string | null;
+    board_id: string; custom_fields: string; start_date: string | null;
+    end_date: string | null; progress: number; color: string | null;
+    is_favorite: number; task_type: string; ticket_number: number;
+    assigned_to: string | null; checklists?: string | null;
+    recurrence_rule?: string | null;
+  }): Promise<string> {
+    const now = Date.now();
+    await this.client.execute({
+      sql: `INSERT INTO tasks (id, title, description, status, priority, due_date, labels,
+                               framework_payload, calendar_sync_state, parent_id, time_tracked,
+                               board_id, custom_fields, start_date, end_date, progress, color, is_favorite,
+                               task_type, ticket_number, assigned_to, checklists, recurrence_rule,
+                               idempotency_key, request_id, created_at, updated_at)
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?, '${STATUS.PENDING}', ?, 0, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+      args: [
+        data.id, data.title, data.description, data.status, data.priority,
+        data.due_date, data.labels, data.framework_payload,
+        data.parent_id, data.board_id, data.custom_fields,
+        data.start_date, data.end_date, data.progress, data.color, data.is_favorite,
+        data.task_type, data.ticket_number, data.assigned_to,
+        data.checklists ?? null, data.recurrence_rule ?? null,
+        crypto.randomUUID(), crypto.randomUUID(), now, now,
+      ] as InValue[],
+    });
+    return data.id;
+  }
+
+  /**
+   * Dynamic update: only SET the columns present in `fields`.
+   * @returns The full updated row (re-fetched after update).
+   */
+  async updateTask(id: string, fields: Record<string, InValue>): Promise<TaskRow | null> {
+    const updates: string[] = [];
+    const args: InValue[] = [];
+    const now = Date.now();
+
+    for (const [col, val] of Object.entries(fields)) {
+      updates.push(`${col} = ?`);
+      args.push(val);
+    }
+    if (updates.length === 0) return null;
+
+    updates.push("updated_at = ?");
+    args.push(now);
+    args.push(id);
+
+    await this.client.execute({
+      sql: `UPDATE tasks SET ${updates.join(", ")} WHERE id = ?`,
+      args,
+    });
+
+    // Re-fetch the updated row
+    const result = await this.client.execute({
+      sql: `SELECT id, title, description, status, priority, due_date, labels,
+                   framework_payload, calendar_sync_state, board_id, custom_fields,
+                   parent_id, time_tracked, start_date, end_date, progress, color,
+                   is_favorite, task_type, ticket_number, assigned_to, checklists, created_at, updated_at
+            FROM tasks WHERE id = ? LIMIT 1`,
+      args: [id],
+    });
+    return (result.rows[0] as TaskRow) ?? null;
+  }
+
+  /** Fetch old field values for activity log diffing before an update */
+  async getFieldsForDiff(id: string): Promise<TaskRow | null> {
+    const result = await this.client.execute({
+      sql: `SELECT title, description, status, priority, due_date, labels,
+                   framework_payload, board_id, custom_fields, parent_id,
+                   task_type, start_date, end_date, progress, color, is_favorite, assigned_to
+            FROM tasks WHERE id = ? LIMIT 1`,
+      args: [id],
+    });
+    return (result.rows[0] as TaskRow) ?? null;
+  }
+
+  /** Log field-level activity changes (fire-and-forget) */
+  async logActivity(
+    taskId: string,
+    changes: Array<{ field: string; oldValue: string | null; newValue: string }>,
+  ): Promise<void> {
+    const now = Date.now();
+    const inserts = changes.map(({ field, oldValue, newValue }) =>
+      this.client.execute({
+        sql: `INSERT INTO task_activity_log (task_id, field, old_value, new_value, actor, created_at)
+              VALUES (?, ?, ?, ?, 'user', ?)`,
+        args: [taskId, field, oldValue, newValue, now] as InValue[],
+      })
+    );
+    await Promise.all(inserts).catch(() => { });
+  }
+
+  /** Delete a single task and cascade-clean related data */
+  async deleteTask(id: string): Promise<void> {
+    await this.client.execute({ sql: "DELETE FROM tasks WHERE id = ?", args: [id] });
+    // Orphan link cleanup
+    try {
+      await this.client.execute({
+        sql: "DELETE FROM task_links WHERE source_task_id = ? OR target_task_id = ?",
+        args: [id, id],
+      });
+    } catch { /* task_links table may not exist yet */ }
+  }
+
+  /** Purge ALL tasks (cascade: activity log, comments, tasks) */
+  async purgeAll(): Promise<void> {
+    await this.client.execute("DELETE FROM task_activity_log");
+    await this.client.execute("DELETE FROM comments");
+    await this.client.execute("DELETE FROM tasks");
+  }
+
+  /** Fetch recurrence data for cloning (used by auto-create on completion) */
+  async getRecurrenceData(id: string): Promise<TaskRow | null> {
+    const result = await this.client.execute({
+      sql: `SELECT recurrence_rule, due_date, title, description, priority, labels,
+                   board_id, parent_id, task_type, assigned_to, checklists, custom_fields
+            FROM tasks WHERE id = ? LIMIT 1`,
+      args: [id],
+    });
+    return (result.rows[0] as TaskRow) ?? null;
+  }
+
+  /**
+   * Clone a task for recurrence — creates next occurrence with new due date.
+   * Resets checklists (all items unchecked) and status to pending.
+   */
+  async cloneForRecurrence(
+    sourceTask: TaskRow,
+    nextDueDate: string,
+    recurrenceRule: string,
+  ): Promise<{ id: string; ticketNumber: number }> {
+    const newId = crypto.randomUUID();
+    const ticketNumber = await this.getNextTicketNumber();
+    const now = Date.now();
+
+    // Reset checklists — uncheck all items for new occurrence
+    let freshChecklists: string | null = null;
+    if (sourceTask.checklists && typeof sourceTask.checklists === "string") {
+      try {
+        const items = JSON.parse(String(sourceTask.checklists));
+        if (Array.isArray(items)) {
+          freshChecklists = JSON.stringify(items.map((i: { text: string }) => ({ text: i.text, done: false })));
+        }
+      } catch { /* keep null */ }
+    }
+
+    await this.client.execute({
+      sql: `INSERT INTO tasks (id, title, description, status, priority, due_date, labels,
+                               recurrence_rule, board_id, parent_id, task_type, assigned_to,
+                               checklists, custom_fields, ticket_number,
+                               idempotency_key, request_id, created_at, updated_at)
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+      args: [
+        newId,
+        sourceTask.title ? String(sourceTask.title) : "Recurring task",
+        sourceTask.description ? String(sourceTask.description) : null,
+        STATUS.PENDING,
+        sourceTask.priority != null ? Number(sourceTask.priority) : 3,
+        nextDueDate,
+        sourceTask.labels ? String(sourceTask.labels) : "[]",
+        recurrenceRule,
+        sourceTask.board_id ? String(sourceTask.board_id) : "default",
+        sourceTask.parent_id ? String(sourceTask.parent_id) : null,
+        sourceTask.task_type ? String(sourceTask.task_type) : "task",
+        sourceTask.assigned_to ? String(sourceTask.assigned_to) : null,
+        freshChecklists,
+        sourceTask.custom_fields ? String(sourceTask.custom_fields) : "{}",
+        ticketNumber,
+        crypto.randomUUID(), crypto.randomUUID(), now, now,
+      ] as InValue[],
+    });
+
+    return { id: newId, ticketNumber };
+  }
+
+  /** Count open tasks (non-complete) — used for iOS badge count */
+  async getOpenTaskCount(): Promise<number> {
+    try {
+      const result = await this.client.execute({
+        sql: `SELECT COUNT(*) as cnt FROM tasks WHERE status NOT IN ('${STATUS.COMPLETE}')`,
+        args: [],
+      });
+      return Number((result.rows[0] as Record<string, unknown>).cnt) || 0;
+    } catch { return 0; }
+  }
+
+  /** Batch update kanban positions */
+  async reorderTasks(updates: Array<{ id: string; position: number }>): Promise<void> {
+    const stmts = updates.map(u => ({
+      sql: "UPDATE tasks SET kanban_position = ?, updated_at = ? WHERE id = ?",
+      args: [u.position, Date.now(), u.id] as InValue[],
+    }));
+    await this.client.batch(stmts);
+  }
+
+  /** Look up custom user display name by ID */
+  async getCustomUserName(userId: string): Promise<string | null> {
+    try {
+      const result = await this.client.execute({
+        sql: "SELECT name FROM custom_users WHERE id = ? LIMIT 1",
+        args: [userId],
+      });
+      if (result.rows.length > 0) return String((result.rows[0] as Record<string, unknown>).name);
+    } catch { /* table may not exist */ }
+    return null;
+  }
+
+  /** Fetch notification preferences from settings table */
+  async getNotificationPreferences(): Promise<{
+    enabled: boolean;
+    disabledUsers: Set<string>;
+    channels: { sidebar: boolean; mobile_push: boolean };
+    mobileTargets: string[];
+  }> {
+    const defaults = {
+      enabled: true,
+      disabledUsers: new Set<string>(),
+      channels: { sidebar: true, mobile_push: false },
+      mobileTargets: [] as string[],
+    };
+    try {
+      const result = await this.client.execute({
+        sql: "SELECT value FROM settings WHERE key = 'notification_preferences' LIMIT 1",
+        args: [],
+      });
+      if (result.rows.length > 0) {
+        const raw = JSON.parse(String((result.rows[0] as Record<string, unknown>).value));
+        if (typeof raw === "object" && raw !== null) {
+          defaults.enabled = raw.enabled !== false;
+          if (Array.isArray(raw.disabled_users)) defaults.disabledUsers = new Set(raw.disabled_users);
+          if (raw.channels) defaults.channels = raw.channels;
+          if (Array.isArray(raw.mobile_targets)) defaults.mobileTargets = raw.mobile_targets;
+        }
+      }
+    } catch { /* settings not available */ }
+    return defaults;
   }
 }
