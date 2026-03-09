@@ -238,11 +238,50 @@ async function mergeHATodoItems(entityId: string, items: HATodoItem[]): Promise<
       const uid = item.uid ?? `ha-todo-${entityId}-${item.summary}`;
       const meithealStatus = haStatusToMeitheal(item.status ?? "needs_action");
 
-      // Check if we already track this todo item
+      // ── Loop prevention: skip items that Meitheal pushed outbound ──
+      // If we see our own attribution text, this item came from us via pushTaskToTodoList.
+      // Re-importing it would create a duplicate, closing the sync loop.
+      if (item.description && /Added from Meitheal$/i.test(item.description)) {
+        skipped++;
+        continue;
+      }
+
+      // Sanitize the title upfront to strip any recursive MTH-NN prefixes
+      const cleanTitle = sanitizeTodoTitle(item.summary);
+
+      // Check if we already track this todo item (primary key: entity + uid)
       const existing = await client.execute({
         sql: "SELECT task_id FROM todo_sync_confirmations WHERE ha_entity_id = ? AND ha_todo_uid = ?",
         args: [entityId, uid],
       });
+
+      // Fallback dedup: if UID lookup fails, check if a task with this title already exists.
+      // This catches items that were pushed outbound (different UID) coming back in.
+      if (existing.rows.length === 0 && cleanTitle) {
+        const titleMatch = await client.execute({
+          sql: "SELECT id FROM tasks WHERE title = ? AND status != 'complete' LIMIT 1",
+          args: [cleanTitle],
+        });
+        if (titleMatch.rows.length > 0) {
+          // Found existing task by title — link it and skip creation
+          const matchedTaskId = titleMatch.rows[0]!.id as string;
+          const nowMs = Date.now();
+          await client.execute({
+            sql: `INSERT OR IGNORE INTO todo_sync_confirmations (
+              confirmation_id, task_id, request_id, ha_entity_id, ha_todo_uid,
+              source, sync_direction, payload, created_at, updated_at
+            ) VALUES (?, ?, ?, ?, ?, 'ha.todo_sync', 'inbound', ?, ?, ?)`,
+            args: [
+              crypto.randomUUID(), matchedTaskId, crypto.randomUUID(),
+              entityId, uid,
+              JSON.stringify({ summary: item.summary, status: item.status, due: item.due }),
+              nowMs, nowMs,
+            ],
+          });
+          skipped++;
+          continue;
+        }
+      }
 
       if (existing.rows.length > 0) {
         // Non-destructive update: only sync from HA if task hasn't been
@@ -278,7 +317,7 @@ async function mergeHATodoItems(entityId: string, items: HATodoItem[]): Promise<
             updated_at = ?
           WHERE id = ?`,
           args: [
-            sanitizeTodoTitle(item.summary),
+            cleanTitle,
             meithealStatus,
             item.due ?? null,
             stripMeithealAttribution(item.description),
@@ -324,7 +363,7 @@ async function mergeHATodoItems(entityId: string, items: HATodoItem[]): Promise<
                   '{}', 'task', ?, ?, ?, ?, ?)`,
           args: [
             taskId,
-            sanitizeTodoTitle(item.summary),
+            cleanTitle,
             stripMeithealAttribution(item.description) ?? "",
             meithealStatus,
             item.due ?? null,

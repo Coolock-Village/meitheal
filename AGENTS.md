@@ -119,7 +119,7 @@ Changes **must** be verified in the correct environment tier before completion.
 | Calendar/Todo sync, entity exposure | 🏠 Tier 2 | HA devcontainer |
 | LLM API (`llm_api.py`, `__init__.py`) | 🏠 Tier 2 | HA devcontainer |
 | Addon lifecycle (start/stop/build) | 🏠 Tier 2 | HA devcontainer |
-| Final acceptance on real data | 🌐 Tier 3 | Production HA (`ha.home.arpa`) |
+| Final acceptance on real data | 🌐 Tier 3 | Production HA (`ha.internal`) |
 
 > **⚠️ AGENTS**: Do NOT mark HA integration work as verified using only Tier 1. If the devcontainer isn't running, start it with `./scripts/devcontainer-up.sh up`. See `.agents/workflows/devcontainer.md` for details.
 

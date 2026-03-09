@@ -340,9 +340,39 @@ async function _syncEntityFromHAInner(entityId: string, state: EntitySyncState |
     for (let i = 0; i < events.length; i++) {
       const evt = events[i]!;
       const uid = eventUids[i]!;
-      const existingTaskId = existingMap.get(uid);
+      let existingTaskId = existingMap.get(uid);
 
       try {
+        // ── Loop prevention: skip events that Meitheal pushed outbound ──
+        // If description contains our attribution, this event came from us.
+        // Re-importing it would create a duplicate, closing the sync loop.
+        if (evt.description && /Added from Meitheal/i.test(evt.description)) {
+          skipped++;
+          continue;
+        }
+
+        // Fallback dedup: if UID lookup fails, check if a task with this title exists.
+        // This catches write-back events re-appearing with a different UID.
+        if (!existingTaskId && evt.summary) {
+          const titleMatch = await client.execute({
+            sql: "SELECT id FROM tasks WHERE title = ? AND status != 'complete' LIMIT 1",
+            args: [evt.summary],
+          });
+          if (titleMatch.rows.length > 0) {
+            existingTaskId = String(titleMatch.rows[0]!.id);
+            // Link it for future lookups
+            await client.execute({
+              sql: `INSERT OR IGNORE INTO calendar_confirmations (confirmation_id, task_id, request_id, provider_event_id,
+                      source, payload, created_at) VALUES (?, ?, ?, ?, 'ha.calendar_sync', ?, ?)`,
+              args: [
+                crypto.randomUUID(), existingTaskId, crypto.randomUUID(), uid,
+                JSON.stringify({ summary: evt.summary, start: evt.start, end: evt.end, entity_id: entityId }),
+                Date.now(),
+              ],
+            });
+          }
+        }
+
         if (existingTaskId) {
           // Build description: include location if present
           const descParts: string[] = [];
