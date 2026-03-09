@@ -533,6 +533,33 @@ const typeConfig: Record<
                           📅✓
                         </span>
                       )}
+                      {task.recurrence_rule && (
+                        <span
+                          class="kanban-card-due"
+                          title="Recurring task"
+                          style="color:var(--text-primary);"
+                        >
+                          🔁
+                        </span>
+                      )}
+                      {(() => {
+                        try {
+                          const cl = task.checklists ? (typeof task.checklists === "string" ? JSON.parse(String(task.checklists)) : task.checklists) : [];
+                          if (Array.isArray(cl) && cl.length > 0) {
+                            const done = cl.filter((i: {done: boolean}) => i.done).length;
+                            return (
+                              <span
+                                class="kanban-card-due"
+                                title={`Checklist: ${done}/${cl.length}`}
+                                style={`color: ${done === cl.length ? 'var(--color-green-500, #22c55e)' : 'var(--text-primary)'};`}
+                              >
+                                ✓ {done}/{cl.length}
+                              </span>
+                            );
+                          }
+                        } catch { /* skip */ }
+                        return null;
+                      })()}
                       {(commentCounts[String(task.id)] ?? 0) > 0 && (
                         <span
                           class="kanban-card-due"

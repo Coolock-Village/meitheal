@@ -96,6 +96,29 @@ const locale: Locale = cookieLocale === "ga" ? "ga" : "en";
         </p>
       </div>
 
+      <!-- Recurrence Picker (Phase 1: REC-02) -->
+      <div class="form-group">
+        <label for="new-task-recurrence" class="form-label">Recurrence</label>
+        <select class="form-select bg-bg-input" id="new-task-recurrence">
+          <option value="">None (one-time)</option>
+          <option value="FREQ=DAILY">Every day</option>
+          <option value="FREQ=WEEKLY">Every week</option>
+          <option value="FREQ=WEEKLY;BYDAY=MO,TU,WE,TH,FR">Every weekday</option>
+          <option value="FREQ=MONTHLY">Every month</option>
+          <option value="FREQ=YEARLY">Every year</option>
+          <option value="FREQ=WEEKLY;INTERVAL=2">Every 2 weeks</option>
+        </select>
+      </div>
+
+      <!-- Checklist (Phase 1: CHK-01) -->
+      <div class="form-group">
+        <label class="form-label">Checklist</label>
+        <div id="new-task-checklist-items" class="space-y-1"></div>
+        <button type="button" id="new-task-add-checklist" class="text-xs text-accent hover:text-accent-hover mt-1 flex items-center gap-1">
+          <span>➕</span> Add checklist item
+        </button>
+      </div>
+
       <div
         class="modal-actions pt-4 border-t border-border flex justify-end gap-3 mt-6"
       >
@@ -128,12 +151,44 @@ const locale: Locale = cookieLocale === "ga" ? "ga" : "en";
   const cancelBtn = document.getElementById("cancel-new-task");
   const form = document.getElementById("new-task-form") as HTMLFormElement;
 
+  // Checklist item management (CHK-01)
+  const checklistContainer = document.getElementById("new-task-checklist-items");
+  const addChecklistBtn = document.getElementById("new-task-add-checklist");
+
+  function addChecklistRow(value = "") {
+    if (!checklistContainer) return;
+    const row = document.createElement("div");
+    row.className = "flex items-center gap-1";
+    const input = document.createElement("input");
+    input.type = "text";
+    input.className = "form-input text-sm py-1 flex-1 bg-bg-input";
+    input.placeholder = "Checklist item...";
+    input.value = value;
+    const removeBtn = document.createElement("button");
+    removeBtn.type = "button";
+    removeBtn.className = "text-text-muted hover:text-red-400 text-sm px-1";
+    removeBtn.textContent = "✕";
+    removeBtn.addEventListener("click", () => row.remove());
+    input.addEventListener("keydown", (e) => {
+      if (e.key === "Enter") { e.preventDefault(); addChecklistRow(); }
+      if (e.key === "Escape" && !input.value.trim()) row.remove();
+    });
+    row.appendChild(input);
+    row.appendChild(removeBtn);
+    checklistContainer.appendChild(row);
+    setTimeout(() => input.focus(), 10);
+  }
+
+  addChecklistBtn?.addEventListener("click", () => addChecklistRow());
+
   function closeNewTaskModal() {
     overlay?.classList.remove("open");
     if (overlay) {
       overlay.style.display = "none";
     }
     form?.reset();
+    // Clear dynamic checklist rows
+    if (checklistContainer) checklistContainer.innerHTML = "";
   }
 
   closeBtn?.addEventListener("click", closeNewTaskModal);
@@ -331,7 +386,14 @@ const locale: Locale = cookieLocale === "ga" ? "ga" : "en";
         .trim();
       if (!finalTitle) finalTitle = titleInput.value.trim();
 
-      const body = {
+      // Collect checklist items
+      const checklistItems: {text: string, done: boolean}[] = [];
+      document.querySelectorAll('#new-task-checklist-items input[type="text"]').forEach((inp) => {
+        const text = (inp as HTMLInputElement).value.trim();
+        if (text) checklistItems.push({ text, done: false });
+      });
+
+      const body: Record<string, unknown> = {
         title: finalTitle,
         description: (
           document.getElementById("new-task-desc-input") as HTMLTextAreaElement
@@ -347,6 +409,8 @@ const locale: Locale = cookieLocale === "ga" ? "ga" : "en";
         labels: JSON.stringify(allLabels),
         due_date: extractedDue,
         assigned_to: assignedTo || null,
+        recurrence_rule: (document.getElementById("new-task-recurrence") as HTMLSelectElement)?.value || null,
+        checklists: checklistItems.length > 0 ? JSON.stringify(checklistItems) : null,
       };
 
       const res = await fetch((window.__ingress_path || "") + "/api/tasks", {

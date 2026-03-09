@@ -663,6 +663,32 @@ Astro.response.headers.set("X-Content-Type-Options", "nosniff");
                   <div>
                     <span class="text-xs text-text-muted">Children:</span>
                     <div id="td-link-children" class="space-y-1 mt-1"></div>
+                    <!-- Subtask progress bar (Phase 1: SUB-03) -->
+                    <div id="td-subtask-progress" class="hidden mt-2">
+                      <div class="flex items-center justify-between text-[10px] text-text-muted mb-0.5">
+                        <span>Subtask progress</span>
+                        <span id="td-subtask-progress-label">0/0</span>
+                      </div>
+                      <div class="w-full h-1.5 bg-bg-input rounded-full overflow-hidden">
+                        <div id="td-subtask-progress-bar" class="h-full bg-accent rounded-full transition-all duration-300" style="width:0%"></div>
+                      </div>
+                    </div>
+                    <!-- Add subtask inline form (Phase 1: SUB-02) -->
+                    <div id="td-add-subtask" class="mt-2">
+                      <button type="button" id="td-add-subtask-btn" class="text-xs text-accent hover:text-accent-hover flex items-center gap-1">
+                        <span>➕</span> Add subtask
+                      </button>
+                      <div id="td-add-subtask-form" class="hidden mt-1 flex gap-1">
+                        <input
+                          id="td-add-subtask-input"
+                          class="form-input text-sm py-1 flex-1"
+                          placeholder="Subtask title..."
+                          autocomplete="off"
+                        />
+                        <button type="button" id="td-add-subtask-submit" class="btn-primary text-xs px-2 py-1">Add</button>
+                        <button type="button" id="td-add-subtask-cancel" class="btn-secondary text-xs px-2 py-1">✕</button>
+                      </div>
+                    </div>
                   </div>
 
                   <!-- Related Links (Jira-style issue linking) -->
@@ -1845,6 +1871,10 @@ Astro.response.headers.set("X-Content-Type-Options", "nosniff");
             ) as HTMLElement;
             if (childrenDiv) {
               childrenDiv.innerHTML = "";
+              // Progress bar elements
+              const progressWrap = document.getElementById("td-subtask-progress");
+              const progressLabel = document.getElementById("td-subtask-progress-label");
+              const progressBar = document.getElementById("td-subtask-progress-bar");
               try {
                 const childRes = await fetch(
                   `${window.__ingress_path || ""}/api/tasks?parent_id=${taskId}`,
@@ -1854,23 +1884,40 @@ Astro.response.headers.set("X-Content-Type-Options", "nosniff");
                   const children = childData.tasks ?? [];
                   if (children.length === 0) {
                     childrenDiv.innerHTML = `<span class="text-xs text-text-muted italic">No children</span>`;
+                    if (progressWrap) progressWrap.classList.add("hidden");
                   } else {
+                    let doneCount = 0;
                     children.forEach((c: Record<string, unknown>) => {
+                      const isDone = c.status === "complete";
+                      if (isDone) doneCount++;
                       const chip = document.createElement("a");
                       chip.href = "#";
-                      chip.className =
-                        "text-xs text-accent hover:underline block";
-                      chip.textContent = `↳ ${c.ticket_key ? c.ticket_key + " " : ""}${String(c.title ?? c.id).slice(0, 50)}`;
+                      chip.className = `text-xs block flex items-center gap-1 ${isDone ? "text-text-muted line-through" : "text-accent hover:underline"}`;
+                      const typeIcon = c.task_type === "epic" ? "🎯" : c.task_type === "story" ? "📖" : "";
+                      const statusIcon = isDone ? "✓" : "⏳";
+                      chip.textContent = `${statusIcon} ${typeIcon}${typeIcon ? " " : ""}↳ ${c.ticket_key ? c.ticket_key + " " : ""}${String(c.title ?? c.id).slice(0, 50)}`;
                       chip.addEventListener("click", (e) => {
                         e.preventDefault();
                         openTaskDetail(String(c.id));
                       });
                       childrenDiv.appendChild(chip);
                     });
+                    // Update progress bar (SUB-03)
+                    if (progressWrap && progressLabel && progressBar) {
+                      progressWrap.classList.remove("hidden");
+                      progressLabel.textContent = `${doneCount}/${children.length}`;
+                      const pct = Math.round((doneCount / children.length) * 100);
+                      progressBar.style.width = `${pct}%`;
+                      // Color coding: green if all done, yellow if partial, default if none
+                      if (pct === 100) progressBar.className = "h-full bg-green-500 rounded-full transition-all duration-300";
+                      else if (pct > 0) progressBar.className = "h-full bg-amber-500 rounded-full transition-all duration-300";
+                      else progressBar.className = "h-full bg-accent rounded-full transition-all duration-300";
+                    }
                   }
                 }
               } catch {
                 childrenDiv.innerHTML = `<span class="text-xs text-text-muted italic">—</span>`;
+                if (progressWrap) progressWrap.classList.add("hidden");
               }
             }
 
@@ -2101,6 +2148,18 @@ Astro.response.headers.set("X-Content-Type-Options", "nosniff");
             (
               document.getElementById("td-task-type") as HTMLSelectElement
             ).value = String(t.task_type ?? "task");
+
+            // Phase 1 (REC-04): Set recurrence select to current value
+            const recurrenceSelect = document.getElementById("td-recurrence") as HTMLSelectElement | null;
+            if (recurrenceSelect) {
+              recurrenceSelect.value = String(t.recurrence_rule ?? "");
+              const descEl = document.getElementById("td-recurrence-desc");
+              if (descEl) {
+                descEl.textContent = t.recurrence_rule
+                  ? `🔁 ${recurrenceSelect.selectedOptions[0]?.textContent ?? ""}`
+                  : "";
+              }
+            }
 
             // Assigned To — populate from /api/users
             const assignSelect = document.getElementById(
@@ -2701,6 +2760,87 @@ Astro.response.headers.set("X-Content-Type-Options", "nosniff");
               Number((e.target as HTMLInputElement).value) || 0,
             ),
           );
+
+        // ───── Labels interactive ─────
+
+        // Phase 1 (REC-04): Recurrence select → save on change
+        document
+          .getElementById("td-recurrence")
+          ?.addEventListener("change", (e) => {
+            const val = (e.target as HTMLSelectElement).value || null;
+            saveTD("recurrence_rule", val);
+            const descEl = document.getElementById("td-recurrence-desc");
+            if (descEl) {
+              descEl.textContent = val ? `🔁 ${(e.target as HTMLSelectElement).selectedOptions[0]?.textContent ?? ""}` : "";
+            }
+          });
+
+        // Phase 1 (SUB-02): Add subtask inline form
+        const addSubBtn = document.getElementById("td-add-subtask-btn");
+        const addSubForm = document.getElementById("td-add-subtask-form");
+        const addSubInput = document.getElementById("td-add-subtask-input") as HTMLInputElement | null;
+        const addSubSubmit = document.getElementById("td-add-subtask-submit");
+        const addSubCancel = document.getElementById("td-add-subtask-cancel");
+
+        if (addSubBtn && addSubForm && addSubInput && addSubSubmit && addSubCancel) {
+          addSubBtn.addEventListener("click", () => {
+            addSubForm.classList.remove("hidden");
+            addSubBtn.classList.add("hidden");
+            addSubInput.value = "";
+            addSubInput.focus();
+          });
+          addSubCancel.addEventListener("click", () => {
+            addSubForm.classList.add("hidden");
+            addSubBtn.classList.remove("hidden");
+          });
+          const submitSubtask = async () => {
+            const title = addSubInput.value.trim();
+            if (!title) return;
+            addSubInput.disabled = true;
+            try {
+              const parentBoardEl = document.getElementById("td-board") as HTMLSelectElement | null;
+              const parentTypeEl = document.getElementById("td-task-type") as HTMLSelectElement | null;
+              const parentType = parentTypeEl?.value ?? "task";
+              const childType = parentType === "epic" ? "story" : "task";
+              const res = await fetch(`${window.__ingress_path || ""}/api/tasks`, {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({
+                  title,
+                  parent_id: currentTaskId,
+                  board_id: parentBoardEl?.value ?? "default",
+                  task_type: childType,
+                  status: "pending",
+                }),
+              });
+              if (res.ok) {
+                addSubInput.value = "";
+                addSubForm.classList.add("hidden");
+                addSubBtn.classList.remove("hidden");
+                openTaskDetail(String(currentTaskId));
+                const { showToast } = await import("@lib/toast");
+                showToast(`Subtask "${title}" created`);
+              } else {
+                const err = await res.json().catch(() => ({ error: "Failed to create subtask" }));
+                const { showToast } = await import("@lib/toast");
+                showToast(err.error ?? "Failed to create subtask", "error");
+              }
+            } catch {
+              const { showToast } = await import("@lib/toast");
+              showToast("Network error creating subtask", "error");
+            } finally {
+              addSubInput.disabled = false;
+            }
+          };
+          addSubSubmit.addEventListener("click", submitSubtask);
+          addSubInput.addEventListener("keydown", (e) => {
+            if (e.key === "Enter") submitSubtask();
+            if (e.key === "Escape") {
+              addSubForm.classList.add("hidden");
+              addSubBtn.classList.remove("hidden");
+            }
+          });
+        }
 
         // ───── Labels interactive ─────
         let currentLabels: string[] = [];
