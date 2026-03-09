@@ -8,15 +8,26 @@
 import type { Client } from "@libsql/client"
 import type { InValue } from "@libsql/client"
 
+export interface BoardRow {
+  [key: string]: unknown
+  id: unknown
+  title: unknown
+  icon: unknown
+  color: unknown
+  position: unknown
+  created_at: unknown
+  updated_at: unknown
+}
+
 export class BoardRepository {
   constructor(private client: Client) {}
 
   /** List all boards ordered by position */
-  async findAll() {
+  async findAll(): Promise<BoardRow[]> {
     const result = await this.client.execute(
       "SELECT id, title, icon, color, position, created_at, updated_at FROM boards ORDER BY position ASC, created_at ASC"
     )
-    return result.rows
+    return result.rows as unknown as BoardRow[]
   }
 
   /** Count total boards (for abuse limits) */

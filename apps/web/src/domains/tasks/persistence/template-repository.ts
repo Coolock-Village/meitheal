@@ -43,11 +43,12 @@ export class TemplateRepository {
       sql: `INSERT INTO tasks (id, title, description, status, priority, labels, task_type,
             recurrence_rule, checklists, custom_fields, board_id, framework_payload,
             calendar_sync_state, idempotency_key, request_id, created_at, updated_at)
-            VALUES (?, ?, ?, '${STATUS.PENDING}', ?, ?, ?, ?, ?, ?, ?, '{}', '${STATUS.PENDING}', ?, ?, ?, ?)`,
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, '{}', ?, ?, ?, ?, ?)`,
       args: [
         taskId,
         String(template.title ?? "Untitled"),
         String(template.description ?? ""),
+        STATUS.PENDING,
         Number(template.priority ?? 3),
         JSON.stringify(template.labels ?? []),
         String(template.task_type ?? "task"),
@@ -55,6 +56,7 @@ export class TemplateRepository {
         JSON.stringify(template.checklists ?? []),
         JSON.stringify(template.custom_fields ?? {}),
         String(template.board_id ?? "default"),
+        STATUS.PENDING,
         crypto.randomUUID(),
         crypto.randomUUID(),
         now,

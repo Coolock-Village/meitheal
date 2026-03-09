@@ -113,10 +113,10 @@ export class SettingsRepository {
             FROM tasks
             WHERE reminder_at IS NOT NULL
               AND reminder_at <= ?
-              AND status NOT IN ('${STATUS.COMPLETE}')
+              AND status NOT IN (?)
             ORDER BY reminder_at ASC
             LIMIT 50`,
-      args: [now],
+      args: [now, STATUS.COMPLETE],
     })
     return { reminders: result.rows, checked_at: now }
   }

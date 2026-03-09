@@ -495,11 +495,11 @@ export class TaskRepository {
                                board_id, custom_fields, start_date, end_date, progress, color, is_favorite,
                                task_type, ticket_number, assigned_to, checklists, recurrence_rule,
                                idempotency_key, request_id, created_at, updated_at)
-            VALUES (?, ?, ?, ?, ?, ?, ?, ?, '${STATUS.PENDING}', ?, 0, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 0, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
       args: [
         data.id, data.title, data.description, data.status, data.priority,
         data.due_date, data.labels, data.framework_payload,
-        data.parent_id, data.board_id, data.custom_fields,
+        STATUS.PENDING, data.parent_id, data.board_id, data.custom_fields,
         data.start_date, data.end_date, data.progress, data.color, data.is_favorite,
         data.task_type, data.ticket_number, data.assigned_to,
         data.checklists ?? null, data.recurrence_rule ?? null,
@@ -660,8 +660,8 @@ export class TaskRepository {
   async getOpenTaskCount(): Promise<number> {
     try {
       const result = await this.client.execute({
-        sql: `SELECT COUNT(*) as cnt FROM tasks WHERE status NOT IN ('${STATUS.COMPLETE}')`,
-        args: [],
+        sql: `SELECT COUNT(*) as cnt FROM tasks WHERE status NOT IN (?)`,
+        args: [STATUS.COMPLETE],
       });
       return Number((result.rows[0] as Record<string, unknown>).cnt) || 0;
     } catch { return 0; }

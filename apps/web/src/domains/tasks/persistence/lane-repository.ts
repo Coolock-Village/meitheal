@@ -105,8 +105,8 @@ export class LaneRepository {
   /** Delete a lane and reassign tasks with its status back to pending */
   async delete(id: string, laneKey: string): Promise<void> {
     await this.client.execute({
-      sql: `UPDATE tasks SET status = '${STATUS.PENDING}', updated_at = ? WHERE status = ?`,
-      args: [Date.now(), laneKey],
+      sql: "UPDATE tasks SET status = ?, updated_at = ? WHERE status = ?",
+      args: [STATUS.PENDING, Date.now(), laneKey],
     })
     await this.client.execute({
       sql: "DELETE FROM kanban_lanes WHERE id = ?",
