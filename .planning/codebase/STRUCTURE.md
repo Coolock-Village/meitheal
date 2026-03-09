@@ -1,6 +1,6 @@
 # Directory Structure
 
-> Last mapped: 2026-03-09 — v0.1.99
+> Last mapped: 2026-03-09 — v0.2.0
 
 ## Root Layout
 
@@ -67,8 +67,10 @@ src/
 │   ├── offline/          # offline-store, sync-engine, tab-sync, notifications
 │   ├── tasks/            # persistence/store.ts, recurrence, task-sync-service
 │   └── todo/             # todo-bridge, todo-status-mapper
-├── layouts/Layout.astro  # Master layout
-├── lib/ (33 utilities)   # api-response, safe-fetch, task-api-client, toast, etc.
+├── layouts/Layout.astro  # Master layout (1,500 lines)
+├── lib/ (38 modules)     # Page controllers + utilities
+│   ├── *-controller.ts   # Extracted page controllers (5 modules, 6,841 lines)
+│   └── *.ts              # Shared utilities (33 modules)
 ├── pages/ (12 pages + 64 API routes)
 │   ├── api/              # 64 endpoints (see INTEGRATIONS.md)
 │   └── *.astro           # index, kanban, table, tasks, today, upcoming, etc.
