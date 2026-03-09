@@ -1,90 +1,79 @@
-# Core Feature Completion — Requirements
+# Core Feature Completion — Requirements (Revised)
 
 **Project:** Meitheal Core Feature Completion Sprint
-**Version:** v1 (derived from gap analysis + CONCERNS.md audit)
+**Version:** v1.1 (revised after deep code audit — 2026-03-09)
 **Date:** 2026-03-09
+
+> [!IMPORTANT]
+> Deep audit revealed ~60% of original Phase 1-3 requirements already exist as working UI.
+> Requirements updated to reflect actual gaps only.
 
 ---
 
-## Subtask Tree UI (SUB)
+## Subtask Hierarchy UI (SUB)
 
-- [ ] **SUB-01**: Subtask indent/tree display in Table view — child tasks indented under parent with expand/collapse
-- [ ] **SUB-02**: Subtask count badge on Kanban cards — show "3/5 subtasks" chip when task has children
-- [ ] **SUB-03**: "Add subtask" action in task detail panel — create child task with parent_id auto-set
-- [ ] **SUB-04**: Subtask progress bar on parent task — visual completion percentage based on done subtasks
-- [ ] **SUB-05**: Subtask list in task detail panel — show child tasks with inline checkbox completion
-- [ ] **SUB-06**: Drag-to-nest in Table view — drag a task onto another to make it a subtask
+> Existing: parent search, children list, parent link/unlink, kanban badges, Gantt tree
+> Missing: table indent, "Add subtask" button, progress bar, hierarchy unification
 
-## Recurrence Picker (REC)
+- [ ] **SUB-01**: Table tree indent — child tasks indented under parent with expand/collapse toggles
+- [ ] **SUB-02**: "Add subtask" button in task detail panel — opens inline quick-create form with parent_id auto-set
+- [ ] **SUB-03**: Subtask completion progress bar on parent task in detail panel and card hover
+- [ ] **SUB-04**: Epic→Story→Task hierarchy grouping in Table view — group-by-parent mode
+- [ ] **SUB-05**: Task type validation on nesting — Epics can hold Stories+Tasks, Stories can hold Tasks, Tasks can't hold Epics
 
-- [ ] **REC-01**: RecurrencePicker Astro component — select daily/weekly/monthly/yearly/custom
-- [ ] **REC-02**: Wire RecurrencePicker into NewTaskModal — set recurrence_rule on task creation
-- [ ] **REC-03**: Wire RecurrencePicker into task detail edit panel — modify recurrence on existing tasks
-- [ ] **REC-04**: Recurrence badge on task cards across all views — visual indicator (🔁 icon)
-- [ ] **REC-05**: Auto-create next occurrence on task completion — clone task with next due date when recurring task completed
-- [ ] **REC-06**: Recurrence rule parser — human-readable display ("Every Monday", "Monthly on the 15th")
+## Recurrence Completion (REC)
 
-## Checklist UI (CHK)
+> Existing: picker in detail panel (6 options), recurrence.ts parser, badges on today/upcoming
+> Missing: auto-create on completion, NewTaskModal picker, kanban badges
 
-- [ ] **CHK-01**: Checklist section in task detail panel — render checklist items with checkboxes
-- [ ] **CHK-02**: Add/remove checklist items inline — text input to append new items
-- [ ] **CHK-03**: Checklist progress indicator on task cards — show "2/5" or progress bar
-- [ ] **CHK-04**: Reorder checklist items via drag-and-drop in detail panel
-- [ ] **CHK-05**: Wire checklists into NewTaskModal — add checklist items during task creation
-- [ ] **CHK-06**: Save/load checklists from task templates — template system preserves checklist items
+- [ ] **REC-01**: Auto-create next occurrence when recurring task completed — clone with next due date
+- [ ] **REC-02**: Recurrence picker in NewTaskModal — same 6 options as detail panel
+- [ ] **REC-03**: Recurrence badge (🔁) on kanban cards
+- [ ] **REC-04**: Save recurrence_rule on task edit — wire td-recurrence select to saveTD
 
-## SQL Migration (SQL)
+## Checklist Completion (CHK)
 
-- [ ] **SQL-01**: Create `@meitheal/domain-tasks` query module with typed functions for task CRUD (findAll, findById, create, update, delete)
-- [ ] **SQL-02**: Create board query module — board CRUD functions in domain package
-- [ ] **SQL-03**: Create label query module — label CRUD functions in domain package
-- [ ] **SQL-04**: Migrate `/api/tasks/index.ts` and `/api/tasks/[id].ts` to use domain query functions
-- [ ] **SQL-05**: Migrate `/api/boards/*` routes to use domain query functions
-- [ ] **SQL-06**: Migrate `/api/labels*` routes to use domain query functions
-- [ ] **SQL-07**: Migrate remaining API routes (comments, activity, templates, gamification) to domain queries
-- [ ] **SQL-08**: Migrate export routes to use domain queries where applicable
+> Existing: full CRUD in detail panel, progress counter
+> Missing: NewTaskModal checklists, progress on cards, template round-trip verification
+
+- [ ] **CHK-01**: Checklist section in NewTaskModal — add checklist items during creation
+- [ ] **CHK-02**: Checklist progress indicator on task cards across all views (kanban, table, today, upcoming)
+- [ ] **CHK-03**: Verify template save/load preserves checklists correctly
+
+## SQL Domain Migration (SQL)
+
+- [ ] **SQL-01**: Create typed task query module in `@meitheal/domain-tasks` (findAll, findById, create, update, delete)
+- [ ] **SQL-02**: Create board + label query modules in domain packages
+- [ ] **SQL-03**: Migrate `/api/tasks/index.ts` and `/api/tasks/[id].ts` to domain queries
+- [ ] **SQL-04**: Migrate `/api/boards/*` and `/api/labels*` routes
+- [ ] **SQL-05**: Migrate remaining routes (comments, activity, templates, gamification, export)
 
 ## Page Decomposition (PGD)
 
-- [ ] **PGD-01**: Extract Kanban `is:inline` script (~800 lines) into `lib/kanban-controller.ts`
-- [ ] **PGD-02**: Extract Table `is:inline` script (~500 lines) into `lib/table-controller.ts`
-- [ ] **PGD-03**: Extract Dashboard `is:inline` script (~300 lines) into `lib/dashboard-controller.ts`
-- [ ] **PGD-04**: Extract Settings `is:inline` scripts into per-tab modules (`lib/settings-general.ts`, etc.)
-- [ ] **PGD-05**: Extract Layout.astro inline scripts into `lib/layout-controller.ts` — command palette, shortcuts, health
+- [ ] **PGD-01**: Extract Kanban inline script (~800 lines) to `lib/kanban-controller.ts`
+- [ ] **PGD-02**: Extract Table inline script (~500 lines) to `lib/table-controller.ts`
+- [ ] **PGD-03**: Extract Dashboard inline script (~300 lines) to `lib/dashboard-controller.ts`
+- [ ] **PGD-04**: Extract Settings inline scripts to per-tab modules
+- [ ] **PGD-05**: Extract Layout.astro scripts to `lib/layout-controller.ts`
 
-## Smart Today (SMT)
+## Smart Today + Tooling (SMT/VER)
 
-- [ ] **SMT-01**: "Suggested" section on Today page — shows overdue + high-priority tasks not yet on today's list
-- [ ] **SMT-02**: Quick-add-to-today action — one-click to move suggested task to today's focus
-- [ ] **SMT-03**: Daily summary stats — completed/remaining/overdue counts at top of Today page
-
-## Version Sync Automation (VER)
-
-- [ ] **VER-01**: Create `scripts/check-version-sync.mjs` — validates config.yaml, run.sh, sw.js versions match
-- [ ] **VER-02**: Add version sync check to CI pipeline — fails if versions don't match
-- [ ] **VER-03**: Create `scripts/bump-version.mjs` — updates all 3 files atomically with new version
+- [ ] **SMT-01**: "Suggested" section on Today page — overdue + high-priority tasks surfaced
+- [ ] **SMT-02**: Quick-add-to-today action — one-click focus
+- [ ] **SMT-03**: Daily summary stats — completed/remaining/overdue counts
+- [ ] **VER-01**: Create `scripts/check-version-sync.mjs` — validates version consistency
+- [ ] **VER-02**: Add version sync check to CI pipeline
+- [ ] **VER-03**: Create `scripts/bump-version.mjs` — atomic version update
 
 ## Scope
 
 ### v1 (this sprint)
-All requirements above (SUB-01 through VER-03) — 35 requirements total
+All above — 28 requirements (reduced from 35 after audit)
 
 ### v2 (deferred)
-- NLP quick add ("Buy milk tomorrow at 3pm #errands")
-- Calendar drag-to-reschedule
-- Pomodoro timer (HA timer entity integration)
-- Time tracking UI (timer start/stop against `time_tracked` column)
-- File attachments on tasks
-- Yearly contribution heatmap
-- Drizzle ORM adoption or removal
-- Dual label system unification
-- Layout.astro full decomposition (beyond script extraction)
-
-### Out of Scope
-- New authentication system (HA handles auth)
-- Mobile native apps (PWA is sufficient)
-- Social/multiplayer features (leaderboards, parties)
-- Cloudflare Workers deployment (apps/api/)
+- NLP quick add, calendar drag-to-reschedule, Pomodoro timer, time tracking UI
+- File attachments, yearly heatmap, Drizzle adoption
+- Full Layout.astro decomposition (beyond script extraction)
 
 ---
 
@@ -92,11 +81,9 @@ All requirements above (SUB-01 through VER-03) — 35 requirements total
 
 | Phase | Requirements |
 |-------|-------------|
-| 1 | SUB-01, SUB-02, SUB-03, SUB-04, SUB-05, SUB-06 |
-| 2 | REC-01, REC-02, REC-03, REC-04, REC-05, REC-06 |
-| 3 | CHK-01, CHK-02, CHK-03, CHK-04, CHK-05, CHK-06 |
-| 4 | SQL-01, SQL-02, SQL-03, SQL-04, SQL-05, SQL-06, SQL-07, SQL-08 |
-| 5 | PGD-01, PGD-02, PGD-03, PGD-04, PGD-05 |
-| 6 | SMT-01, SMT-02, SMT-03, VER-01, VER-02, VER-03 |
+| 1 | SUB-01→05, REC-01→04, CHK-01→03 |
+| 2 | SQL-01→05 |
+| 3 | PGD-01→05 |
+| 4 | SMT-01→03, VER-01→03 |
 
-*Requirements: 2026-03-09 — core feature completion sprint*
+*Requirements revised: 2026-03-09 — post-audit, actual gaps only*

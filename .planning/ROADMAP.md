@@ -1,10 +1,13 @@
-# Core Feature Completion — Roadmap
+# Core Feature Completion — Roadmap (Revised)
 
 **Project:** Meitheal Core Feature Completion Sprint
-**Phases:** 6
-**Requirements:** 35
+**Phases:** 4 (consolidated from 6 after audit)
+**Requirements:** 28
 **Date:** 2026-03-09
 **Status:** 🔄 IN PROGRESS
+
+> Reduced from 6 to 4 phases — Subtask/Recurrence/Checklist merged into Phase 1
+> since most UI already exists and gaps are interconnected.
 
 ---
 
@@ -12,121 +15,80 @@
 
 | # | Phase | Status | Date |
 |---|-------|--------|------|
-| 1 | Subtask Tree UI | ⬜ Not started | — |
-| 2 | Recurrence Engine | ⬜ Not started | — |
-| 3 | Checklist UI | ⬜ Not started | — |
-| 4 | SQL Domain Migration | ⬜ Not started | — |
-| 5 | Page Decomposition | ⬜ Not started | — |
-| 6 | Smart Today + Tooling | ⬜ Not started | — |
+| 1 | Hierarchy + Feature Gaps | ⬜ Not started | — |
+| 2 | SQL Domain Migration | ⬜ Not started | — |
+| 3 | Page Decomposition | ⬜ Not started | — |
+| 4 | Smart Today + Tooling | ⬜ Not started | — |
 
 ---
 
-## Phase 1: Subtask Tree UI
+## Phase 1: Hierarchy + Feature Gaps
 
-**Goal:** Surface the existing parent_id data model as a full subtask experience — users can see, create, and manage subtasks across all views.
+**Goal:** Complete the Epic→Story→Task hierarchy across all views, fill remaining subtask/recurrence/checklist UI gaps, and ensure parent/children relationships ebb and flow together.
 
-**Requirements:** SUB-01, SUB-02, SUB-03, SUB-04, SUB-05, SUB-06
+**Requirements:** SUB-01→05, REC-01→04, CHK-01→03 (12 requirements)
 
 **Success Criteria:**
-1. User can see child tasks indented under parent in Table view with expand/collapse
-2. Kanban cards show subtask count badge ("3/5 subtasks") when task has children
-3. User can add a subtask from the task detail panel, and it inherits parent's board
-4. Parent task shows visual completion percentage based on child task status
-5. User can view and complete child tasks inline in the task detail panel
+1. Table view shows parent/child tree with indent + expand/collapse
+2. Epic→Story→Task nesting rules enforced (Epic→Story→Task, not Task→Epic)
+3. "Add subtask" button in detail panel creates child with correct parent_id
+4. Completing a recurring task auto-creates next occurrence with correct due date
+5. Kanban cards show recurrence badge (🔁) like today/upcoming already do
+6. NewTaskModal has recurrence picker and checklist section
+7. Subtask progress bar visible on parent tasks
+8. Checklist progress visible on cards across all views
 
-**Dependencies:** None — `parent_id` column and API support already exist.
+**Dependencies:** None — building on existing infrastructure.
 
 ---
 
-## Phase 2: Recurrence Engine
+## Phase 2: SQL Domain Migration
 
-**Goal:** Let users set recurring schedules on tasks and have new occurrences auto-created on completion.
+**Goal:** Extract inline SQL from API routes into typed domain package functions.
 
-**Requirements:** REC-01, REC-02, REC-03, REC-04, REC-05, REC-06
+**Requirements:** SQL-01→05 (5 requirements)
 
 **Success Criteria:**
-1. RecurrencePicker component renders daily/weekly/monthly/yearly/custom options
-2. User can set recurrence when creating a task via NewTaskModal
-3. User can edit recurrence rule on existing tasks in the detail panel
-4. Recurring tasks show a 🔁 badge on cards across all views
-5. Completing a recurring task auto-creates the next occurrence with the correct due date
-6. Recurrence rules display in human-readable format ("Every Monday")
+1. `@meitheal/domain-tasks` exports typed CRUD functions
+2. All task/board/label API routes use domain queries
+3. Remaining routes (comments, templates, gamification, export) migrated
+4. Zero test regressions
 
-**Dependencies:** `recurrence_rule` column exists. `domains/tasks/recurrence.ts` has some parsing logic.
+**Dependencies:** Phase 1 (new features write domain queries from day one).
 
 ---
 
-## Phase 3: Checklist UI
+## Phase 3: Page Decomposition
 
-**Goal:** Enable inline checklist management within tasks — users can create, check off, reorder, and track checklist items.
+**Goal:** Extract inline scripts from monolith Astro pages into typed modules.
 
-**Requirements:** CHK-01, CHK-02, CHK-03, CHK-04, CHK-05, CHK-06
+**Requirements:** PGD-01→05 (5 requirements)
 
 **Success Criteria:**
-1. Task detail panel renders checklist items with functional checkboxes
-2. User can add/remove checklist items inline
-3. Task cards show checklist progress ("2/5" or progress bar)
-4. Checklist items can be reordered via drag-and-drop
-5. NewTaskModal includes checklist section
-6. Templates preserve and restore checklist items
+1. Kanban, Table, Dashboard scripts extracted to typed `.ts` modules
+2. Settings tab scripts extracted to per-tab modules
+3. Layout.astro scripts extracted to `lib/layout-controller.ts`
+4. All modules type-check via `astro check`
 
-**Dependencies:** `checklists` JSON column exists in tasks table. Template system already stores checklists.
+**Dependencies:** Phase 2 (extracted scripts should use domain queries).
 
 ---
 
-## Phase 4: SQL Domain Migration
+## Phase 4: Smart Today + Tooling
 
-**Goal:** Eliminate inline SQL from API routes by extracting queries into typed domain package functions. Improves testability, reduces duplication, enforces consistent patterns.
+**Goal:** Smart task suggestions + developer tooling for version management.
 
-**Requirements:** SQL-01, SQL-02, SQL-03, SQL-04, SQL-05, SQL-06, SQL-07, SQL-08
+**Requirements:** SMT-01→03, VER-01→03 (6 requirements)
 
 **Success Criteria:**
-1. `@meitheal/domain-tasks` exports typed CRUD functions (findAll, findById, create, update, delete)
-2. Board and label queries encapsulated in domain modules
-3. All task API routes use domain query functions instead of inline SQL
-4. Board and label API routes migrated
-5. Comment, activity, template, and gamification routes migrated
-6. Export routes use domain queries
-7. Zero test regressions after migration
+1. Today page "Suggested" section with overdue + high-priority tasks
+2. One-click add-to-today from suggestions
+3. Daily summary stats
+4. Version sync check script + CI integration
+5. Atomic version bump script
 
-**Dependencies:** Phases 1-3 (new features should write domain queries from the start, not inline SQL).
+**Dependencies:** None (can run in parallel with Phase 3).
 
 ---
 
-## Phase 5: Page Decomposition
-
-**Goal:** Extract large inline scripts from monolith Astro pages into typed TypeScript modules. Enables IDE support, type checking, and unit testing.
-
-**Requirements:** PGD-01, PGD-02, PGD-03, PGD-04, PGD-05
-
-**Success Criteria:**
-1. Kanban page inline script extracted to `lib/kanban-controller.ts` with full type coverage
-2. Table page inline script extracted to `lib/table-controller.ts`
-3. Dashboard inline script extracted to `lib/dashboard-controller.ts`
-4. Settings tabs extracted to per-tab modules
-5. Layout.astro scripts (command palette, shortcuts, health) extracted to `lib/layout-controller.ts`
-6. All extracted modules are importable and type-checkable via `astro check`
-
-**Dependencies:** Phase 4 (SQL migration should be done first so extracted scripts use domain queries).
-
----
-
-## Phase 6: Smart Today + Tooling
-
-**Goal:** Enhance the Today page with smart suggestions and add developer tooling for version management.
-
-**Requirements:** SMT-01, SMT-02, SMT-03, VER-01, VER-02, VER-03
-
-**Success Criteria:**
-1. Today page shows "Suggested" section with overdue + high-priority tasks not in today's list
-2. User can one-click add a suggested task to today's focus
-3. Daily summary shows completed/remaining/overdue counts
-4. `scripts/check-version-sync.mjs` validates version consistency
-5. CI fails on version mismatch
-6. `scripts/bump-version.mjs` updates all 3 version files atomically
-
-**Dependencies:** None (can run in parallel with Phase 5).
-
----
-
-*Roadmap: 2026-03-09 — derived from gap analysis + CONCERNS.md P0-P4*
+*Roadmap revised: 2026-03-09 — consolidated after deep code audit*
