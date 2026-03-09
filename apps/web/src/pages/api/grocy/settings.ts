@@ -7,10 +7,10 @@
  * @domain grocy
  * @bounded-context integration
  */
-import type { APIRoute } from "astro";
-import { ensureSchema, getPersistenceClient } from "@domains/tasks/persistence/store";
-import type { InValue } from "@libsql/client";
-import { logApiError } from "../../../lib/api-logger";
+import type { APIRoute } from "astro"
+import { ensureSchema, getPersistenceClient } from "@domains/tasks/persistence/store"
+import { SettingsRepository } from "@domains/tasks/persistence/settings-repository"
+import { logApiError } from "../../../lib/api-logger"
 
 const GROCY_SETTINGS_KEYS = [
   "grocy_url",
@@ -18,30 +18,22 @@ const GROCY_SETTINGS_KEYS = [
   "grocy_sync_mode",
   "grocy_sync_interval",
   "grocy_sync_enabled",
-] as const;
+] as const
 
 /**
  * GET /api/grocy/settings — returns all Grocy-related settings
  */
 export const GET: APIRoute = async () => {
   try {
-    await ensureSchema();
-    const client = getPersistenceClient();
+    await ensureSchema()
+    const repo = new SettingsRepository(getPersistenceClient())
+    await repo.ensureSettingsTable()
 
-    const placeholders = GROCY_SETTINGS_KEYS.map(() => "?").join(", ");
-    const result = await client.execute({
-      sql: `SELECT key, value FROM settings WHERE key IN (${placeholders})`,
-      args: [...GROCY_SETTINGS_KEYS] as InValue[],
-    });
-
-    const settings: Record<string, unknown> = {};
-    for (const row of result.rows) {
-      const r = row as Record<string, unknown>;
-      const key = String(r.key);
-      try {
-        settings[key] = JSON.parse(String(r.value));
-      } catch {
-        settings[key] = String(r.value);
+    const settings: Record<string, unknown> = {}
+    for (const key of GROCY_SETTINGS_KEYS) {
+      const result = await repo.getByKey(key)
+      if (result) {
+        settings[key] = result.value
       }
     }
 
@@ -50,25 +42,25 @@ export const GET: APIRoute = async () => {
       settings.grocy_api_key_masked =
         settings.grocy_api_key.length > 4
           ? "••••" + settings.grocy_api_key.slice(-4)
-          : "••••";
-      settings.grocy_api_key_set = true;
-      delete settings.grocy_api_key;
+          : "••••"
+      settings.grocy_api_key_set = true
+      delete settings.grocy_api_key
     } else {
-      settings.grocy_api_key_set = false;
+      settings.grocy_api_key_set = false
     }
 
     return new Response(JSON.stringify({ ok: true, settings }), {
       status: 200,
       headers: { "Content-Type": "application/json" },
-    });
+    })
   } catch (err) {
-    logApiError("grocy-settings", "GET failed", err);
+    logApiError("grocy-settings", "GET failed", err)
     return new Response(JSON.stringify({ ok: false, error: "Internal server error" }), {
       status: 500,
       headers: { "Content-Type": "application/json" },
-    });
+    })
   }
-};
+}
 
 /**
  * PUT /api/grocy/settings
@@ -76,75 +68,61 @@ export const GET: APIRoute = async () => {
  */
 export const PUT: APIRoute = async ({ request }) => {
   try {
-    let body: Record<string, unknown>;
+    let body: Record<string, unknown>
 
     try {
-      body = await request.json();
+      body = await request.json()
     } catch {
       return new Response(JSON.stringify({ ok: false, error: "Invalid JSON body" }), {
         status: 400,
         headers: { "Content-Type": "application/json" },
-      });
+      })
     }
 
-    await ensureSchema();
-    const client = getPersistenceClient();
-    const now = Date.now();
-    const saved: string[] = [];
-
-    // Ensure settings table exists
-    await client.execute(
-      `CREATE TABLE IF NOT EXISTS settings (
-        key TEXT PRIMARY KEY,
-        value TEXT NOT NULL,
-        updated_at INTEGER NOT NULL
-      )`
-    );
+    await ensureSchema()
+    const repo = new SettingsRepository(getPersistenceClient())
+    await repo.ensureSettingsTable()
+    const saved: string[] = []
 
     for (const settingKey of GROCY_SETTINGS_KEYS) {
       if (body[settingKey] !== undefined) {
-        const value = JSON.stringify(body[settingKey]);
+        const value = JSON.stringify(body[settingKey])
 
         // Validate
         if (settingKey === "grocy_url" && typeof body[settingKey] === "string") {
-          const urlStr = body[settingKey] as string;
+          const urlStr = body[settingKey] as string
           if (urlStr && !urlStr.startsWith("http://") && !urlStr.startsWith("https://")) {
             return new Response(
               JSON.stringify({ ok: false, error: "Grocy URL must start with http:// or https://" }),
               { status: 400, headers: { "Content-Type": "application/json" } },
-            );
+            )
           }
         }
 
         if (settingKey === "grocy_sync_mode") {
-          const mode = body[settingKey] as string;
+          const mode = body[settingKey] as string
           if (!["import", "export", "bidirectional"].includes(mode)) {
             return new Response(
               JSON.stringify({ ok: false, error: "sync_mode must be import, export, or bidirectional" }),
               { status: 400, headers: { "Content-Type": "application/json" } },
-            );
+            )
           }
         }
 
-        await client.execute({
-          sql: `INSERT INTO settings (key, value, updated_at) VALUES (?, ?, ?)
-                ON CONFLICT(key) DO UPDATE SET value = excluded.value, updated_at = excluded.updated_at`,
-          args: [settingKey, value, now] as InValue[],
-        });
-
-        saved.push(settingKey);
+        await repo.upsert(settingKey, value)
+        saved.push(settingKey)
       }
     }
 
     return new Response(
       JSON.stringify({ ok: true, saved, message: `Saved ${saved.length} setting(s)` }),
       { status: 200, headers: { "Content-Type": "application/json" } },
-    );
+    )
   } catch (err) {
-    logApiError("grocy-settings", "PUT failed", err);
+    logApiError("grocy-settings", "PUT failed", err)
     return new Response(JSON.stringify({ ok: false, error: "Internal server error" }), {
       status: 500,
       headers: { "Content-Type": "application/json" },
-    });
+    })
   }
-};
+}

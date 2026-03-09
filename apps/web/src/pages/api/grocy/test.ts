@@ -56,15 +56,14 @@ export const POST: APIRoute = async ({ request }) => {
     // For auto-detected installs, try fetching API key from saved settings
     if (autoDetected && !apiKey) {
       try {
-        const { ensureSchema, getPersistenceClient } = await import("@domains/tasks/persistence/store");
-        await ensureSchema();
-        const client = getPersistenceClient();
-        const row = await client.execute({
-          sql: "SELECT value FROM settings WHERE key = 'grocy_api_key' LIMIT 1",
-          args: [],
-        });
-        if (row.rows.length > 0 && row.rows[0]?.value) {
-          apiKey = String(row.rows[0]?.value);
+        const { ensureSchema, getPersistenceClient } = await import("@domains/tasks/persistence/store")
+        const { SettingsRepository } = await import("@domains/tasks/persistence/settings-repository")
+        await ensureSchema()
+        const repo = new SettingsRepository(getPersistenceClient())
+        await repo.ensureSettingsTable()
+        const result = await repo.getByKey("grocy_api_key")
+        if (result?.value && typeof result.value === "string") {
+          apiKey = result.value
         }
       } catch { /* Settings lookup failed */ }
     }

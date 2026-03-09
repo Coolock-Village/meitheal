@@ -14,20 +14,19 @@ import { logApiError } from "../../../lib/api-logger";
 
 export const GET: APIRoute = async () => {
   try {
-    const { ensureSchema, getPersistenceClient } = await import("@domains/tasks/persistence/store");
-    await ensureSchema();
-    const client = getPersistenceClient();
+    const { ensureSchema, getPersistenceClient } = await import("@domains/tasks/persistence/store")
+    const { SettingsRepository } = await import("@domains/tasks/persistence/settings-repository")
+    await ensureSchema()
+    const repo = new SettingsRepository(getPersistenceClient())
+    await repo.ensureSettingsTable()
 
-    // Read integration settings
-    const result = await client.execute(
-      "SELECT key, value FROM settings WHERE key IN ('n8n_mode', 'n8n_events', 'n8n_webhook_url', 'webhook_endpoint', 'webhook_secret')"
-    );
-    const settings: Record<string, unknown> = {};
-    for (const row of result.rows) {
-      try {
-        settings[String(row.key)] = JSON.parse(String(row.value));
-      } catch {
-        settings[String(row.key)] = String(row.value);
+    // Read integration settings via repository
+    const settingKeys = ["n8n_mode", "n8n_events", "n8n_webhook_url", "webhook_endpoint", "webhook_secret"]
+    const settings: Record<string, unknown> = {}
+    for (const key of settingKeys) {
+      const result = await repo.getByKey(key)
+      if (result) {
+        settings[key] = result.value
       }
     }
 

@@ -1,15 +1,16 @@
-import type { APIRoute } from "astro";
-import { ensureSchema, getPersistenceClient } from "@domains/tasks/persistence/store";
-import { exportFilename } from "../../../lib/export-filename";
-import { logApiError } from "../../../lib/api-logger";
+import type { APIRoute } from "astro"
+import { ensureSchema, getPersistenceClient } from "@domains/tasks/persistence/store"
+import { SettingsRepository } from "@domains/tasks/persistence/settings-repository"
+import { exportFilename } from "../../../lib/export-filename"
+import { logApiError } from "../../../lib/api-logger"
 
 export const GET: APIRoute = async () => {
     try {
-        await ensureSchema();
-        const client = getPersistenceClient();
+        await ensureSchema()
+        const repo = new SettingsRepository(getPersistenceClient())
+        await repo.ensureSettingsTable()
 
-        // Fetch all true server-side settings
-        const result = await client.execute("SELECT * FROM settings");
+        const rows = await repo.getAll()
 
         // Secrets that MUST NOT be exported
         const EXCLUDED_KEYS = new Set([
@@ -19,33 +20,30 @@ export const GET: APIRoute = async () => {
             "n8n_signing_secret",
             "webhook_secret",
             "grocy_api_key",
-        ]);
+        ])
 
         // Convert array of rows into a key-value object, excluding secrets
-        const settingsObject: Record<string, string> = {};
-        for (const row of result.rows) {
+        const settingsObject: Record<string, string> = {}
+        for (const row of rows) {
             if (row.key && row.value !== null && !EXCLUDED_KEYS.has(row.key as string)) {
-                settingsObject[row.key as string] = row.value as string;
+                settingsObject[row.key as string] = row.value as string
             }
         }
 
-        // Generate JSON payload
-        const dataStr = JSON.stringify(settingsObject, null, 2);
+        const dataStr = JSON.stringify(settingsObject, null, 2)
 
-        // Send as downloadable file
         return new Response(dataStr, {
             status: 200,
             headers: {
                 "Content-Type": "application/json",
-                "Content-Disposition": `attachment; filename="${exportFilename("Settings", "json")}"`
-            }
-        });
-
+                "Content-Disposition": `attachment; filename="${exportFilename("Settings", "json")}"`,
+            },
+        })
     } catch (error) {
-        logApiError("export-settings", "Failed to export settings as JSON", error);
+        logApiError("export-settings", "Failed to export settings as JSON", error)
         return new Response(JSON.stringify({ error: "Settings Export failed" }), {
             status: 500,
-            headers: { "Content-Type": "application/json" }
-        });
+            headers: { "Content-Type": "application/json" },
+        })
     }
-};
+}
