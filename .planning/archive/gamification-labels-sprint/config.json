@@ -1,0 +1,20 @@
+{
+  "project_name": "Meitheal Gamification + Labels",
+  "model_profile": "quality",
+  "workflow": {
+    "mode": "auto",
+    "auto_advance": true,
+    "commit_docs": true,
+    "parallelization": true
+  },
+  "depth": "thorough",
+  "models": {
+    "planner": "sonnet",
+    "executor": "sonnet",
+    "researcher": "sonnet",
+    "checker": "sonnet",
+    "verifier": "sonnet",
+    "roadmapper": "sonnet",
+    "mapper": "haiku"
+  }
+}
