@@ -1,10 +1,9 @@
-import type { APIRoute } from "astro";
-import type { InValue } from "@libsql/client";
-import { ensureSchema, getPersistenceClient } from "@domains/tasks/persistence/store";
-import { apiError, apiJson } from "../../../../lib/api-response";
-import { STATUS } from "../../../../lib/status-config";
-import { formatTicketKey } from "../../../../lib/ticket-key";
-import { createLogger, defaultRedactionPatterns } from "@meitheal/domain-observability";
+import type { APIRoute } from "astro"
+import { ensureSchema, getPersistenceClient } from "@domains/tasks/persistence/store"
+import { TaskRepository } from "@domains/tasks/persistence/task-repository"
+import { apiError, apiJson } from "../../../../lib/api-response"
+import { formatTicketKey } from "../../../../lib/ticket-key"
+import { createLogger, defaultRedactionPatterns } from "@meitheal/domain-observability"
 
 const logger = createLogger({
     service: "meitheal-web",
@@ -13,7 +12,7 @@ const logger = createLogger({
     enabledCategories: ["tasks", "audit", "observability"],
     redactPatterns: defaultRedactionPatterns,
     auditEnabled: true,
-});
+})
 
 /**
  * POST /api/tasks/[id]/duplicate — Clone a task with a new ID.
@@ -22,49 +21,41 @@ const logger = createLogger({
  */
 export const POST: APIRoute = async ({ params }) => {
     try {
-        await ensureSchema();
-        const client = getPersistenceClient();
-        const sourceId = params.id!;
+        await ensureSchema()
+        const repo = new TaskRepository(getPersistenceClient())
+        const sourceId = params.id!
 
         // Fetch source task
-        const source = await client.execute({
-            sql: `SELECT title, description, status, priority, due_date, labels,
-                   framework_payload, board_id, custom_fields, parent_id,
-                   start_date, end_date, progress, color, is_favorite,
-                   task_type, time_tracked
-            FROM tasks WHERE id = ? LIMIT 1`,
-            args: [sourceId],
-        });
-
-        if (source.rows.length === 0) {
-            return apiError("Task not found", 404);
+        const row = await repo.findById(sourceId)
+        if (!row) {
+            return apiError("Task not found", 404)
         }
 
-        const row = source.rows[0] as Record<string, unknown>;
-        const newId = crypto.randomUUID();
-        const now = Date.now();
-        const newTitle = `${String(row.title)} (copy)`;
+        const ticket_number = await repo.getNextTicketNumber()
+        const newTitle = `${String(row.title)} (copy)`
+        const newId = crypto.randomUUID()
 
-        // Assign next sequential ticket_number
-        const nextNumResult = await client.execute("SELECT COALESCE(MAX(ticket_number), 0) + 1 AS next_num FROM tasks");
-        const ticket_number = Number((nextNumResult.rows[0] as Record<string, unknown>)?.next_num ?? 1);
-
-        await client.execute({
-            sql: `INSERT INTO tasks (id, title, description, status, priority, due_date, labels,
-                               framework_payload, calendar_sync_state, board_id, custom_fields,
-                               parent_id, start_date, end_date, progress, color, is_favorite,
-                               task_type, time_tracked, ticket_number, idempotency_key, request_id, created_at, updated_at)
-            VALUES (?, ?, ?, ?, ?, ?, ?, ?, '${STATUS.PENDING}', ?, ?, ?, ?, ?, ?, ?, ?, ?, 0, ?, ?, ?, ?, ?)`,
-            args: [
-                newId, newTitle, row.description ?? "", "pending", row.priority ?? 3,
-                row.due_date ?? null, row.labels ?? "[]", row.framework_payload ?? "{}",
-                row.board_id ?? "default", row.custom_fields ?? "{}",
-                row.parent_id ?? null, row.start_date ?? null, row.end_date ?? null,
-                row.progress ?? 0, row.color ?? null, row.is_favorite ?? 0,
-                row.task_type ?? "task",
-                ticket_number, crypto.randomUUID(), crypto.randomUUID(), now, now,
-            ] as InValue[],
-        });
+        await repo.createTask({
+            id: newId,
+            title: newTitle,
+            description: row.description ? String(row.description) : "",
+            status: "pending",
+            priority: row.priority != null ? Number(row.priority) : 3,
+            due_date: row.due_date ? String(row.due_date) : null,
+            labels: row.labels ? String(row.labels) : "[]",
+            framework_payload: row.framework_payload ? String(row.framework_payload) : "{}",
+            parent_id: row.parent_id ? String(row.parent_id) : null,
+            board_id: row.board_id ? String(row.board_id) : "default",
+            custom_fields: row.custom_fields ? String(row.custom_fields) : "{}",
+            start_date: row.start_date ? String(row.start_date) : null,
+            end_date: row.end_date ? String(row.end_date) : null,
+            progress: row.progress != null ? Number(row.progress) : 0,
+            color: row.color ? String(row.color) : null,
+            is_favorite: row.is_favorite ? Number(row.is_favorite) : 0,
+            task_type: row.task_type ? String(row.task_type) : "task",
+            ticket_number,
+            assigned_to: null,
+        })
 
         logger.audit({
             event: "audit.task.duplicated",
@@ -73,8 +64,9 @@ export const POST: APIRoute = async ({ params }) => {
             request_id: crypto.randomUUID(),
             task_id: newId,
             message: `Task duplicated from ${sourceId}`,
-        });
+        })
 
+        const now = Date.now()
         return apiJson({
             id: newId,
             ticket_number,
@@ -82,7 +74,7 @@ export const POST: APIRoute = async ({ params }) => {
             title: newTitle,
             source_id: sourceId,
             created_at: now,
-        }, 201);
+        }, 201)
     } catch (err) {
         logger.log("error", {
             event: "api.duplicate.post.failed",
@@ -90,7 +82,7 @@ export const POST: APIRoute = async ({ params }) => {
             component: "duplicate-api",
             request_id: crypto.randomUUID(),
             message: "Internal server error",
-        });
-        return apiError("Failed to duplicate task");
+        })
+        return apiError("Failed to duplicate task")
     }
-};
+}
