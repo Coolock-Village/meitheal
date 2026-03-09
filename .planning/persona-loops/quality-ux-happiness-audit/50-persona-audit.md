@@ -437,21 +437,21 @@
 ## Priority Summary
 
 ### P0 — Critical (Address First)
-- [ ] `@media (prefers-reduced-motion: reduce)` for all animations
+- [x] `@media (prefers-reduced-motion: reduce)` for all animations — **RESOLVED**: `_base.css:98-109` and `_utilities.css:138-147` have global wildcard rules
 
 ### P1 — High
-- [ ] Layout.astro: extract task-detail, command-palette to separate components
+- [x] Layout.astro: extract task-detail, command-palette to separate components — **RESOLVED**: Phase 3 WPE (layout-controller.ts + task-modal-controller.ts)
 - [ ] Create shared API fetch utility (`@lib/api.ts`)
-- [ ] Move inline SQL from pages to domain service layer
-- [ ] innerHTML XSS audit — replace with textContent/DOM API
+- [x] Move inline SQL from pages to domain service layer — **RESOLVED**: Phase 2 SQL Domain Migration
+- [ ] innerHTML XSS audit — replace with textContent/DOM API (LOW risk: server-controlled data, `escape-html.ts` exists)
 
 ### P2 — Medium
 - [ ] Add focus traps to command palette and modals
 - [ ] Add "Undo" toast for destructive actions (delete task)
 - [ ] Add optimistic updates for kanban drag/drop
 - [ ] Add retry button on failed API calls
-- [ ] Add `@media (prefers-reduced-motion: reduce)` overrides
-- [ ] Extract kanban client JS to `kanban-client.ts`
+- [x] Add `@media (prefers-reduced-motion: reduce)` overrides — **RESOLVED**: covered by P0 fix
+- [x] Extract kanban client JS to `kanban-client.ts` — **SKIPPED**: `is:inline` with well-organized IIFEs
 - [ ] Missing error boundaries for API failures
 
 ### P3 — Low
