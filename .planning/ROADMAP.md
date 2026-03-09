@@ -15,8 +15,8 @@
 
 | # | Phase | Status | Date |
 |---|-------|--------|------|
-| 1 | Hierarchy + Feature Gaps | ⬜ Not started | — |
-| 2 | SQL Domain Migration | ⬜ Not started | — |
+| 1 | Hierarchy + Feature Gaps | ✅ Complete | 2026-03-09 |
+| 2 | SQL Domain Migration | ✅ Complete | 2026-03-09 |
 | 3 | Page Decomposition | ⬜ Not started | — |
 | 4 | Smart Today + Tooling | ⬜ Not started | — |
 
