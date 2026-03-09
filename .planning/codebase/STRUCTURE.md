@@ -1,139 +1,96 @@
-# Codebase Structure
+# Directory Structure
 
-**Analysis Date:** 2026-03-04
-**Version:** 0.1.59
+> Last mapped: 2026-03-09 — v0.1.99
 
-## Directory Layout
+## Root Layout
 
 ```
 meitheal/
-├── .agents/rules/           # Agent behavior rules (autonomous.md, design-and-ux.md)
-├── .github/workflows/       # CI/CD (ci.yml, publish-addon, live-ha, live-vikunja)
-├── .planning/               # GSD planning (codebase map, persona loops)
-├── .skills/                 # Agent skill definitions
-├── .zeroclaw/               # AI soul file
-├── meitheal-hub/            # HA OS add-on
-│   ├── Dockerfile
-│   ├── config.yaml
-│   ├── run.sh
-│   └── rootfs/etc/
-│       ├── alloy/config.river
-│       └── grafana/dashboards/compat-api.json
+├── .agents/rules/workflows/     # Agent rules and GSD workflows
+├── .devcontainer/               # HA devcontainer for Tier 2 testing
+├── .github/workflows/           # CI: governance, typecheck, tests, docker
+├── .planning/codebase/          # THIS — codebase mapping docs
+├── .skills/core-workflows/      # Agent skills (SKILL.md)
+├── .zeroclaw/                   # Agent identity (soul.md)
 ├── apps/
-│   ├── api/                 # Cloudflare Workers adapter (skeleton)
-│   └── web/                 # Astro SSR application
-│       ├── drizzle/         # Schema + 3 migrations
-│       ├── scripts/         # Build/CI scripts + serve.mjs wrapper
-│       └── src/
-│           ├── content/config.ts
-│           ├── domains/
-│           │   ├── auth/ingress.ts
-│           │   ├── auth/ingress-policy.ts  # Ingress context from X-Ingress-Path
-│           │   ├── ha/ha-events.ts         # HA WebSocket events
-│           │   ├── integrations/vikunja-compat/
-│           │   │   ├── auth.ts
-│           │   │   ├── compat-logger.ts
-│           │   │   ├── http.ts
-│           │   │   └── store.ts
-│           │   ├── offline/                 # PWA lifecycle
-│           │   │   └── sw-register.ts       # SW registration + update detection
-│           │   ├── todo/                   # HA todo list sync
-│           │   │   ├── todo-bridge.ts
-│           │   │   └── todo-status-mapper.ts
-│           │   └── tasks/
-│           │       ├── persistence/store.ts
-│           │       └── task-sync-service.ts
-│           ├── middleware.ts
-│           └── pages/
-│               ├── api/     # 42 API endpoint files
-│               └── index.astro
-│           ├── components/
-│           │   ├── pwa/           # PWA install banner
-│           │   │   └── PwaInstallBanner.astro
-│           │   └── settings/      # Tab components (SettingsGeneral, SettingsIntegrations, etc.)
-│           └── styles/
-│               ├── global.css     # Hub: @tailwind + @import for 14 partials
-│               ├── _tokens.css    # Fonts, :root vars, themes, HA passthrough
-│               ├── _base.css      # Resets, typography, scrollbar
-│               ├── _layout.css    # Sidebar, main-content, topbar, stats
-│               ├── _forms.css     # Inputs, selects, labels
-│               ├── _buttons.css   # btn variants + micro-interactions
-│               ├── _cards.css     # Cards, badges, status indicators
-│               ├── _tasks.css     # Task items, bento, checklist, priorities
-│               ├── _kanban.css    # Kanban board, cards, drag-drop, lanes
-│               ├── _table.css     # Data table, sticky col, filters
-│               ├── _feedback.css  # Toast, skeleton, empty states
-│               ├── _search.css    # Search input/results
-│               ├── _modal.css     # Modal overlay + dialog
-│               ├── _responsive.css # Mobile, print, touch, high contrast
-│               └── _utilities.css  # a11y, transitions, reduced motion
+│   ├── api/                     # @meitheal/api — Cloudflare Workers (future)
+│   └── web/                     # @meitheal/web — Main Astro SSR app ★
 ├── docs/
-│   ├── decisions/           # 6 ADRs (0001–0006)
-│   ├── kcs/                 # 5 KCS docs
-│   ├── methodologies/       # Framework docs
-│   └── prfaq/               # Product FAQ docs
-├── integrations/home-assistant/  # HA custom component (Python)
-│   └── custom_components/meitheal/  # Config flow, coordinator, services, LLM API
-├── packages/
-│   ├── domain-auth/
-│   ├── domain-observability/
-│   ├── domain-strategy/
-│   ├── domain-tasks/
-│   └── integration-core/
-├── tests/
-│   ├── e2e/                 # 38 Playwright specs
-│   ├── governance/          # Governance specs
-│   └── scripts/             # Live verification scripts
-├── AGENTS.md
-├── README.md
-├── SKILL.md
-├── WEBMCP.md
-├── package.json
-├── pnpm-workspace.yaml
-├── repository.yaml
-└── tsconfig.base.json
+│   ├── decisions/               # ADRs
+│   ├── kcs/                     # KCS runbooks (pwa-offline-guide, etc.)
+│   └── methodologies/           # DDD, RICE, KCS docs
+├── integrations/
+│   ├── blueprints/              # HA automation blueprints
+│   └── home-assistant/          # HA custom components
+├── meitheal-hub/                # HA Add-on packaging ★
+│   ├── config.yaml              # Add-on manifest (version, ingress, schema)
+│   ├── Dockerfile               # Multi-arch Docker build
+│   ├── run.sh                   # Addon entrypoint (bashio)
+│   ├── rootfs/                  # Filesystem overlay (services, backup hooks)
+│   └── translations/            # Add-on UI translations (en.yaml)
+├── packages/                    # Domain packages ★
+│   ├── domain-auth/             # CSRF, ingress, session
+│   ├── domain-observability/    # Structured logger
+│   ├── domain-strategy/         # RICE scoring
+│   ├── domain-tasks/            # Task aggregates
+│   └── integration-core/        # Calendar, webhooks, A2A
+├── tests/                       # @meitheal/tests ★
+│   ├── e2e/                     # 30 end-to-end specs
+│   ├── governance/              # IQS platinum governance
+│   └── unit/                    # 18 unit specs
+├── AGENTS.md                    # Agent behavior rules
+├── WEBMCP.md                    # Agent protocol docs
+└── pnpm-workspace.yaml          # Workspace packages
 ```
 
-## Key Files
+## apps/web/src/ — Main Application
 
-| File | Purpose |
-|------|---------|
-| `apps/web/src/middleware.ts` | Ingress auth, CSP, CSRF, rate limiting |
-| `apps/web/scripts/serve.mjs` | Ingress-safe HTTP wrapper (prevents 301 loops) |
-| `packages/domain-tasks/src/vertical-slice.ts` | Task create + calendar sync (173 lines) |
-| `packages/integration-core/src/home-assistant-calendar.ts` | HA calendar adapter (166 lines) |
-| `apps/web/src/domains/auth/ingress-policy.ts` | Ingress context detection |
-| `apps/web/src/domains/ha/ha-events.ts` | HA WebSocket event bridge |
-| `apps/web/src/lib/ingress-state-persistence.ts` | Route + scroll persistence across HA iframe recreation |
-| `apps/web/scripts/perf-budget-check.mjs` | CI performance enforcement |
-| `meitheal-hub/run.sh` | HA add-on startup (uses serve.mjs wrapper) |
-| `docs/decisions/0006-iteration-05-integrations-rfc.md` | Next iteration RFC |
-| `apps/web/public/sw.js` | Service worker (4 scoped caches + eviction) |
-| `apps/web/src/components/pwa/PwaInstallBanner.astro` | PWA install banner |
-| `docs/kcs/pwa-offline-guide.md` | PWA & offline-first guide (KCS) |
+```
+src/
+├── components/ (34 Astro components)
+│   ├── gamification/     # Confetti, GamificationWidget, StreakBadge
+│   ├── ha/               # AskAssistModal, TypingIndicator
+│   ├── layout/           # Sidebar, TopNavigation, BoardSwitcher, NavList, Footer
+│   ├── pwa/              # PwaInstallBanner
+│   ├── settings/         # General, Integrations, Labels, Agents, System
+│   ├── tasks/            # NewTaskModal, StrategicEvaluator, TaskViewTabs
+│   └── ui/               # EmptyState, Icon, HelpTooltip, LabelBadges, etc. (14)
+├── domains/ (17 bounded contexts)
+│   ├── ai/               # ha-assist-service, ai-context-service
+│   ├── auth/             # ingress-policy, ingress
+│   ├── calendar/         # caldav-client, calendar-bridge
+│   ├── gamification/     # XP engine, streak-tracker
+│   ├── grocy/            # grocy-bridge, grocy-mapper
+│   ├── ha/               # connection, entities, events, services, users, startup
+│   ├── labels/           # label-store, label-color-resolver
+│   ├── notifications/    # due-date-reminders
+│   ├── offline/          # offline-store, sync-engine, tab-sync, notifications
+│   ├── tasks/            # persistence/store.ts, recurrence, task-sync-service
+│   └── todo/             # todo-bridge, todo-status-mapper
+├── layouts/Layout.astro  # Master layout
+├── lib/ (33 utilities)   # api-response, safe-fetch, task-api-client, toast, etc.
+├── pages/ (12 pages + 64 API routes)
+│   ├── api/              # 64 endpoints (see INTEGRATIONS.md)
+│   └── *.astro           # index, kanban, table, tasks, today, upcoming, etc.
+├── styles/ (17 CSS partials)
+├── types/window.d.ts     # Global Window type extensions
+└── middleware.ts          # Security, ingress, rate limiting, DB init
+```
 
-## Where to Add New Code
+## Key File Locations
 
 | What | Where |
 |------|-------|
-| New domain package | `packages/domain-<name>/` + register in `pnpm-workspace.yaml` |
-| New API route | `apps/web/src/pages/api/` (Astro file-based routing) |
-| New integration adapter | `packages/integration-core/src/` |
-| New E2E test | `tests/e2e/<name>.spec.ts` |
-| New governance test | `tests/governance/<name>.spec.ts` |
-| New ADR | `docs/decisions/000N-<name>.md` (currently 12) |
-| New CSS domain | `apps/web/src/styles/_<domain>.css` + add `@import` to `global.css` |
-| New KCS doc | `docs/kcs/<name>.md` (currently 11) |
-| New Grafana dashboard | `meitheal-hub/rootfs/etc/grafana/dashboards/` |
-
-## Naming
-
-- **Files:** kebab-case (`task-sync-service.ts`, `compat-logger.ts`)
-- **Test specs:** `<feature>.spec.ts` or `<feature>.spec.mjs`
-- **Domain packages:** `domain-<context>` prefix
-- **Exports:** Named only (no default exports)
-- **Barrel files:** `index.ts` in each package
-
----
-
-*Structure analysis: 2026-03-04 — v0.1.59 Phase 59 PWA activation*
+| Add-on version | `meitheal-hub/config.yaml` → `version:` |
+| Run version | `meitheal-hub/run.sh` → `MEITHEAL_VERSION` |
+| SW cache version | `apps/web/public/sw.js` → `CACHE_VERSION` |
+| DB schema | `apps/web/src/domains/tasks/persistence/store.ts` |
+| DB file (prod) | `/data/meitheal.db` |
+| DB file (dev) | `apps/web/.data/meitheal.db` |
+| Middleware | `apps/web/src/middleware.ts` |
+| Ingress wrapper | `apps/web/scripts/serve.mjs` |
+| Astro config | `apps/web/astro.config.mjs` |
+| CI pipeline | `.github/workflows/ci.yml` |
+| Docker build | `meitheal-hub/Dockerfile` |
+| Test config | `tests/playwright.config.ts` |
+| Path aliases | `apps/web/tsconfig.json` (`@domains/` → `src/domains/`) |

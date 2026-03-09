@@ -1,76 +1,96 @@
-# Testing Patterns
+# Testing
 
-**Analysis Date:** 2026-03-06
-**Version:** 0.1.69
+> Last mapped: 2026-03-09 — v0.1.99
 
 ## Framework
 
-- **Runner:** Playwright 1.58
-- **Config:** `tests/playwright.config.ts`
-- **Assertion:** Playwright built-in `expect`
+| Aspect | Detail |
+|--------|--------|
+| Runner | Playwright Test |
+| Package | `@meitheal/tests` |
+| Config | `tests/playwright.config.ts` |
+| Total specs | 48 files |
+| Total tests | 340 (275 passing, 65 skipped as of v0.1.99) |
+| Run command | `pnpm --filter @meitheal/tests test` |
 
-## Commands
+## Test Structure
 
-```bash
-pnpm --filter @meitheal/tests test          # All tests
-pnpm --filter @meitheal/tests test <file>   # Specific spec
-pnpm check                                  # Typecheck all packages
+```
+tests/
+├── e2e/                        # 30 end-to-end test files
+│   ├── api.spec.ts             # Core API endpoint tests
+│   ├── pages.spec.ts           # Page rendering tests
+│   ├── navigation.spec.ts      # Route navigation tests
+│   ├── seo.spec.ts             # SEO meta tag validation
+│   ├── accessibility.spec.ts   # A11y checks
+│   ├── security-headers.spec.ts # CSP, HSTS, CSRF headers
+│   ├── ha-calendar-adapter.spec.ts # HA calendar integration
+│   ├── vikunja-compat.spec.ts  # Vikunja v1 API compatibility
+│   ├── offline-sync.spec.ts    # Offline sync engine
+│   ├── pwa-offline.spec.ts     # PWA/SW behavior
+│   ├── webhook-signer.spec.ts  # HMAC webhook signing
+│   ├── rate-limiter.spec.ts    # Rate limiting
+│   ├── ticket-number.spec.ts   # Ticket key generation
+│   ├── task-type-api.spec.ts   # Task type CRUD
+│   ├── user-assignment.spec.ts # User assignment (24 tests)
+│   ├── ingress-state-persistence.spec.ts # Ingress state
+│   ├── ingress-header-validation.spec.ts # Ingress headers
+│   ├── logger-redaction.spec.ts # Log redaction
+│   └── ... (11 more)
+├── governance/
+│   └── iqs-platinum.spec.ts    # IQS Platinum quality checks
+├── unit/                       # 18 unit test files
+│   └── todo-status-mapper.spec.ts # Status mapping
+├── scripts/                    # Test helper scripts
+└── types/                      # Test type definitions
 ```
 
-## Test Inventory (38 specs)
+## Testing Patterns
 
-| Spec | Type | Status |
-|------|------|--------|
-| `ha-calendar-adapter.spec.ts` | Integration | ✅ Active (3 tests) |
-| `task-sync-persistence.spec.ts` | Integration | ✅ Active (4 tests) |
-| `task-sync-domain.spec.ts` | Unit | ✅ Active (2 tests) |
-| `vikunja-compat-auth.spec.ts` | Unit | ✅ Active (3 tests) |
-| `vikunja-compat-calendar-sync.spec.ts` | Integration | ✅ Active (1 test) |
-| `vikunja-compat-calendar-timezone.spec.ts` | Integration | ✅ Active (3 tests) |
-| `ingress-header-validation.spec.ts` | Unit | ✅ Active (4 tests) |
-| `logger-redaction.spec.ts` | Unit | ✅ Active (1 test) |
-| `migration-splitter.spec.mjs` | Unit | ✅ Active (3 tests) |
-| `ha-security-hardening.spec.ts` | Security | ✅ Active |
-| `middleware-ingress-behavior.spec.ts` | Integration | ✅ Active |
-| `rename-sweep-regression.spec.ts` | Regression | ✅ Active |
-| `layout-ingress-viewtransitions.spec.ts` | Integration | ✅ Active |
-| `vikunja-compat.spec.ts` | E2E | ⏭ Skipped (requires running server) |
-| `well-known.spec.ts` | E2E | ⏭ Skipped (requires running server) |
-| `pages.spec.ts` | E2E | ⏭ Skipped (requires E2E_BASE_URL) |
-| `navigation.spec.ts` | E2E | ⏭ Skipped (requires E2E_BASE_URL) |
-| `seo.spec.ts` | E2E | ⏭ Skipped (requires E2E_BASE_URL) |
-| `accessibility.spec.ts` | E2E | ⏭ Skipped (requires E2E_BASE_URL) |
-| `security-headers.spec.ts` | Placeholder | ⏭ Skipped |
-| `auth-passkey.spec.ts` | Placeholder | ⏭ Skipped |
-| `offline-sync.spec.ts` | Placeholder | ⏭ Skipped |
-| `integrations.spec.ts` | Placeholder | ⏭ Skipped |
-| `logging-observability.spec.ts` | Placeholder | ⏭ Skipped |
-| `api.spec.ts` | Placeholder | ⏭ Skipped |
-| `repo-standards.spec.ts` | Governance | ✅ Active (4 tests) |
-| + 12 additional specs | Various | ✅/⏭ (see `tests/e2e/`) |
+### HTTP Server Harness
+- Tests spin up a **local HTTP server** simulating HA Supervisor API
+- No external mocking framework — uses Node.js `http.createServer()`
+- Temp SQLite databases via `file:${tmpdir}/...`
 
-**Totals:** 43 specs total (including unit/todo-status-mapper.spec.ts)
+### No Shared State
+- Each test creates its own database
+- No global fixtures or shared mutable state
+- Tests are fully parallelizable
 
-## CI Jobs
+### Domain Logic Imports
+- Tests import workspace packages directly:
+  ```typescript
+  import { calculateRICE } from "@meitheal/domain-strategy"
+  import { createLogger } from "@meitheal/domain-observability"
+  ```
 
-| Job | Tests Run |
-|-----|-----------|
-| `typecheck-and-tests` | All specs |
-| `ha-harness` | `ha-calendar-adapter.spec.ts` |
-| `governance` | `repo-standards.spec.ts` |
-| `migration-check` | `db:migrate` + `db:migrate:check` |
-| `schema-drift` | `schema:drift` |
-| `perf-budgets` | `perf:budget` + font path guard |
-| `security-audit` | `pnpm audit` (dependency CVE check) |
+### API Testing
+- Tests call API routes via fetch against the local server
+- Validates response status, headers, and JSON body
+- Checks error responses and edge cases
 
-## Patterns
+## CI Pipeline
 
-- Tests import domain logic directly from workspace packages
-- HA tests use local HTTP server harness to simulate HA API
-- Persistence tests use temp SQLite file (`file:${tmpdir}/...`)
-- No shared state between specs
-- No external mocking framework — pure HTTP stubbing
+```yaml
+# .github/workflows/ci.yml
+jobs:
+  governance:        # Required files exist, CSS brace balance
+  typecheck-and-tests: # pnpm install → pnpm check → pnpm test
+  ha-harness:        # HA-specific integration tests
+  docker:            # Build multi-arch Docker image (tag-triggered)
+```
 
----
+## Verification Tiers
 
-*Testing analysis: 2026-03-06 — v0.1.69 notification audit + CI security job*
+| Tier | What | How |
+|------|------|-----|
+| 🔧 Tier 1 | CSS, layout, UI, client JS | `npm run dev` in `apps/web/` |
+| 🏠 Tier 2 | Ingress, middleware, HA API | `./scripts/devcontainer-up.sh` |
+| 🌐 Tier 3 | Final acceptance on real data | `ha.home.arpa:8123` |
+
+## Current Coverage Gaps
+
+- No dedicated unit tests for `lib/` utilities (task-api-client, toast, etc.)
+- Gamification (XP, streaks) has no test specs
+- Calendar CalDAV client has limited coverage
+- Frontend interactions (kanban drag-drop, table sort) untested

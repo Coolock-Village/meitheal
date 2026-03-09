@@ -1,91 +1,113 @@
-# Codebase Concerns
+# Concerns & Technical Debt
 
-**Analysis Date:** 2026-03-06
-**Version:** 0.1.69
+> Last mapped: 2026-03-09 — v0.1.99
 
-## Tech Debt
+## P0 — Critical
 
-| Issue | Impact | Location | Fix |
-|-------|--------|----------|-----|
-| Build output in git | Repo inflation, noisy diffs | `apps/web/dist/` | Docker build-only output |
-| Cloudflare adapter skeleton | Cloud path non-functional | `apps/api/` | Implement when cloud is prioritized |
-| 7 placeholder test specs | No actual coverage | `tests/e2e/` (skipped specs) | Implement when features exist |
+### Inline SQL in API Routes
+- **Files**: All 64 API routes in `pages/api/`
+- **Issue**: SQL queries are written inline in API route handlers instead of being encapsulated in domain packages
+- **Risk**: Duplication, inconsistent query patterns, hard to audit
+- **Fix**: Migrate to `@meitheal/domain-tasks` query functions
 
-## Security
+### Large Page Files
+- **Files**: `kanban.astro` (~1700 lines), `settings.astro` (~2200 lines), `table.astro` (~1000 lines), `index.astro` (~600 lines)
+- **Issue**: Mixing Astro templates, CSS, and large inline scripts
+- **Risk**: Hard to maintain, test, and review
+- **Fix**: Extract inline scripts to separate `.ts` files, extract sub-components
 
-| Risk | Location | Current Mitigation | Status |
-|------|----------|-------------------|--------|
-| Ingress header spoofing | `middleware.ts`, `auth/ingress.ts` | Required header validation + 4 spoofing tests | ✅ Mitigated |
-| Ingress 301 redirect loop | `serve.mjs`, Astro SSR adapter | `serve.mjs` normalizes `//` → `/` before routing | ✅ Mitigated |
-| SSRF in unfurl | `pages/api/unfurl.ts` | Domain allowlist (.local/.home.arpa) | ✅ Mitigated |
-| Secret leakage in logs | `domain-observability/logger.ts` | 6 default redaction patterns | ✅ Mitigated |
-| Compat API abuse | `vikunja-compat/auth.ts` | Bearer token validation + rate limiting | ✅ Mitigated |
+## P1 — High
 
-## Performance
+### Missing `is:inline` Script Tests
+- All client-side interactivity is in `<script is:inline>` blocks within `.astro` files
+- These are invisible to TypeScript and untestable in unit tests
+- Risk: Regressions in kanban drag-drop, table sorting, command palette
 
-All budgets enforced in CI (`perf-budgets` job):
+### Partial Subtask/Recurrence/Checklist UI
+- `parent_id`, `recurrence_rule`, `checklists` columns exist in DB
+- API supports creating/querying with these fields
+- **No UI** for: tree/indent view, recurrence picker, inline checklists
+- Users can't access these features without API calls
 
-| Metric | CI Threshold | Local Threshold |
-|--------|-------------|-----------------|
-| Client bundle | ≤ 64 KB | ≤ 80 KB |
-| Web RSS | ≤ 160 MB | ≤ 220 MB |
-| Task create p95 | ≤ 150 ms | ≤ 250 ms |
+### Version Sync is Manual
+- Three files must stay in sync: `config.yaml`, `run.sh`, `sw.js`
+- No automated validation or build hook to enforce
+- Risk: Mismatched versions between SW cache and backend
 
-No bottlenecks detected.
+## P2 — Medium
 
-## Fragile Areas
+### Drizzle ORM Unused
+- Drizzle is a dependency but **not used for queries**
+- All SQL is raw `client.execute()` with hand-written queries
+- The `drizzle/` directory and `drizzle-kit` are present but schema is managed in `ensureSchema()`
+- Consider: Remove drizzle deps if not planning to adopt, or migrate to Drizzle queries
 
-| Area | Why Fragile | Tests | Safe Modification |
-|------|-------------|-------|-------------------|
-| Vikunja compat surface | Must match upstream API exactly | 3 compat specs + live verifier | Run `verify_vikunja_voice_assistant_compat.py` |
-| SQL statement splitter | Edge cases (triggers, strings) | `migration-splitter.spec.mjs` | Run splitter spec |
-| Timezone handling | Non-UTC offsets in calendar sync | `vikunja-compat-calendar-timezone.spec.ts` | Run timezone spec |
+### Empty Domain Packages
+- `domains/frameworks/`, `domains/observability/`, `domains/strategy/` are **empty directories**
+- Logic lives in workspace packages (`packages/domain-strategy/`) instead
+- These should be removed or populated
 
-## Test Coverage Gaps
+### CSS @apply Lint Warnings
+- `_feedback.css` uses `@apply` which IDE CSS linters flag as "Unknown at rule"
+- These work at build time (Tailwind processes them) but create noise
+- 5 persistent lint warnings
 
-| Gap | Risk | Priority |
-|-----|------|----------|
-| `domain-auth` package directly | Auth logic changes could break silently | Medium |
-| `domain-strategy` RICE scoring | Scoring formula changes untested | Medium |
-| Content schema validation | Malformed YAML could cause runtime errors | Low |
-| Browser E2E (pages, nav, a11y) | No automated browser testing | Medium |
+### Layout.astro Complexity
+- `Layout.astro` handles: sidebar, navigation, command palette, keyboard shortcuts, health checks, fetch patching, focus traps, theme management
+- Single file responsibility overload — should be decomposed
 
-## Resolved Concerns (This Iteration)
+## P3 — Low
 
-- ✅ `OA-402` — Compat routes now have structured request logging
-- ✅ `OA-409` — Grafana dashboard for compat API metrics
-- ✅ `OA-410` — Non-UTC timezone handling validated with 3 tests
-- ✅ `OA-411` — HA custom component shows structured error payloads
-- ✅ `OA-412` — Iteration-05 RFC drafted for webhook/Grocy/n8n
-- ✅ `OA-413` — HA connection status always showing "Disconnected" — `/api/ha/connection` never called `getHAConnection()` before reading singleton status
-- ✅ `OA-414` — HA version requirement too strict — `conversation` moved to `after_dependencies`, LLM API import made conditional (v0.1.55)
-- ✅ `OA-415` — Task type icons (`✅`) confused with completion state — changed to `📌` across Today and Upcoming views
-- ✅ `OA-416` — Keyboard shortcuts + command palette navigate to bare paths (`/tasks`, `/kanban`), causing 404 behind HA ingress — all 17 `window.location.href` calls now prepend `window.__ingress_path`
-- ✅ `OA-417` — n8n HA addon mode save handler wrongly required webhook URL — now saves `n8n_mode: ha_addon`, webhook URL optional
-- ✅ `OA-418` — Calendar settings `calendar_sync_enabled` and `calendar_write_back` not persisted — added to save handler + sync API call
-- ✅ `OA-419` — PWA service worker never registered — Phase 59: wired `registerServiceWorker()` in Layout.astro, added install banner, Settings install/update buttons
-- ✅ `OA-420` — SW `CACHE_VERSION` stuck at 0.1.25 — synced to 0.1.58, added `GET_VERSION` handler
-- ✅ `OA-421` — No cache eviction — unlimited growth risk with dynamic IPs/ingress tokens — 4 scoped caches with max-entries + TTL eviction
-- ✅ `OA-422` — Offline page Dashboard link not ingress-aware — now uses `x-ingress-path` header
-- ✅ `OA-423` — Offline page missing `role="alert"` + `aria-live` — added both
-- ✅ `OA-424` — KCS pwa-offline-guide.md stale — updated with cache eviction, install flow, update flow
-- ✅ `OA-425` — SW update check 60s too aggressive for addon — reduced to 300s (5 min)
-- ✅ `OA-426` — ~82 bare `fetch('/api/...')` calls would fail behind HA ingress — all now use `window.__ingress_path` prefix
-- ✅ `OA-427` — 30+ `as any` casts across codebase — reduced to 2 via `types/window.d.ts`, `LayoutShiftEntry`, `env.d.ts` typed DateFormat
-- ✅ `OA-428` — 6 raw `alert()` calls — replaced with `showToast()` notifications
-- ✅ `OA-429` — `ha/calendars.ts` GET endpoint leaked stack traces — wrapped in try/catch
-- ✅ `OA-430` — CSS `@import` after `@tailwind` caused 10+ PostCSS warnings per build — reordered in `global.css`
-- ✅ `OA-431` — Dead modal classes in `_modal.css` (`.modal-overlay`, `.modal-content`, `.modal-title`, `.modal-actions`) — removed by user
-- ✅ `OA-432` — Duplicate `Window.__ingress_path` declaration in `ingress-fetch.ts` — centralized in `types/window.d.ts`
-- ✅ `OA-433` — WS event handler crashes could kill connection — all 5 `subscribeEvents` callbacks wrapped in try/catch
-- ✅ `OA-434` — Polling wait `setInterval` leaked on timeout — replaced with proper `clearInterval`+`clearTimeout`
-- ✅ `OA-435` — Webhook dispatcher queried DB on every task event — cached n8n events + webhook settings with 60s TTL
-- ✅ `OA-436` — Settings GET all leaked `grocy_api_key` and `webhook_secret` — redacted in bulk response
-- ✅ `OA-437` — Epoch-ms due dates bypassed SQL ISO filter — added second query with `CAST(due_date AS INTEGER)` + GLOB
-- ✅ `OA-438` — Reminder window input accepted 0/negative values — clamped JS-side to 5-1440
-- ✅ `OA-439` — No notification timestamps — added time context to sidebar notifications
-- ✅ `OA-440` — Notification service data logged — kept at debug level only, safe
+### Dead Route: `/api/reminders`
+- `pages/api/reminders.ts` exists but may not be wired to any UI
+- Due-date reminders are in `domains/notifications/due-date-reminders.ts`
+- Need to verify if this route is actively used
 
----
+### No Rate Limit on Export Routes
+- `/api/export/database.sqlite` serves the full DB file
+- No rate limiting beyond the global 120/min
+- Large file export should have stricter limits
 
-*Concerns audit: 2026-03-06 — 10-phase notification robustness audit*
+### Service Worker Version Fallback
+- `sw.js` hardcodes `CACHE_VERSION = "0.1.99"` as fallback
+- Dynamic version comes from `/version.json` at install
+- If both fail, stale cache could persist indefinitely
+
+### `apps/api/` (Cloudflare Workers) is Inactive
+- Has `package.json`, `src/`, migrations, but not used in production
+- Not integrated into CI pipeline
+- Future: May be used for Cloudflare D1 edge deployment
+
+## P4 — Deferred
+
+### No i18n Translation Files
+- `lib/locale.ts` has a translation system
+- `meitheal-hub/translations/en.yaml` exists for addon
+- But the actual UI translations may be incomplete or hardcoded
+
+### PWA Background Sync
+- `sync-engine.ts`, `sync-lock.ts`, `tab-sync.ts` exist
+- IndexedDB offline store is implemented
+- But: no visual Queue indicator in UI, no conflict resolution UI
+- Background sync tag registered but sync execution is untested
+
+### `window.__healthIntervalId` Pattern
+- Health check interval uses `window.__healthIntervalId` guard
+- Prevents accumulation but still runs outside page lifecycle
+- Could leak on full page teardown (not ViewTransition)
+
+## Security Notes
+
+### ✅ Good
+- All SQL uses parameterized queries (`?` placeholders)
+- `sanitize-html` used for user HTML content
+- XSS vectors fixed (innerHTML → DOM API in kanban, index)
+- Rate limiting: 120/req per minute
+- CSRF protection in middleware
+- CSP headers set
+- Secrets redacted in logs
+
+### ⚠️ Watch
+- No authentication layer — relies entirely on HA Supervisor headers
+- In standalone mode (no HA), all routes are accessible without auth
+- Export routes serve raw data without additional access control
