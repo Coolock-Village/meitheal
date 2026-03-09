@@ -1,10 +1,10 @@
-import type { APIRoute } from "astro";
-import type { InValue } from "@libsql/client";
-import { ensureSchema, getPersistenceClient } from "@domains/tasks/persistence/store";
-import { stripHtml } from "../../../lib/strip-html";
-import { apiError, apiJson } from "../../../lib/api-response";
-import { STATUS } from "../../../lib/status-config";
-import { createLogger, defaultRedactionPatterns } from "@meitheal/domain-observability";
+import type { APIRoute } from "astro"
+import type { InValue } from "@libsql/client"
+import { ensureSchema, getPersistenceClient } from "@domains/tasks/persistence/store"
+import { LaneRepository } from "@domains/tasks/persistence/lane-repository"
+import { stripHtml } from "../../../lib/strip-html"
+import { apiError, apiJson } from "../../../lib/api-response"
+import { createLogger, defaultRedactionPatterns } from "@meitheal/domain-observability"
 
 const logger = createLogger({
   service: "meitheal-web",
@@ -13,96 +13,75 @@ const logger = createLogger({
   enabledCategories: ["tasks", "audit", "observability"],
   redactPatterns: defaultRedactionPatterns,
   auditEnabled: true,
-});
+})
 
 /** PUT /api/lanes/[id], DELETE /api/lanes/[id] */
 
 export const PUT: APIRoute = async ({ params, request }) => {
   try {
-    await ensureSchema();
-    const client = getPersistenceClient();
-    const body = (await request.json().catch(() => ({}))) as Record<string, unknown>;
+    await ensureSchema()
+    const repo = new LaneRepository(getPersistenceClient())
+    const body = (await request.json().catch(() => ({}))) as Record<string, unknown>
 
-    const existing = await client.execute({
-      sql: "SELECT id, built_in FROM kanban_lanes WHERE id = ? LIMIT 1",
-      args: [params.id!],
-    });
-    if (existing.rows.length === 0) {
-      return apiError("Lane not found", 404);
+    const existing = await repo.findById(params.id!)
+    if (!existing) {
+      return apiError("Lane not found", 404)
     }
 
-    const isBuiltIn = Number((existing.rows[0] as Record<string, unknown>).built_in ?? 0) === 1;
+    const isBuiltIn = Number(existing.built_in ?? 0) === 1
 
-    // Prevent changing key or includes on built-in lanes (breaks status mapping)
     if (isBuiltIn && (body.key !== undefined || body.includes !== undefined)) {
-      return apiError("Cannot change key or includes on built-in lanes", 403);
+      return apiError("Cannot change key or includes on built-in lanes", 403)
     }
 
-    const now = Date.now();
-    const updates: string[] = [];
-    const args: InValue[] = [];
+    const fields: Record<string, InValue> = {}
 
     if (typeof body.label === "string") {
-      const label = stripHtml(body.label.trim());
+      const label = stripHtml(body.label.trim())
       if (!label || label.length < 1 || label.length > 50) {
-        return apiError("label must be 1-50 characters", 400);
+        return apiError("label must be 1-50 characters", 400)
       }
-      updates.push("label = ?");
-      args.push(label);
+      fields.label = label
     }
     if (typeof body.icon === "string") {
-      updates.push("icon = ?");
-      args.push(body.icon.slice(0, 4));
+      fields.icon = body.icon.slice(0, 4)
     }
     if (typeof body.position === "number") {
-      updates.push("position = ?");
-      args.push(Math.max(0, Math.round(body.position)));
+      fields.position = Math.max(0, Math.round(body.position))
     }
     if (typeof body.wip_limit === "number") {
-      updates.push("wip_limit = ?");
-      args.push(Math.max(0, Math.round(body.wip_limit)));
+      fields.wip_limit = Math.max(0, Math.round(body.wip_limit))
     }
     if (typeof body.includes === "string") {
       try {
-        const parsed = JSON.parse(body.includes);
+        const parsed = JSON.parse(body.includes)
         if (Array.isArray(parsed)) {
-          updates.push("includes = ?");
-          args.push(body.includes);
+          fields.includes = body.includes
         }
       } catch { /* skip invalid JSON */ }
     }
 
-    if (updates.length === 0) {
-      return apiError("No fields to update", 400);
+    if (Object.keys(fields).length === 0) {
+      return apiError("No fields to update", 400)
     }
 
-    updates.push("updated_at = ?");
-    args.push(now);
-    args.push(params.id!);
+    const updated = await repo.update(params.id!, fields)
+    if (!updated) {
+      return apiError("Update failed", 500)
+    }
 
-    await client.execute({
-      sql: `UPDATE kanban_lanes SET ${updates.join(", ")} WHERE id = ?`,
-      args,
-    });
-
-    const updated = await client.execute({
-      sql: "SELECT id, key, label, icon, position, wip_limit, includes, built_in, created_at, updated_at FROM kanban_lanes WHERE id = ? LIMIT 1",
-      args: [params.id!],
-    });
-
-    const row = updated.rows[0] as Record<string, unknown>;
     return apiJson({
-      id: row.id,
-      key: row.key,
-      label: row.label,
-      icon: row.icon,
-      position: Number(row.position ?? 0),
-      wip_limit: Number(row.wip_limit ?? 0),
-      includes: typeof row.includes === "string" ? JSON.parse(String(row.includes)) : [],
-      builtIn: Number(row.built_in ?? 0) === 1,
-      created_at: row.created_at,
-      updated_at: row.updated_at,
-    });
+      id: updated.id,
+      key: updated.key,
+      label: updated.label,
+      icon: updated.icon,
+      position: Number(updated.position ?? 0),
+      wip_limit: Number(updated.wip_limit ?? 0),
+      includes: typeof updated.includes === "string" ? JSON.parse(String(updated.includes)) : [],
+      builtIn: Number(updated.built_in ?? 0) === 1,
+      created_at: updated.created_at,
+      updated_at: updated.updated_at,
+    })
   } catch (err) {
     logger.log("error", {
       event: "api.lanes.put.failed",
@@ -110,39 +89,29 @@ export const PUT: APIRoute = async ({ params, request }) => {
       component: "lanes-api",
       request_id: crypto.randomUUID(),
       message: "Internal server error",
-    });
-    return apiError("Failed to update lane");
+    })
+    return apiError("Failed to update lane")
   }
-};
+}
 
 export const DELETE: APIRoute = async ({ params }) => {
   try {
-    await ensureSchema();
-    const client = getPersistenceClient();
+    await ensureSchema()
+    const repo = new LaneRepository(getPersistenceClient())
 
-    const existing = await client.execute({
-      sql: "SELECT id, built_in, key FROM kanban_lanes WHERE id = ? LIMIT 1",
-      args: [params.id!],
-    });
-    if (existing.rows.length === 0) {
-      return apiError("Lane not found", 404);
+    const existing = await repo.findForDelete(params.id!)
+    if (!existing) {
+      return apiError("Lane not found", 404)
     }
 
-    const row = existing.rows[0] as Record<string, unknown>;
-    if (Number(row.built_in ?? 0) === 1) {
-      return apiError("Cannot delete built-in lane", 403);
+    if (Number(existing.built_in ?? 0) === 1) {
+      return apiError("Cannot delete built-in lane", 403)
     }
 
-    // Move tasks in this lane's status back to "pending"
-    const key = String(row.key);
-    await client.execute({
-      sql: `UPDATE tasks SET status = '${STATUS.PENDING}', updated_at = ? WHERE status = ?`,
-      args: [Date.now(), key],
-    });
+    const key = String(existing.key)
+    await repo.delete(params.id!, key)
 
-    await client.execute({ sql: "DELETE FROM kanban_lanes WHERE id = ?", args: [params.id!] });
-
-    return apiJson({ deleted: true, tasksReassigned: key });
+    return apiJson({ deleted: true, tasksReassigned: key })
   } catch (err) {
     logger.log("error", {
       event: "api.lanes.delete.failed",
@@ -150,7 +119,7 @@ export const DELETE: APIRoute = async ({ params }) => {
       component: "lanes-api",
       request_id: crypto.randomUUID(),
       message: "Internal server error",
-    });
-    return apiError("Failed to delete lane");
+    })
+    return apiError("Failed to delete lane")
   }
-};
+}
