@@ -1,8 +1,9 @@
-import type { APIRoute } from "astro";
-import { ensureSchema, getPersistenceClient } from "@domains/tasks/persistence/store";
-import { formatTicketKey } from "../../../lib/ticket-key";
-import { exportFilename } from "../../../lib/export-filename";
-import { logApiError } from "../../../lib/api-logger";
+import type { APIRoute } from "astro"
+import { ensureSchema, getPersistenceClient } from "@domains/tasks/persistence/store"
+import { TaskRepository } from "@domains/tasks/persistence/task-repository"
+import { formatTicketKey } from "../../../lib/ticket-key"
+import { exportFilename } from "../../../lib/export-filename"
+import { logApiError } from "../../../lib/api-logger"
 
 /**
  * Export Tasks as JSON
@@ -12,41 +13,31 @@ import { logApiError } from "../../../lib/api-logger";
  */
 export const GET: APIRoute = async () => {
     try {
-        await ensureSchema();
-        const client = getPersistenceClient();
+        await ensureSchema()
+        const repo = new TaskRepository(getPersistenceClient())
+        const allRows = await repo.exportAll()
 
-        // Explicit column list to avoid leaking internal schema changes
-        const result = await client.execute(
-            `SELECT id, title, description, status, priority, due_date, labels,
-                    framework_payload, calendar_sync_state, board_id, custom_fields,
-                    parent_id, time_tracked, start_date, end_date, progress, color,
-                    is_favorite, task_type, ticket_number, recurrence_rule,
-                    checklists, reminder_at, created_at, updated_at
-             FROM tasks ORDER BY updated_at DESC`
-        );
-        const allTasks = result.rows.map(row => {
-            const r = row as Record<string, unknown>;
-            const tn = r.ticket_number != null ? Number(r.ticket_number) : null;
-            return { ...r, ticket_key: formatTicketKey(tn) };
-        });
+        const allTasks = allRows.map(row => {
+            const r = row as Record<string, unknown>
+            const tn = r.ticket_number != null ? Number(r.ticket_number) : null
+            return { ...r, ticket_key: formatTicketKey(tn) }
+        })
 
-        // Generate JSON payload
-        const dataStr = JSON.stringify(allTasks, null, 2);
+        const dataStr = JSON.stringify(allTasks, null, 2)
 
-        // Send as downloadable file
         return new Response(dataStr, {
             status: 200,
             headers: {
                 "Content-Type": "application/json",
                 "Content-Disposition": `attachment; filename="${exportFilename("Tasks", "json")}"`,
-                "X-Content-Type-Options": "nosniff"
-            }
-        });
+                "X-Content-Type-Options": "nosniff",
+            },
+        })
     } catch (error) {
-        logApiError("export-tasks-json", "Failed to export tasks as JSON", error);
+        logApiError("export-tasks-json", "Failed to export tasks as JSON", error)
         return new Response(JSON.stringify({ error: "Export failed" }), {
             status: 500,
-            headers: { "Content-Type": "application/json" }
-        });
+            headers: { "Content-Type": "application/json" },
+        })
     }
-};
+}

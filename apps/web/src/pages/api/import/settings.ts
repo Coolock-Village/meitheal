@@ -1,10 +1,11 @@
-import type { APIRoute } from "astro";
-import { ensureSchema, getPersistenceClient } from "@domains/tasks/persistence/store";
-import { logApiError, logApiWarn } from "../../../lib/api-logger";
+import type { APIRoute } from "astro"
+import { ensureSchema, getPersistenceClient } from "@domains/tasks/persistence/store"
+import { SettingsRepository } from "@domains/tasks/persistence/settings-repository"
+import { logApiError, logApiWarn } from "../../../lib/api-logger"
 
 /** Known safe setting keys — only these will be imported.
  * IMPORTANT: Update this set when adding new saveSetting() calls.
- * Last audited: 2026-03-01 (Phase 35) */
+ * Last audited: 2026-03-09 (SQL-02 Migration) */
 const ALLOWED_KEYS = new Set([
     // ── Home Assistant / Connectivity ──
     "ha-url", "ha-token", "ha_url", "ha_token",
@@ -34,61 +35,56 @@ const ALLOWED_KEYS = new Set([
     "custom_fields",
     // ── Custom Theme ──
     "custom_theme_css", "custom_theme_name", "accent-color",
-]);
+])
 
 export const POST: APIRoute = async ({ request }) => {
     try {
         // Guard against oversized payloads (100KB max)
-        const contentLength = Number(request.headers.get("content-length") ?? 0);
+        const contentLength = Number(request.headers.get("content-length") ?? 0)
         if (contentLength > 102400) {
-            return new Response(JSON.stringify({ error: "Import payload too large (max 100KB)" }), { status: 413, headers: { "Content-Type": "application/json" } });
+            return new Response(JSON.stringify({ error: "Import payload too large (max 100KB)" }), { status: 413, headers: { "Content-Type": "application/json" } })
         }
 
-        const data = await request.json();
+        const data = await request.json()
 
         if (!data || typeof data !== "object" || Array.isArray(data)) {
-            return new Response(JSON.stringify({ error: "Invalid settings payload format. Expected a key-value object." }), { status: 400, headers: { "Content-Type": "application/json" } });
+            return new Response(JSON.stringify({ error: "Invalid settings payload format. Expected a key-value object." }), { status: 400, headers: { "Content-Type": "application/json" } })
         }
 
-        await ensureSchema();
-        const client = getPersistenceClient();
+        await ensureSchema()
+        const repo = new SettingsRepository(getPersistenceClient())
+        await repo.ensureSettingsTable()
 
-        // Batch all upserts inside a single transaction for atomicity
-        const statements = [];
+        // Build validated entries for batch import
+        const entries: Array<{ key: string; value: string }> = []
         for (const [key, value] of Object.entries(data)) {
             if (typeof key !== "string" || value === null || value === undefined) {
-                continue;
+                continue
             }
             if (!ALLOWED_KEYS.has(key)) {
-                logApiWarn("import-settings", `Rejected unknown key: ${key}`);
-                continue;
+                logApiWarn("import-settings", `Rejected unknown key: ${key}`)
+                continue
             }
 
-            const stringValue = typeof value === "string" ? value : JSON.stringify(value);
-            const now = Date.now();
-            statements.push({
-                sql: `INSERT INTO settings (key, value, updated_at) VALUES (?, ?, ?) ON CONFLICT(key) DO UPDATE SET value = excluded.value, updated_at = excluded.updated_at`,
-                args: [key, stringValue, now]
-            });
+            const stringValue = typeof value === "string" ? value : JSON.stringify(value)
+            entries.push({ key, value: stringValue })
         }
 
-        if (statements.length === 0) {
+        if (entries.length === 0) {
             return new Response(JSON.stringify({ success: false, message: "No valid settings found in payload." }), {
                 status: 400,
-                headers: { "Content-Type": "application/json" }
-            });
+                headers: { "Content-Type": "application/json" },
+            })
         }
 
-        // Execute all in a single batch for performance (P4 fix)
-        await client.batch(statements);
+        const count = await repo.importBatch(entries)
 
-        return new Response(JSON.stringify({ success: true, message: `${statements.length} settings imported successfully.` }), {
+        return new Response(JSON.stringify({ success: true, message: `${count} settings imported successfully.` }), {
             status: 200,
-            headers: { "Content-Type": "application/json" }
-        });
-
+            headers: { "Content-Type": "application/json" },
+        })
     } catch (error) {
-        logApiError("import-settings", "Failed to import settings", error);
-        return new Response(JSON.stringify({ error: "Import failed: payload could not be processed." }), { status: 500, headers: { "Content-Type": "application/json" } });
+        logApiError("import-settings", "Failed to import settings", error)
+        return new Response(JSON.stringify({ error: "Import failed: payload could not be processed." }), { status: 500, headers: { "Content-Type": "application/json" } })
     }
-};
+}

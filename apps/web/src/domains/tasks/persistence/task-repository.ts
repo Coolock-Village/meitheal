@@ -376,6 +376,23 @@ export class TaskRepository {
     return (result.rows[0] as TaskRow) ?? null;
   }
 
+  /**
+   * Export all tasks with explicit column list.
+   * Used by export/tasks.json.ts and export/tasks.csv.ts.
+   * Column list is explicit to avoid leaking internal schema changes.
+   */
+  async exportAll(): Promise<TaskRow[]> {
+    const result = await this.client.execute(
+      `SELECT id, title, description, status, priority, due_date, labels,
+              framework_payload, calendar_sync_state, board_id, custom_fields,
+              parent_id, time_tracked, start_date, end_date, progress, color,
+              is_favorite, task_type, ticket_number, recurrence_rule,
+              checklists, reminder_at, created_at, updated_at
+       FROM tasks ORDER BY updated_at DESC`
+    );
+    return result.rows as TaskRow[];
+  }
+
   /** List tasks with optional filters, pagination, and sorting. */
   async findAll(opts: {
     status?: string;

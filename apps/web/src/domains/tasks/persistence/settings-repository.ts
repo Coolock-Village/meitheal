@@ -59,6 +59,50 @@ export class SettingsRepository {
     await this.client.execute("DELETE FROM settings")
   }
 
+  /** Get multiple settings by keys (batch read) */
+  async getByKeys(keys: string[]): Promise<Record<string, unknown>> {
+    if (keys.length === 0) return {}
+    const placeholders = keys.map(() => "?").join(", ")
+    const result = await this.client.execute({
+      sql: `SELECT key, value FROM settings WHERE key IN (${placeholders})`,
+      args: keys as InValue[],
+    })
+    const settings: Record<string, unknown> = {}
+    for (const row of result.rows) {
+      const r = row as Record<string, unknown>
+      const key = String(r.key)
+      try {
+        settings[key] = JSON.parse(String(r.value))
+      } catch {
+        settings[key] = String(r.value)
+      }
+    }
+    return settings
+  }
+
+  /** Batch import settings atomically (upsert many at once) */
+  async importBatch(entries: Array<{ key: string; value: string }>): Promise<number> {
+    if (entries.length === 0) return 0
+    const now = Date.now()
+    const statements = entries.map(({ key, value }) => ({
+      sql: `INSERT INTO settings (key, value, updated_at) VALUES (?, ?, ?)
+            ON CONFLICT(key) DO UPDATE SET value = excluded.value, updated_at = excluded.updated_at`,
+      args: [key, value, now] as InValue[],
+    }))
+    await this.client.batch(statements)
+    return entries.length
+  }
+
+  /** Delete settings by keys (batch delete) */
+  async deleteByKeys(keys: string[]): Promise<void> {
+    if (keys.length === 0) return
+    const statements = keys.map((key) => ({
+      sql: "DELETE FROM settings WHERE key = ?",
+      args: [key] as InValue[],
+    }))
+    await this.client.batch(statements)
+  }
+
   // ── Reminders ──────────────────────────────────────────────────────
 
   /** Get tasks with pending reminders (reminder_at <= now, not completed) */

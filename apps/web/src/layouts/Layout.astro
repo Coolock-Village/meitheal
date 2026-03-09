@@ -463,7 +463,7 @@ Astro.response.headers.set("X-Content-Type-Options", "nosniff");
           <a
             href="#"
             id="td-parent"
-            class="text-xs text-info hidden hover:underline flex items-center gap-1 mb-1"
+            class="text-xs text-info hidden hover:underline items-center gap-1 mb-1"
           ></a>
           <div
             class="flex items-center justify-between pb-2 border-b border-border"
@@ -678,7 +678,7 @@ Astro.response.headers.set("X-Content-Type-Options", "nosniff");
                       <button type="button" id="td-add-subtask-btn" class="text-xs text-accent hover:text-accent-hover flex items-center gap-1">
                         <span>➕</span> Add subtask
                       </button>
-                      <div id="td-add-subtask-form" class="hidden mt-1 flex gap-1">
+                      <div id="td-add-subtask-form" class="hidden mt-1 gap-1">
                         <input
                           id="td-add-subtask-input"
                           class="form-input text-sm py-1 flex-1"
@@ -1803,12 +1803,14 @@ Astro.response.headers.set("X-Content-Type-Options", "nosniff");
               parentEl.textContent = `↑ ${t.parent_ticket_key ?? t.parent_title ?? t.parent_id}`;
               parentEl.href = `#task-${t.parent_id}`;
               parentEl.classList.remove("hidden");
+              parentEl.classList.add("flex");
               parentEl.onclick = (e) => {
                 e.preventDefault();
                 openTaskDetail(String(t.parent_id));
               };
             } else if (parentEl) {
               parentEl.classList.add("hidden");
+              parentEl.classList.remove("flex");
             }
 
             // Linked Tickets — parent display
@@ -2785,12 +2787,14 @@ Astro.response.headers.set("X-Content-Type-Options", "nosniff");
         if (addSubBtn && addSubForm && addSubInput && addSubSubmit && addSubCancel) {
           addSubBtn.addEventListener("click", () => {
             addSubForm.classList.remove("hidden");
+            addSubForm.classList.add("flex");
             addSubBtn.classList.add("hidden");
             addSubInput.value = "";
             addSubInput.focus();
           });
           addSubCancel.addEventListener("click", () => {
             addSubForm.classList.add("hidden");
+            addSubForm.classList.remove("flex");
             addSubBtn.classList.remove("hidden");
           });
           const submitSubtask = async () => {

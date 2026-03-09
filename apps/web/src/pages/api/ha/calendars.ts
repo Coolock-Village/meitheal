@@ -58,38 +58,9 @@ export const POST: APIRoute = async ({ request }) => {
     if (entityId) {
       resolvedEntities = [entityId];
     } else {
-      // Resolve from settings DB — prefer multi-entity, fall back to legacy
-      try {
-        const { ensureSchema, getPersistenceClient } = await import("@domains/tasks/persistence/store");
-        await ensureSchema();
-        const client = getPersistenceClient();
-
-        // Try multi-entity first
-        const multiRes = await client.execute({
-          sql: "SELECT value FROM settings WHERE key = 'calendar_entities' LIMIT 1",
-          args: [],
-        });
-        if (multiRes.rows.length > 0) {
-          try {
-            const parsed = JSON.parse(String(multiRes.rows[0]!.value));
-            if (Array.isArray(parsed)) {
-              resolvedEntities = parsed.filter((e: unknown) => typeof e === "string" && e.length > 0);
-            }
-          } catch { /* invalid JSON */ }
-        }
-
-        // Legacy fallback
-        if (resolvedEntities.length === 0) {
-          const res = await client.execute({
-            sql: "SELECT value FROM settings WHERE key IN ('calendar_entity', 'cal_entity') ORDER BY key LIMIT 1",
-            args: [],
-          });
-          if (res.rows.length > 0) {
-            try { entityId = JSON.parse(String(res.rows[0]!.value)); } catch { entityId = String(res.rows[0]!.value); }
-            if (entityId) resolvedEntities = [entityId];
-          }
-        }
-      } catch { /* DB not available */ }
+      // Resolve via shared helper (uses SettingsRepository)
+      const { resolveCalendarEntities } = await import("../../../domains/calendar/resolve-calendar-entities");
+      resolvedEntities = await resolveCalendarEntities();
     }
 
     if (resolvedEntities.length === 0) {

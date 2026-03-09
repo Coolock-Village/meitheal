@@ -82,37 +82,8 @@ export const POST: APIRoute = async ({ request }) => {
 
           // Fall back to settings DB if no entity provided
           if (!entityId) {
-            try {
-              const { ensureSchema, getPersistenceClient } = await import("@domains/tasks/persistence/store");
-              await ensureSchema();
-              const client = getPersistenceClient();
-
-              // Try multi-entity first
-              const res = await client.execute({
-                sql: "SELECT value FROM settings WHERE key = 'calendar_entities' LIMIT 1",
-                args: [],
-              });
-              if (res.rows.length > 0) {
-                try {
-                  const parsed = JSON.parse(String(res.rows[0]!.value));
-                  if (Array.isArray(parsed) && parsed.length > 0) {
-                    resolvedEntities = parsed.filter((e: unknown) => typeof e === "string" && e.length > 0);
-                  }
-                } catch { /* invalid JSON */ }
-              }
-
-              // Legacy fallback — single entity key
-              if (resolvedEntities.length === 0) {
-                const legacyRes = await client.execute({
-                  sql: "SELECT value FROM settings WHERE key IN ('calendar_entity', 'cal_entity') ORDER BY key LIMIT 1",
-                  args: [],
-                });
-                if (legacyRes.rows.length > 0) {
-                  try { entityId = JSON.parse(String(legacyRes.rows[0]!.value)); } catch { entityId = String(legacyRes.rows[0]!.value); }
-                  if (entityId) resolvedEntities = [entityId];
-                }
-              }
-            } catch { /* DB not available */ }
+            const { resolveCalendarEntities } = await import("@domains/calendar/resolve-calendar-entities");
+            resolvedEntities = await resolveCalendarEntities();
           } else {
             resolvedEntities = [entityId];
           }
