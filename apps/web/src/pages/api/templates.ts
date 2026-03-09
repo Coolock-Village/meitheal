@@ -8,178 +8,133 @@
  * @kcs template_json schema: { title, description, priority, labels, task_type,
  *   recurrence_rule, checklists, custom_fields, board_id }
  */
-import type { APIRoute } from "astro";
-import { ensureSchema, getPersistenceClient } from "@domains/tasks/persistence/store";
-import { logApiError } from "../../lib/api-logger";
-import { STATUS } from "../../lib/status-config";
+import type { APIRoute } from "astro"
+import { ensureSchema, getPersistenceClient } from "@domains/tasks/persistence/store"
+import { TemplateRepository } from "@domains/tasks/persistence/template-repository"
+import { logApiError } from "../../lib/api-logger"
 
 export const GET: APIRoute = async () => {
   try {
-    await ensureSchema();
-    const client = getPersistenceClient();
-    const result = await client.execute(
-      "SELECT * FROM task_templates ORDER BY position ASC, created_at ASC",
-    );
-    return new Response(JSON.stringify({ templates: result.rows }), {
+    await ensureSchema()
+    const repo = new TemplateRepository(getPersistenceClient())
+    const templates = await repo.findAll()
+    return new Response(JSON.stringify({ templates }), {
       status: 200,
       headers: { "Content-Type": "application/json" },
-    });
+    })
   } catch (error) {
     return new Response(
       JSON.stringify({ error: "Failed to fetch templates" }),
       { status: 500, headers: { "Content-Type": "application/json" } },
-    );
+    )
   }
-};
+}
 
 export const POST: APIRoute = async ({ request }) => {
   try {
-    await ensureSchema();
-    const client = getPersistenceClient();
+    await ensureSchema()
+    const repo = new TemplateRepository(getPersistenceClient())
 
-    let body: Record<string, unknown>;
+    let body: Record<string, unknown>
     try {
-      body = await request.json() as Record<string, unknown>;
+      body = await request.json() as Record<string, unknown>
     } catch {
       return new Response(
         JSON.stringify({ error: "Invalid JSON body" }),
         { status: 400, headers: { "Content-Type": "application/json" } },
-      );
+      )
     }
 
     // If template_id is provided, instantiate a task from template
     if (body.template_id) {
-      const tmplResult = await client.execute({
-        sql: "SELECT * FROM task_templates WHERE id = ?",
-        args: [String(body.template_id)],
-      });
-
-      const tmpl = tmplResult.rows[0] as Record<string, unknown> | undefined;
+      const tmpl = await repo.findById(String(body.template_id))
       if (!tmpl) {
         return new Response(
           JSON.stringify({ error: "Template not found" }),
           { status: 404, headers: { "Content-Type": "application/json" } },
-        );
+        )
       }
 
-      const template = JSON.parse(String(tmpl.template_json ?? "{}")) as Record<string, unknown>;
-      const taskId = crypto.randomUUID();
-      const now = Date.now();
+      const template = JSON.parse(String(tmpl.template_json ?? "{}")) as Record<string, unknown>
+      const taskId = crypto.randomUUID()
 
-      await client.execute({
-        sql: `INSERT INTO tasks (id, title, description, status, priority, labels, task_type,
-              recurrence_rule, checklists, custom_fields, board_id, framework_payload,
-              calendar_sync_state, idempotency_key, request_id, created_at, updated_at)
-              VALUES (?, ?, ?, '${STATUS.PENDING}', ?, ?, ?, ?, ?, ?, ?, '{}', '${STATUS.PENDING}', ?, ?, ?, ?)`,
-        args: [
-          taskId,
-          String(template.title ?? "Untitled"),
-          String(template.description ?? ""),
-          Number(template.priority ?? 3),
-          JSON.stringify(template.labels ?? []),
-          String(template.task_type ?? "task"),
-          template.recurrence_rule ? String(template.recurrence_rule) : null,
-          JSON.stringify(template.checklists ?? []),
-          JSON.stringify(template.custom_fields ?? {}),
-          String(template.board_id ?? "default"),
-          crypto.randomUUID(),
-          crypto.randomUUID(),
-          now,
-          now,
-        ],
-      });
+      await repo.instantiateFromTemplate(taskId, template)
 
       return new Response(
         JSON.stringify({ id: taskId, created_from_template: body.template_id }),
         { status: 201, headers: { "Content-Type": "application/json" } },
-      );
+      )
     }
 
     // Otherwise, create a new template
     const { name, template_json, icon } = body as {
-      name?: string;
-      template_json?: Record<string, unknown>;
-      icon?: string;
-    };
+      name?: string
+      template_json?: Record<string, unknown>
+      icon?: string
+    }
 
     if (!name || typeof name !== "string" || name.trim().length === 0) {
       return new Response(
         JSON.stringify({ error: "name is required" }),
         { status: 400, headers: { "Content-Type": "application/json" } },
-      );
+      )
     }
 
     if (name.trim().length > 100) {
       return new Response(
         JSON.stringify({ error: "name must be 100 characters or fewer" }),
         { status: 400, headers: { "Content-Type": "application/json" } },
-      );
+      )
     }
 
-    const id = crypto.randomUUID();
-    const now = Date.now();
+    const id = crypto.randomUUID()
+    const position = await repo.getNextPosition()
 
-    const posResult = await client.execute(
-      "SELECT COALESCE(MAX(position), -1) + 1 AS next_pos FROM task_templates",
-    );
-    const position = Number(
-      (posResult.rows[0] as Record<string, unknown>)?.next_pos ?? 0,
-    );
-
-    await client.execute({
-      sql: `INSERT INTO task_templates (id, name, template_json, icon, position, created_at, updated_at)
-            VALUES (?, ?, ?, ?, ?, ?, ?)`,
-      args: [
-        id,
-        name.trim(),
-        JSON.stringify(template_json ?? {}),
-        icon ?? "📝",
-        position,
-        now,
-        now,
-      ],
-    });
+    await repo.create({
+      id,
+      name: name.trim(),
+      templateJson: JSON.stringify(template_json ?? {}),
+      icon: icon ?? "📝",
+      position,
+    })
 
     return new Response(
       JSON.stringify({ id, name: name.trim(), position }),
       { status: 201, headers: { "Content-Type": "application/json" } },
-    );
+    )
   } catch (error) {
-    logApiError("templates", "POST error", error);
+    logApiError("templates", "POST error", error)
     return new Response(
       JSON.stringify({ error: "Failed to process template request" }),
       { status: 500, headers: { "Content-Type": "application/json" } },
-    );
+    )
   }
-};
+}
 
 export const DELETE: APIRoute = async ({ request }) => {
   try {
-    await ensureSchema();
-    const client = getPersistenceClient();
-    const url = new URL(request.url);
-    const id = url.searchParams.get("id");
+    await ensureSchema()
+    const repo = new TemplateRepository(getPersistenceClient())
+    const url = new URL(request.url)
+    const id = url.searchParams.get("id")
 
     if (!id) {
       return new Response(
         JSON.stringify({ error: "id query parameter is required" }),
         { status: 400, headers: { "Content-Type": "application/json" } },
-      );
+      )
     }
 
-    await client.execute({
-      sql: "DELETE FROM task_templates WHERE id = ?",
-      args: [id],
-    });
+    await repo.delete(id)
 
     return new Response(JSON.stringify({ deleted: true }), {
       status: 200,
       headers: { "Content-Type": "application/json" },
-    });
+    })
   } catch (error) {
     return new Response(
       JSON.stringify({ error: "Failed to delete template" }),
       { status: 500, headers: { "Content-Type": "application/json" } },
-    );
+    )
   }
-};
+}
