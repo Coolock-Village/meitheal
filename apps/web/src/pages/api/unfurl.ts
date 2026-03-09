@@ -18,7 +18,7 @@ const blockedHosts = new Set(["localhost", "127.0.0.1", "::1", "0.0.0.0"]);
 
 /**
  * HA-aware private host detection.
- * `.local` (mDNS) and `.internal` (HA default domain) are ALLOWED
+ * `.local` (mDNS) and `.home.arpa` (HA default domain) are ALLOWED
  * because they are legitimate HA network targets.
  * Only block actual dangerous loopback/metadata/link-local addresses.
  */
@@ -27,8 +27,8 @@ function isPrivateHost(hostname: string): boolean {
     return true;
   }
 
-  // Allow .local (mDNS) and .internal (HA default) — these are valid HA network targets
-  if (hostname.endsWith(".local") || hostname.endsWith(".internal")) {
+  // Allow .local (mDNS) and .home.arpa (HA default) — these are valid HA network targets
+  if (hostname.endsWith(".local") || hostname.endsWith(".home.arpa")) {
     return false;
   }
 
