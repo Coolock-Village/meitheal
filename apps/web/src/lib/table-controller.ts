@@ -463,36 +463,33 @@ document
   ?.addEventListener("change", async (e) => {
     const newStatus = (e.target as HTMLSelectElement).value
     if (!newStatus) return
-    const checked = document.querySelectorAll(".row-check:checked")
-    try {
-      const promises = Array.from(checked).map((cb) =>
-        taskApi.updateTask((cb as HTMLElement).dataset.id!, { status: newStatus }),
-      )
-      await Promise.all(promises)
-      showToast(`${checked.length} tasks updated`)
-      checked.forEach((cb) => {
+    const checked = Array.from(document.querySelectorAll(".row-check:checked"))
+    let ok = 0
+    let fail = 0
+    for (const cb of checked) {
+      try {
+        await taskApi.updateTask((cb as HTMLElement).dataset.id!, { status: newStatus })
+        ok++
         const row = cb.closest("tr")
-        const select = row?.querySelector(
-          "select.inline-select",
-        ) as HTMLSelectElement
+        const select = row?.querySelector("select.inline-select") as HTMLSelectElement
         if (select) select.value = newStatus
-        if (newStatus === "complete") {
-          row?.classList.add("row-done")
-        } else {
-          row?.classList.remove("row-done")
-        }
-      })
-      bulkBar.style.display = "none"
-    } catch {
-      showToast("table.bulk_update_failed", "error")
+        if (newStatus === "complete") row?.classList.add("row-done")
+        else row?.classList.remove("row-done")
+      } catch {
+        fail++
+      }
+      // Stagger to avoid rate-limit/ingress flood
+      await new Promise((r) => setTimeout(r, 100))
     }
+    showToast(fail ? `${ok} updated, ${fail} failed` : `${ok} tasks updated`)
+    bulkBar.style.display = "none"
   })
 
 // Bulk delete
 document
   .getElementById("bulk-delete")
   ?.addEventListener("click", async () => {
-    const checked = document.querySelectorAll(".row-check:checked")
+    const checked = Array.from(document.querySelectorAll(".row-check:checked"))
     const ok = await confirmDialog({
       message: `Delete ${checked.length} selected tasks? This cannot be undone.`,
       variant: "danger",
@@ -500,17 +497,21 @@ document
       title: "Bulk Delete",
     })
     if (!ok) return
-    try {
-      const promises = Array.from(checked).map((cb) =>
-        taskApi.deleteTask((cb as HTMLElement).dataset.id!),
-      )
-      await Promise.all(promises)
-      showToast(`${checked.length} tasks deleted`)
-      checked.forEach((cb) => cb.closest("tr")?.remove())
-      bulkBar.style.display = "none"
-    } catch {
-      showToast("table.bulk_delete_failed", "error")
+    let deleted = 0
+    let fail = 0
+    for (const cb of checked) {
+      try {
+        await taskApi.deleteTask((cb as HTMLElement).dataset.id!)
+        cb.closest("tr")?.remove()
+        deleted++
+      } catch {
+        fail++
+      }
+      // Stagger to avoid rate-limit/ingress flood
+      await new Promise((r) => setTimeout(r, 100))
     }
+    showToast(fail ? `${deleted} deleted, ${fail} failed` : `${deleted} tasks deleted`)
+    bulkBar.style.display = "none"
   })
 
 // ── Column sorting — with numeric comparison fix ────────────
