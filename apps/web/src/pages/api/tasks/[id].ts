@@ -190,6 +190,35 @@ export const PUT: APIRoute = async ({ params, request }) => {
   if (typeof body.parent_id === "string" || body.parent_id === null) {
     sanitized.parent_id = body.parent_id;
   }
+  // Phase 1: Epic→Story→Task nesting validation on parent_id change
+  if (sanitized.parent_id !== undefined && sanitized.parent_id !== null) {
+    const parentLookup = await client.execute({
+      sql: "SELECT task_type FROM tasks WHERE id = ? LIMIT 1",
+      args: [String(sanitized.parent_id)],
+    });
+    if (parentLookup.rows.length === 0) {
+      return new Response(JSON.stringify({ error: "Parent task not found" }), {
+        status: 400, headers: { "content-type": "application/json" },
+      });
+    }
+    const parentType = String((parentLookup.rows[0] as Record<string, unknown>).task_type ?? "task");
+    // Determine child type: use sanitized.task_type if changing, else fetch current
+    let childType = typeof sanitized.task_type === "string" ? sanitized.task_type : null;
+    if (!childType) {
+      const currentType = await client.execute({ sql: "SELECT task_type FROM tasks WHERE id = ? LIMIT 1", args: [String(existing.rows[0]!.id)] });
+      childType = String((currentType.rows[0] as Record<string, unknown>)?.task_type ?? "task");
+    }
+    if (parentType === "task" && (childType === "epic" || childType === "story")) {
+      return new Response(JSON.stringify({
+        error: `Cannot nest ${childType} under a task — tasks can only contain other tasks`,
+      }), { status: 400, headers: { "content-type": "application/json" } });
+    }
+    if (parentType === "story" && childType === "epic") {
+      return new Response(JSON.stringify({
+        error: "Cannot nest an epic under a story — stories can only contain tasks",
+      }), { status: 400, headers: { "content-type": "application/json" } });
+    }
+  }
   if (typeof body.time_tracked === "number") {
     sanitized.time_tracked = Math.max(0, Math.round(body.time_tracked));
   }
@@ -503,6 +532,75 @@ export const PUT: APIRoute = async ({ params, request }) => {
           callHAService("persistent_notification", "dismiss", { notification_id: `meitheal_due_${resolvedId}` }).catch(() => {});
         }).catch(() => {});
       }
+    }
+  }
+
+  // Phase 1: Recurrence auto-create — clone task with next due date on completion
+  if (sanitized.status !== undefined && isDoneStatus(String(sanitized.status)) && !isDoneStatus(String(oldTask?.status ?? ""))) {
+    try {
+      const recurrenceRow = await client.execute({
+        sql: "SELECT recurrence_rule, due_date, title, description, priority, labels, board_id, parent_id, task_type, assigned_to, checklists, custom_fields FROM tasks WHERE id = ? LIMIT 1",
+        args: [resolvedId],
+      });
+      const recTask = recurrenceRow.rows[0] as Record<string, unknown> | undefined;
+      if (recTask?.recurrence_rule && typeof recTask.recurrence_rule === "string" && recTask.recurrence_rule.length > 0) {
+        const { parseRRule, getNextOccurrence } = await import("../../../domains/tasks/recurrence");
+        const rule = parseRRule(String(recTask.recurrence_rule));
+        if (!rule) throw new Error(`Cannot parse recurrence rule: ${recTask.recurrence_rule}`);
+        const baseDateStr = recTask.due_date ? String(recTask.due_date) : new Date().toISOString().split("T")[0]!;
+        const baseDate = new Date(baseDateStr);
+        const nextDate = getNextOccurrence(rule, baseDate);
+        if (nextDate) {
+          const newId = crypto.randomUUID();
+          // Get next ticket number
+          const seqResult = await client.execute("SELECT MAX(ticket_number) as max_num FROM tasks");
+          const nextTicketNum = (Number((seqResult.rows[0] as Record<string, unknown>).max_num) || 0) + 1;
+          const nextDueDate = nextDate.toISOString().split("T")[0]!;
+          // Reset checklists — uncheck all items for the new occurrence
+          let freshChecklists: string | null = null;
+          if (recTask.checklists && typeof recTask.checklists === "string") {
+            try {
+              const items = JSON.parse(String(recTask.checklists));
+              if (Array.isArray(items)) {
+                freshChecklists = JSON.stringify(items.map((i: { text: string }) => ({ text: i.text, done: false })));
+              }
+            } catch { /* keep null */ }
+          }
+          await client.execute({
+            sql: `INSERT INTO tasks (id, title, description, status, priority, due_date, labels,
+                                    recurrence_rule, board_id, parent_id, task_type, assigned_to,
+                                    checklists, custom_fields, ticket_number,
+                                    idempotency_key, request_id, created_at, updated_at)
+                  VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+            args: [
+              newId,
+              recTask.title ? String(recTask.title) : "Recurring task",
+              recTask.description ? String(recTask.description) : null,
+              STATUS.PENDING,
+              recTask.priority != null ? Number(recTask.priority) : 3,
+              nextDueDate,
+              recTask.labels ? String(recTask.labels) : "[]",
+              String(recTask.recurrence_rule),
+              recTask.board_id ? String(recTask.board_id) : "default",
+              recTask.parent_id ? String(recTask.parent_id) : null,
+              recTask.task_type ? String(recTask.task_type) : "task",
+              recTask.assigned_to ? String(recTask.assigned_to) : null,
+              freshChecklists,
+              recTask.custom_fields ? String(recTask.custom_fields) : "{}",
+              nextTicketNum,
+              crypto.randomUUID(), crypto.randomUUID(), now, now,
+            ] as InValue[],
+          });
+          // Dispatch event for the new recurring occurrence
+          dispatchTaskEvent("task.created", {
+            id: newId, title: recTask.title, status: STATUS.PENDING,
+            due_date: nextDueDate, recurrence_rule: recTask.recurrence_rule,
+            ticket_key: formatTicketKey(nextTicketNum),
+          }).catch(() => {});
+        }
+      }
+    } catch (err) {
+      logApiError("recurrence-auto-create", "Failed to create next recurring occurrence", err);
     }
   }
 

@@ -213,6 +213,31 @@ export const POST: APIRoute = async ({ request }) => {
   // Validate parent_id (optional reference to another task)
   const parent_id = typeof body.parent_id === "string" ? body.parent_id : null;
 
+  // Phase 1: Epic→Story→Task nesting validation
+  if (parent_id) {
+    const parentResult = await client.execute({
+      sql: "SELECT task_type FROM tasks WHERE id = ? LIMIT 1",
+      args: [parent_id],
+    });
+    if (parentResult.rows.length === 0) {
+      return new Response(JSON.stringify({ error: "Parent task not found" }), {
+        status: 400, headers: { "content-type": "application/json" },
+      });
+    }
+    const parentType = String((parentResult.rows[0] as Record<string, unknown>).task_type ?? "task");
+    // Nesting rules: Epic → Story/Task, Story → Task, Task → Task
+    if (parentType === "task" && (task_type === "epic" || task_type === "story")) {
+      return new Response(JSON.stringify({
+        error: `Cannot nest ${task_type} under a task — tasks can only contain other tasks`,
+      }), { status: 400, headers: { "content-type": "application/json" } });
+    }
+    if (parentType === "story" && task_type === "epic") {
+      return new Response(JSON.stringify({
+        error: "Cannot nest an epic under a story — stories can only contain tasks",
+      }), { status: 400, headers: { "content-type": "application/json" } });
+    }
+  }
+
   // Board and custom fields
   const board_id = typeof body.board_id === "string" ? body.board_id : "default";
 
