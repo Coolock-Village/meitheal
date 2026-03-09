@@ -31,6 +31,8 @@
         function closeTD() {
           tdOverlay?.classList.add("hidden");
           currentTaskId = null;
+          // Always reset body overflow to restore page scrolling
+          document.body.style.overflow = "";
           history.pushState(null, "", window.location.pathname);
           // P3-4: Restore focus to the element that triggered the panel
           if (_previouslyFocused && _previouslyFocused instanceof HTMLElement) {

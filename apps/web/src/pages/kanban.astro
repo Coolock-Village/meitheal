@@ -635,6 +635,7 @@ const typeConfig: Record<
                         class="card-action-btn card-edit-btn"
                         data-id={String(task.id)}
                         title={t("kanban.edit_task", locale)}
+                        aria-label={`Edit task: ${String(task.title ?? "").slice(0, 50)}`}
                       >
                         ✏️
                       </button>
@@ -647,6 +648,7 @@ const typeConfig: Record<
                         data-status={String(task.status ?? "pending")}
                         data-priority={String(p)}
                         title={t("tasks.ask_ai", locale)}
+                        aria-label={`AI assist for: ${String(task.title ?? "").slice(0, 50)}`}
                       >
                         🤖
                       </button>
@@ -654,6 +656,7 @@ const typeConfig: Record<
                         class="card-action-btn card-dup-btn"
                         data-id={String(task.id)}
                         title={t("kanban.duplicate", locale)}
+                        aria-label={`Duplicate task: ${String(task.title ?? "").slice(0, 50)}`}
                       >
                         ⧉
                       </button>

@@ -244,6 +244,21 @@
                 e.preventDefault();
                 searchInput?.focus();
               }
+              // Ctrl+K / Cmd+K opens command palette
+              if (e.key === "k" && (e.metaKey || e.ctrlKey)) {
+                e.preventDefault();
+                const cpOverlay = document.getElementById(
+                  "command-palette-overlay",
+                );
+                if (cpOverlay) {
+                  cpOverlay.classList.toggle("hidden");
+                  if (!cpOverlay.classList.contains("hidden")) {
+                    const cpInput = cpOverlay.querySelector("input");
+                    cpInput?.focus();
+                  }
+                }
+                return;
+              }
               if (e.key === "n") {
                 e.preventDefault();
                 // If on tasks page, click the create button; otherwise navigate

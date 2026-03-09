@@ -277,3 +277,12 @@
     opacity: 0;
   }
 }
+
+/* Suppress loading bar animation for reduced motion preference */
+@media (prefers-reduced-motion: reduce) {
+  .page-loading-bar.active {
+    animation: none;
+    width: 100%;
+    opacity: 0;
+  }
+}

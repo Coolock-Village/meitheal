@@ -185,6 +185,9 @@ Astro.response.headers.set("X-Content-Type-Options", "nosniff");
     <script is:inline>
       (function () {
         var t = localStorage.getItem("meitheal-theme") || "dark";
+        // Always set data-theme explicitly for all states (including dark)
+        // Previous code relied on :root fallthrough for dark, which caused
+        // theme inconsistency when components used [data-theme="dark"] selector
         if (t === "custom") {
           document.documentElement.setAttribute("data-theme", "dark");
           var css = localStorage.getItem("meitheal-custom-theme-css");
@@ -194,12 +197,9 @@ Astro.response.headers.set("X-Content-Type-Options", "nosniff");
             s.textContent = css;
             document.head.appendChild(s);
           }
-        } else if (t === "auto") {
-          document.documentElement.setAttribute("data-theme", "auto");
-        } else if (t === "light") {
-          document.documentElement.setAttribute("data-theme", "light");
+        } else {
+          document.documentElement.setAttribute("data-theme", t);
         }
-        // dark = default (no data-theme needed, :root vars apply)
       })();
     </script>
 
@@ -1281,55 +1281,9 @@ Astro.response.headers.set("X-Content-Type-Options", "nosniff");
           });
 
         // ───── Service Worker Registration ─────
-        // PWA features (SW, install prompt, push) require a secure context
-        // (HTTPS or localhost). Most HA users have HTTPS via Nabu Casa or
-        // DuckDNS+LetsEncrypt. For HTTP users, degrade gracefully.
-        const isSecure = window.isSecureContext;
-        window.__pwa_supported = isSecure && "serviceWorker" in navigator;
-
-        if (!isSecure) {
-          console.info(
-            "[pwa] Insecure context (HTTP) — PWA features disabled. Enable HTTPS for offline support.",
-          );
-        } else if ("serviceWorker" in navigator) {
-          const ip = window.__ingress_path || "";
-          const swUrl = ip + "/sw.js";
-          const swScope = ip + "/";
-          navigator.serviceWorker
-            .register(swUrl, { scope: swScope })
-            .then((reg) => {
-              // Send ingress path to SW for precache URL prefixing
-              if (ip) {
-                const send = (sw: ServiceWorker | null) => {
-                  if (sw)
-                    sw.postMessage({ type: "SET_INGRESS_PATH", path: ip });
-                };
-                send(reg.active);
-                send(reg.installing);
-                send(reg.waiting);
-              }
-              // Auto-update: when a new SW is waiting, tell it to activate
-              reg.addEventListener("updatefound", () => {
-                const newWorker = reg.installing;
-                if (newWorker) {
-                  if (ip)
-                    newWorker.postMessage({
-                      type: "SET_INGRESS_PATH",
-                      path: ip,
-                    });
-                  newWorker.addEventListener("statechange", () => {
-                    if (
-                      newWorker.state === "installed" &&
-                      navigator.serviceWorker.controller
-                    ) {
-                      newWorker.postMessage({ type: "SKIP_WAITING" });
-                    }
-                  });
-                }
-              });
-            })
-            .catch((err) => console.warn("[pwa] SW registration failed:", err));
-        }
+        // Handled by module import below (sw-register.ts).
+        // Previous inline block removed to prevent duplicate registration.
+        // See <script> block at end of body importing @domains/offline/sw-register.
 
         // ───── Sidebar Badge Hydration ─────
         // SSR renders the badge with server-side count, but it can be stale or 0
