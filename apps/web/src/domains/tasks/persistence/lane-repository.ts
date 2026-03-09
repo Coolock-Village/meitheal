@@ -31,7 +31,7 @@ export class LaneRepository {
     const result = await this.client.execute(
       "SELECT id, key, label, icon, position, wip_limit, includes, built_in, created_at, updated_at FROM kanban_lanes ORDER BY position ASC"
     )
-    return result.rows as LaneRow[]
+    return result.rows as unknown as LaneRow[]
   }
 
   /** Find a lane by ID */
@@ -40,7 +40,7 @@ export class LaneRepository {
       sql: "SELECT id, key, label, icon, position, wip_limit, includes, built_in, created_at, updated_at FROM kanban_lanes WHERE id = ? LIMIT 1",
       args: [id],
     })
-    return (result.rows[0] as LaneRow) ?? null
+    return (result.rows[0] as unknown as LaneRow) ?? null
   }
 
   /** Find a lane by ID with only id, built_in, key fields (for delete validation) */
@@ -49,7 +49,7 @@ export class LaneRepository {
       sql: "SELECT id, built_in, key FROM kanban_lanes WHERE id = ? LIMIT 1",
       args: [id],
     })
-    return (result.rows[0] as { id: unknown; built_in: unknown; key: unknown }) ?? null
+    return (result.rows[0] as unknown as { id: unknown; built_in: unknown; key: unknown }) ?? null
   }
 
   /** Check if a lane key already exists */

@@ -24,20 +24,28 @@ export const GET: APIRoute = async ({ url }) => {
 
   const taskType = url.searchParams.get("task_type")
 
-  const { tasks: rawTasks, total } = await repo.findAll({
-    status: url.searchParams.get("status") ?? undefined,
-    boardId: url.searchParams.get("board_id") ?? undefined,
-    taskType: taskType && VALID_TASK_TYPES.includes(taskType as TaskType) ? taskType : undefined,
-    parentId: url.searchParams.get("parent_id") ?? undefined,
-    search: url.searchParams.get("q") ?? undefined,
-    assignedTo: url.searchParams.get("assigned_to") ?? undefined,
-    label: url.searchParams.get("label") ?? undefined,
+  const findOpts: Parameters<typeof repo.findAll>[0] = {
     favorite: url.searchParams.get("favorite") === "1",
     sort,
     order,
     limit,
     offset,
-  })
+  }
+  const status = url.searchParams.get("status")
+  if (status) findOpts.status = status
+  const boardId = url.searchParams.get("board_id")
+  if (boardId) findOpts.boardId = boardId
+  if (taskType && VALID_TASK_TYPES.includes(taskType as TaskType)) findOpts.taskType = taskType
+  const parentId = url.searchParams.get("parent_id")
+  if (parentId) findOpts.parentId = parentId
+  const search = url.searchParams.get("q")
+  if (search) findOpts.search = search
+  const assignedTo = url.searchParams.get("assigned_to")
+  if (assignedTo) findOpts.assignedTo = assignedTo
+  const label = url.searchParams.get("label")
+  if (label) findOpts.label = label
+
+  const { tasks: rawTasks, total } = await repo.findAll(findOpts)
 
   const tasks = rawTasks.map((r) => {
     const ticketNum = r.ticket_number != null ? Number(r.ticket_number) : null
