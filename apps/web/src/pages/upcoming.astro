@@ -194,6 +194,23 @@ const totalTasks = days.reduce((sum, d) => sum + d.tasks.length, 0);
                         🔁
                       </span>
                     )}
+                    {(() => {
+                      try {
+                        const cl = task.checklists ? (typeof task.checklists === "string" ? JSON.parse(String(task.checklists)) : task.checklists) : [];
+                        if (Array.isArray(cl) && cl.length > 0) {
+                          const done = cl.filter((i: {done: boolean}) => i.done).length;
+                          return (
+                            <span
+                              style={`font-size: 10px; color: ${done === cl.length ? 'var(--color-green-500, #22c55e)' : 'var(--text-muted)'};`}
+                              title={`Checklist: ${done}/${cl.length}`}
+                            >
+                              ✓ {done}/{cl.length}
+                            </span>
+                          );
+                        }
+                      } catch { /* skip */ }
+                      return null;
+                    })()}
                     {task.assigned_to && (
                       <span
                         class="avatar avatar--sm"

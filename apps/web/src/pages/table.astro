@@ -27,6 +27,53 @@ const priorityClasses: Record<number, string> = {
   4: "priority-low",
   5: "priority-minimal",
 };
+
+// --- Subtask Hierarchy: Build tree and flatten with depth ---
+type TaskWithDepth = (typeof tasks)[number] & { depth: number; hasChildren: boolean; childIds: string[] };
+
+function buildTreeRows(allTasks: typeof tasks): TaskWithDepth[] {
+  // Index by id
+  const byId = new Map(allTasks.map(t => [t.id, t]));
+  // Build children map
+  const childrenMap = new Map<string, typeof tasks>();
+  for (const t of allTasks) {
+    if (t.parent_id && byId.has(String(t.parent_id))) {
+      const pid = String(t.parent_id);
+      if (!childrenMap.has(pid)) childrenMap.set(pid, []);
+      childrenMap.get(pid)!.push(t);
+    }
+  }
+  // Flatten tree with DFS
+  const result: TaskWithDepth[] = [];
+  const visited = new Set<string>();
+  function walk(task: (typeof tasks)[number], depth: number) {
+    if (visited.has(task.id)) return;
+    visited.add(task.id);
+    const kids = childrenMap.get(task.id) ?? [];
+    result.push({
+      ...task,
+      depth,
+      hasChildren: kids.length > 0,
+      childIds: kids.map(c => c.id),
+    });
+    for (const child of kids) walk(child, depth + 1);
+  }
+  // Start with root tasks (no parent or parent not in set)
+  for (const t of allTasks) {
+    if (!t.parent_id || !byId.has(String(t.parent_id))) {
+      walk(t, 0);
+    }
+  }
+  // Add any orphans not visited (circular refs etc.)
+  for (const t of allTasks) {
+    if (!visited.has(t.id)) {
+      result.push({ ...t, depth: 0, hasChildren: false, childIds: [] });
+    }
+  }
+  return result;
+}
+
+const treeRows = buildTreeRows(tasks);
 ---
 
 <Layout title={`Meitheal — ${t("table.title", locale)}`}>
@@ -195,7 +242,7 @@ const priorityClasses: Record<number, string> = {
               </tr>
             </thead>
             <tbody>
-              {tasks.map((task) => {
+              {treeRows.map((task) => {
                 const cfEntries = Object.entries(task.custom_fields).filter(
                   ([, v]) => v !== null && v !== undefined && v !== "",
                 );
@@ -217,7 +264,12 @@ const priorityClasses: Record<number, string> = {
                     data-labels={JSON.stringify(task.labels ?? [])}
                     data-title={task.title.toLowerCase()}
                     data-search={searchText}
-                    class={`table-row ${task.is_done ? "row-done" : ""}`}
+                    data-depth={String(task.depth)}
+                    data-parent-id={task.parent_id ? String(task.parent_id) : ""}
+                    data-has-children={task.hasChildren ? "true" : ""}
+                    data-child-ids={task.childIds.join(",")}
+                    class={`table-row ${task.is_done ? "row-done" : ""} ${task.depth > 0 ? "subtask-row" : ""}`}
+                    style={task.depth > 0 ? `--subtask-depth: ${task.depth}` : undefined}
                   >
                     <td>
                       <input
@@ -237,18 +289,32 @@ const priorityClasses: Record<number, string> = {
                       </span>
                     </td>
                     <td>
-                      <span
-                        class="editable-cell"
-                        contenteditable="true"
-                        role="textbox"
-                        data-field="title"
-                        data-id={task.id}
-                        data-original={task.title}
-                      >
-                        {task.title}
-                      </span>
+                      <div class="task-title-cell" style={task.depth > 0 ? `padding-left: ${task.depth * 20}px` : undefined}>
+                        {task.hasChildren && (
+                          <button
+                            type="button"
+                            class="subtree-toggle"
+                            data-parent-id={task.id}
+                            title="Toggle subtasks"
+                            aria-expanded="true"
+                          >▾</button>
+                        )}
+                        {task.depth > 0 && !task.hasChildren && (
+                          <span class="subtree-indent-marker">↳</span>
+                        )}
+                        <span
+                          class="editable-cell"
+                          contenteditable="true"
+                          role="textbox"
+                          data-field="title"
+                          data-id={task.id}
+                          data-original={task.title}
+                        >
+                          {task.title}
+                        </span>
+                      </div>
                       {task.description && (
-                        <div class="cell-description">
+                        <div class="cell-description" style={task.depth > 0 ? `margin-left: ${task.depth * 20}px` : undefined}>
                           {task.description.slice(0, 60)}
                         </div>
                       )}
@@ -435,6 +501,76 @@ const priorityClasses: Record<number, string> = {
     import { showToast } from "@lib/toast";
     import { confirmDialog } from "@lib/confirm-dialog";
     import { taskApi } from "../lib/task-api-client";
+
+    // ── Subtask tree expand/collapse ──
+    const COLLAPSE_KEY = "meitheal-table-collapsed";
+    const collapsedParents = new Set<string>(
+      JSON.parse(sessionStorage.getItem(COLLAPSE_KEY) ?? "[]")
+    );
+
+    function saveCollapsedState() {
+      sessionStorage.setItem(COLLAPSE_KEY, JSON.stringify([...collapsedParents]));
+    }
+
+    function getDescendantIds(parentId: string): string[] {
+      const ids: string[] = [];
+      const row = document.querySelector(`tr[data-id="${parentId}"]`);
+      const childIds = row?.getAttribute("data-child-ids")?.split(",").filter(Boolean) ?? [];
+      for (const cid of childIds) {
+        ids.push(cid);
+        ids.push(...getDescendantIds(cid));
+      }
+      return ids;
+    }
+
+    function toggleSubtree(parentId: string, collapse: boolean) {
+      const descendants = getDescendantIds(parentId);
+      for (const did of descendants) {
+        const row = document.querySelector(`tr[data-id="${did}"]`) as HTMLElement;
+        if (row) {
+          row.style.display = collapse ? "none" : "";
+          // If this descendant is also collapsed, keep its children hidden
+          if (!collapse && collapsedParents.has(did)) {
+            const subDescendants = getDescendantIds(did);
+            for (const sd of subDescendants) {
+              const subRow = document.querySelector(`tr[data-id="${sd}"]`) as HTMLElement;
+              if (subRow) subRow.style.display = "none";
+            }
+          }
+        }
+      }
+    }
+
+    // Initialize collapse state
+    for (const pid of collapsedParents) {
+      toggleSubtree(pid, true);
+      const btn = document.querySelector(`.subtree-toggle[data-parent-id="${pid}"]`) as HTMLElement;
+      if (btn) {
+        btn.textContent = "▸";
+        btn.setAttribute("aria-expanded", "false");
+      }
+    }
+
+    // Bind toggle buttons
+    document.querySelectorAll(".subtree-toggle").forEach(btn => {
+      btn.addEventListener("click", (e) => {
+        e.stopPropagation();
+        const parentId = (btn as HTMLElement).getAttribute("data-parent-id")!;
+        const isCollapsed = collapsedParents.has(parentId);
+        if (isCollapsed) {
+          collapsedParents.delete(parentId);
+          toggleSubtree(parentId, false);
+          (btn as HTMLElement).textContent = "▾";
+          btn.setAttribute("aria-expanded", "true");
+        } else {
+          collapsedParents.add(parentId);
+          toggleSubtree(parentId, true);
+          (btn as HTMLElement).textContent = "▸";
+          btn.setAttribute("aria-expanded", "false");
+        }
+        saveCollapsedState();
+      });
+    });
 
     const FILTER_KEY = "meitheal-task-view-filters";
 
@@ -959,6 +1095,46 @@ const priorityClasses: Record<number, string> = {
 </Layout>
 
 <style>
+  /* Subtask hierarchy styles (Phase 1: SUB-01) */
+  .task-title-cell {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+  }
+  .subtree-toggle {
+    background: none;
+    border: none;
+    color: var(--text-muted);
+    cursor: pointer;
+    font-size: 12px;
+    width: 16px;
+    height: 16px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+    padding: 0;
+    border-radius: var(--radius-sm);
+    transition: background 0.15s, color 0.15s;
+  }
+  .subtree-toggle:hover {
+    background: var(--bg-input);
+    color: var(--text-primary);
+  }
+  .subtree-indent-marker {
+    color: var(--text-muted);
+    font-size: 11px;
+    width: 16px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+    opacity: 0.5;
+  }
+  .subtask-row {
+    border-left: 2px solid var(--accent);
+  }
+
   .filter-bar {
     display: flex;
     gap: 10px;
