@@ -701,4 +701,110 @@ export class TaskRepository {
     } catch { /* settings not available */ }
     return defaults;
   }
+
+  // ── Comment Methods ─────────────────────────────────────────────────
+
+  /** List comments for a task, ordered by creation time ascending */
+  async getComments(taskId: string) {
+    const result = await this.client.execute({
+      sql: "SELECT id, task_id, content, author, created_at FROM comments WHERE task_id = ? ORDER BY created_at ASC",
+      args: [taskId] as InValue[],
+    });
+    return result.rows;
+  }
+
+  /** Check if a task exists (lightweight) */
+  async taskExists(taskId: string): Promise<boolean> {
+    const result = await this.client.execute({
+      sql: "SELECT id FROM tasks WHERE id = ? LIMIT 1",
+      args: [taskId] as InValue[],
+    });
+    return result.rows.length > 0;
+  }
+
+  /** Insert a new comment and return both the insert result and the latest comment */
+  async addComment(taskId: string, content: string, author: string) {
+    await this.client.execute({
+      sql: "INSERT INTO comments (task_id, content, author) VALUES (?, ?, ?)",
+      args: [taskId, content, author] as InValue[],
+    });
+    const latest = await this.client.execute({
+      sql: "SELECT id, task_id, content, author, created_at FROM comments WHERE task_id = ? ORDER BY id DESC LIMIT 1",
+      args: [taskId] as InValue[],
+    });
+    return latest.rows[0];
+  }
+
+  // ── Activity Log Methods ────────────────────────────────────────────
+
+  /** Fetch paginated activity log for a task */
+  async getActivityLog(taskId: string, limit: number, offset: number) {
+    const result = await this.client.execute({
+      sql: `SELECT id, task_id, field, old_value, new_value, actor, created_at
+            FROM task_activity_log
+            WHERE task_id = ?
+            ORDER BY created_at DESC
+            LIMIT ? OFFSET ?`,
+      args: [taskId, limit, offset],
+    });
+    return result.rows;
+  }
+
+  // ── Task Link Methods ──────────────────────────────────────────────
+
+  /** Get outbound links (this task → other tasks) with target info */
+  async getOutboundLinks(taskId: string) {
+    const result = await this.client.execute({
+      sql: `SELECT tl.id, tl.source_task_id, tl.target_task_id, tl.link_type, tl.created_at,
+                   t.title AS target_title, t.task_type AS target_task_type, t.ticket_number AS target_ticket_number
+            FROM task_links tl
+            JOIN tasks t ON t.id = tl.target_task_id
+            WHERE tl.source_task_id = ?
+            ORDER BY tl.created_at DESC`,
+      args: [taskId],
+    });
+    return result.rows;
+  }
+
+  /** Get inbound links (other tasks → this task) with source info */
+  async getInboundLinks(taskId: string) {
+    const result = await this.client.execute({
+      sql: `SELECT tl.id, tl.source_task_id, tl.target_task_id, tl.link_type, tl.created_at,
+                   t.title AS source_title, t.task_type AS source_task_type, t.ticket_number AS source_ticket_number
+            FROM task_links tl
+            JOIN tasks t ON t.id = tl.source_task_id
+            WHERE tl.target_task_id = ?
+            ORDER BY tl.created_at DESC`,
+      args: [taskId],
+    });
+    return result.rows;
+  }
+
+  /** Check if a specific link already exists (idempotency) */
+  async linkExists(sourceTaskId: string, targetTaskId: string, linkType: string): Promise<boolean> {
+    const result = await this.client.execute({
+      sql: "SELECT id FROM task_links WHERE source_task_id = ? AND target_task_id = ? AND link_type = ?",
+      args: [sourceTaskId, targetTaskId, linkType],
+    });
+    return result.rows.length > 0;
+  }
+
+  /** Create a new task link */
+  async createLink(id: string, sourceTaskId: string, targetTaskId: string, linkType: string): Promise<string> {
+    const now = new Date().toISOString();
+    await this.client.execute({
+      sql: "INSERT INTO task_links (id, source_task_id, target_task_id, link_type, created_at) VALUES (?, ?, ?, ?, ?)",
+      args: [id, sourceTaskId, targetTaskId, linkType, now],
+    });
+    return now;
+  }
+
+  /** Delete a task link (scoped to a specific task for authorization) */
+  async deleteLink(linkId: string, taskId: string): Promise<number> {
+    const result = await this.client.execute({
+      sql: "DELETE FROM task_links WHERE id = ? AND (source_task_id = ? OR target_task_id = ?)",
+      args: [linkId, taskId, taskId],
+    });
+    return result.rowsAffected;
+  }
 }
