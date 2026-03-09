@@ -47,6 +47,8 @@
           _previouslyFocused = document.activeElement;
           currentTaskId = taskId;
           tdOverlay.classList.remove("hidden");
+          // Set dynamic aria-label for screen readers
+          tdOverlay.setAttribute("aria-label", `Task detail: loading...`);
 
           try {
             // Populate status dropdown from lanes API
@@ -311,6 +313,8 @@
 
             (document.getElementById("td-title") as HTMLInputElement).value =
               String(t.title ?? "");
+            // Update aria-label with actual task title for screen readers
+            tdOverlay?.setAttribute("aria-label", `Task detail: ${String(t.title ?? "Untitled")}`);
 
             // Priority dot color
             const priorityDot = document.getElementById(

@@ -1456,5 +1456,14 @@ Astro.response.headers.set("X-Content-Type-Options", "nosniff");
     </script>
     <Confetti />
     <PomodoroTimer />
+    <!-- Graceful fallback when JavaScript is disabled -->
+    <noscript>
+      <div style="position:fixed;inset:0;z-index:9999;background:var(--bg-primary,#0f0f23);color:var(--text-primary,#e2e8f0);display:flex;align-items:center;justify-content:center;padding:2rem;text-align:center;">
+        <div>
+          <h1 style="font-size:1.5rem;margin-bottom:1rem;">JavaScript Required</h1>
+          <p>Meitheal requires JavaScript to function. Please enable JavaScript in your browser settings and reload this page.</p>
+        </div>
+      </div>
+    </noscript>
   </body>
 </html>
