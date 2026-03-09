@@ -8,6 +8,7 @@
         "upcoming": "Upcoming",
         "calendar": "Calendar",
         "settings": "Settings",
+        "gamification": "Gamification",
         "skip_to_content": "Skip to content"
     },
     "sidebar": {
@@ -463,6 +464,18 @@
         "daily_goal": "Daily Goal",
         "weekly_chart": "This Week",
         "xp_earned": "+{points} XP",
-        "level": "Level {level}"
+        "level": "Level {level}",
+        "level_progress": "{current} / {next} XP",
+        "xp_to_next": "{xp} XP to next level",
+        "achievements": "Achievements",
+        "achievements_unlocked": "{count} / {total} unlocked",
+        "achievement_locked": "Keep going to unlock this!",
+        "page_title": "Gamification",
+        "page_subtitle": "Track your progress, earn achievements, and level up",
+        "stats_section": "Your Stats",
+        "heatmap_title": "Activity Heatmap",
+        "total_completed": "Tasks Completed",
+        "best_streak": "Best Streak",
+        "current_level": "Current Level"
     }
 }

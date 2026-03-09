@@ -206,6 +206,8 @@
                 }
                 if (taskOverlay && !taskOverlay.classList.contains("hidden")) {
                   taskOverlay.classList.add("hidden");
+                  // Always reset body overflow when closing task detail
+                  document.body.style.overflow = "";
                   return;
                 }
                 if (cpOverlay && !cpOverlay.classList.contains("hidden")) {

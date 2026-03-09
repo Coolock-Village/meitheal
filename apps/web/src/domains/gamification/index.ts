@@ -15,3 +15,19 @@ export {
   type GamificationStats,
   type DailyRecord,
 } from "./streak-tracker"
+
+export {
+  getLevel,
+  getXpForLevel,
+  getProgressToNextLevel,
+  getXpToNextLevel,
+  checkAchievements,
+  getAllAchievements,
+  getYearlyHeatmapData,
+  ensureAchievementSchema,
+  resetAchievementForTests,
+  ACHIEVEMENTS,
+  type Achievement,
+  type UnlockedAchievement,
+  type AchievementCheckResult,
+} from "./achievement-engine"

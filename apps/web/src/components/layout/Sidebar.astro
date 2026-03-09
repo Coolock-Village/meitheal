@@ -54,6 +54,7 @@ const NAV_ITEMS: Record<string, NavItemDef> = {
   today: { href: "/today", i18nKey: "nav.today", icon: "today" },
   upcoming: { href: "/upcoming", i18nKey: "nav.upcoming", icon: "upcoming" },
   calendar: { href: "/calendar", i18nKey: "nav.calendar", icon: "calendar" },
+  gamification: { href: "/gamification", i18nKey: "nav.gamification", icon: "trophy" },
 };
 
 type NavKey = string;
@@ -64,6 +65,7 @@ const DEFAULT_ORDER: NavKey[] = [
   "today",
   "upcoming",
   "calendar",
+  "gamification",
 ];
 
 interface CustomNavItem {
@@ -93,6 +95,7 @@ let sidebarConfig: SidebarConfig = {
   today: true,
   upcoming: true,
   calendar: true,
+  gamification: true,
 };
 
 /** Fetch streak data for sidebar badge */

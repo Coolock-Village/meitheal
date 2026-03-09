@@ -7,13 +7,17 @@
  * @kcs This module provides a client-side function that:
  * 1. POSTs to /api/gamification with task priority
  * 2. Server computes weighted XP (P1=50, P2=40, P3=30, P4=20, P5=10)
- * 3. Triggers confetti animation via window.triggerConfetti()
- * 4. Shows XP earned and streak milestone toasts
+ * 3. Checks achievements and awards new ones
+ * 4. Triggers confetti animation via window.triggerConfetti()
+ * 5. Shows XP earned, streak milestone, achievement unlock, and level-up toasts
  *
  * Import this in any page script that handles task completion events.
  */
 
 import { showToast } from "@lib/toast"
+
+/** Track previous level to detect level-ups */
+let lastKnownLevel = 0
 
 /**
  * Record a task completion and trigger celebration effects.
@@ -45,8 +49,28 @@ export async function onTaskCompleted(priority = 3): Promise<void> {
       if (streak > 0 && streak % 5 === 0) {
         showToast(`🔥 ${streak} day streak!`, "success")
       }
+
+      // Show level-up toast
+      if (data.level && lastKnownLevel > 0 && data.level > lastKnownLevel) {
+        setTimeout(() => {
+          showToast(`🎉 Level Up! You're now Level ${data.level}`, "success")
+        }, 600)
+      }
+      if (data.level) {
+        lastKnownLevel = data.level
+      }
+
+      // Show achievement unlock toasts
+      if (Array.isArray(data.newAchievements) && data.newAchievements.length > 0) {
+        data.newAchievements.forEach((a: { icon: string, name: string }, i: number) => {
+          setTimeout(() => {
+            showToast(`${a.icon} Achievement: ${a.name}`, "success")
+          }, 800 + i * 500)
+        })
+      }
     }
   } catch {
     // Non-critical — don't block the completion flow
   }
 }
+

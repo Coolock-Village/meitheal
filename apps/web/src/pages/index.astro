@@ -4,7 +4,7 @@ import EmptyState from "../components/ui/EmptyState.astro";
 import LabelBadges from "../components/ui/LabelBadges.astro";
 import StreakBadge from "../components/gamification/StreakBadge.astro";
 import GamificationWidget from "../components/gamification/GamificationWidget.astro";
-import { getStats as getGamificationStats, getWeeklyData as getGamificationWeekly } from "../domains/gamification/streak-tracker";
+import { getStats as getGamificationStats, getWeeklyData as getGamificationWeekly, getLevel, getProgressToNextLevel } from "@domains/gamification";
 import { t } from "../i18n/translations";
 import type { Locale } from "../lib/locale";
 import {
@@ -52,6 +52,8 @@ try {
 } catch {
   // Gamification not available
 }
+const gamLevel = getLevel(gamificationStats.totalPoints);
+const gamProgress = getProgressToNextLevel(gamificationStats.totalPoints);
 
 import { PRIORITY_LABELS } from "../lib/priority-config";
 import { STATUS_LABELS as statusLabels } from "../lib/status-config";
@@ -186,7 +188,7 @@ import { getPriorityColor } from "../lib/priority-config";
   </div>
 
   <div style="margin-bottom: 20px;">
-    <GamificationWidget stats={gamificationStats} weekly={gamificationWeekly} />
+    <GamificationWidget stats={gamificationStats} weekly={gamificationWeekly} level={gamLevel} progressToNext={gamProgress} />
   </div>
   {
     favorites.length > 0 && (
