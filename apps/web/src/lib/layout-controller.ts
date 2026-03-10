@@ -69,6 +69,8 @@
           // Defensive: clear any stale body scroll lock from a previous page's
           // task-detail or modal overlay (MPA nav doesn't run close handlers)
           document.body.style.overflow = "";
+          // Also remove editor-injected scroll lock class (e.g. from PWA banner)
+          document.body.classList.remove("antigravity-scroll-lock");
 
           // Active nav link — strip ingress prefix so path comparison works behind HA ingress
           const rawPath = window.location.pathname;

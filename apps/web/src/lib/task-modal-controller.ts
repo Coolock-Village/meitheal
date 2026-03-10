@@ -167,7 +167,7 @@
                       await fetch(
                         `${window.__ingress_path || ""}/api/tasks/${currentTaskId}`,
                         {
-                          method: "PATCH",
+                          method: "PUT",
                           headers: { "Content-Type": "application/json" },
                           body: JSON.stringify({ parent_id: null }),
                         },

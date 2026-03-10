@@ -4,7 +4,8 @@
     "types": ["node"],
     "baseUrl": "..",
     "paths": {
-      "@domains/*": ["apps/web/src/domains/*"]
+      "@domains/*": ["apps/web/src/domains/*"],
+      "@lib/*": ["apps/web/src/lib/*"]
     }
   },
   "include": ["e2e", "governance", "types", "playwright.config.ts"]

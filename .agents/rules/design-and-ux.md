@@ -30,21 +30,21 @@ Use `/local-dev` for the full workflow. Quick reference:
 |------|-----|---------|
 | 🔧 Local Dev | `localhost:4321` (or `--port 4500`) | UI/CSS/JS changes — `npm run dev` in `apps/web/` |
 | 🏠 HA Devcontainer | `localhost:7123` | Full HA Supervisor context — ingress, WebSocket, addon lifecycle. Per [HA app testing docs](https://developers.home-assistant.io/docs/apps/testing/) |
-| 🌐 **Live Production** | `ha.home.arpa:8123` | **Real system with real data**. Runs released Docker images. NOT a dev server. |
+| 🌐 **Live Production** | `ha.internal:8123` | **Real system with real data**. Runs released Docker images. NOT a dev server. |
 
-> ⚠️ `ha.home.arpa` URLs below are for **verification of deployed releases only**. For development iterations, use Local Dev or HA Devcontainer.
+> ⚠️ `ha.internal` URLs below are for **verification of deployed releases only**. For development iterations, use Local Dev or HA Devcontainer.
 
 
 We will cover the following (in order)
 
-- Dashboard/Home — <http://ha.home.arpa:8123/868b2fee_meitheal_hub>
-- KanBan — <http://ha.home.arpa:8123/api/hassio_ingress/nSNXnUWXfe2DcUzE_X_4wsGWAwTIUze7_WdXaSsXJwo/kanban>
-- Table — <http://ha.home.arpa:8123/api/hassio_ingress/nSNXnUWXfe2DcUzE_X_4wsGWAwTIUze7_WdXaSsXJwo/table>
-- Today — <http://ha.home.arpa:8123/api/hassio_ingress/nSNXnUWXfe2DcUzE_X_4wsGWAwTIUze7_WdXaSsXJwo/today>
-- Upcoming — <http://ha.home.arpa:8123/api/hassio_ingress/nSNXnUWXfe2DcUzE_X_4wsGWAwTIUze7_WdXaSsXJwo/upcoming>
-- Calendar — <http://ha.home.arpa:8123/api/hassio_ingress/nSNXnUWXfe2DcUzE_X_4wsGWAwTIUze7_WdXaSsXJwo/calendar>
+- Dashboard/Home — <http://ha.internal:8123/868b2fee_meitheal_hub>
+- KanBan — <http://ha.internal:8123/api/hassio_ingress/nSNXnUWXfe2DcUzE_X_4wsGWAwTIUze7_WdXaSsXJwo/kanban>
+- Table — <http://ha.internal:8123/api/hassio_ingress/nSNXnUWXfe2DcUzE_X_4wsGWAwTIUze7_WdXaSsXJwo/table>
+- Today — <http://ha.internal:8123/api/hassio_ingress/nSNXnUWXfe2DcUzE_X_4wsGWAwTIUze7_WdXaSsXJwo/today>
+- Upcoming — <http://ha.internal:8123/api/hassio_ingress/nSNXnUWXfe2DcUzE_X_4wsGWAwTIUze7_WdXaSsXJwo/upcoming>
+- Calendar — <http://ha.internal:8123/api/hassio_ingress/nSNXnUWXfe2DcUzE_X_4wsGWAwTIUze7_WdXaSsXJwo/calendar>
 - New Task Modal
-- Settings — <http://ha.home.arpa:8123/api/hassio_ingress/nSNXnUWXfe2DcUzE_X_4wsGWAwTIUze7_WdXaSsXJwo/settings>
+- Settings — <http://ha.internal:8123/api/hassio_ingress/nSNXnUWXfe2DcUzE_X_4wsGWAwTIUze7_WdXaSsXJwo/settings>
 - Edit Card/Ticket Modal
 - Search/ Search Modal
 - Board selection and settings

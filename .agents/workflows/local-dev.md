@@ -12,9 +12,9 @@ Meitheal has **three environment tiers**. Always use the right one for what you'
 |------|-----|------------|-------------|
 | 🔧 **Local Astro Dev** | `http://localhost:4321/` | Raw Astro SSR dev server (`npm run dev`) | UI changes, CSS, component work, JS logic. No HA Supervisor context. |
 | 🏠 **HA Devcontainer** | `http://localhost:7123/` | Full HA Supervisor + Home Assistant via Antigravity devcontainer | Ingress testing, HA API integration, addon lifecycle, config.yaml validation. |
-| 🌐 **Live HA Production** | `http://ha.home.arpa:8123/` | Real Home Assistant OS with full functionality (real devices, automations, entities) | Final verification of deployed addon image. **This is NOT a dev environment** — it runs released Docker images only. |
+| 🌐 **Live HA Production** | `http://ha.internal:8123/` | Real Home Assistant OS with full functionality (real devices, automations, entities) | Final verification of deployed addon image. **This is NOT a dev environment** — it runs released Docker images only. |
 
-> **⚠️ IMPORTANT**: `ha.home.arpa` is a **live production system** with real data, real automations, and real device integrations. Do NOT treat it as a development server. Changes here require a tagged release, CI Docker image build, and addon restart.
+> **⚠️ IMPORTANT**: `ha.internal` is a **live production system** with real data, real automations, and real device integrations. Do NOT treat it as a development server. Changes here require a tagged release, CI Docker image build, and addon restart.
 
 ## Tier 1: Local Astro Dev Server
 
@@ -72,10 +72,10 @@ If you need physical hardware (serial ports, USB, Zigbee):
 3. Comment out `image:` in `config.yaml` (forces local build)
 4. Rebuild from HA → Settings → Add-ons → Meitheal → Rebuild
 
-## Tier 3: Live HA Production (`ha.home.arpa`)
+## Tier 3: Live HA Production (`ha.internal`)
 
-- URL: `http://ha.home.arpa:8123/868b2fee_meitheal` (sidebar panel)
-- Ingress: `http://ha.home.arpa:8123/api/hassio_ingress/nSNXnUWXfe2DcUzE_X_4wsGWAwTIUze7_WdXaSsXJwo/`
+- URL: `http://ha.internal:8123/868b2fee_meitheal` (sidebar panel)
+- Ingress: `http://ha.internal:8123/api/hassio_ingress/nSNXnUWXfe2DcUzE_X_4wsGWAwTIUze7_WdXaSsXJwo/`
 - Runs the **released Docker image** from GHCR/Docker Hub
 - Real devices, automations, entities, calendars, todo lists, Grocy
 

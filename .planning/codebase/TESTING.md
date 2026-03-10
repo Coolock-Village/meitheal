@@ -86,7 +86,7 @@ jobs:
 |------|------|-----|
 | 🔧 Tier 1 | CSS, layout, UI, client JS | `npm run dev` in `apps/web/` |
 | 🏠 Tier 2 | Ingress, middleware, HA API | `./scripts/devcontainer-up.sh` |
-| 🌐 Tier 3 | Final acceptance on real data | `ha.home.arpa:8123` |
+| 🌐 Tier 3 | Final acceptance on real data | `ha.internal:8123` |
 
 ## Current Coverage Gaps
 

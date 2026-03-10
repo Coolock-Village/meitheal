@@ -1,90 +1,91 @@
 {
-    "folders": [
-        {
-            "path": ".",
-            "name": "📦 Meitheal Root"
-        },
-        {
-            "path": "meitheal-hub",
-            "name": "🏠 HA Add-on"
-        },
-        {
-            "path": "apps/web",
-            "name": "🌐 Web App"
-        },
-        {
-            "path": "apps/api",
-            "name": "🔌 API"
-        },
-        {
-            "path": "packages/domain-tasks",
-            "name": "📋 Domain: Tasks"
-        },
-        {
-            "path": "packages/domain-strategy",
-            "name": "🎯 Domain: Strategy"
-        },
-        {
-            "path": "packages/domain-auth",
-            "name": "🔐 Domain: Auth"
-        },
-        {
-            "path": "packages/domain-observability",
-            "name": "📊 Domain: Observability"
-        },
-        {
-            "path": "packages/integration-core",
-            "name": "🔗 Integration Core"
-        },
-        {
-            "path": "integrations/home-assistant",
-            "name": "🏡 HA Integration"
-        },
-        {
-            "path": "docs",
-            "name": "📖 Docs"
-        }
-    ],
-    "settings": {
-        "files.exclude": {
-            "**/.git": true,
-            "**/node_modules": true,
-            "**/.astro": true,
-            "**/.next": true
-        },
-        "search.exclude": {
-            "**/node_modules": true,
-            "**/.astro": true,
-            "**/pnpm-lock.yaml": true,
-            "**/dist": true,
-            "**/build": true
-        },
-        "editor.defaultFormatter": "esbenp.prettier-vscode",
-        "emmet.includeLanguages": {
-            "astro": "html"
-        },
-        "[astro]": {
-            "editor.defaultFormatter": "astro-build.astro-vscode"
-        },
-        "[typescript]": {
-            "editor.defaultFormatter": "esbenp.prettier-vscode"
-        },
-        "[json]": {
-            "editor.defaultFormatter": "vscode.json-language-features"
-        },
-        "piny.project_settings": {
-            "open-pages": [
-                "pinyfakepage.html"
-            ]
-        }
+  "folders": [
+    {
+      "path": ".",
+      "name": "📦 Meitheal Root",
     },
-    "extensions": {
-        "recommendations": [
-            "astro-build.astro-vscode",
-            "esbenp.prettier-vscode",
-            "dbaeumer.vscode-eslint",
-            "bradlc.vscode-tailwindcss",
-            "golang.go"
-        ]
-    }
+    {
+      "path": "meitheal-hub",
+      "name": "🏠 HA Add-on",
+    },
+    {
+      "path": "apps/web",
+      "name": "🌐 Web App",
+    },
+    {
+      "path": "apps/api",
+      "name": "🔌 API",
+    },
+    {
+      "path": "packages/domain-tasks",
+      "name": "📋 Domain: Tasks",
+    },
+    {
+      "path": "packages/domain-strategy",
+      "name": "🎯 Domain: Strategy",
+    },
+    {
+      "path": "packages/domain-auth",
+      "name": "🔐 Domain: Auth",
+    },
+    {
+      "path": "packages/domain-observability",
+      "name": "📊 Domain: Observability",
+    },
+    {
+      "path": "packages/integration-core",
+      "name": "🔗 Integration Core",
+    },
+    {
+      "path": "integrations/home-assistant",
+      "name": "🏡 HA Integration",
+    },
+    {
+      "path": "docs",
+      "name": "📖 Docs",
+    },
+  ],
+  "settings": {
+    "files.exclude": {
+      "**/.git": true,
+      "**/node_modules": true,
+      "**/.astro": true,
+      "**/.next": true,
+    },
+    "search.exclude": {
+      "**/node_modules": true,
+      "**/.astro": true,
+      "**/pnpm-lock.yaml": true,
+      "**/dist": true,
+      "**/build": true,
+    },
+    "editor.defaultFormatter": "esbenp.prettier-vscode",
+    "emmet.includeLanguages": {
+      "astro": "html",
+    },
+    "[astro]": {
+      "editor.defaultFormatter": "astro-build.astro-vscode",
+    },
+    "[typescript]": {
+      "editor.defaultFormatter": "esbenp.prettier-vscode",
+    },
+    "[json]": {
+      "editor.defaultFormatter": "vscode.json-language-features",
+    },
+    "piny.project_settings": {
+      "open-pages": ["pinyfakepage.html"],
+    },
+    "workbench.experimental.cloudChanges.autoStore": "onShutdown",
+    "git.autofetch": true,
+    "typescript.disableAutomaticTypeAcquisition": false,
+  },
+  "extensions": {
+    "recommendations": [
+      "astro-build.astro-vscode",
+      "esbenp.prettier-vscode",
+      "dbaeumer.vscode-eslint",
+      "bradlc.vscode-tailwindcss",
+      "golang.go",
+    ],
+  },
 }

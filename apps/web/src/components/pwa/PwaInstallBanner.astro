@@ -19,6 +19,7 @@
   role="complementary"
   aria-label="Install app"
   aria-live="polite"
+  data-no-scroll-lock="true"
   style="display: none;"
 >
   <div class="pwa-banner__content">
@@ -49,7 +50,7 @@
     top: 12px;
     right: 12px;
     left: auto;
-    z-index: 1000;
+    z-index: 50;
     display: flex;
     align-items: center;
     justify-content: space-between;
@@ -198,6 +199,10 @@
     const banner = document.getElementById("pwa-install-banner");
     if (!banner) return;
     banner.classList.remove("pwa-banner--visible");
+    // P0: Clear any scroll lock that may have been applied while banner was visible
+    // (editor heuristics or modal systems may lock body scroll on fixed overlays)
+    document.body.style.overflow = "";
+    document.body.classList.remove("antigravity-scroll-lock");
     setTimeout(() => {
       banner.style.display = "none";
     }, 350);

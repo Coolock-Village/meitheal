@@ -73,6 +73,45 @@ Astro.response.headers.set("X-Content-Type-Options", "nosniff");
 <!doctype html>
 <html lang={locale} dir="ltr">
   <head>
+    <!-- Scroll-lock guard: prevent external tools from locking body scroll (P0) -->
+    <script is:inline>
+      (function () {
+        // Meitheal modals that legitimately lock scroll set data-scroll-lock="true"
+        function isRealModalOpen() {
+          var overlay = document.getElementById("task-detail-overlay");
+          if (overlay && !overlay.classList.contains("hidden")) return true;
+          var ntModal = document.getElementById("new-task-modal");
+          if (ntModal && ntModal.classList.contains("active")) return true;
+          var confirmOverlay = document.getElementById("confirm-dialog-overlay");
+          if (confirmOverlay && !confirmOverlay.classList.contains("hidden")) return true;
+          // Mobile sidebar open is legitimate
+          if (document.body.classList.contains("sidebar-open") && window.innerWidth <= 768) return true;
+          return false;
+        }
+        // MutationObserver: undo external overflow:hidden on body when no modal is open
+        var observer = new MutationObserver(function (mutations) {
+          for (var i = 0; i < mutations.length; i++) {
+            var m = mutations[i];
+            if (m.attributeName === "style" || m.attributeName === "class") {
+              var body = document.body;
+              var hasHidden = body.style.overflow === "hidden" || body.classList.contains("antigravity-scroll-lock");
+              if (hasHidden && !isRealModalOpen()) {
+                body.style.overflow = "";
+                body.classList.remove("antigravity-scroll-lock");
+              }
+            }
+          }
+        });
+        // Start observing once body exists
+        if (document.body) {
+          observer.observe(document.body, { attributes: true, attributeFilter: ["style", "class"] });
+        } else {
+          document.addEventListener("DOMContentLoaded", function () {
+            observer.observe(document.body, { attributes: true, attributeFilter: ["style", "class"] });
+          });
+        }
+      })();
+    </script>
     <!-- Ingress-aware fetch: prefix /api/ paths with HA ingress path -->
     <script is:inline>
       (function () {
@@ -347,7 +386,7 @@ Astro.response.headers.set("X-Content-Type-Options", "nosniff");
   </head>
   <body>
     <!-- Page transition loading indicator -->
-    <div class="meitheal-loading-bar" aria-hidden="true"></div>
+    <div class="meitheal-loading-bar" aria-hidden="true" data-no-scroll-lock="true"></div>
 
     <!-- Wire Astro view transitions to loading bar -->
     <script is:inline>
