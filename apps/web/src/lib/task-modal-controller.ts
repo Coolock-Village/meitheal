@@ -716,7 +716,10 @@
 
             // Load attachments (Phase 23)
             loadAttachments(taskId);
-            _isPopulating = false;
+            // Delay resetting _isPopulating so blur/change events that
+            // fire asynchronously during focus transitions don't trigger
+            // spurious save notifications
+            setTimeout(() => { _isPopulating = false }, 100);
           } catch (e) {
             console.error("Failed to load task detail", e);
             _isPopulating = false;
