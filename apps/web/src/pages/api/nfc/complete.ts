@@ -3,6 +3,7 @@ import { ensureSchema, getPersistenceClient } from "@domains/tasks/persistence/s
 import { TaskRepository } from "@domains/tasks/persistence/task-repository"
 import { apiJson, apiError } from "../../../lib/api-response"
 import { isDoneStatus, STATUS } from "../../../lib/status-config"
+import { isFeatureEnabled } from "../../../lib/feature-flags"
 
 /**
  * NFC Tag Task Completion API
@@ -25,6 +26,9 @@ import { isDoneStatus, STATUS } from "../../../lib/status-config"
  */
 
 export const POST: APIRoute = async ({ request }) => {
+  if (!(await isFeatureEnabled("nfc"))) {
+    return apiError("NFC tag completion is disabled in settings", 404)
+  }
   try {
     await ensureSchema()
     const client = getPersistenceClient()
@@ -69,6 +73,9 @@ export const POST: APIRoute = async ({ request }) => {
 }
 
 export const GET: APIRoute = async ({ url }) => {
+  if (!(await isFeatureEnabled("nfc"))) {
+    return apiError("NFC tag completion is disabled in settings", 404)
+  }
   try {
     await ensureSchema()
     const client = getPersistenceClient()

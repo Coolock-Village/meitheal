@@ -11,6 +11,7 @@ import {
   getPersistenceClient,
 } from "@domains/tasks/persistence/store";
 import { getStats as getGamificationStats } from "@domains/gamification";
+import { getFeatureFlags } from "../../lib/feature-flags";
 
 const currentPath = Astro.url.pathname;
 export interface Props {
@@ -98,13 +99,19 @@ let sidebarConfig: SidebarConfig = {
   gamification: true,
 };
 
+/** Feature flags — hide gamification if disabled */
+const ff = await getFeatureFlags();
+const gamificationEnabled = ff.gamification !== false;
+
 /** Fetch streak data for sidebar badge */
 let currentStreak = 0;
-try {
-  const stats = await getGamificationStats();
-  currentStreak = stats.currentStreak;
-} catch {
-  /* gamification schema may not exist yet */
+if (gamificationEnabled) {
+  try {
+    const stats = await getGamificationStats();
+    currentStreak = stats.currentStreak;
+  } catch {
+    /* gamification schema may not exist yet */
+  }
 }
 
 try {
@@ -167,7 +174,13 @@ const labels: Record<string, string> =
   (sidebarConfig.labels as Record<string, string>) ?? {};
 
 const navItems = order
-  .filter((key) => sidebarConfig[key] !== false && key in NAV_ITEMS)
+  .filter((key) => {
+    if (sidebarConfig[key] === false) return false
+    if (!(key in NAV_ITEMS)) return false
+    // Feature flag: hide gamification nav when disabled
+    if (key === "gamification" && !gamificationEnabled) return false
+    return true
+  })
   .map((key) => {
     const def = NAV_ITEMS[key]!;
     const label = labels[key] || t(def.i18nKey, locale);
@@ -247,9 +260,11 @@ const navItems = order
     <SidebarBoardSwitcher locale={locale} />
   </div>
 
-  <div style="padding: 0.5rem 0.75rem; border-top: 1px solid var(--border, #334155);">
-    <StreakBadge streak={currentStreak} compact />
-  </div>
+  {gamificationEnabled && (
+    <div style="padding: 0.5rem 0.75rem; border-top: 1px solid var(--border, #334155);">
+      <StreakBadge streak={currentStreak} compact />
+    </div>
+  )}
 
   <SidebarFooter locale={locale} />
 </nav>

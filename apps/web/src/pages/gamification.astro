@@ -29,6 +29,12 @@ import {
   getYearlyHeatmapData,
   ensureGamificationSchema,
 } from "@domains/gamification";
+import { isFeatureEnabled } from "../lib/feature-flags";
+
+// Feature flag guard — redirect if gamification disabled
+if (!(await isFeatureEnabled("gamification"))) {
+  return Astro.redirect("/");
+}
 
 // Ensure schema exists
 try {

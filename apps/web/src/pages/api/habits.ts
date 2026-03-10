@@ -6,6 +6,7 @@ import {
   deleteHabit,
 } from "@domains/habits"
 import { apiJson, apiError } from "../../lib/api-response"
+import { isFeatureEnabled } from "../../lib/feature-flags"
 
 /**
  * Habits API
@@ -18,6 +19,9 @@ import { apiJson, apiError } from "../../lib/api-response"
  */
 
 export const GET: APIRoute = async () => {
+  if (!(await isFeatureEnabled("habits"))) {
+    return apiError("Habit tracker is disabled in settings", 404)
+  }
   try {
     const habits = await getHabits()
     return apiJson({ habits })
@@ -27,6 +31,9 @@ export const GET: APIRoute = async () => {
 }
 
 export const POST: APIRoute = async ({ request }) => {
+  if (!(await isFeatureEnabled("habits"))) {
+    return apiError("Habit tracker is disabled in settings", 404)
+  }
   try {
     const body = (await request.json().catch(() => ({}))) as Record<string, unknown>
     const action = String(body.action || "create")

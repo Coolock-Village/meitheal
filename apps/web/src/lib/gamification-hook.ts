@@ -24,6 +24,9 @@ let lastKnownLevel = 0
  * @param priority - Task priority (1=Critical → 5=Minimal). XP is computed server-side.
  */
 export async function onTaskCompleted(priority = 3): Promise<void> {
+  // Feature flag guard — skip gamification when disabled
+  if ((window as any).__featureFlags?.gamification === false) return
+
   try {
     const res = await fetch("/api/gamification", {
       method: "POST",

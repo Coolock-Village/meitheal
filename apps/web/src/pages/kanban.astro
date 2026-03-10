@@ -791,13 +791,16 @@ const typeConfig: Record<
 
         // Gamification: confetti + record completion when dropped to complete
         if (newStatus === "complete") {
-          if (typeof window.triggerConfetti === "function") window.triggerConfetti();
-          var cardPriority = parseInt(card.dataset.priority ?? "3", 10) || 3;
-          fetch("/api/gamification", {
-            method: "POST",
-            headers: { "content-type": "application/json" },
-            body: JSON.stringify({ priority: cardPriority }),
-          }).catch(function() {});
+          var ff = window.__featureFlags || {};
+          if (ff.confetti !== false && typeof window.triggerConfetti === "function") window.triggerConfetti();
+          if (ff.gamification !== false) {
+            var cardPriority = parseInt(card.dataset.priority ?? "3", 10) || 3;
+            fetch("/api/gamification", {
+              method: "POST",
+              headers: { "content-type": "application/json" },
+              body: JSON.stringify({ priority: cardPriority }),
+            }).catch(function() {});
+          }
         }
       } catch {
         // Revert on failure — reload to get server state

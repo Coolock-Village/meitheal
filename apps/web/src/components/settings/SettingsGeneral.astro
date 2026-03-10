@@ -747,6 +747,22 @@ const { locale } = Astro.props;
       </button>
     </div>
   </div>
+
+  <!-- Optional Features -->
+  <div class="card">
+    <div class="card-header">
+      <div>
+        <div class="card-title">⚡ Optional Features</div>
+        <div class="card-subtitle">
+          Enable or disable optional features. Disabled features are hidden from
+          the UI and their APIs return 404. Core task management is never affected.
+        </div>
+      </div>
+    </div>
+    <div id="feature-toggles-container" style="padding: 16px; display: flex; flex-direction: column; gap: 10px;">
+      <span style="color: var(--text-muted); font-size: 12px; font-style: italic;">Loading features…</span>
+    </div>
+  </div>
 </div>
 
 <script is:inline>
@@ -1434,5 +1450,102 @@ const { locale } = Astro.props;
           }, 2000);
         });
     });
+  })();
+</script>
+
+<script is:inline>
+  // Feature toggles
+  (function () {
+    const container = document.getElementById("feature-toggles-container");
+    if (!container) return;
+
+    const CATEGORIES = {
+      productivity: { label: "Productivity", icon: "🎯" },
+      integrations: { label: "Integrations", icon: "🔌" },
+      visual: { label: "Visual", icon: "✨" },
+    };
+
+    fetch((window.__ingress_path || "") + "/api/features")
+      .then(function (r) { return r.json(); })
+      .then(function (data) {
+        if (!data.features) return;
+        container.innerHTML = "";
+
+        // Group by category
+        var grouped = {};
+        data.features.forEach(function (f) {
+          if (!grouped[f.category]) grouped[f.category] = [];
+          grouped[f.category].push(f);
+        });
+
+        Object.keys(CATEGORIES).forEach(function (cat) {
+          var features = grouped[cat];
+          if (!features || features.length === 0) return;
+
+          var catInfo = CATEGORIES[cat];
+          var section = document.createElement("div");
+          section.style.cssText = "margin-bottom: 8px;";
+
+          var heading = document.createElement("div");
+          heading.style.cssText = "font-weight: 600; font-size: 12px; text-transform: uppercase; letter-spacing: 0.5px; color: var(--text-muted); margin-bottom: 8px; padding-top: 4px;";
+          heading.textContent = catInfo.icon + " " + catInfo.label;
+          section.appendChild(heading);
+
+          features.forEach(function (f) {
+            var row = document.createElement("div");
+            row.style.cssText = "display: flex; align-items: center; gap: 10px; padding: 10px 12px; background: var(--bg-secondary); border: 1px solid var(--border); border-radius: 8px;";
+
+            row.innerHTML =
+              '<label class="toggle-switch" style="flex-shrink: 0;">' +
+              '<input type="checkbox" id="feature-toggle-' + f.name + '" data-feature="' + f.name + '" ' + (f.enabled ? 'checked' : '') + ' />' +
+              '<span class="toggle-slider"></span>' +
+              '</label>' +
+              '<div style="flex: 1;">' +
+              '<div style="font-weight: 500; font-size: 13px;">' + f.icon + ' ' + f.label + '</div>' +
+              '<div style="font-size: 11px; color: var(--text-muted);">' + f.description + '</div>' +
+              '</div>';
+
+            var checkbox = row.querySelector('input[type="checkbox"]');
+            checkbox.addEventListener("change", function () {
+              var featureName = this.dataset.feature;
+              var enabled = this.checked;
+
+              fetch((window.__ingress_path || "") + "/api/features", {
+                method: "PUT",
+                headers: { "content-type": "application/json" },
+                body: JSON.stringify({ feature: featureName, enabled: enabled }),
+              })
+                .then(function (r) { return r.json(); })
+                .then(function () {
+                  if (typeof window.showToast === "function") {
+                    window.showToast((enabled ? "Enabled" : "Disabled") + ": " + f.label);
+                  }
+                  // Update client-side flags
+                  if (window.__featureFlags) {
+                    window.__featureFlags[featureName] = enabled;
+                  }
+                })
+                .catch(function () {
+                  if (typeof window.showToast === "function") {
+                    window.showToast("Failed to update feature", "error");
+                  }
+                });
+            });
+
+            section.appendChild(row);
+          });
+
+          container.appendChild(section);
+        });
+
+        // Reload hint
+        var hint = document.createElement("div");
+        hint.style.cssText = "font-size: 11px; color: var(--text-muted); margin-top: 4px; padding: 8px 12px; background: var(--bg-secondary); border-radius: 6px; border: 1px dashed var(--border);";
+        hint.innerHTML = '💡 <strong>Note:</strong> Some changes take effect on the next page load.';
+        container.appendChild(hint);
+      })
+      .catch(function () {
+        container.innerHTML = '<span style="color: var(--danger); font-size: 12px;">Failed to load features</span>';
+      });
   })();
 </script>

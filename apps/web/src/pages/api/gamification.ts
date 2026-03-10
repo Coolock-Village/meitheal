@@ -12,14 +12,26 @@ import {
   getYearlyHeatmapData,
 } from "@domains/gamification"
 import { apiJson, apiError } from "../../lib/api-response"
+import { isFeatureEnabled } from "../../lib/feature-flags"
 
 /**
  * Gamification API
  * GET /api/gamification — Get stats, level, achievements, heatmap
  * POST /api/gamification — Record a task completion, check achievements
+ *
+ * Gated behind the `gamification` feature flag.
  */
 
+const featureGuard = async () => {
+  if (!(await isFeatureEnabled("gamification"))) {
+    return apiError("Gamification is disabled in settings", 404)
+  }
+  return null
+}
+
 export const GET: APIRoute = async ({ url }) => {
+  const guardResult = await featureGuard()
+  if (guardResult) return guardResult
   try {
     const includeHeatmap = url.searchParams.get("heatmap") === "true"
     const [stats, weekly, achievementData] = await Promise.all([
@@ -56,6 +68,8 @@ export const GET: APIRoute = async ({ url }) => {
 }
 
 export const POST: APIRoute = async ({ request }) => {
+  const guardResult = await featureGuard()
+  if (guardResult) return guardResult
   try {
     const body = (await request.json().catch(() => ({}))) as Record<string, unknown>
     const priority = typeof body.priority === "number" ? body.priority : 3
