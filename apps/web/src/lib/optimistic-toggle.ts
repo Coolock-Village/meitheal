@@ -57,7 +57,7 @@ export async function optimisticToggle(opts: OptimisticToggleOptions): Promise<v
     const res = await fetch(
       (window.__ingress_path || "") + `/api/tasks/${taskId}`,
       {
-        method: "PATCH",
+        method: "PUT",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ status: newStatus }),
       },

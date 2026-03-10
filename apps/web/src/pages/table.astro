@@ -486,8 +486,8 @@ const treeRows = buildTreeRows(tasks);
     </select>
     <button
       type="button"
-      class="btn btn-danger bulk-delete-btn"
-      id="bulk-delete">{t("table.delete_selected", locale)}</button
+      class="btn bulk-delete-btn"
+      id="bulk-delete">🗑 {t("table.delete_selected", locale)}</button
     >
   </div>
 
@@ -652,8 +652,17 @@ const treeRows = buildTreeRows(tasks);
     max-width: 140px;
   }
   .bulk-delete-btn {
-    padding: 6px 12px;
-    font-size: 13px;
+    padding: 4px 10px;
+    font-size: 12px;
+    background: transparent;
+    color: var(--danger);
+    border: 1px solid var(--danger);
+    opacity: 0.75;
+    transition: opacity 0.15s, background 0.15s;
+  }
+  .bulk-delete-btn:hover {
+    opacity: 1;
+    background: rgba(239, 68, 68, 0.1);
   }
   .ticket-key-badge {
     display: inline-block;

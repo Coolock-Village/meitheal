@@ -501,3 +501,6 @@ export const DELETE: APIRoute = async ({ params }) => {
 
   return new Response(null, { status: 204 })
 }
+
+/** PATCH is an alias for PUT — some client-side callers use PATCH for partial updates */
+export const PATCH = PUT

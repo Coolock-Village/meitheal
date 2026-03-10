@@ -26,7 +26,7 @@ const logger = createLogger({
 // Capped at MAX_ENTRIES to prevent OOM under DDoS. Oldest entries evicted
 // when the cap is reached via FIFO iteration order of Map.
 const rateLimitMap = new Map<string, { count: number; resetAt: number }>();
-const RATE_LIMIT = 120; // requests per window
+const RATE_LIMIT = 300; // requests per window
 const RATE_WINDOW_MS = 60_000; // 1 minute
 const MAX_RATE_ENTRIES = 10_000; // memory cap (~800KB at peak)
 

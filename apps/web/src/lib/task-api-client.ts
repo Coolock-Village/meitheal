@@ -174,10 +174,10 @@ export const taskApi = {
     return parseResponse<any>(res)
   },
 
-  /** PATCH /api/tasks/:id — update a task */
+  /** PUT /api/tasks/:id — update a task */
   async updateTask(id: string, payload: TaskPatchPayload): Promise<any> {
     const res = await safeFetch(`/api/tasks/${enc(id)}`, {
-      method: "PATCH",
+      method: "PUT",
       headers: JSON_HEADERS,
       body: JSON.stringify(payload),
     })
