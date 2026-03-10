@@ -3,9 +3,15 @@
  *
  * Handles: quick-add form, checkbox toggles, user filter,
  * task click handlers, keyboard shortcut (n → focus quick add).
+ *
+ * All DOM listeners use pageLifecycle.signal for automatic cleanup
+ * on ViewTransition navigations (prevents listener accumulation).
  */
 import { showToast } from "@lib/toast"
 import { taskApi } from "../lib/task-api-client"
+import { pageLifecycle } from "@lib/page-lifecycle"
+
+const signal = pageLifecycle.signal
 
 // ── Quick add form ──────────────────────────────────────────
 document
@@ -69,7 +75,7 @@ document
       showToast((err as Error).message || "common.failed_create", "error")
       newCard.remove()
     }
-  })
+  }, { signal })
 
 // ── Checkbox toggles — optimistic CSS swap ──────────────────
 document.querySelectorAll(".task-checkbox").forEach((cb) => {
@@ -108,7 +114,7 @@ document.querySelectorAll(".task-checkbox").forEach((cb) => {
       // Revert
       target.checked = !target.checked
     }
-  })
+  }, { signal })
 })
 
 // ── Header "+ New Task" button → open unified New Task modal ──
@@ -127,7 +133,7 @@ document.getElementById("quick-add-btn")?.addEventListener("click", () => {
       }
     })
   }
-})
+}, { signal })
 
 // ── My open tasks — user filter ─────────────────────────────
 const openSelect = document.getElementById(
@@ -206,7 +212,7 @@ if (openSelect && openList) {
       openSelect.value,
     )
     applyOpenFilter()
-  })
+  }, { signal })
 }
 
 // ── Task items → open detail panel on click ─────────────────
@@ -218,16 +224,9 @@ document.querySelectorAll(".task-item[data-id]").forEach((el) => {
     if (id && typeof (window as any).openTaskDetail === "function") {
       ;(window as any).openTaskDetail(id)
     }
-  })
+  }, { signal })
 })
 
 // ── Keyboard shortcut: n → focus quick add ──────────────────
-document.addEventListener("keydown", (e) => {
-  if (
-    e.key === "n" &&
-    !["INPUT", "TEXTAREA"].includes((e.target as HTMLElement)?.tagName)
-  ) {
-    e.preventDefault()
-    ;(document.getElementById("quick-title") as HTMLInputElement)?.focus()
-  }
-})
+// Note: layout-controller.ts already handles the global "n" shortcut,
+// so this duplicate is removed to prevent double-firing.
