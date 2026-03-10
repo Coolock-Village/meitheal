@@ -340,20 +340,28 @@
               }
 
               // Phase 20 (ADHD Optimization): T/S/E shortcuts for detail panel task_type
+              // Only active when task detail is open AND user is NOT editing a text field
               if (taskOverlay && !taskOverlay.classList.contains("hidden")) {
-                const typeSelect = document.getElementById(
-                  "td-task-type",
-                ) as HTMLSelectElement | null;
-                if (typeSelect) {
-                  let newType = null;
-                  if (e.key.toLowerCase() === "t") newType = "task";
-                  if (e.key.toLowerCase() === "s") newType = "story";
-                  if (e.key.toLowerCase() === "e") newType = "epic";
+                const tdTag = (e.target as HTMLElement)?.tagName;
+                const tdIsEditing =
+                  ["INPUT", "TEXTAREA", "SELECT"].includes(tdTag) ||
+                  (e.target as HTMLElement)?.contentEditable === "true";
 
-                  if (newType && typeSelect.value !== newType) {
-                    e.preventDefault();
-                    typeSelect.value = newType;
-                    typeSelect.dispatchEvent(new Event("change"));
+                if (!tdIsEditing) {
+                  const typeSelect = document.getElementById(
+                    "td-task-type",
+                  ) as HTMLSelectElement | null;
+                  if (typeSelect) {
+                    let newType = null;
+                    if (e.key.toLowerCase() === "t") newType = "task";
+                    if (e.key.toLowerCase() === "s") newType = "story";
+                    if (e.key.toLowerCase() === "e") newType = "epic";
+
+                    if (newType && typeSelect.value !== newType) {
+                      e.preventDefault();
+                      typeSelect.value = newType;
+                      typeSelect.dispatchEvent(new Event("change"));
+                    }
                   }
                 }
               }
