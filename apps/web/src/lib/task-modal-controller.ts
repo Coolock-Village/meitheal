@@ -19,6 +19,7 @@
           "task-detail-overlay",
         ) as HTMLDivElement;
         let currentTaskId: string | null = null;
+        let _isPopulating = false;
         // P3-4/P22: Focus management — restore focus to trigger element on panel close
         let _previouslyFocused: Element | null = null;
         let _settingsFields: Array<{
@@ -46,7 +47,10 @@
           // P3-4: Store focus origin for restore on close
           _previouslyFocused = document.activeElement;
           currentTaskId = taskId;
+          _isPopulating = true;
           tdOverlay.classList.remove("hidden");
+          // Lock body scroll while panel is open (closeTD restores it)
+          document.body.style.overflow = "hidden";
           // Set dynamic aria-label for screen readers
           tdOverlay.setAttribute("aria-label", `Task detail: loading...`);
 
@@ -712,8 +716,10 @@
 
             // Load attachments (Phase 23)
             loadAttachments(taskId);
+            _isPopulating = false;
           } catch (e) {
             console.error("Failed to load task detail", e);
+            _isPopulating = false;
             closeTD()
           }
         }
@@ -831,7 +837,7 @@
         }
 
         async function saveTD(field: string, value: unknown) {
-          if (!currentTaskId) return;
+          if (!currentTaskId || _isPopulating) return;
           try {
             const res = await fetch(
               `${window.__ingress_path || ""}/api/tasks/${currentTaskId}`,
