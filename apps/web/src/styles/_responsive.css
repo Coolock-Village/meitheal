@@ -6,9 +6,27 @@
  * Does NOT own: base component styles — only responsive overrides of them
  * ============================================= */
 
+/* ===== Settings tab-pane CSS fallback =====
+ * Prevents all tab panes from showing simultaneously if JS hasn't initialised
+ * (race condition on slow mobile connections / HA companion app WebView).
+ * JS still manages .active class — this CSS ensures the default hidden state. */
+.tab-pane {
+  display: none;
+}
+.tab-pane.active {
+  display: block;
+}
+
 /* Mobile breakpoint */
 /* ===== Responsive ===== */
 @media (max-width: 768px) {
+  /* Lock body scroll when sidebar is open on mobile */
+  body.sidebar-open {
+    overflow: hidden !important;
+    position: fixed;
+    width: 100%;
+    height: 100%;
+  }
   /* Mobile: sidebar off-screen but rendered (not display:none) */
   .sidebar {
     display: flex !important;
@@ -25,16 +43,13 @@
       box-shadow: 4px 0 24px rgba(0, 0, 0, 0.4);
   }
 
-    /* Mobile: dark overlay behind open sidebar */
+    /* Mobile: dark overlay behind open sidebar — full-screen, under sidebar z-index */
     .sidebar.open::after {
       content: '';
       position: fixed;
-    top: 0;
-      left: 240px;
-      /* sidebar width */
-      right: 0;
-      bottom: 0;
+      inset: 0;
       background: rgba(0, 0, 0, 0.5);
+      z-index: -1;
   }
 
   .main-content {
@@ -173,6 +188,12 @@
   min-width: 0;
 }
 
+/* Mobile: search results — full-width overlay */
+.search-results {
+  max-height: 70vh !important;
+  -webkit-overflow-scrolling: touch;
+}
+
 /* Mobile: settings tabs scroll hint */
 .settings-tabs {
   gap: 16px;
@@ -208,6 +229,23 @@
 .sidebar-toggle {
   display: none !important;
 }
+
+  /* Mobile: safe-area-inset padding for iOS notch / dynamic island */
+  .topbar {
+    padding-top: max(8px, env(safe-area-inset-top)) !important;
+    padding-left: max(12px, env(safe-area-inset-left)) !important;
+    padding-right: max(12px, env(safe-area-inset-right)) !important;
+  }
+
+  .sidebar {
+    padding-top: max(16px, env(safe-area-inset-top)) !important;
+    padding-bottom: max(16px, env(safe-area-inset-bottom)) !important;
+    padding-left: max(16px, env(safe-area-inset-left)) !important;
+  }
+
+  .content {
+    padding-bottom: max(16px, env(safe-area-inset-bottom)) !important;
+  }
 }
 
 /* Print stylesheet */

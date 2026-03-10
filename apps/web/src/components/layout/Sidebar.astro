@@ -283,6 +283,8 @@ const navItems = order
     padding-top: 8px;
     scrollbar-width: thin;
     scrollbar-color: var(--border) transparent;
+    -webkit-overflow-scrolling: touch;
+    overscroll-behavior: contain;
   }
 
   .sidebar-scroll::-webkit-scrollbar {
@@ -407,11 +409,9 @@ const navItems = order
     .sidebar.open::after {
       content: "";
       position: fixed;
-      top: 0;
-      left: 240px;
-      right: 0;
-      bottom: 0;
+      inset: 0;
       background: rgba(0, 0, 0, 0.5);
+      z-index: -1;
     }
   }
 </style>

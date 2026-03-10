@@ -22,7 +22,7 @@ const { locale } = Astro.props;
       <Icon name="menu" size={20} />
     </button>
     <h1
-      class="page-title text-xl font-semibold tracking-tight text-text-primary m-0 hidden sm:block"
+      class="page-title text-xl font-semibold tracking-tight text-text-primary m-0 truncate max-w-[200px] sm:max-w-none"
     >
       <slot name="page-title" />
     </h1>
@@ -81,10 +81,26 @@ const { locale } = Astro.props;
   // Mobile menu toggle
   const menuBtn = document.getElementById("menu-toggle");
   const sidebar = document.getElementById("sidebar");
+  let savedScrollY = 0;
 
   function toggleSidebar() {
+    const isOpening = !sidebar?.classList.contains("open");
     sidebar?.classList.toggle("open");
     document.body.classList.toggle("sidebar-open");
+
+    // Lock/unlock body scroll on mobile
+    if (isOpening) {
+      savedScrollY = window.scrollY;
+    } else {
+      // Restore scroll position after body position:fixed is removed
+      requestAnimationFrame(() => window.scrollTo(0, savedScrollY));
+    }
+  }
+
+  function closeSidebar() {
+    if (sidebar?.classList.contains("open")) {
+      toggleSidebar();
+    }
   }
 
   menuBtn?.addEventListener("click", toggleSidebar);
@@ -98,7 +114,15 @@ const { locale } = Astro.props;
       target !== menuBtn &&
       !menuBtn?.contains(target)
     ) {
-      toggleSidebar();
+      closeSidebar();
+    }
+  });
+
+  // Auto-close sidebar when a nav link is clicked on mobile
+  sidebar?.addEventListener("click", (e) => {
+    const link = (e.target as HTMLElement)?.closest("a.nav-link");
+    if (link && !link.classList.contains("nav-link--external") && window.innerWidth <= 768) {
+      closeSidebar();
     }
   });
 
@@ -190,6 +214,8 @@ const { locale } = Astro.props;
       const sidebar = document.getElementById("sidebar");
       if (sidebar?.classList.contains("open")) {
         sidebar.classList.remove("open");
+        document.body.classList.remove("sidebar-open");
+        requestAnimationFrame(() => window.scrollTo(0, savedScrollY));
         return;
       }
     }
