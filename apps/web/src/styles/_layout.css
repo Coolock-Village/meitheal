@@ -135,9 +135,13 @@
     touch-action: pan-y;
     -webkit-overflow-scrolling: touch;
     transition: margin-left 250ms cubic-bezier(0.4, 0, 0.2, 1);
-    /* P0-3: Layout containment — tells browser this subtree won't
-       affect outside layout, enabling paint/layout optimizations */
-    contain: layout style;
+    /* P0-3: Style containment only — `contain: layout` was removed because
+       it creates an independent formatting context that blocks wheel-event
+       scroll propagation to the body scroll container. With layout containment,
+       wheel events over .main-content couldn't reach body's overflow-y:auto,
+       so scrolling only worked when the cursor was directly on the scrollbar.
+       `contain: style` is safe (isolates counters/quotes, no layout side-effects). */
+    contain: style;
   }
 
     /* When sidebar is collapsed, expand main content to full width */
