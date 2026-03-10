@@ -96,7 +96,12 @@
             const res = await fetch(
               `${window.__ingress_path || ""}/api/tasks/${taskId}`,
             );
-            if (!res.ok) return;
+            if (!res.ok) {
+              closeTD()
+              const { showToast } = await import("@lib/toast")
+              showToast("common.failed", "error")
+              return
+            }
             const t = (await res.json()) as Record<string, unknown>;
 
             if (t.id) currentTaskId = String(t.id);
@@ -709,6 +714,7 @@
             loadAttachments(taskId);
           } catch (e) {
             console.error("Failed to load task detail", e);
+            closeTD()
           }
         }
 
