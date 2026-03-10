@@ -8,6 +8,12 @@
 import { showToast } from "@lib/toast"
 import { confirmDialog } from "@lib/confirm-dialog"
 import { taskApi } from "../lib/task-api-client"
+import {
+  saveFilterState as persistFilters,
+  loadFilterState,
+  matchesStatusFilter,
+  matchesRiceFilter,
+} from "@lib/filter-state"
 
 // ── Subtask tree expand/collapse ────────────────────────────
 const COLLAPSE_KEY = "meitheal-table-collapsed"
@@ -79,8 +85,6 @@ document.querySelectorAll(".subtree-toggle").forEach(btn => {
   })
 })
 
-const FILTER_KEY = "meitheal-task-view-filters"
-
 // Label filter state — updated by LabelFilterBar events
 let activeLabelFilter: string[] = []
 
@@ -135,22 +139,11 @@ function applyTableFilters() {
     const el = row as HTMLElement
     const title = el.dataset.search ?? el.dataset.title ?? ""
     const matchSearch = !searchVal || title.includes(searchVal)
-    const matchStatus = !statusFilter || el.dataset.status === statusFilter
+    const matchStatus = matchesStatusFilter(el, statusFilter)
     const matchPriority =
       !priorityFilter || el.dataset.priority === priorityFilter
 
-    let matchRice = true
-    if (riceFilter) {
-      const riceVal = el.dataset.rice
-      if (!riceVal) {
-        matchRice = false
-      } else {
-        const r = Number(riceVal)
-        if (riceFilter === "high") matchRice = r >= 15
-        else if (riceFilter === "medium") matchRice = r >= 8 && r < 15
-        else if (riceFilter === "low") matchRice = r < 8
-      }
-    }
+    const matchRice = matchesRiceFilter(el, riceFilter)
 
     let matchUser = true
     if (userFilter === "__unassigned__") {
@@ -204,15 +197,7 @@ function saveFilterState() {
       (document.getElementById("table-filter-user") as HTMLSelectElement)
         ?.value ?? "",
   }
-  localStorage.setItem(FILTER_KEY, JSON.stringify(state))
-
-  // Sync to URL for deep-linking
-  const url = new URL(window.location.href)
-  Object.entries(state).forEach(([key, val]) => {
-    if (val) url.searchParams.set(key, val)
-    else url.searchParams.delete(key)
-  })
-  window.history.replaceState(null, "", url.toString())
+  persistFilters(state)
 }
 
 // Attach filter listeners
@@ -251,23 +236,7 @@ document.getElementById("clear-filters")?.addEventListener("click", () => {
 
 // Restore filter state — URL params take priority, then localStorage
 try {
-  const urlParams = new URLSearchParams(window.location.search)
-  const hasUrlFilters =
-    urlParams.has("search") ||
-    urlParams.has("status") ||
-    urlParams.has("priority") ||
-    urlParams.has("rice") ||
-    urlParams.has("user")
-
-  const source = hasUrlFilters
-    ? {
-        search: urlParams.get("search") ?? "",
-        status: urlParams.get("status") ?? "",
-        priority: urlParams.get("priority") ?? "",
-        rice: urlParams.get("rice") ?? "",
-        user: urlParams.get("user") ?? "",
-      }
-    : JSON.parse(localStorage.getItem(FILTER_KEY) ?? "{}")
+  const source = loadFilterState()
 
   if (source.search)
     (document.getElementById("table-search") as HTMLInputElement).value =

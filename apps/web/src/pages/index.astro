@@ -187,7 +187,7 @@ import { getPriorityColor } from "../lib/priority-config";
     </a>
   </div>
 
-  <div style="margin-bottom: 20px;">
+  <div class="card" style="margin-bottom: 20px; padding: 0; overflow: hidden;">
     <GamificationWidget stats={gamificationStats} weekly={gamificationWeekly} level={gamLevel} progressToNext={gamProgress} />
   </div>
   {
@@ -218,10 +218,8 @@ import { getPriorityColor } from "../lib/priority-config";
               <div class="task-title">
                 <span
                   class="priority-dot"
-                  style={`color: ${getPriorityColor(Number(fav.priority ?? 3))}`}
-                >
-                  ●
-                </span>
+                  style={`background: ${getPriorityColor(Number(fav.priority ?? 3))}`}
+                ></span>
                 {String(fav.title)}
               </div>
               {fav.due_date && (
@@ -315,9 +313,7 @@ import { getPriorityColor } from "../lib/priority-config";
                 style="cursor:pointer;"
               >
                 <div class="task-title">
-                  <span class="priority-dot" style={`color: ${priColor}`}>
-                    ●
-                  </span>
+                  <span class="priority-dot" style={`background: ${priColor}`}></span>
                   {ticketNum && (
                     <span style="font-size: 11px; color: var(--text-muted); margin-right: 6px;">
                       {ticketNum}
@@ -466,6 +462,7 @@ import { getPriorityColor } from "../lib/priority-config";
     class="toast-container"
     aria-live="polite"
     role="status"
+    data-no-scroll-lock="true"
   >
   </div>
 

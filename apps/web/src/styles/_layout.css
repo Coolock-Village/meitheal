@@ -278,10 +278,12 @@ body.ha-ingress .top-navigation .hamburger-btn {
   display: none !important;
 }
 
-/* Priority indicator dot */
+/* Priority indicator dot — uses background-color, not text color */
 .priority-dot {
-  width: 0.5rem;
-  height: 0.5rem;
-  border-radius: 9999px;
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
   display: inline-block;
+  flex-shrink: 0;
+  vertical-align: middle;
 }

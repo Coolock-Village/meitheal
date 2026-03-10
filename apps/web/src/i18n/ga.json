@@ -120,7 +120,9 @@
         "ask_ai": "Fiafraigh den II",
         "assigned_to": "Sann Chuig",
         "unassigned": "Gan Sannta",
-        "assign_hint": "Leid: Úsáid @ainm sa teideal le huathshannú"
+        "assign_hint": "Leid: Úsáid @ainm sa teideal le huathshannú",
+        "overdue": "Thar Téarma",
+        "clear_filters": "Glan Ar Fad"
     },
     "kanban": {
         "title": "Clár Kanban",

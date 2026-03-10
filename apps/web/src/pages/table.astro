@@ -130,6 +130,7 @@ const treeRows = buildTreeRows(tasks);
             <option value="complete">
               {t("task_status.complete", locale)}
             </option>
+            <option value="overdue">{t("tasks.overdue", locale)}</option>
           </select>
           <select
             class="form-select filter-select"
@@ -268,6 +269,7 @@ const treeRows = buildTreeRows(tasks);
                     data-parent-id={task.parent_id ? String(task.parent_id) : ""}
                     data-has-children={task.hasChildren ? "true" : ""}
                     data-child-ids={task.childIds.join(",")}
+                    data-overdue={task.is_overdue ? "true" : "false"}
                     class={`table-row ${task.is_done ? "row-done" : ""} ${task.depth > 0 ? "subtask-row" : ""}`}
                     style={task.depth > 0 ? `--subtask-depth: ${task.depth}` : undefined}
                   >
@@ -494,6 +496,7 @@ const treeRows = buildTreeRows(tasks);
     class="toast-container"
     aria-live="polite"
     role="status"
+    data-no-scroll-lock="true"
   >
   </div>
 

@@ -67,6 +67,7 @@ const { tasks, counts, customFieldDefs } = await getTasksForView();
       <option value="pending">{t("task_status.pending", locale)}</option>
       <option value="active">{t("task_status.active", locale)}</option>
       <option value="complete">{t("task_status.complete", locale)}</option>
+      <option value="overdue">{t("tasks.overdue", locale)}</option>
     </select>
     <select
       class="form-select filter-select"
@@ -136,6 +137,7 @@ const { tasks, counts, customFieldDefs } = await getTasksForView();
               data-priority={String(task.priority)}
               data-rice={task.rice !== null ? String(task.rice) : ""}
               data-board={task.board_id}
+              data-overdue={task.is_overdue ? "true" : "false"}
               data-title={task.title.toLowerCase()}
               data-search={searchText}
               role="button"
@@ -275,6 +277,7 @@ const { tasks, counts, customFieldDefs } = await getTasksForView();
   class="toast-container"
   aria-live="polite"
   role="status"
+  data-no-scroll-lock="true"
 >
 </div>
 
@@ -283,8 +286,12 @@ const { tasks, counts, customFieldDefs } = await getTasksForView();
   import { confirmDialog } from "@lib/confirm-dialog";
   import { taskApi } from "../lib/task-api-client";
   import { onTaskCompleted } from "../lib/gamification-hook";
-
-  const FILTER_KEY = "meitheal-task-view-filters";
+  import {
+    saveFilterState as persistFilters,
+    loadFilterState,
+    matchesStatusFilter,
+    matchesRiceFilter,
+  } from "@lib/filter-state";
 
   // Task clicks are handled by Layout.astro's delegated openTaskDetail handler
 
@@ -446,22 +453,10 @@ const { tasks, counts, customFieldDefs } = await getTasksForView();
       const matchTitle =
         !search ||
         (el.dataset.search ?? el.dataset.title ?? "").includes(search);
-      const matchStatus =
-        !statusFilter ||
-        el.dataset.status === statusFilter ||
-        (statusFilter === "complete" && el.dataset.status === "complete");
+      const matchStatus = matchesStatusFilter(el, statusFilter);
       const matchPriority =
         !priorityFilter || el.dataset.priority === priorityFilter;
-
-      let matchRice = true;
-      if (riceFilter && el.dataset.rice) {
-        const r = Number(el.dataset.rice);
-        if (riceFilter === "high") matchRice = r >= 15;
-        else if (riceFilter === "medium") matchRice = r >= 8 && r < 15;
-        else if (riceFilter === "low") matchRice = r < 8;
-      } else if (riceFilter && !el.dataset.rice) {
-        matchRice = false;
-      }
+      const matchRice = matchesRiceFilter(el, riceFilter);
 
       const visible = matchTitle && matchStatus && matchPriority && matchRice;
       if (visible) {
@@ -474,7 +469,6 @@ const { tasks, counts, customFieldDefs } = await getTasksForView();
     saveFilterState();
   }
 
-  // Persist shared filter state — sync to localStorage + URL params (#39)
   function saveFilterState() {
     const state = {
       search:
@@ -493,18 +487,7 @@ const { tasks, counts, customFieldDefs } = await getTasksForView();
         (document.getElementById("sort-select") as HTMLSelectElement)?.value ??
         "created_at-desc",
     };
-    localStorage.setItem(FILTER_KEY, JSON.stringify(state));
-
-    // Sync to URL for deep-linking (#39)
-    const url = new URL(window.location.href);
-    Object.entries(state).forEach(([key, val]) => {
-      if (val && val !== "created_at-desc") {
-        url.searchParams.set(key, val);
-      } else {
-        url.searchParams.delete(key);
-      }
-    });
-    window.history.replaceState(null, "", url.toString());
+    persistFilters(state);
   }
 
   // Attach filter listeners
@@ -535,25 +518,8 @@ const { tasks, counts, customFieldDefs } = await getTasksForView();
     applyFilters();
   });
 
-  // Restore filter state — URL params take priority (#39), then localStorage
   try {
-    const urlParams = new URLSearchParams(window.location.search);
-    const hasUrlFilters =
-      urlParams.has("search") ||
-      urlParams.has("status") ||
-      urlParams.has("priority") ||
-      urlParams.has("rice") ||
-      urlParams.has("sort");
-
-    const source = hasUrlFilters
-      ? {
-          search: urlParams.get("search") ?? "",
-          status: urlParams.get("status") ?? "",
-          priority: urlParams.get("priority") ?? "",
-          rice: urlParams.get("rice") ?? "",
-          sort: urlParams.get("sort") ?? "created_at-desc",
-        }
-      : JSON.parse(localStorage.getItem(FILTER_KEY) ?? "{}");
+    const source = loadFilterState();
 
     if (source.search)
       (document.getElementById("search-input") as HTMLInputElement).value =
