@@ -227,6 +227,21 @@ document.querySelectorAll(".task-item[data-id]").forEach((el) => {
   }, { signal })
 })
 
+// ── Bento card edit buttons → open detail panel ─────────────
+// The global body click handler in task-modal-controller excludes
+// buttons (target.closest("button")), so bento `.card-edit-btn`
+// needs its own explicit handler per page (like kanban does).
+document.querySelectorAll(".card-edit-btn").forEach((btn) => {
+  btn.addEventListener("click", (e) => {
+    e.stopPropagation()
+    const id = (btn as HTMLElement).dataset.id
+    if (!id) return
+    if (typeof (window as any).openTaskDetail === "function") {
+      ;(window as any).openTaskDetail(id)
+    }
+  }, { signal })
+})
+
 // ── Keyboard shortcut: n → focus quick add ──────────────────
 // Note: layout-controller.ts already handles the global "n" shortcut,
 // so this duplicate is removed to prevent double-firing.
