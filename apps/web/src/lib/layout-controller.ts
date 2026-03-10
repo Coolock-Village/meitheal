@@ -66,6 +66,10 @@
         // DOM refs are re-queried on each page load to avoid stale refs.
         // ============================================================
         pageLifecycle.onPageLoad((signal) => {
+          // Defensive: clear any stale body scroll lock from a previous page's
+          // task-detail or modal overlay (MPA nav doesn't run close handlers)
+          document.body.style.overflow = "";
+
           // Active nav link — strip ingress prefix so path comparison works behind HA ingress
           const rawPath = window.location.pathname;
           const ip = window.__ingress_path || "";

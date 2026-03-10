@@ -84,7 +84,7 @@ export const POST: APIRoute = async ({ request }) => {
 
     return apiJson({
       stats,
-      confetti: true,
+      confetti: await isFeatureEnabled("confetti"),
       xp: points,
       level,
       progressToNext,

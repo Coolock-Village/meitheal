@@ -83,8 +83,24 @@ export const FEATURE_DEFAULTS: Record<string, FeatureDefinition> = {
 /** Resolved feature flag state */
 export type FeatureFlags = Record<string, boolean>
 
-/** Get all feature flags (server-side — reads from DB) */
+/**
+ * Per-request cache — prevents N+1 DB queries when Layout, Sidebar,
+ * and API guards all call getFeatureFlags() during the same SSR render.
+ * TTL of 100ms is long enough to cover a single render cycle but short
+ * enough to pick up changes between requests.
+ */
+let _cachedFlags: FeatureFlags | null = null
+let _cacheTimestamp = 0
+const CACHE_TTL_MS = 100
+
+/** Get all feature flags (server-side — reads from DB, cached per request) */
 export async function getFeatureFlags(): Promise<FeatureFlags> {
+  // Return cached result if within TTL
+  const now = Date.now()
+  if (_cachedFlags && (now - _cacheTimestamp) < CACHE_TTL_MS) {
+    return _cachedFlags
+  }
+
   try {
     await ensureSchema()
     const repo = new SettingsRepository(getPersistenceClient())
@@ -102,6 +118,8 @@ export async function getFeatureFlags(): Promise<FeatureFlags> {
         flags[name] = def.default
       }
     }
+    _cachedFlags = flags
+    _cacheTimestamp = now
     return flags
   } catch {
     // Fallback: all defaults (safe degradation)

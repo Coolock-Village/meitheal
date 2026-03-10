@@ -26,7 +26,7 @@
  *
  * @kcs Kept in sync automatically via astro.config.mjs build hook.
  */
-const CACHE_VERSION = "0.2.2";
+let CACHE_VERSION = "0.2.2";
 const SYNC_TAG = "meitheal-background-sync";
 
 /**
