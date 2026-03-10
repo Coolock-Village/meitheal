@@ -134,3 +134,52 @@
   box-shadow: 0 8px 32px rgba(0, 0, 0, 0.4);
   animation: fade-in-up 0.3s cubic-bezier(0.16, 1, 0.3, 1) forwards;
 }
+
+/* ===== Mobile modal overrides ===== */
+@media (max-width: 768px) {
+  /* Modal content — constrain height and make scrollable on mobile */
+  .modal-content {
+    max-height: 90vh;
+    max-width: 95vw;
+    overflow-y: auto;
+    -webkit-overflow-scrolling: touch;
+    margin: env(safe-area-inset-top, 0) 8px env(safe-area-inset-bottom, 0);
+  }
+
+  /* Task detail panel — fullscreen on mobile */
+  #task-detail-panel {
+    max-width: 100% !important;
+    width: 100% !important;
+    border-left: none !important;
+    border-radius: 0 !important;
+  }
+
+  /* Task detail overlay — slide up instead of right on mobile */
+  #task-detail-overlay .animate-slide-in {
+    animation: td-slide-up 0.3s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+  }
+
+  /* Task detail content — reduce padding on mobile */
+  #task-detail-panel > div {
+    padding-left: 16px !important;
+    padding-right: 16px !important;
+  }
+
+  /* Shortcut modal — near-fullscreen on mobile */
+  .shortcut-modal-content {
+    max-width: 95vw;
+    padding: 16px 20px;
+  }
+}
+
+/* Task detail mobile slide-up animation */
+@keyframes td-slide-up {
+  from {
+    opacity: 0;
+    transform: translateY(100%);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}

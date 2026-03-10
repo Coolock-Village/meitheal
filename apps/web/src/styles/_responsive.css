@@ -63,11 +63,48 @@
   .kanban-board {
     flex-direction: column;
     overflow-x: visible;
+    gap: 8px;
+    padding: 0 4px;
   }
 
   .kanban-column {
     min-width: 100%;
     max-width: 100%;
+  }
+
+  /* Mobile: kanban card actions always visible (no hover on touch) */
+  .kanban-card-actions {
+    opacity: 1 !important;
+    pointer-events: auto !important;
+    transform: translateY(0) !important;
+  }
+
+  /* Mobile: empty state compact */
+  .empty-state {
+    padding: 2rem 1rem !important;
+  }
+
+  /* Mobile: checklist items — proper touch targets */
+  .form-checkbox {
+    min-width: 22px;
+    min-height: 22px;
+  }
+
+  /* Mobile: task detail title input — proper mobile sizing */
+  #td-title {
+    font-size: 1.25rem !important;
+    padding: 6px 8px !important;
+  }
+
+  /* Mobile: task detail header — allow close button to wrap */
+  #task-detail-panel .flex.items-center.justify-between {
+    flex-wrap: wrap;
+    gap: 8px;
+  }
+
+  /* Mobile: task detail header — don't push close button off-screen */
+  #task-detail-panel .flex.items-center.gap-4.w-full {
+    margin-right: 0 !important;
   }
 
   /* Mobile: stack stats grid 2x2 */
@@ -188,10 +225,17 @@
   min-width: 0;
 }
 
-/* Mobile: search results — full-width overlay */
+/* Mobile: search results — full-width overlay with safe scrolling */
 .search-results {
   max-height: 70vh !important;
   -webkit-overflow-scrolling: touch;
+  overscroll-behavior: contain;
+}
+
+/* Mobile: search items — bigger touch targets */
+.search-item {
+  min-height: 48px;
+  padding: 12px 16px !important;
 }
 
 /* Mobile: settings tabs scroll hint */
