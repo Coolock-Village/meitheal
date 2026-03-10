@@ -98,6 +98,9 @@ Astro.response.headers.set("X-Content-Type-Options", "nosniff");
               if (hasHidden && !isRealModalOpen()) {
                 body.style.overflow = "";
                 body.classList.remove("antigravity-scroll-lock");
+                // P0-2: Reset position/touch-action if leaked from sidebar-open
+                if (body.style.position === "fixed") body.style.position = "";
+                if (body.style.touchAction === "none") body.style.touchAction = "";
               }
             }
           }

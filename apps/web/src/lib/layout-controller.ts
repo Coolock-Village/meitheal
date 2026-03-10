@@ -11,6 +11,7 @@
 
         import { confirmDialog } from "@lib/confirm-dialog";
         import { pageLifecycle } from "@lib/page-lifecycle";
+        import { escapeHtml } from "@lib/escape-html";
 
         // Expose for is:inline scripts (kanban)
         window.confirmDialog = confirmDialog;
@@ -124,9 +125,9 @@
                     searchResults.innerHTML = data.tasks
                       .map(
                         (t) =>
-                          `<div class="search-item" data-task-id="${String(t.id ?? "")}" style="cursor:pointer;">
-                  <strong>${String(t.title ?? "")}</strong>
-                  <span class="search-meta">${String(t.status ?? "pending")} · P${t.priority ?? 3}</span>
+                          `<div class="search-item" data-task-id="${escapeHtml(t.id ?? "")}" style="cursor:pointer;">
+                  <strong>${escapeHtml(t.title ?? "")}</strong>
+                  <span class="search-meta">${escapeHtml(t.status ?? "pending")} · P${escapeHtml(t.priority ?? 3)}</span>
                 </div>`,
                       )
                       .join("");

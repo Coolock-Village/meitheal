@@ -77,7 +77,6 @@ const { locale } = Astro.props;
 </header>
 
 <script>
-  import { escapeHtml } from "../../lib/escape-html";
   // Mobile menu toggle
   const menuBtn = document.getElementById("menu-toggle");
   const sidebar = document.getElementById("sidebar");
@@ -126,97 +125,16 @@ const { locale } = Astro.props;
     }
   });
 
-  // Global search
-  const searchInput = document.getElementById(
-    "global-search",
-  ) as HTMLInputElement;
-  const searchResults = document.getElementById("search-results")!;
-  let searchTimeout: ReturnType<typeof setTimeout> | null = null;
+  // Global search and CMD+K/Escape handled by layout-controller.ts
+  // (with proper AbortSignal lifecycle management)
 
-  searchInput?.addEventListener("input", (e) => {
-    const target = e.target as HTMLInputElement;
-    const q = target.value.trim();
-    if (searchTimeout) clearTimeout(searchTimeout);
-
-    if (!q) {
-      searchResults.style.display = "none";
-      return;
-    }
-
-    searchTimeout = setTimeout(async () => {
-      try {
-        const res = await fetch(
-          (window.__ingress_path || "") +
-            `/api/tasks?q=${encodeURIComponent(q)}&limit=8`,
-        );
-        const data = await res.json();
-        if (data.tasks.length === 0) {
-          searchResults.innerHTML =
-            '<div class="search-empty">No tasks found</div>';
-        } else {
-          searchResults.innerHTML = data.tasks
-            .map(
-              (t: any) =>
-                `<div class="search-item" data-task-id="${escapeHtml(t.id)}" style="cursor:pointer;">
-                  <strong>${escapeHtml(t.title)}</strong>
-                  <span class="search-meta">${escapeHtml(t.status ?? "pending")} · P${escapeHtml(t.priority ?? 3)}</span>
-                </div>`,
-            )
-            .join("");
-        }
-        searchResults.style.display = "block";
-      } catch {
-        searchResults.style.display = "none";
-      }
-    }, 300);
-  });
-
-  // Search Results Routing
-  searchResults?.addEventListener("click", (e) => {
-    const item = (e.target as HTMLElement)?.closest(
-      ".search-item",
-    ) as HTMLElement;
-    if (!item) return;
-    const taskId = item.dataset.taskId;
-    if (!taskId) return;
-    searchResults.style.display = "none";
-    searchInput.value = "";
-    // If we're on a page with the task detail panel available, open it natively
-    if (typeof window.openTaskDetail === "function") {
-      window.openTaskDetail(taskId);
-    } else {
-      window.location.href =
-        (window.__ingress_path || "") + `/tasks#task-${taskId}`; // Redirect to tasks list and open panel using new anchor syntax
-    }
-  });
-
-  // Dismiss on click outside
-  document.addEventListener("click", (e) => {
-    if (!(e.target as HTMLElement)?.closest("#search-container")) {
-      searchResults.style.display = "none";
-    }
-  });
-
-  // CMD+K and Esc bindings
+  // Sidebar-specific Escape binding (close sidebar on Escape)
   document.addEventListener("keydown", (e) => {
-    if (e.key === "k" && (e.metaKey || e.ctrlKey)) {
-      e.preventDefault();
-      searchInput?.focus();
-      return;
-    }
-
     if (e.key === "Escape") {
-      if (document.activeElement === searchInput) {
-        searchInput?.blur();
-        searchResults.style.display = "none";
-        return;
-      }
-      const sidebar = document.getElementById("sidebar");
       if (sidebar?.classList.contains("open")) {
         sidebar.classList.remove("open");
         document.body.classList.remove("sidebar-open");
         requestAnimationFrame(() => window.scrollTo(0, savedScrollY));
-        return;
       }
     }
   });

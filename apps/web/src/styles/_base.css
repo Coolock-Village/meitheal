@@ -19,6 +19,9 @@
     overflow-x: hidden;
     overflow-y: auto;
     max-width: 100vw;
+    /* P0-2: Enable native touch scrolling in HA Companion App WebView/iframe */
+    -webkit-overflow-scrolling: touch;
+    touch-action: pan-x pan-y pinch-zoom;
     /* P3-1: Prevent iOS rubber-band overscroll in HA WebView/PWA */
       overscroll-behavior: contain;
   }

@@ -26,6 +26,8 @@
     position: fixed;
     width: 100%;
     height: 100%;
+    /* P0-2: Block all touch gestures when sidebar overlay is open */
+    touch-action: none;
   }
   /* Mobile: sidebar off-screen but rendered (not display:none) */
   .sidebar {
@@ -125,6 +127,9 @@
                 main {
                   max-width: 100vw;
                   overflow-x: hidden;
+                  /* P0-2: Enable native touch scroll in HA WebView iframe */
+                  -webkit-overflow-scrolling: touch;
+                  touch-action: pan-y;
                 }
 
                 /* Mobile: reduce content padding */
@@ -512,4 +517,20 @@
   body.sidebar-collapsed .main-content {
     margin-left: 0;
   }
+}
+
+/* ===== HA Ingress iframe: touch scroll compatibility (P0-2) ===== */
+/* HA Companion App WebView (both iOS and Android) embeds add-ons in
+   an iframe. Touch scroll events need explicit CSS hints to work
+   correctly in this nested browsing context. */
+body.ha-ingress {
+  -webkit-overflow-scrolling: touch;
+  touch-action: pan-x pan-y pinch-zoom;
+}
+
+body.ha-ingress .main-content,
+body.ha-ingress .content,
+body.ha-ingress main {
+  -webkit-overflow-scrolling: touch;
+  touch-action: pan-y;
 }

@@ -10,6 +10,11 @@
   /* --- Kanban board --- */
   .kanban-board {
     @apply flex gap-4 overflow-x-auto pb-4 px-6 min-h-[60vh];
+    /* P0-2: Enable native touch scrolling in HA WebView iframe */
+    -webkit-overflow-scrolling: touch;
+    touch-action: pan-x pan-y;
+    /* P0-3: Promote to GPU compositing layer for smooth scroll */
+    will-change: scroll-position;
   }
 
   .kanban-column {
