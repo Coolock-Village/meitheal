@@ -159,7 +159,7 @@ const treeRows = buildTreeRows(tasks);
             id="table-filter-user"
             aria-label="Filter by assigned user"
           >
-            <option value="">All users</option>
+            <option value="">{t("tasks.all_users", locale)}</option>
             <option value="__unassigned__">Unassigned</option>
           </select>
           <button type="button" class="filter-clear-btn" id="clear-filters">
@@ -180,7 +180,7 @@ const treeRows = buildTreeRows(tasks);
                   />
                 </th>
                 <th scope="col" class="sortable col-key" data-col="key">
-                  Key
+                  {t("table.col_key", locale)}
                   <span class="sort-indicator" />
                 </th>
                 <th scope="col" class="sortable col-title" data-col="title">
@@ -188,7 +188,7 @@ const treeRows = buildTreeRows(tasks);
                   <span class="sort-indicator" />
                 </th>
                 <th scope="col" class="sortable col-type" data-col="type">
-                  Type
+                  {t("table.col_type", locale)}
                   <span class="sort-indicator" />
                 </th>
                 <th scope="col" class="sortable col-status" data-col="status">
@@ -235,7 +235,7 @@ const treeRows = buildTreeRows(tasks);
                   👤
                 </th>
                 <th scope="col" class="col-labels">
-                  Labels
+                  {t("table.col_labels", locale)}
                 </th>
                 <th scope="col" class="col-actions">
                   {t("table.col_actions", locale)}
@@ -307,6 +307,7 @@ const treeRows = buildTreeRows(tasks);
                         <span
                           class="editable-cell"
                           contenteditable="true"
+                          spellcheck="false"
                           role="textbox"
                           data-field="title"
                           data-id={task.id}
@@ -339,9 +340,7 @@ const treeRows = buildTreeRows(tasks);
                         </option>
                         <option
                           value="active"
-                          selected={
-                            task.status === "active" || task.status === "active"
-                          }
+                          selected={task.status === "active"}
                         >
                           {t("task_status.active", locale)}
                         </option>
@@ -463,12 +462,18 @@ const treeRows = buildTreeRows(tasks);
                         title={t("tasks.delete", locale)}
                         aria-label={`Delete ${task.title}`}
                       >
-                        ×
+                        🗑
                       </button>
                     </td>
                   </tr>
                 );
               })}
+              {/* P4 T14: No-results row — shown when all rows filtered out */}
+              <tr class="no-results-row" style="display: none;">
+                <td colspan="13" class="cell-center text-muted" style="padding: 40px 20px; font-size: 14px;">
+                  {t("table.no_results", locale)}
+                </td>
+              </tr>
             </tbody>
           </table>
         </div>
@@ -716,5 +721,20 @@ const treeRows = buildTreeRows(tasks);
     font-size: 10px;
     color: var(--accent);
     margin-left: 2px;
+  }
+  /* P4 T15: Scroll shadow — visual cue for horizontal overflow */
+  .table-container.has-scroll {
+    mask-image: linear-gradient(to right, black calc(100% - 40px), transparent);
+    -webkit-mask-image: linear-gradient(to right, black calc(100% - 40px), transparent);
+  }
+  .table-container.has-scroll:hover {
+    mask-image: none;
+    -webkit-mask-image: none;
+  }
+  /* P3 T12: Disabled state for bulk bar during operations */
+  .bulk-bar button:disabled,
+  .bulk-bar select:disabled {
+    opacity: 0.5;
+    pointer-events: none;
   }
 </style>

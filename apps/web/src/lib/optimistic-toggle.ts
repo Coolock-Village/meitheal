@@ -54,14 +54,12 @@ export async function optimisticToggle(opts: OptimisticToggleOptions): Promise<v
 
   // Step 2: API call
   try {
-    const res = await fetch(
-      (window.__ingress_path || "") + `/api/tasks/${taskId}`,
-      {
-        method: "PUT",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ status: newStatus }),
-      },
-    )
+    // P0 T3: Use bare path — Layout.astro monkey-patches fetch() with ingress prefix
+    const res = await fetch(`/api/tasks/${taskId}`, {
+      method: "PUT",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ status: newStatus }),
+    })
 
     if (!res.ok) throw new Error(`HTTP ${res.status}`)
 
