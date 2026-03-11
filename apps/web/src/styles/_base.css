@@ -12,6 +12,12 @@
     max-width: 100vw;
     /* P0-1: Eliminate 300ms tap delay on all touch devices/browsers */
       touch-action: manipulation;
+    /* P3-1: Prevent iOS rubber-band overscroll in HA WebView/PWA.
+       Applied to html (not body) because per CSS spec, body's overflow
+       is propagated to the viewport — making html the actual scroll
+       container. overscroll-behavior on body would block wheel-event
+       propagation to the viewport, breaking normal scrolling. */
+    overscroll-behavior-y: contain;
   }
 
   body {
@@ -22,8 +28,6 @@
     /* P0-2: Enable native touch scrolling in HA Companion App WebView/iframe */
     -webkit-overflow-scrolling: touch;
     touch-action: pan-x pan-y pinch-zoom;
-    /* P3-1: Prevent iOS rubber-band overscroll in HA WebView/PWA */
-      overscroll-behavior: contain;
   }
 
     h1,
