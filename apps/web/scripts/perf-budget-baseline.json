@@ -1,16 +1,16 @@
 {
   "source": "GitHub Actions CI perf-budgets job — main branch",
-  "captured_at": "2026-03-07",
+  "captured_at": "2026-03-14",
   "runner": "ubuntu-24.04 / node 22",
   "sample_runs": 19,
-  "rationale": "Budget raised to 900KiB: growth from 752KB to 855KB is from page-lifecycle module, i18n expansion (backlog/cancelled), CSS badge classes, comment DOM-safe rendering. All intentional.",
+  "rationale": "Budget raised to 1MiB: growth from 855KB to 945KB is from habits page (task template integration), FilterToolbar component extraction, gamification hooks, checklist builder. All intentional feature additions.",
   "observed_max": {
-    "clientBytes": 855327,
+    "clientBytes": 945467,
     "rssKb": 200000,
     "p95Ms": 30.0
   },
   "budgets": {
-    "clientBytesMax": 921600,
+    "clientBytesMax": 1048576,
     "rssKbMax": 262144,
     "p95MsMax": 250
   }
