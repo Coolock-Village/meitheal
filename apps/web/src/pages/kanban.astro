@@ -141,7 +141,7 @@ if (backlogMode === "hidden" || backlogMode === "disabled") {
   columns = columns.filter((col) => col.key !== "backlog");
 }
 
-import { PRIORITY_COLORS as priorityColors } from "../lib/priority-config";
+import { PRIORITY_COLORS as priorityColors, PRIORITY_CSS_CLASSES as priorityClasses } from "../lib/priority-config";
 
 const priorityLabels: Record<number, string> = {
   1: t("priority.critical", locale),
@@ -398,13 +398,10 @@ const typeConfig: Record<
                     )}
                     <div class="kanban-card-meta">
                       <span
-                        class="priority-dot"
-                        style={`background: ${priorityColors[p]}`}
+                        class={`priority-dot ${priorityClasses[p] ?? 'priority-medium'}`}
                         title={priorityLabels[p]}
                       />
-                      <span
-                        style={`color: ${priorityColors[p]}; font-size: 11px;`}
-                      >
+                      <span class={`priority-label ${priorityClasses[p] ?? 'priority-medium'}`}>
                         {priorityLabels[p]}
                       </span>
                       {task.due_date ? (
@@ -424,10 +421,10 @@ const typeConfig: Record<
                       ) : null}
                       {childCount > 0 && (
                         <span
-                          class="kanban-card-due"
+                          class="kanban-meta-subtasks"
                           title={`${childCount} sub-tasks`}
                         >
-                          ↳ {childCount} sub-tasks
+                          ↳ {childCount}
                         </span>
                       )}
                       {rice ? (
@@ -443,7 +440,7 @@ const typeConfig: Record<
                       )}
                       {task.recurrence_rule && (
                         <span
-                          class="kanban-card-due"
+                          class="kanban-meta-recurrence"
                           title="Recurring task"
                         >
                           🔁
@@ -456,9 +453,8 @@ const typeConfig: Record<
                             const done = cl.filter((i: {done: boolean}) => i.done).length;
                             return (
                               <span
-                                class="kanban-card-due"
+                                class={`kanban-meta-checklist${done === cl.length ? ' checklist-complete' : ''}`}
                                 title={`Checklist: ${done}/${cl.length}`}
-                                style={`color: ${done === cl.length ? 'var(--color-green-500, #22c55e)' : 'var(--text-primary)'};`}
                               >
                                 ✓ {done}/{cl.length}
                               </span>
@@ -469,7 +465,7 @@ const typeConfig: Record<
                       })()}
                       {(commentCounts[String(task.id)] ?? 0) > 0 && (
                         <span
-                          class="kanban-card-due"
+                          class="kanban-meta-comments"
                           title={`${commentCounts[String(task.id)] ?? 0} comments`}
                         >
                           💬 {commentCounts[String(task.id)] ?? 0}
@@ -1054,6 +1050,84 @@ const typeConfig: Record<
     });
 
     // T-1903: Click anywhere on kanban card is natively handled by Layout.astro delegated click listener.
+
+    // Context menu for the "More" (⋯) button
+    (() => {
+      let activeMenu = null;
+
+      function closeMenu() {
+        if (activeMenu) { activeMenu.remove(); activeMenu = null; }
+      }
+
+      document.addEventListener("click", (e) => {
+        if (activeMenu && !activeMenu.contains(e.target)) closeMenu();
+      });
+      document.addEventListener("keydown", (e) => {
+        if (e.key === "Escape") closeMenu();
+      });
+
+      document.querySelectorAll(".card-more-btn").forEach((btn) => {
+        btn.addEventListener("click", (e) => {
+          e.stopPropagation();
+          closeMenu();
+
+          const id = btn.dataset.id;
+          if (!id) return;
+
+          const menu = document.createElement("div");
+          menu.className = "kanban-context-menu";
+          menu.innerHTML = `
+            <button class="ctx-item ctx-delete" data-action="delete">🗑 Delete</button>
+            <button class="ctx-item ctx-archive" data-action="archive">📦 Archive</button>
+          `;
+
+          // Position near button
+          const rect = btn.getBoundingClientRect();
+          menu.style.cssText = `position:fixed;top:${rect.bottom + 4}px;left:${rect.left - 80}px;z-index:200;`;
+          document.body.appendChild(menu);
+          activeMenu = menu;
+
+          menu.addEventListener("click", async (ev) => {
+            const action = ev.target.closest("[data-action]")?.dataset.action;
+            if (!action) return;
+            closeMenu();
+
+            if (action === "delete") {
+              if (!confirm("Delete this task permanently?")) return;
+              try {
+                const res = await fetch(`${window.__ingress_path || ""}/api/tasks/${id}`, { method: "DELETE" });
+                if (res.ok) {
+                  const card = document.querySelector(`.kanban-card[data-id="${id}"]`);
+                  if (card) {
+                    card.style.transition = "opacity 0.2s ease, transform 0.2s ease";
+                    card.style.opacity = "0";
+                    card.style.transform = "scale(0.95)";
+                    setTimeout(() => { card.remove(); updateAllCounts(); }, 200);
+                  }
+                  if (window.showToast) window.showToast("Task deleted", "info");
+                } else {
+                  if (window.showToast) window.showToast("Failed to delete task", "error");
+                }
+              } catch {
+                if (window.showToast) window.showToast("Failed to delete task", "error");
+              }
+            } else if (action === "archive") {
+              try {
+                const res = await fetch(`${window.__ingress_path || ""}/api/tasks/${id}`, {
+                  method: "PUT",
+                  headers: { "content-type": "application/json" },
+                  body: JSON.stringify({ status: "complete" }),
+                });
+                if (res.ok) window.location.reload();
+                else if (window.showToast) window.showToast("Failed to archive task", "error");
+              } catch {
+                if (window.showToast) window.showToast("Failed to archive task", "error");
+              }
+            }
+          });
+        });
+      });
+    })();
 
     // Quick add from kanban column — uses inline form, not prompt()
     document.querySelectorAll(".kanban-add-btn").forEach((btn) => {
@@ -2421,6 +2495,34 @@ const typeConfig: Record<
     border-radius: 50%;
     flex-shrink: 0;
   }
+  /* Priority color classes — single source of truth: priority-config.ts */
+  .priority-dot.priority-critical, .priority-label.priority-critical { --prio-color: #ef4444; }
+  .priority-dot.priority-high, .priority-label.priority-high { --prio-color: #f59e0b; }
+  .priority-dot.priority-medium, .priority-label.priority-medium { --prio-color: #3b82f6; }
+  .priority-dot.priority-low, .priority-label.priority-low { --prio-color: #6366F1; }
+  .priority-dot.priority-minimal, .priority-label.priority-minimal { --prio-color: #6b7280; }
+  .priority-dot[class*="priority-"] { background: var(--prio-color); }
+  .priority-label {
+    font-size: 11px;
+    color: var(--prio-color, var(--text-muted));
+    font-weight: 500;
+  }
+  /* Semantic metadata classes */
+  .kanban-meta-subtasks,
+  .kanban-meta-checklist,
+  .kanban-meta-comments,
+  .kanban-meta-recurrence {
+    font-size: 11px;
+    color: var(--text-muted);
+    display: flex;
+    align-items: center;
+    gap: 2px;
+  }
+  .kanban-meta-checklist.checklist-complete {
+    color: var(--color-green-500, #22c55e);
+  }
+  .kanban-meta-comments { gap: 3px; }
+  .kanban-meta-recurrence { font-size: 13px; }
   .kanban-empty {
     text-align: center;
     padding: 30px;
