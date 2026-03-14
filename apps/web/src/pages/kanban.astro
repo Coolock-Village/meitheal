@@ -884,8 +884,6 @@ const typeConfig: Record<
         const afterEl = getDragAfterElement(cardsContainer, e.clientY);
         const indicator = document.createElement("div");
         indicator.className = "reorder-indicator";
-        indicator.style.cssText =
-          "height:2px;background:var(--accent);border-radius:1px;margin:2px 0;pointer-events:none;";
 
         if (afterEl) {
           cardsContainer.insertBefore(indicator, afterEl);
