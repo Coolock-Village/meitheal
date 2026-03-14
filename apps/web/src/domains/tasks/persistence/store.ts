@@ -436,18 +436,35 @@ export async function ensureSchema(): Promise<void> {
   await client.execute("CREATE INDEX IF NOT EXISTS saved_filters_position_idx ON saved_filters(position)");
 
   // Phase 31: Task templates — reusable task blueprints
+  // is_habit: 1 = habit template (auto-creates daily recurring tasks)
   await client.execute(`
     CREATE TABLE IF NOT EXISTS task_templates (
       id TEXT PRIMARY KEY,
       name TEXT NOT NULL,
       template_json TEXT NOT NULL DEFAULT '{}',
       icon TEXT NOT NULL DEFAULT '📝',
+      is_habit INTEGER NOT NULL DEFAULT 0,
+      frequency TEXT NOT NULL DEFAULT 'daily',
       position INTEGER NOT NULL DEFAULT 0,
       created_at INTEGER NOT NULL,
       updated_at INTEGER NOT NULL
     )
   `);
   await client.execute("CREATE INDEX IF NOT EXISTS task_templates_position_idx ON task_templates(position)");
+
+  // Habits integration: is_habit column on task_templates (existing DBs)
+  if (!(await hasColumn(client, "task_templates", "is_habit"))) {
+    await client.execute("ALTER TABLE task_templates ADD COLUMN is_habit INTEGER NOT NULL DEFAULT 0");
+  }
+  if (!(await hasColumn(client, "task_templates", "frequency"))) {
+    await client.execute("ALTER TABLE task_templates ADD COLUMN frequency TEXT NOT NULL DEFAULT 'daily'");
+  }
+
+  // Habits integration: link tasks back to their source template
+  if (!(await hasColumn(client, "tasks", "source_template_id"))) {
+    await client.execute("ALTER TABLE tasks ADD COLUMN source_template_id TEXT");
+  }
+  await client.execute("CREATE INDEX IF NOT EXISTS tasks_source_template_id_idx ON tasks(source_template_id)");
 
   await client.execute("CREATE INDEX IF NOT EXISTS tasks_status_idx ON tasks(status)");
   await client.execute("CREATE INDEX IF NOT EXISTS tasks_priority_idx ON tasks(priority)");

@@ -1,602 +1,724 @@
 ---
 /**
- * Habits Page — Daily habit tracker with streaks and completion history
+ * Habits Page — Task Template Integration
  *
- * @domain habits
+ * @domain domain-tasks (habits bounded context)
  * @bounded-context habits
  *
- * Shows active habits with today's completion status, streak data,
- * and a 7-day completion grid. Supports creating, completing, and
- * deleting habits via the /api/habits endpoint.
+ * Habits are task templates (is_habit=1) that auto-create daily tasks.
+ * Completing a habit creates a real task visible across all views.
+ * Streaks derive from completed task dates — fully integrated.
  *
- * @kcs Feature-flag gated — redirects to / if habits disabled.
- * All data fetched server-side via domain imports for SSR.
+ * @kcs Habits are NOT isolated. They produce real tasks that appear in
+ * Today, Kanban, Table, and Upcoming views automatically.
  */
+import Layout from "../layouts/Layout.astro"
+import { t } from "../i18n/translations"
+import type { Locale } from "../lib/locale"
+import { isFeatureEnabled } from "../lib/feature-flags"
 
-import Layout from "../layouts/Layout.astro";
-import { isFeatureEnabled } from "../lib/feature-flags";
-import { getHabits, ensureHabitSchema, type HabitWithStats } from "@domains/habits";
+const locale = (Astro.cookies.get("meitheal-locale")?.value ?? "en") as Locale
 
-// Feature flag guard
-if (!(await isFeatureEnabled("habits"))) {
-  return Astro.redirect("/");
-}
-
-// Ensure schema exists
-try {
-  await ensureHabitSchema();
-} catch {
-  /* DB not available */
-}
-
-// Fetch habits with stats
-let habits: HabitWithStats[] = [];
-try {
-  habits = await getHabits();
-} catch {
-  /* graceful fallback */
-}
-
-// Build 7-day date range for completion grid
-const today = new Date();
-const days: { date: string; label: string; isToday: boolean }[] = [];
-for (let i = 6; i >= 0; i--) {
-  const d = new Date(today);
-  d.setDate(d.getDate() - i);
-  const dateStr = d.toISOString().split("T")[0]!;
-  const label = d.toLocaleDateString("en", { weekday: "short" });
-  days.push({ date: dateStr, label, isToday: i === 0 });
+const isEnabled = await isFeatureEnabled("habits")
+if (!isEnabled) {
+  return Astro.redirect("/")
 }
 ---
 
-<Layout title="Habits — Meitheal" description="Track daily habits with streaks and completion history">
-  <Fragment slot="page-title">🔁 Habits</Fragment>
+<Layout title={`${t("nav.habits", locale)} — Meitheal`}>
+  <main class="habits-page" id="habits-page">
+    <header class="habits-header">
+      <div class="habits-header__left">
+        <h1 class="habits-header__title">🔁 {t("nav.habits", locale)}</h1>
+        <p class="habits-header__subtitle">Daily habits create real tasks — visible in Today, Kanban, Table & Upcoming</p>
+      </div>
+      <button class="btn btn-primary" id="create-habit-btn" aria-label="Create new habit">
+        + New Habit
+      </button>
+    </header>
 
-  <div class="habits-page">
-    <!-- Summary Stats -->
-    <section class="habits-stats">
-      <div class="habits-stat">
-        <span class="habits-stat__value">{habits.length}</span>
-        <span class="habits-stat__label">Active Habits</span>
+    <!-- Stats bar -->
+    <div class="habits-stats" id="habits-stats">
+      <div class="stat-card">
+        <span class="stat-value" id="stat-active">—</span>
+        <span class="stat-label">Active Habits</span>
       </div>
-      <div class="habits-stat">
-        <span class="habits-stat__value">{habits.filter(h => h.todayCount > 0).length}</span>
-        <span class="habits-stat__label">Done Today</span>
+      <div class="stat-card">
+        <span class="stat-value" id="stat-completed-today">—</span>
+        <span class="stat-label">Done Today</span>
       </div>
-      <div class="habits-stat">
-        <span class="habits-stat__value">{Math.max(...habits.map(h => h.currentStreak), 0)}</span>
-        <span class="habits-stat__label">Best Active Streak</span>
+      <div class="stat-card">
+        <span class="stat-value" id="stat-longest-streak">—</span>
+        <span class="stat-label">Best Streak</span>
       </div>
-      <div class="habits-stat">
-        <span class="habits-stat__value">{habits.reduce((sum, h) => sum + h.totalCompletions, 0)}</span>
-        <span class="habits-stat__label">Total Completions</span>
+      <div class="stat-card">
+        <span class="stat-value" id="stat-total">—</span>
+        <span class="stat-label">Total Completions</span>
       </div>
-    </section>
+    </div>
 
-    <!-- Create New Habit -->
-    <section class="habits-create">
-      <form id="create-habit-form" class="habits-create__form">
-        <input
-          type="text"
-          id="habit-name-input"
-          class="form-input habits-create__input"
-          placeholder="New habit name... (e.g. Meditate, Exercise, Read)"
-          required
-          autocomplete="off"
-        />
-        <div class="habits-create__options">
-          <label class="habits-create__option">
-            <span class="text-xs text-text-muted">Icon</span>
-            <input
-              type="text"
-              id="habit-icon-input"
-              class="form-input habits-create__icon-input"
-              value="✅"
-              maxlength="4"
-            />
-          </label>
-          <label class="habits-create__option">
-            <span class="text-xs text-text-muted">Color</span>
-            <input
-              type="color"
-              id="habit-color-input"
-              class="habits-create__color-input"
-              value="#6366f1"
-            />
-          </label>
-          <label class="habits-create__option">
-            <span class="text-xs text-text-muted">Frequency</span>
-            <select id="habit-freq-input" class="form-input habits-create__freq-input">
-              <option value="daily">Daily</option>
-              <option value="weekly">Weekly</option>
-            </select>
-          </label>
+    <!-- Habit list -->
+    <div class="habits-list" id="habits-list">
+      <div class="habits-loading">Loading habits…</div>
+    </div>
+
+    <!-- Create/Edit Modal -->
+    <div class="habit-modal-overlay hidden" id="habit-modal-overlay">
+      <div class="habit-modal" role="dialog" aria-labelledby="habit-modal-title">
+        <div class="habit-modal__header">
+          <h2 id="habit-modal-title">New Habit</h2>
+          <button class="btn-icon" id="habit-modal-close" aria-label="Close">&times;</button>
         </div>
-        <button type="submit" class="btn-primary habits-create__btn">+ Add Habit</button>
-      </form>
-    </section>
-
-    <!-- Habit Cards -->
-    <section class="habits-grid" id="habits-grid">
-      {habits.length === 0 ? (
-        <div class="habits-empty">
-          <span class="habits-empty__icon">🔁</span>
-          <p class="habits-empty__title">No habits yet</p>
-          <p class="habits-empty__desc">Create your first habit above to start tracking daily behaviors</p>
-        </div>
-      ) : (
-        habits.map((habit) => (
-          <div
-            class={`habit-card ${habit.todayCount > 0 ? "habit-card--done" : ""}`}
-            data-habit-id={habit.id}
-            style={`--habit-color: ${habit.color};`}
-          >
-            <div class="habit-card__header">
-              <div class="habit-card__identity">
-                <span class="habit-card__icon">{habit.icon}</span>
-                <div>
-                  <span class="habit-card__name">{habit.name}</span>
-                  <span class="habit-card__freq">{habit.frequency}</span>
-                </div>
-              </div>
-              <button
-                type="button"
-                class="habit-card__complete-btn"
-                data-habit-id={habit.id}
-                title={habit.todayCount > 0 ? `Done ${habit.todayCount}× today` : "Mark complete for today"}
-              >
-                {habit.todayCount > 0 ? `✓ ${habit.todayCount}×` : "○"}
-              </button>
+        <form id="habit-form" class="habit-modal__body">
+          <input type="hidden" id="habit-edit-id" value="" />
+          <div class="form-group">
+            <label for="habit-name">Habit Name</label>
+            <input type="text" id="habit-name" placeholder="e.g. Morning Exercise" maxlength="100" required />
+          </div>
+          <div class="form-group form-row">
+            <div class="form-group">
+              <label for="habit-icon">Icon</label>
+              <input type="text" id="habit-icon" value="✅" maxlength="4" class="icon-input" />
             </div>
-
-            <div class="habit-card__stats">
-              <div class="habit-card__stat">
-                <span class="habit-card__stat-value">🔥 {habit.currentStreak}</span>
-                <span class="habit-card__stat-label">Streak</span>
-              </div>
-              <div class="habit-card__stat">
-                <span class="habit-card__stat-value">🏆 {habit.longestStreak}</span>
-                <span class="habit-card__stat-label">Best</span>
-              </div>
-              <div class="habit-card__stat">
-                <span class="habit-card__stat-value">📊 {habit.totalCompletions}</span>
-                <span class="habit-card__stat-label">Total</span>
-              </div>
+            <div class="form-group">
+              <label for="habit-frequency">Frequency</label>
+              <select id="habit-frequency">
+                <option value="daily">Daily</option>
+                <option value="weekly">Weekly</option>
+              </select>
             </div>
-
-            <div class="habit-card__actions">
-              <button
-                type="button"
-                class="habit-card__delete-btn"
-                data-habit-id={habit.id}
-                data-habit-name={habit.name}
-                title="Delete habit"
-              >🗑</button>
+            <div class="form-group">
+              <label for="habit-priority">Priority</label>
+              <select id="habit-priority">
+                <option value="1">🔴 Urgent</option>
+                <option value="2">🟠 High</option>
+                <option value="3" selected>🟡 Medium</option>
+                <option value="4">🟢 Low</option>
+                <option value="5">⚪ None</option>
+              </select>
             </div>
           </div>
-        ))
-      )}
-    </section>
-  </div>
+          <div class="form-group">
+            <label for="habit-description">Description (optional)</label>
+            <textarea id="habit-description" rows="2" placeholder="What does this habit involve?"></textarea>
+          </div>
+
+          <!-- Checklist Builder -->
+          <div class="form-group">
+            <label>Checklist (optional)</label>
+            <div id="checklist-items" class="checklist-builder"></div>
+            <button type="button" class="btn btn-ghost btn-sm" id="add-checklist-item">+ Add item</button>
+          </div>
+
+          <div class="habit-modal__footer">
+            <button type="button" class="btn btn-ghost" id="habit-cancel">Cancel</button>
+            <button type="submit" class="btn btn-primary">Save Habit</button>
+          </div>
+        </form>
+      </div>
+    </div>
+  </main>
 </Layout>
-
-<script>
-  import { showToast } from "@lib/toast"
-
-  function initHabitsPage() {
-    // Create habit form
-    const form = document.getElementById("create-habit-form") as HTMLFormElement | null
-    form?.addEventListener("submit", async (e) => {
-      e.preventDefault()
-      const nameInput = document.getElementById("habit-name-input") as HTMLInputElement
-      const iconInput = document.getElementById("habit-icon-input") as HTMLInputElement
-      const colorInput = document.getElementById("habit-color-input") as HTMLInputElement
-      const freqInput = document.getElementById("habit-freq-input") as HTMLSelectElement
-
-      const name = nameInput.value.trim()
-      if (!name) return
-
-      try {
-        const res = await fetch("/api/habits", {
-          method: "POST",
-          headers: { "content-type": "application/json" },
-          body: JSON.stringify({
-            action: "create",
-            name,
-            icon: iconInput.value || "✅",
-            color: colorInput.value || "#6366f1",
-            frequency: freqInput.value || "daily",
-          }),
-        })
-
-        if (res.ok) {
-          showToast("Habit created!", "success")
-          nameInput.value = ""
-          // Reload to show updated list
-          window.location.reload()
-        } else {
-          showToast("Failed to create habit", "error")
-        }
-      } catch {
-        showToast("Network error", "error")
-      }
-    })
-
-    // Complete habit buttons
-    document.querySelectorAll<HTMLButtonElement>(".habit-card__complete-btn").forEach((btn) => {
-      btn.addEventListener("click", async () => {
-        const habitId = btn.dataset.habitId
-        if (!habitId) return
-
-        try {
-          const res = await fetch("/api/habits", {
-            method: "POST",
-            headers: { "content-type": "application/json" },
-            body: JSON.stringify({ action: "complete", habitId }),
-          })
-
-          if (res.ok) {
-            const data = await res.json()
-            btn.textContent = `✓ ${data.count}×`
-            btn.closest(".habit-card")?.classList.add("habit-card--done")
-            showToast("Habit completed! 🎉", "success")
-          } else {
-            showToast("Failed to complete habit", "error")
-          }
-        } catch {
-          showToast("Network error", "error")
-        }
-      })
-    })
-
-    // Delete habit buttons
-    document.querySelectorAll<HTMLButtonElement>(".habit-card__delete-btn").forEach((btn) => {
-      btn.addEventListener("click", async () => {
-        const habitId = btn.dataset.habitId
-        const habitName = btn.dataset.habitName || "this habit"
-        if (!habitId) return
-
-        if (!confirm(`Delete habit "${habitName}"? This cannot be undone.`)) return
-
-        try {
-          const res = await fetch("/api/habits", {
-            method: "POST",
-            headers: { "content-type": "application/json" },
-            body: JSON.stringify({ action: "delete", habitId }),
-          })
-
-          if (res.ok) {
-            btn.closest(".habit-card")?.remove()
-            showToast("Habit deleted", "success")
-            // Check if grid is now empty
-            const grid = document.getElementById("habits-grid")
-            if (grid && grid.querySelectorAll(".habit-card").length === 0) {
-              window.location.reload()
-            }
-          } else {
-            showToast("Failed to delete habit", "error")
-          }
-        } catch {
-          showToast("Network error", "error")
-        }
-      })
-    })
-  }
-
-  // Init on load and after View Transitions
-  initHabitsPage()
-  document.addEventListener("astro:after-swap", initHabitsPage)
-</script>
 
 <style>
   .habits-page {
-    display: flex;
-    flex-direction: column;
-    gap: 1.5rem;
-    padding: 1rem 0;
     max-width: 900px;
+    margin: 0 auto;
+    padding: 24px 20px;
   }
 
-  /* Stats */
-  .habits-stats {
-    display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
-    gap: 0.75rem;
-  }
-
-  .habits-stat {
+  .habits-header {
     display: flex;
-    flex-direction: column;
-    align-items: center;
-    gap: 0.25rem;
-    padding: 1rem;
-    background: var(--bg-card, #1a1a2e);
-    border-radius: 12px;
-    border: 1px solid var(--border, #334155);
-    text-align: center;
-    transition: transform 0.15s, border-color 0.15s;
+    justify-content: space-between;
+    align-items: flex-start;
+    margin-bottom: 24px;
+    gap: 16px;
   }
 
-  .habits-stat:hover {
-    transform: translateY(-2px);
-    border-color: var(--accent, #6366f1);
-  }
-
-  .habits-stat__value {
+  .habits-header__title {
     font-size: 1.5rem;
     font-weight: 700;
-    color: var(--text-primary, #e0e0e0);
-    font-variant-numeric: tabular-nums;
-  }
-
-  .habits-stat__label {
-    font-size: 0.6875rem;
-    color: var(--text-muted, #888);
-    text-transform: uppercase;
-    letter-spacing: 0.03em;
-  }
-
-  /* Create Form */
-  .habits-create {
-    padding: 1.25rem;
-    background: var(--bg-card, #1a1a2e);
-    border-radius: 12px;
-    border: 1px solid var(--border, #334155);
-  }
-
-  .habits-create__form {
-    display: flex;
-    flex-direction: column;
-    gap: 0.75rem;
-  }
-
-  .habits-create__input {
-    font-size: 1rem;
-  }
-
-  .habits-create__options {
-    display: flex;
-    gap: 1rem;
-    flex-wrap: wrap;
-    align-items: flex-end;
-  }
-
-  .habits-create__option {
-    display: flex;
-    flex-direction: column;
-    gap: 0.25rem;
-  }
-
-  .habits-create__icon-input {
-    width: 3.5rem;
-    text-align: center;
-    font-size: 1.25rem;
-    padding: 0.25rem;
-  }
-
-  .habits-create__color-input {
-    width: 3rem;
-    height: 2rem;
-    padding: 0;
-    border: 1px solid var(--border, #334155);
-    border-radius: 6px;
-    background: none;
-    cursor: pointer;
-  }
-
-  .habits-create__freq-input {
-    min-width: 100px;
-  }
-
-  .habits-create__btn {
-    align-self: flex-start;
-  }
-
-  /* Empty State */
-  .habits-empty {
-    text-align: center;
-    padding: 3rem 1rem;
-    background: var(--bg-card, #1a1a2e);
-    border-radius: 12px;
-    border: 1px dashed var(--border, #334155);
-  }
-
-  .habits-empty__icon {
-    font-size: 3rem;
-    display: block;
-    margin-bottom: 1rem;
-  }
-
-  .habits-empty__title {
-    font-size: 1.125rem;
-    font-weight: 600;
-    color: var(--text-primary, #e0e0e0);
-    margin: 0 0 0.5rem;
-  }
-
-  .habits-empty__desc {
-    font-size: 0.875rem;
-    color: var(--text-muted, #888);
     margin: 0;
   }
 
-  /* Habit Cards Grid */
-  .habits-grid {
+  .habits-header__subtitle {
+    font-size: 0.85rem;
+    color: var(--text-muted, #9ca3af);
+    margin: 4px 0 0;
+  }
+
+  .habits-stats {
     display: grid;
-    grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
-    gap: 1rem;
+    grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+    gap: 12px;
+    margin-bottom: 24px;
+  }
+
+  .stat-card {
+    background: var(--surface-elevated, #1e1e2e);
+    border: 1px solid var(--border, #2e2e3e);
+    border-radius: 10px;
+    padding: 16px;
+    text-align: center;
+  }
+
+  .stat-value {
+    display: block;
+    font-size: 1.5rem;
+    font-weight: 700;
+    color: var(--accent, #6366f1);
+  }
+
+  .stat-label {
+    font-size: 0.75rem;
+    color: var(--text-muted, #9ca3af);
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    margin-top: 4px;
+  }
+
+  /* Habit cards */
+  .habits-list {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+  }
+
+  .habits-loading, .habits-empty {
+    text-align: center;
+    color: var(--text-muted, #9ca3af);
+    padding: 48px 0;
+    font-size: 1rem;
   }
 
   .habit-card {
-    background: var(--bg-card, #1a1a2e);
+    background: var(--surface-elevated, #1e1e2e);
+    border: 1px solid var(--border, #2e2e3e);
     border-radius: 12px;
-    border: 1px solid var(--border, #334155);
-    padding: 1.25rem;
-    transition: transform 0.15s, border-color 0.2s, box-shadow 0.2s;
+    padding: 16px 20px;
+    transition: border-color 0.15s, box-shadow 0.15s;
     position: relative;
-    overflow: hidden;
-  }
-
-  .habit-card::before {
-    content: "";
-    position: absolute;
-    top: 0;
-    left: 0;
-    right: 0;
-    height: 3px;
-    background: var(--habit-color, var(--accent, #6366f1));
-    opacity: 0.6;
-    transition: opacity 0.2s;
   }
 
   .habit-card:hover {
-    transform: translateY(-2px);
-    border-color: var(--habit-color, var(--accent, #6366f1));
-    box-shadow: 0 4px 16px rgba(0, 0, 0, 0.2);
+    border-color: var(--accent, #6366f1);
   }
 
-  .habit-card:hover::before {
-    opacity: 1;
+  .habit-card.completed {
+    border-color: var(--success, #22c55e);
+    background: color-mix(in srgb, var(--success, #22c55e) 5%, var(--surface-elevated, #1e1e2e));
   }
 
-  .habit-card--done {
-    border-color: color-mix(in srgb, var(--habit-color, var(--accent)) 40%, transparent);
-    background: color-mix(in srgb, var(--habit-color, var(--accent)) 5%, var(--bg-card, #1a1a2e));
-  }
-
-  .habit-card--done::before {
-    opacity: 1;
-  }
-
-  .habit-card__header {
+  .habit-card__top {
     display: flex;
     align-items: center;
-    justify-content: space-between;
-    margin-bottom: 1rem;
+    gap: 12px;
   }
 
-  .habit-card__identity {
-    display: flex;
-    align-items: center;
-    gap: 0.75rem;
-  }
-
-  .habit-card__icon {
-    font-size: 1.75rem;
-    line-height: 1;
-  }
-
-  .habit-card__name {
-    font-size: 0.9375rem;
-    font-weight: 600;
-    color: var(--text-primary, #e0e0e0);
-    display: block;
-  }
-
-  .habit-card__freq {
-    font-size: 0.6875rem;
-    color: var(--text-muted, #888);
-    text-transform: capitalize;
-  }
-
-  .habit-card__complete-btn {
-    font-size: 1.125rem;
-    width: 3rem;
-    height: 3rem;
+  .habit-card__check {
+    flex-shrink: 0;
+    width: 28px;
+    height: 28px;
     border-radius: 50%;
-    border: 2px solid var(--habit-color, var(--accent, #6366f1));
+    border: 2px solid var(--border-strong, #3e3e4e);
     background: transparent;
-    color: var(--text-muted, #888);
     cursor: pointer;
-    transition: all 0.2s;
     display: flex;
     align-items: center;
     justify-content: center;
+    font-size: 14px;
+    transition: all 0.15s;
+    color: transparent;
+  }
+
+  .habit-card__check:hover {
+    border-color: var(--accent, #6366f1);
+    background: color-mix(in srgb, var(--accent, #6366f1) 10%, transparent);
+  }
+
+  .habit-card.completed .habit-card__check {
+    background: var(--success, #22c55e);
+    border-color: var(--success, #22c55e);
+    color: white;
+  }
+
+  .habit-card__icon {
+    font-size: 1.3rem;
+  }
+
+  .habit-card__info {
+    flex: 1;
+    min-width: 0;
+  }
+
+  .habit-card__name {
+    font-weight: 600;
+    font-size: 1rem;
+  }
+
+  .habit-card__meta {
+    display: flex;
+    gap: 12px;
+    font-size: 0.78rem;
+    color: var(--text-muted, #9ca3af);
+    margin-top: 4px;
+    flex-wrap: wrap;
+  }
+
+  .habit-card__streak {
+    color: var(--warning, #f59e0b);
+    font-weight: 600;
+  }
+
+  .habit-card__actions {
+    display: flex;
+    gap: 6px;
     flex-shrink: 0;
   }
 
-  .habit-card__complete-btn:hover {
-    background: color-mix(in srgb, var(--habit-color, var(--accent)) 15%, transparent);
-    color: var(--text-primary, #e0e0e0);
-    transform: scale(1.05);
-  }
-
-  .habit-card--done .habit-card__complete-btn {
-    background: var(--habit-color, var(--accent, #6366f1));
-    color: white;
-    font-size: 0.8125rem;
-    font-weight: 600;
-  }
-
-  /* Stats Row */
-  .habit-card__stats {
-    display: flex;
-    gap: 1rem;
-    margin-bottom: 0.75rem;
-  }
-
-  .habit-card__stat {
-    display: flex;
-    flex-direction: column;
-    gap: 0.125rem;
-  }
-
-  .habit-card__stat-value {
-    font-size: 0.8125rem;
-    font-weight: 600;
-    color: var(--text-secondary, #a0a0a0);
-  }
-
-  .habit-card__stat-label {
-    font-size: 0.625rem;
-    color: var(--text-muted, #888);
-    text-transform: uppercase;
-    letter-spacing: 0.05em;
-  }
-
-  /* Actions */
-  .habit-card__actions {
-    display: flex;
-    justify-content: flex-end;
-    padding-top: 0.5rem;
-    border-top: 1px solid var(--border, #334155);
-  }
-
-  .habit-card__delete-btn {
-    font-size: 0.875rem;
-    background: none;
-    border: none;
-    color: var(--text-muted, #888);
-    cursor: pointer;
-    padding: 0.25rem 0.5rem;
-    border-radius: 4px;
-    transition: color 0.15s, background 0.15s;
-    opacity: 0;
+  .habit-card__actions .btn-icon {
+    opacity: 0.5;
     transition: opacity 0.15s;
   }
 
-  .habit-card:hover .habit-card__delete-btn {
+  .habit-card:hover .habit-card__actions .btn-icon {
     opacity: 1;
   }
 
-  .habit-card__delete-btn:hover {
-    color: var(--error, #ef4444);
-    background: rgba(239, 68, 68, 0.1);
+  /* Checklists in cards */
+  .habit-card__checklist {
+    margin-top: 10px;
+    padding-left: 40px;
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+  }
+
+  .habit-card__checklist-item {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-size: 0.85rem;
+    color: var(--text-secondary, #b0b0c0);
+  }
+
+  .habit-card__checklist-item input[type="checkbox"] {
+    accent-color: var(--accent, #6366f1);
+  }
+
+  /* Modal */
+  .habit-modal-overlay {
+    position: fixed;
+    inset: 0;
+    background: rgba(0, 0, 0, 0.6);
+    z-index: 1000;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 20px;
+  }
+
+  .habit-modal-overlay.hidden {
+    display: none;
+  }
+
+  .habit-modal {
+    background: var(--surface-elevated, #1e1e2e);
+    border: 1px solid var(--border, #2e2e3e);
+    border-radius: 16px;
+    width: 100%;
+    max-width: 520px;
+    max-height: 80vh;
+    overflow-y: auto;
+  }
+
+  .habit-modal__header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 20px 24px 12px;
+  }
+
+  .habit-modal__header h2 {
+    font-size: 1.2rem;
+    font-weight: 700;
+    margin: 0;
+  }
+
+  .habit-modal__body {
+    padding: 0 24px 24px;
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+  }
+
+  .habit-modal__footer {
+    display: flex;
+    justify-content: flex-end;
+    gap: 8px;
+    padding-top: 8px;
+  }
+
+  .form-group label {
+    display: block;
+    font-size: 0.8rem;
+    font-weight: 600;
+    margin-bottom: 6px;
+    color: var(--text-muted, #9ca3af);
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+  }
+
+  .form-row {
+    display: flex;
+    gap: 12px;
+  }
+
+  .form-row .form-group {
+    flex: 1;
+  }
+
+  .icon-input {
+    width: 60px;
+    text-align: center;
+    font-size: 1.3rem;
+  }
+
+  /* Checklist builder */
+  .checklist-builder {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+  }
+
+  .checklist-builder__item {
+    display: flex;
+    gap: 8px;
+    align-items: center;
+  }
+
+  .checklist-builder__item input[type="text"] {
+    flex: 1;
+  }
+
+  .checklist-builder__item .btn-remove {
+    color: var(--danger, #ef4444);
+    background: none;
+    border: none;
+    cursor: pointer;
+    font-size: 1.1rem;
+    padding: 4px;
+    opacity: 0.6;
+  }
+
+  .checklist-builder__item .btn-remove:hover {
+    opacity: 1;
   }
 
   /* Responsive */
   @media (max-width: 600px) {
-    .habits-stats {
-      grid-template-columns: repeat(2, 1fr);
-    }
-
-    .habits-grid {
-      grid-template-columns: 1fr;
-    }
-
-    .habits-create__options {
+    .habits-header {
       flex-direction: column;
-      gap: 0.5rem;
+    }
+    .form-row {
+      flex-direction: column;
     }
   }
 </style>
+
+<script>
+  const ingressPath = (window as any).__ingress_path || ""
+
+  interface HabitData {
+    id: string
+    name: string
+    icon: string
+    frequency: string
+    todayCompleted: boolean
+    todayTaskId: string | null
+    lastCompletedDate: string | null
+    currentStreak: number
+    longestStreak: number
+    totalCompletions: number
+    checklists: Array<{ text: string; done: boolean }>
+  }
+
+  let habits: HabitData[] = []
+
+  // ── Fetch & Render ──────────────────────────────────────────────
+
+  async function fetchHabits() {
+    try {
+      const res = await fetch(`${ingressPath}/api/habits`)
+      if (!res.ok) throw new Error("API error")
+      const data = await res.json()
+      habits = data.habits ?? []
+      renderHabits()
+      updateStats()
+    } catch (err) {
+      console.error("[Habits] Failed to load:", err)
+      const list = document.getElementById("habits-list")
+      if (list) list.innerHTML = '<div class="habits-empty">Failed to load habits</div>'
+    }
+  }
+
+  function renderHabits() {
+    const list = document.getElementById("habits-list")
+    if (!list) return
+
+    if (habits.length === 0) {
+      list.innerHTML = `
+        <div class="habits-empty">
+          <p>No habits yet. Create your first daily habit!</p>
+          <p style="font-size: 0.8rem; color: var(--text-muted)">
+            Habits create real tasks that show up in Today, Kanban, Table & Upcoming.
+          </p>
+        </div>`
+      return
+    }
+
+    list.innerHTML = habits.map(h => {
+      const streakText = h.currentStreak > 0 ? `🔥 ${h.currentStreak} day streak` : ""
+      const lastText = h.lastCompletedDate ? `Last: ${h.lastCompletedDate}` : "Never completed"
+      const totalText = `${h.totalCompletions} total`
+      const checklistHtml = h.checklists.length > 0
+        ? `<div class="habit-card__checklist">${h.checklists.map((item, i) =>
+            `<label class="habit-card__checklist-item">
+              <input type="checkbox" ${item.done ? "checked" : ""} data-habit-id="${h.id}" data-item-index="${i}" />
+              <span>${escapeHtml(item.text)}</span>
+            </label>`
+          ).join("")}</div>`
+        : ""
+
+      return `
+        <div class="habit-card ${h.todayCompleted ? "completed" : ""}" data-habit-id="${h.id}">
+          <div class="habit-card__top">
+            <button class="habit-card__check" data-action="complete" data-id="${h.id}" aria-label="Complete ${escapeHtml(h.name)} today">
+              ${h.todayCompleted ? "✓" : ""}
+            </button>
+            <span class="habit-card__icon">${h.icon}</span>
+            <div class="habit-card__info">
+              <div class="habit-card__name">${escapeHtml(h.name)}</div>
+              <div class="habit-card__meta">
+                ${streakText ? `<span class="habit-card__streak">${streakText}</span>` : ""}
+                <span>${lastText}</span>
+                <span>${totalText}</span>
+                <span>📅 ${h.frequency}</span>
+              </div>
+            </div>
+            <div class="habit-card__actions">
+              <button class="btn-icon" data-action="edit" data-id="${h.id}" aria-label="Edit ${escapeHtml(h.name)}" title="Edit">✏️</button>
+              <button class="btn-icon" data-action="delete" data-id="${h.id}" aria-label="Delete ${escapeHtml(h.name)}" title="Delete">🗑️</button>
+            </div>
+          </div>
+          ${checklistHtml}
+        </div>`
+    }).join("")
+  }
+
+  function updateStats() {
+    const active = document.getElementById("stat-active")
+    const doneToday = document.getElementById("stat-completed-today")
+    const bestStreak = document.getElementById("stat-longest-streak")
+    const total = document.getElementById("stat-total")
+
+    if (active) active.textContent = String(habits.length)
+    if (doneToday) doneToday.textContent = String(habits.filter(h => h.todayCompleted).length)
+    if (bestStreak) bestStreak.textContent = String(Math.max(0, ...habits.map(h => h.longestStreak)))
+    if (total) total.textContent = String(habits.reduce((sum, h) => sum + h.totalCompletions, 0))
+  }
+
+  function escapeHtml(str: unknown): string {
+    const s = String(str ?? "")
+    return s.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;")
+  }
+
+  // ── Actions ─────────────────────────────────────────────────────
+
+  async function completeHabit(templateId: string) {
+    try {
+      const res = await fetch(`${ingressPath}/api/habits`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ action: "complete", templateId }),
+      })
+      if (res.ok) {
+        // Trigger gamification/confetti hook
+        try {
+          const { onTaskCompleted } = await import("@lib/gamification-hook")
+          onTaskCompleted()
+        } catch { /* gamification may not be available */ }
+        await fetchHabits()
+      }
+    } catch (err) {
+      console.error("[Habits] Complete failed:", err)
+    }
+  }
+
+  async function deleteHabit(templateId: string) {
+    if (!confirm("Delete this habit? Associated tasks will remain in your task list.")) return
+    try {
+      const res = await fetch(`${ingressPath}/api/habits`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ action: "delete", templateId }),
+      })
+      if (res.ok) await fetchHabits()
+    } catch (err) {
+      console.error("[Habits] Delete failed:", err)
+    }
+  }
+
+  // ── Modal ───────────────────────────────────────────────────────
+
+  const overlay = document.getElementById("habit-modal-overlay")!
+  const form = document.getElementById("habit-form") as HTMLFormElement
+  const editIdInput = document.getElementById("habit-edit-id") as HTMLInputElement
+  const nameInput = document.getElementById("habit-name") as HTMLInputElement
+  const iconInput = document.getElementById("habit-icon") as HTMLInputElement
+  const freqSelect = document.getElementById("habit-frequency") as HTMLSelectElement
+  const prioritySelect = document.getElementById("habit-priority") as HTMLSelectElement
+  const descInput = document.getElementById("habit-description") as HTMLTextAreaElement
+  const checklistContainer = document.getElementById("checklist-items")!
+  const modalTitle = document.getElementById("habit-modal-title")!
+
+  function openCreateModal() {
+    editIdInput.value = ""
+    modalTitle.textContent = "New Habit"
+    nameInput.value = ""
+    iconInput.value = "✅"
+    freqSelect.value = "daily"
+    prioritySelect.value = "3"
+    descInput.value = ""
+    checklistContainer.innerHTML = ""
+    overlay.classList.remove("hidden")
+    nameInput.focus()
+  }
+
+  function openEditModal(habitId: string) {
+    const h = habits.find(x => x.id === habitId)
+    if (!h) return
+
+    editIdInput.value = h.id
+    modalTitle.textContent = "Edit Habit"
+    nameInput.value = h.name
+    iconInput.value = h.icon
+    freqSelect.value = h.frequency
+    descInput.value = ""
+
+    // Populate checklists
+    checklistContainer.innerHTML = ""
+    h.checklists.forEach(item => addChecklistItem(item.text))
+
+    overlay.classList.remove("hidden")
+    nameInput.focus()
+  }
+
+  function closeModal() {
+    overlay.classList.add("hidden")
+  }
+
+  function addChecklistItem(text = "") {
+    const div = document.createElement("div")
+    div.className = "checklist-builder__item"
+    div.innerHTML = `
+      <input type="text" placeholder="Checklist item" value="${escapeHtml(text)}" class="checklist-text" />
+      <button type="button" class="btn-remove" aria-label="Remove item">&times;</button>`
+    div.querySelector(".btn-remove")?.addEventListener("click", () => div.remove())
+    checklistContainer.appendChild(div)
+    const input = div.querySelector("input") as HTMLInputElement
+    if (!text) input.focus()
+  }
+
+  // ── Event Handlers ──────────────────────────────────────────────
+
+  document.getElementById("create-habit-btn")?.addEventListener("click", openCreateModal)
+  document.getElementById("habit-modal-close")?.addEventListener("click", closeModal)
+  document.getElementById("habit-cancel")?.addEventListener("click", closeModal)
+  document.getElementById("add-checklist-item")?.addEventListener("click", () => addChecklistItem())
+
+  overlay.addEventListener("click", (e) => {
+    if (e.target === overlay) closeModal()
+  })
+
+  form.addEventListener("submit", async (e) => {
+    e.preventDefault()
+    const name = nameInput.value.trim()
+    if (!name) return
+
+    const checklists = Array.from(checklistContainer.querySelectorAll<HTMLInputElement>(".checklist-text"))
+      .map(input => input.value.trim())
+      .filter(Boolean)
+      .map(text => ({ text, done: false }))
+
+    const editId = editIdInput.value
+
+    if (editId) {
+      // Update existing
+      const templateJson: Record<string, unknown> = {
+        title: name,
+        description: descInput.value.trim(),
+        priority: Number(prioritySelect.value),
+        labels: ["habit"],
+        task_type: "task",
+      }
+      if (checklists.length > 0) templateJson.checklists = checklists
+
+      await fetch(`${ingressPath}/api/habits`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          action: "update",
+          templateId: editId,
+          name,
+          icon: iconInput.value || "✅",
+          frequency: freqSelect.value,
+          templateJson,
+        }),
+      })
+    } else {
+      // Create new
+      await fetch(`${ingressPath}/api/habits`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          action: "create",
+          name,
+          icon: iconInput.value || "✅",
+          frequency: freqSelect.value,
+          priority: Number(prioritySelect.value),
+          description: descInput.value.trim(),
+          checklists: checklists.length > 0 ? checklists : undefined,
+        }),
+      })
+    }
+
+    closeModal()
+    await fetchHabits()
+  })
+
+  // Delegated click on habit list
+  document.getElementById("habits-list")?.addEventListener("click", (e) => {
+    const btn = (e.target as Element).closest("[data-action]") as HTMLElement | null
+    if (!btn) return
+
+    const action = btn.dataset.action
+    const id = btn.dataset.id
+    if (!id) return
+
+    switch (action) {
+      case "complete":
+        completeHabit(id)
+        break
+      case "edit":
+        openEditModal(id)
+        break
+      case "delete":
+        deleteHabit(id)
+        break
+    }
+  })
+
+  // ── Init ────────────────────────────────────────────────────────
+  fetchHabits()
+</script>
