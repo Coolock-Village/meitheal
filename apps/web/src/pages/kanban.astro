@@ -332,9 +332,7 @@ const typeConfig: Record<
             data-wip-limit={String(col.wipLimit)}
             role="region"
             aria-label={`${col.label} Swimlane`}
-            ondrop="handleDrop(arguments[0])"
-            ondragover="arguments[0].preventDefault(); this.classList.add('drag-over');"
-            ondragleave="this.classList.remove('drag-over');"
+
           >
             <div class="kanban-column-header">
               <span>
@@ -449,8 +447,7 @@ const typeConfig: Record<
                     data-board={String(task.board_id ?? "default")}
                     data-assigned={String(task.assigned_to ?? "")}
                     data-labels={String(task.labels ?? "[]")}
-                    ondragstart="arguments[0].dataTransfer.setData('text/plain', this.dataset.id); this.classList.add('dragging');"
-                    ondragend="this.classList.remove('dragging'); document.querySelectorAll('.drag-ghost').forEach(g=>g.remove()); document.querySelectorAll('.drag-over').forEach(c=>c.classList.remove('drag-over'));"
+
                     style={`border-left: 4px solid ${task.color ? String(task.color) : tc.color};`}
                   >
                     <div class="kanban-card-header">
@@ -821,11 +818,33 @@ const typeConfig: Record<
       }
     }
 
-    // ── Within-lane drag-to-reorder ──────────────────────────────────
-    // Enhance dragover on each column to show drop indicator between cards
+    // ── Drag-and-drop event listeners (migrated from inline handlers for CSP) ──
     document.querySelectorAll(".kanban-column").forEach((col) => {
+      // Column-level: drop, dragover, dragleave
+      col.addEventListener("drop", handleDrop);
+      col.addEventListener("dragover", (e) => {
+        e.preventDefault();
+        col.classList.add("drag-over");
+      });
+      col.addEventListener("dragleave", () => {
+        col.classList.remove("drag-over");
+      });
+
       const cardsContainer = col.querySelector(".kanban-cards");
       if (!cardsContainer) return;
+
+      // Card-level: dragstart, dragend (replaces inline handlers for CSP)
+      cardsContainer.querySelectorAll(".kanban-card").forEach((card) => {
+        card.addEventListener("dragstart", (e) => {
+          e.dataTransfer.setData("text/plain", card.dataset.id);
+          card.classList.add("dragging");
+        });
+        card.addEventListener("dragend", () => {
+          card.classList.remove("dragging");
+          document.querySelectorAll(".drag-ghost").forEach(g => g.remove());
+          document.querySelectorAll(".drag-over").forEach(c => c.classList.remove("drag-over"));
+        });
+      });
 
       cardsContainer.addEventListener("dragover", (e) => {
         e.preventDefault();
