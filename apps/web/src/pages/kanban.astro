@@ -455,7 +455,7 @@ const typeConfig: Record<
                     data-labels={String(task.labels ?? "[]")}
                     ondragstart="arguments[0].dataTransfer.setData('text/plain', this.dataset.id); this.classList.add('dragging');"
                     ondragend="this.classList.remove('dragging'); document.querySelectorAll('.drag-ghost').forEach(g=>g.remove()); document.querySelectorAll('.drag-over').forEach(c=>c.classList.remove('drag-over'));"
-                    style={`border-left: 3px solid ${task.color ? String(task.color) : tc.color};`}
+                    style={`border-left: 4px solid ${task.color ? String(task.color) : tc.color};`}
                   >
                     <div class="kanban-card-header">
                       <div
@@ -648,7 +648,7 @@ const typeConfig: Record<
                         title={t("kanban.edit_task", locale)}
                         aria-label={`Edit task: ${String(task.title ?? "").slice(0, 50)}`}
                       >
-                        ✏️
+                        ✎
                       </button>
                       <button
                         class="card-action-btn card-ai-btn"
@@ -661,7 +661,7 @@ const typeConfig: Record<
                         title={t("tasks.ask_ai", locale)}
                         aria-label={`AI assist for: ${String(task.title ?? "").slice(0, 50)}`}
                       >
-                        🤖
+                        ⚡
                       </button>
                       <button
                         class="card-action-btn card-dup-btn"
@@ -669,7 +669,15 @@ const typeConfig: Record<
                         title={t("kanban.duplicate", locale)}
                         aria-label={`Duplicate task: ${String(task.title ?? "").slice(0, 50)}`}
                       >
-                        ⧉
+                        ⊕
+                      </button>
+                      <button
+                        class="card-action-btn card-more-btn"
+                        data-id={String(task.id)}
+                        title="More actions"
+                        aria-label={`More options for: ${String(task.title ?? "").slice(0, 50)}`}
+                      >
+                        ⋯
                       </button>
                     </div>
                   </div>
@@ -1137,7 +1145,7 @@ const typeConfig: Record<
           ${
             !lane.builtIn
               ? `
-            <button type="button" class="lane-edit" data-id="${lane.id}" data-label="${lane.label}" title="Rename" aria-label="Rename lane" style="background:none;border:none;cursor:pointer;color:var(--text-muted);font-size:14px;">✏️</button>
+            <button type="button" class="lane-edit" data-id="${lane.id}" data-label="${lane.label}" title="Rename" aria-label="Rename lane" style="background:none;border:none;cursor:pointer;color:var(--text-muted);font-size:14px;">✎</button>
             <button type="button" class="lane-remove" data-id="${lane.id}" title="Remove" aria-label="Remove lane" style="background:none;border:none;cursor:pointer;color:var(--danger);font-size:14px;">×</button>
           `
               : '<span style="font-size:11px;color:var(--text-muted);">built-in</span>'
@@ -1787,19 +1795,36 @@ const typeConfig: Record<
         applyTypeFilters();
       });
 
-      // Swimlane header collapse toggle
+      // Swimlane header collapse toggle — CSS animation + localStorage persistence
       document.querySelectorAll(".swimlane-header").forEach((header) => {
-        header.addEventListener("click", () => {
-          const group = header.closest(".swimlane-group");
-          if (!group) return;
-          const cards = group.querySelector(".swimlane-cards");
-          const toggle = header.querySelector(".swimlane-toggle");
-          if (cards) {
-            const isCollapsed = cards.style.display === "none";
-            cards.style.display = isCollapsed ? "" : "none";
-            if (toggle) toggle.textContent = isCollapsed ? "▼" : "▶";
-            group.classList.toggle("swimlane-collapsed", !isCollapsed);
+        const group = header.closest(".swimlane-group");
+        if (!group) return;
+        const cards = group.querySelector(".swimlane-cards");
+        const toggle = header.querySelector(".swimlane-toggle");
+        const type = header.dataset.type || "unknown";
+        const storageKey = `meitheal-kanban-swimlane-${type}`;
+
+        // Restore saved collapse state
+        const saved = localStorage.getItem(storageKey);
+        if (saved === "collapsed" && cards) {
+          cards.classList.add("collapsed");
+          if (toggle) {
+            toggle.classList.add("collapsed");
+            toggle.textContent = "▶";
           }
+          group.classList.add("swimlane-collapsed");
+        }
+
+        header.style.cursor = "pointer";
+        header.addEventListener("click", () => {
+          if (!cards) return;
+          const isCollapsed = cards.classList.toggle("collapsed");
+          if (toggle) {
+            toggle.classList.toggle("collapsed", isCollapsed);
+            toggle.textContent = isCollapsed ? "▶" : "▼";
+          }
+          group.classList.toggle("swimlane-collapsed", isCollapsed);
+          localStorage.setItem(storageKey, isCollapsed ? "collapsed" : "expanded");
         });
       });
     })();

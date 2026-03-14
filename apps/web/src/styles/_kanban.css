@@ -14,7 +14,7 @@
     -webkit-overflow-scrolling: touch;
     touch-action: pan-x pan-y;
     /* P0-3: Promote to GPU compositing layer for smooth scroll */
-    will-change: scroll-position;
+    /* will-change removed per research — static application wastes GPU memory */
   }
 
   .kanban-column {
@@ -58,10 +58,10 @@
   .kanban-card {
     @apply bg-bg-card/90 backdrop-blur-sm border border-border rounded-md p-3 cursor-grab shadow-sm relative;
     transition:
-      transform 0.25s cubic-bezier(0.175, 0.885, 0.32, 1.275),
-      box-shadow 0.25s ease,
-      border-color 0.25s ease,
-      background-color 0.25s ease;
+      transform 0.15s ease,
+      box-shadow 0.15s ease,
+      border-color 0.15s ease,
+      background-color 0.15s ease;
   }
 
   .kanban-card:hover {
@@ -78,16 +78,14 @@
   }
 
   .kanban-card.dragging {
-    @apply bg-bg-card opacity-80;
-    transform: rotate(3deg) scale(1.05);
+    @apply bg-bg-card;
+    opacity: 0.85;
+    transform: scale(1.03);
     border: 1px solid var(--accent);
-    box-shadow:
-      0 12px 32px rgba(0, 0, 0, 0.6),
-      0 0 0 2px rgba(99, 102, 241, 0.3);
+    box-shadow: 0 8px 24px rgba(0, 0, 0, 0.3);
     z-index: 50;
     cursor: grabbing;
-    /* P2-4: GPU compositing for smooth drag animation */
-      will-change: transform;
+    will-change: transform;
   }
 
   .kanban-card-title {
@@ -139,7 +137,13 @@
 
   .card-action-btn {
     @apply bg-bg-hover/80 border-none rounded px-1.5 py-0.5 cursor-pointer text-xs transition-colors;
+    transition: opacity 0.15s ease, background-color 0.15s ease;
   }
+
+  .card-action-btn:nth-child(1) { transition-delay: 0ms; }
+  .card-action-btn:nth-child(2) { transition-delay: 40ms; }
+  .card-action-btn:nth-child(3) { transition-delay: 80ms; }
+  .card-action-btn:nth-child(4) { transition-delay: 120ms; }
 
   .card-action-btn:hover {
     @apply bg-accent/20;
@@ -236,5 +240,45 @@
 
   .n8n-event {
     @apply flex items-center justify-between py-2 px-3 bg-bg-secondary/50 rounded-md text-sm;
+  }
+
+  /* --- Swimlane collapse animation --- */
+  .swimlane-cards {
+    transition: max-height 0.3s ease-out, opacity 0.2s ease, padding 0.2s ease;
+    overflow: hidden;
+  }
+
+  .swimlane-cards.collapsed {
+    max-height: 0 !important;
+    opacity: 0;
+    padding: 0;
+  }
+
+  .swimlane-toggle {
+    transition: transform 0.2s ease;
+    display: inline-block;
+  }
+
+  .swimlane-toggle.collapsed {
+    transform: rotate(-90deg);
+  }
+
+  /* --- Accessibility: respect motion preferences --- */
+  @media (prefers-reduced-motion: reduce) {
+    .kanban-card,
+    .kanban-card-actions,
+    .card-action-btn,
+    .swimlane-cards,
+    .swimlane-toggle,
+    .swimlane-add-btn,
+    .kanban-add-task {
+      transition: none !important;
+    }
+    .kanban-card:hover {
+      transform: none;
+    }
+    .kanban-card.dragging {
+      transform: none;
+    }
   }
 }
