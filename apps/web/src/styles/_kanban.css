@@ -435,8 +435,11 @@
     .swimlane-cards,
     .swimlane-toggle,
     .swimlane-add-btn,
-    .kanban-add-task {
+    .kanban-add-task,
+    .kanban-context-menu,
+    .kanban-card::before {
       transition: none !important;
+      animation: none !important;
     }
     .kanban-card:hover {
       transform: none;
