@@ -1495,7 +1495,7 @@ const typeConfig: Record<
             c.style.display = "none";
           }
         });
-        updateColumnCounts();
+        updateAllCounts();
         applyLabelFilter();
       }
 
@@ -1513,7 +1513,7 @@ const typeConfig: Record<
       document.addEventListener("meitheal:label-filter", __handleLabelFilter);
 
       function applyLabelFilter() {
-        document.querySelectorAll(".flat-card").forEach(function (c) {
+        document.querySelectorAll(".kanban-card").forEach(function (c) {
           var el = c;
           if (activeLabelFilter.length === 0) {
             // No label filter — don't override type filter visibility
@@ -1540,17 +1540,36 @@ const typeConfig: Record<
             el.style.display = "none";
           }
         });
-        updateColumnCounts();
+        updateAllCounts();
       }
 
-      function updateColumnCounts() {
+      // Unified visibility helper — checks ALL filter dimensions
+      function isCardVisible(card) {
+        if (card.style.display === "none") return false
+        if (card.classList.contains("user-filtered-out")) return false
+        return true
+      }
+
+      // Unified count updater — column headers + swimlane badges
+      function updateAllCounts() {
+        // 1. Column header counts
         document.querySelectorAll(".kanban-column").forEach((col) => {
-          const count = col.querySelector(".kanban-count");
-          const visible = col.querySelectorAll(
-            '.kanban-card:not([style*="display: none"])',
-          );
-          if (count) count.textContent = visible.length;
-        });
+          const count = col.querySelector(".kanban-count")
+          const visible = Array.from(
+            col.querySelectorAll(".kanban-card"),
+          ).filter(isCardVisible)
+          if (count) count.textContent = visible.length
+        })
+
+        // 2. Swimlane group counts (both static + dynamic)
+        document.querySelectorAll(".swimlane-group").forEach((group) => {
+          const countEl = group.querySelector(".swimlane-count")
+          if (!countEl) return
+          const visible = Array.from(
+            group.querySelectorAll(".kanban-card"),
+          ).filter(isCardVisible)
+          countEl.textContent = visible.length
+        })
       }
 
       // Swimlane group-by dropdown
@@ -1589,7 +1608,7 @@ const typeConfig: Record<
               card.style.display = "none";
             }
           });
-          updateColumnCounts();
+          updateAllCounts();
           // Sync with sidebar
           document.dispatchEvent(new CustomEvent("board-filter-change", {
             detail: { boardId }
@@ -1695,7 +1714,7 @@ const typeConfig: Record<
                 group.style.display = activeTypes.has(groupType) ? "" : "none";
                 const countEl = group.querySelector(".swimlane-count");
                 const cards = group.querySelectorAll(".kanban-card");
-                if (countEl) countEl.textContent = cards.length;
+                if (countEl) countEl.textContent = Array.from(cards).filter(isCardVisible).length;
               });
           });
         } else if (mode === "board" || mode === "priority") {
@@ -1755,18 +1774,21 @@ const typeConfig: Record<
               labelSpan.textContent = label;
               const countSpan = document.createElement("span");
               countSpan.className = "swimlane-count";
-              countSpan.textContent = String(cards.length);
+              countSpan.textContent = String(cards.filter(isCardVisible).length);
               header.append(toggleSpan, labelSpan, countSpan);
 
-              // Collapse toggle
+              // Collapse toggle — use CSS class (matches static swimlane pattern)
               header.addEventListener("click", () => {
-                const cardsEl = group.querySelector(".swimlane-cards");
-                const toggle = header.querySelector(".swimlane-toggle");
-                if (cardsEl) {
-                  const collapsed = cardsEl.style.display === "none";
-                  cardsEl.style.display = collapsed ? "" : "none";
-                  if (toggle) toggle.textContent = collapsed ? "▼" : "▶";
-                  group.classList.toggle("swimlane-collapsed", !collapsed);
+                const isCollapsed = group.classList.contains("collapsed")
+                group.classList.toggle("collapsed", !isCollapsed)
+                const toggle = header.querySelector(".swimlane-toggle")
+                if (toggle) toggle.textContent = isCollapsed ? "▼" : "▶"
+                // Persist collapse state
+                const collapseKey = `meitheal-swimlane-dyn-${key}`
+                if (isCollapsed) {
+                  localStorage.removeItem(collapseKey)
+                } else {
+                  localStorage.setItem(collapseKey, "1")
                 }
               });
 
@@ -1930,14 +1952,7 @@ const typeConfig: Record<
             }
           });
 
-        // Update column counts (exclude user-filtered cards)
-        document.querySelectorAll(".kanban-column").forEach((col) => {
-          const count = col.querySelector(".kanban-count");
-          const visible = col.querySelectorAll(
-            '.kanban-card:not([style*="display: none"]):not(.user-filtered-out)',
-          );
-          if (count) count.textContent = visible.length;
-        });
+        updateAllCounts()
       }
 
       // Click handlers
