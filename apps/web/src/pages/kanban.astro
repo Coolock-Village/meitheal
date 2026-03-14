@@ -1479,16 +1479,24 @@ const typeConfig: Record<
           const desc = (card.dataset.desc || "").toLowerCase();
           const match = !query || title.includes(query) || desc.includes(query);
           card.style.display = match ? "" : "none";
+
+          // Highlight matching text in title
+          const titleEl = card.querySelector(".kanban-card-title .kanban-title-text");
+          if (titleEl && !titleEl.hasAttribute("contenteditable")) {
+            const originalTitle = card.dataset.title || "";
+            if (query && match && title.includes(query)) {
+              const idx = title.indexOf(query);
+              const before = originalTitle.substring(0, idx);
+              const matched = originalTitle.substring(idx, idx + query.length);
+              const after = originalTitle.substring(idx + query.length);
+              titleEl.innerHTML = `${before}<mark class="search-highlight">${matched}</mark>${after}`;
+            } else {
+              titleEl.textContent = originalTitle;
+            }
+          }
         });
 
-        // Update column counts to reflect visible cards
-        document.querySelectorAll(".kanban-column").forEach((col) => {
-          const count = col.querySelector(".kanban-count");
-          const visible = col.querySelectorAll(
-            '.kanban-card:not([style*="display: none"])',
-          );
-          if (count) count.textContent = visible.length;
-        });
+        updateAllCounts();
       });
     })();
 
