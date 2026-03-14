@@ -221,11 +221,26 @@ export const POST: APIRoute = async ({ request }) => {
     assigned_to = await repo.getDefaultAssignee()
   }
 
+  // Phase 31: Checklists
+  let checklists = "[]"
+  if (body.checklists !== undefined) {
+    if (typeof body.checklists !== "string") {
+      return new Response(JSON.stringify({ error: "checklists must be a JSON string" }), { status: 400, headers: { "content-type": "application/json" } })
+    }
+    try {
+      const parsed = JSON.parse(body.checklists)
+      if (!Array.isArray(parsed)) throw new Error()
+      checklists = body.checklists
+    } catch {
+      return new Response(JSON.stringify({ error: "checklists must be a valid JSON array string" }), { status: 400, headers: { "content-type": "application/json" } })
+    }
+  }
+
   await repo.createTask({
     id, title, description, status, priority, due_date, labels,
     framework_payload, parent_id, board_id, custom_fields,
     start_date, end_date, progress, color, is_favorite,
-    task_type, ticket_number, assigned_to,
+    task_type, ticket_number, assigned_to, checklists,
   })
 
   const now = Date.now()

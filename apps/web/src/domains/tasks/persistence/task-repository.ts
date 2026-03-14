@@ -502,7 +502,7 @@ export class TaskRepository {
         STATUS.PENDING, data.parent_id, data.board_id, data.custom_fields,
         data.start_date, data.end_date, data.progress, data.color, data.is_favorite,
         data.task_type, data.ticket_number, data.assigned_to,
-        data.checklists ?? null, data.recurrence_rule ?? null,
+        data.checklists ?? "[]", data.recurrence_rule ?? null,
         crypto.randomUUID(), crypto.randomUUID(), now, now,
       ] as InValue[],
     });
