@@ -1177,7 +1177,7 @@ const typeConfig: Record<
           <button type="button" class="btn btn-primary quick-add-btn">Add</button>
         `;
         btn.parentElement.insertBefore(form, btn);
-        btn.style.display = "none";
+        btn.classList.add("hidden");
 
         const input = form.querySelector("input");
         const addBtn = form.querySelector("button");
@@ -1217,7 +1217,7 @@ const typeConfig: Record<
 
         function cleanup() {
           form.remove();
-          btn.style.display = "";
+          btn.classList.remove("hidden");
         }
 
         addBtn.addEventListener("click", submitTask);
@@ -1577,6 +1577,27 @@ const typeConfig: Record<
       const activeTypes = new Set(["epic", "story", "task"]);
       let isGrouped = false;
 
+      // Restore saved type filter state
+      const savedTypeFilter = localStorage.getItem("meitheal-kanban-type-filter")
+      if (savedTypeFilter) {
+        try {
+          const savedTypes = JSON.parse(savedTypeFilter)
+          if (Array.isArray(savedTypes) && savedTypes.length > 0) {
+            activeTypes.clear()
+            savedTypes.forEach(t => activeTypes.add(t))
+            // Update button visual state
+            document.querySelectorAll(".type-filter-btn").forEach(btn => {
+              const type = btn.dataset.type
+              if (type === "all") {
+                btn.classList.toggle("active", activeTypes.size === 3)
+              } else {
+                btn.classList.toggle("active", activeTypes.has(type))
+              }
+            })
+          }
+        } catch {}
+      }
+
       // Type filter buttons
       document.querySelectorAll(".type-filter-btn").forEach((btn) => {
         btn.addEventListener("click", () => {
@@ -1637,6 +1658,15 @@ const typeConfig: Record<
             c.style.display = "none";
           }
         });
+
+        // Persist active type filter state
+        const activeTypesArr = btnTypes.filter(t => t !== "all")
+        if (activeTypesArr.length === 3) {
+          localStorage.removeItem("meitheal-kanban-type-filter")
+        } else {
+          localStorage.setItem("meitheal-kanban-type-filter", JSON.stringify(activeTypesArr))
+        }
+
         updateAllCounts();
         applyLabelFilter();
       }
@@ -1777,6 +1807,8 @@ const typeConfig: Record<
           // Clear saved filter state
           localStorage.removeItem("meitheal-board-filter")
           localStorage.removeItem("meitheal-user-filter")
+          localStorage.removeItem("meitheal-kanban-type-filter")
+          localStorage.removeItem("meitheal-kanban-board-filter")
 
           updateAllCounts()
           updateFilterClearBtn()
