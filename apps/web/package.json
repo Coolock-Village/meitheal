@@ -17,7 +17,7 @@
   "dependencies": {
     "@astrojs/mdx": "^4.3.13",
     "@astrojs/node": "^9.5.4",
-    "@astrojs/sitemap": "^3.7.0",
+    "@astrojs/sitemap": "^3.7.1",
     "@fontsource-variable/geist": "^5.2.8",
     "@fontsource-variable/inter": "^5.2.8",
     "@fontsource/jetbrains-mono": "^5.2.8",
@@ -33,14 +33,14 @@
     "home-assistant-js-websocket": "^9.6.0",
     "marked": "^17.0.4",
     "sanitize-html": "^2.17.1",
-    "undici": "^7.22.0",
+    "undici": "^7.24.2",
     "ws": "^8.19.0",
     "zod": "^4.3.6"
   },
   "devDependencies": {
-    "@astrojs/check": "^0.9.6",
+    "@astrojs/check": "^0.9.7",
     "@astrojs/tailwind": "^6.0.2",
-    "@types/node": "^25.3.5",
+    "@types/node": "^25.5.0",
     "@types/sanitize-html": "^2.16.1",
     "@types/ws": "^8.18.1",
     "drizzle-kit": "^0.31.9",
