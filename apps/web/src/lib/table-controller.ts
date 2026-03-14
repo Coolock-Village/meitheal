@@ -72,10 +72,34 @@ function init() {
   setupSortableHeaders()
   setupTableOverflow()
 
-  // Apply initial filters and grouping
-  applyAllFilters()
+  // Apply grouping first (creates group headers before filtering)
   if (currentGroupBy !== "none") {
     applyGrouping(currentGroupBy)
+  }
+
+  // Apply initial filters — with stale-state protection
+  applyAllFilters()
+
+  // Stale filter protection: if ALL tasks are filtered out but tasks exist,
+  // the restored state is stale — clear it and show everything
+  const totalRows = document.querySelectorAll(".table-row").length
+  const visibleRows = document.querySelectorAll(".table-row:not(.filtered-out)").length
+  if (totalRows > 0 && visibleRows === 0) {
+    clearFilterState()
+    currentFilterState = {}
+    currentGroupBy = "none"
+    restoreFilterControls()
+    // Reset group-by select
+    const groupBySelect = document.getElementById("table-group-by") as HTMLSelectElement | null
+    if (groupBySelect) groupBySelect.value = "none"
+    // Remove group headers
+    applyGrouping("none")
+    // Reset type toggles
+    document.querySelectorAll<HTMLButtonElement>(".type-toggle").forEach((btn) => {
+      btn.classList.add("active")
+      btn.setAttribute("aria-pressed", "true")
+    })
+    applyAllFilters()
   }
 }
 
