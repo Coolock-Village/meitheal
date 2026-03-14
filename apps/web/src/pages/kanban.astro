@@ -1500,8 +1500,8 @@ const typeConfig: Record<
           document.querySelectorAll(".type-filter-btn.active"),
         ).map((b) => b.getAttribute("data-type") || "");
 
-        // 1. Filter flat cards
-        document.querySelectorAll(".flat-card").forEach((c) => {
+        // 1. Filter all cards (flat + grouped — works in all swimlane modes)
+        document.querySelectorAll(".kanban-card").forEach((c) => {
           const ct = String(
             c.getAttribute("data-task-type") || "task",
           ).toLowerCase();
