@@ -76,10 +76,8 @@
 - All SQL is raw `client.execute()` now in repositories
 - Consider: Remove drizzle deps or migrate to Drizzle queries
 
-### Missing Command Palette Shortcut
-- **Files**: `apps/web/src/lib/layout-controller.ts:180-345`
-- **Issue**: `Ctrl+K` / `Cmd+K` not handled — command palette exists in DOM but no keyboard shortcut to open it
-- **Fix**: Add `(e.metaKey || e.ctrlKey) && e.key === 'k'` handler in keydown listener
+### ~~Missing Command Palette Shortcut~~ (RESOLVED — already in layout-controller.ts + task-modal-controller.ts)
+- Ctrl+K / Cmd+K handler exists at layout-controller.ts:254 and task-modal-controller.ts:2209
 
 ### ~~Inline Event Handlers Require `unsafe-inline` CSP~~ (RESOLVED — Phase 06)
 - 5 inline handlers migrated to `addEventListener` in kanban.astro
@@ -133,11 +131,8 @@
 
 ## P4 — Deferred
 
-### `will-change: transform` GPU Memory Leak
-- **Files**: `apps/web/src/styles/_responsive.css:345-348`
-- **Issue**: `will-change: transform` applied to all `.kanban-card` elements permanently on touch devices — promotes ALL cards to GPU layers
-- **Impact**: High GPU memory usage with 100+ cards
-- **Fix**: Only apply during active drag operation
+### ~~`will-change: transform` GPU Memory Leak~~ (RESOLVED — correctly scoped)
+- `will-change: transform` only on `.kanban-card.dragging` in `_kanban.css` and `_responsive.css`
 
 ### No i18n Translation Files (Partial)
 ### PWA Background Sync (No visual indicator)
@@ -158,4 +153,4 @@
 - No authentication layer — relies entirely on HA Supervisor headers
 - In standalone mode (no HA), all routes are accessible without auth
 - Export routes serve raw data without additional access control
-- Inline event handlers (`ondrop`, `onclick`) require `unsafe-inline` CSP
+- ~~Inline event handlers (`ondrop`, `onclick`) require `unsafe-inline` CSP~~ (RESOLVED — migrated to addEventListener)

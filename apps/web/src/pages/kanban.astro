@@ -966,6 +966,37 @@ const typeConfig: Record<
       });
     });
 
+    // Card body click → open task detail (Teamhood parity)
+    // Excludes: action buttons, inline-editing, checkbox clicks
+    document.querySelectorAll(".kanban-card").forEach((card) => {
+      card.addEventListener("click", (e) => {
+        // Skip if clicking action buttons, links, or inputs
+        const target = e.target
+        if (target.closest(".kanban-card-actions") ||
+            target.closest("button") ||
+            target.closest("a") ||
+            target.closest("input") ||
+            target.closest("[contenteditable='true']")) return
+
+        const id = card.dataset.id
+        if (!id) return
+
+        // Debounce: skip if we just finished a drag
+        if (card.classList.contains("dragging")) return
+
+        let attempts = 0
+        function tryOpen() {
+          if (typeof window.openTaskDetail === "function") {
+            window.openTaskDetail(id)
+          } else if (attempts < 10) {
+            attempts++
+            setTimeout(tryOpen, 50)
+          }
+        }
+        tryOpen()
+      })
+    })
+
     // Inline quick-edit: double-click card title to edit in place
     document.querySelectorAll(".kanban-title-text").forEach((titleSpan) => {
       titleSpan.addEventListener("dblclick", (e) => {
