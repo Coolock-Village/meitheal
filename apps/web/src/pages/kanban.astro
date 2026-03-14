@@ -203,7 +203,7 @@ const typeConfig: Record<
         data-type="epic"
         title={t("kanban.toggle_epics", locale)}
       >
-        <span class="type-dot" style="background: #8b5cf6;"></span>
+        <span class="type-dot type-dot-epic"></span>
         {t("kanban.epics", locale)}
       </button>
       <button
@@ -212,7 +212,7 @@ const typeConfig: Record<
         data-type="story"
         title={t("kanban.toggle_stories", locale)}
       >
-        <span class="type-dot" style="background: #3b82f6;"></span>
+        <span class="type-dot type-dot-story"></span>
         {t("kanban.stories", locale)}
       </button>
       <button
@@ -221,7 +221,7 @@ const typeConfig: Record<
         data-type="task"
         title={t("kanban.toggle_tasks", locale)}
       >
-        <span class="type-dot" style="background: #6366F1;"></span>
+        <span class="type-dot type-dot-task"></span>
         {t("kanban.tasks_label", locale)}
       </button>
     </div>
@@ -280,10 +280,19 @@ const typeConfig: Record<
         <option value="priority">{t("kanban.group_priority", locale)}</option>
       </select>
     </div>
+    <button
+      type="button"
+      class="filter-clear-btn hidden"
+      id="filter-clear-btn"
+      title="Clear all filters"
+      aria-label="Clear all active filters"
+    >
+      ✕ Clear Filters
+    </button>
   </div>
 
   <!-- Lane management panel -->
-  <div class="lane-mgmt" id="lane-mgmt" style="display: none;">
+  <div class="lane-mgmt hidden" id="lane-mgmt">
     <div class="lane-mgmt-inner">
       <div class="lane-mgmt-header">
         <strong>{t("kanban.manage_swimlanes", locale)}</strong>
@@ -363,9 +372,8 @@ const typeConfig: Record<
                 ).length;
                 return (
                   <div
-                    class={`swimlane-group swimlane-${type}`}
+                    class={`swimlane-group swimlane-${type} hidden`}
                     data-swimlane-type={type}
-                    style="display: none;"
                   >
                     <div class="swimlane-header" data-type={type}>
                       <span class="swimlane-toggle">▼</span>
@@ -799,6 +807,16 @@ const typeConfig: Record<
           body: JSON.stringify(payload),
         });
 
+        // WIP limit warning toast (soft limit — allows drop but warns)
+        const wipLimit = parseInt(targetCol.dataset.wipLimit || "0", 10)
+        if (wipLimit > 0) {
+          const currentCount = targetCol.querySelectorAll(".kanban-card").length
+          if (currentCount > wipLimit) {
+            const colTitle = targetCol.querySelector(".kanban-column-title")?.textContent || "this column"
+            if (window.showToast) window.showToast(`⚠️ WIP limit exceeded: ${currentCount}/${wipLimit} in ${colTitle}`, "warning")
+          }
+        }
+
         // Gamification: confetti + record completion when dropped to complete
         if (newStatus === "complete") {
           var ff = window.__featureFlags || {};
@@ -1154,7 +1172,6 @@ const typeConfig: Record<
         const taskType = btn.dataset.taskType;
         const form = document.createElement("div");
         form.className = "kanban-inline-add";
-        form.style.cssText = "display:flex;gap:6px;margin-top:8px;";
         form.innerHTML = `
           <input type="text" class="form-input quick-add-input" placeholder="Task title..." aria-label="New task title" autofocus />
           <button type="button" class="btn btn-primary quick-add-btn">Add</button>
@@ -1389,13 +1406,13 @@ const typeConfig: Record<
 
     // Helper to close lanes panel
     function closeLaneMgmt() {
-      if (laneMgmt) laneMgmt.style.display = "none";
+      if (laneMgmt) laneMgmt.classList.add("hidden");
     }
 
     // T-1904: Toggle lanes panel
     manageLanesBtn?.addEventListener("click", () => {
-      const isOpen = laneMgmt.style.display !== "none";
-      laneMgmt.style.display = isOpen ? "none" : "flex";
+      const isOpen = !laneMgmt.classList.contains("hidden");
+      laneMgmt.classList.toggle("hidden", isOpen);
       if (!isOpen) renderLaneList();
     });
 
@@ -1406,7 +1423,7 @@ const typeConfig: Record<
 
     // Close on Escape key
     document.addEventListener("keydown", (e) => {
-      if (e.key === "Escape" && laneMgmt?.style.display !== "none") {
+      if (e.key === "Escape" && laneMgmt && !laneMgmt.classList.contains("hidden")) {
         closeLaneMgmt();
       }
     });
@@ -1672,6 +1689,7 @@ const typeConfig: Record<
       function isCardVisible(card) {
         if (card.style.display === "none") return false
         if (card.classList.contains("user-filtered-out")) return false
+        if (card.classList.contains("hidden")) return false
         return true
       }
 
@@ -1694,6 +1712,76 @@ const typeConfig: Record<
             group.querySelectorAll(".kanban-card"),
           ).filter(isCardVisible)
           countEl.textContent = visible.length
+        })
+
+        // Auto-detect filter state for clear button
+        updateFilterClearBtn()
+      }
+
+      // Show/hide filter clear button based on active filter state
+      const filterClearBtn = document.getElementById("filter-clear-btn")
+      function updateFilterClearBtn() {
+        if (!filterClearBtn) return
+        let anyActive = false
+        // Type filter: any button NOT active means filter is on
+        const typeButtons = document.querySelectorAll(".type-filter-btn:not(.all-type-toggle)")
+        typeButtons.forEach(btn => {
+          if (!btn.classList.contains("active")) anyActive = true
+        })
+        // User filter: not "all" selected
+        const activeUserBtn = document.querySelector(".user-filter-btn.active")
+        if (activeUserBtn && activeUserBtn.dataset.user !== "all") anyActive = true
+        // Board filter: not empty/all
+        const boardSelect = document.getElementById("board-filter-select")
+        if (boardSelect && boardSelect.value) anyActive = true
+        // Label filter: check via event system (label filter dispatches custom events)
+        const anyCardHidden = document.querySelector(".kanban-card[style*='display: none']")
+        if (anyCardHidden) anyActive = true
+
+        filterClearBtn.classList.toggle("hidden", !anyActive)
+      }
+
+      // Clear all filters handler
+      if (filterClearBtn) {
+        filterClearBtn.addEventListener("click", () => {
+          // Reset type filters — activate all
+          document.querySelectorAll(".type-filter-btn").forEach(btn => {
+            btn.classList.add("active")
+          })
+
+          // Reset user filter — show all
+          document.querySelectorAll(".user-filter-btn").forEach(btn => {
+            btn.classList.toggle("active", btn.dataset.user === "all")
+          })
+          document.querySelectorAll(".kanban-card.user-filtered-out").forEach(card => {
+            card.classList.remove("user-filtered-out")
+          })
+
+          // Reset board filter
+          const boardSelect = document.getElementById("board-filter-select")
+          if (boardSelect) boardSelect.value = ""
+
+          // Show all cards
+          document.querySelectorAll(".kanban-card").forEach(card => {
+            card.style.display = ""
+          })
+
+          // Show all swimlane groups
+          document.querySelectorAll(".swimlane-group.hidden").forEach(group => {
+            group.classList.remove("hidden")
+          })
+
+          // Clear label filter via event
+          document.dispatchEvent(new CustomEvent("meitheal:label-filter", { detail: { label: "" } }))
+
+          // Clear saved filter state
+          localStorage.removeItem("meitheal-board-filter")
+          localStorage.removeItem("meitheal-user-filter")
+
+          updateAllCounts()
+          updateFilterClearBtn()
+
+          if (window.showToast) window.showToast("All filters cleared", "info")
         })
       }
 
@@ -1836,7 +1924,7 @@ const typeConfig: Record<
               .querySelectorAll(".swimlane-group:not(.dynamic-group)")
               .forEach((group) => {
                 const groupType = group.dataset.swimlaneType;
-                group.style.display = activeTypes.has(groupType) ? "" : "none";
+                group.classList.toggle("hidden", !activeTypes.has(groupType));
                 const countEl = group.querySelector(".swimlane-count");
                 const cards = group.querySelectorAll(".kanban-card");
                 if (countEl) countEl.textContent = Array.from(cards).filter(isCardVisible).length;
@@ -2682,6 +2770,25 @@ const typeConfig: Record<
   .kanban-card.user-filtered-out {
     display: none !important;
   }
+  .filter-clear-btn {
+    @apply text-xs px-3 py-1 rounded-md;
+    background: rgba(239, 68, 68, 0.1);
+    color: var(--danger, #ef4444);
+    border: 1px solid rgba(239, 68, 68, 0.2);
+    cursor: pointer;
+    transition: background 0.15s ease, border-color 0.15s ease;
+    white-space: nowrap;
+    flex-shrink: 0;
+  }
+  .filter-clear-btn:hover {
+    background: rgba(239, 68, 68, 0.2);
+    border-color: rgba(239, 68, 68, 0.4);
+  }
+  .kanban-inline-add {
+    display: flex;
+    gap: 6px;
+    margin-top: 8px;
+  }
   .type-dot {
     width: 8px;
     height: 8px;
@@ -2689,6 +2796,9 @@ const typeConfig: Record<
     display: inline-block;
     flex-shrink: 0;
   }
+  .type-dot-epic { background: #8b5cf6; }
+  .type-dot-story { background: #3b82f6; }
+  .type-dot-task { background: #6366F1; }
   .type-group-btn.active {
     background: var(--accent-light);
     border-color: var(--accent);
