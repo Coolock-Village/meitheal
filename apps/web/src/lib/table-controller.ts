@@ -17,6 +17,7 @@
 
 import { showToast } from "@lib/toast"
 import { confirmDialog } from "@lib/confirm-dialog"
+import { onTaskCompleted } from "@lib/gamification-hook"
 import {
   saveFilterState,
   loadFilterState,
@@ -59,18 +60,50 @@ function init() {
   currentFilterState = loadFilterState()
   currentGroupBy = currentFilterState.groupBy ?? "none"
 
-  // Initialize all features
-  loadBoards()
-  restoreFilterControls()
-  setupFilterListeners()
-  setupTypeToggleListeners()
-  setupGroupByListener()
+  // Table-specific features
   setupSubtaskToggles()
   setupInlineEditing()
   setupRowClicks()
   setupBulkActions()
   setupSortableHeaders()
   setupTableOverflow()
+  loadBoards() // Still needed for grouping header labels + bulk board selector
+
+  // Listen for unified filter events from FilterToolbar
+  document.addEventListener("meitheal:filter-change", ((e: CustomEvent) => {
+    const detail = e.detail ?? {}
+    if (detail.view && detail.view !== "table") return // Ignore kanban events
+
+    // Update controller state from FilterToolbar event
+    currentFilterState = {
+      ...currentFilterState,
+      search: detail.search ?? "",
+      status: detail.status ?? "",
+      priority: detail.priority ?? "",
+      rice: detail.rice ?? "",
+      user: detail.user ?? "",
+      board: detail.board ?? "",
+      types: detail.types ?? [],
+    }
+
+    // Handle groupBy changes
+    const newGroupBy = detail.groupBy ?? "none"
+    if (newGroupBy !== currentGroupBy) {
+      currentGroupBy = newGroupBy
+      currentFilterState.groupBy = currentGroupBy
+      applyGrouping(currentGroupBy)
+    }
+
+    saveFilterState(currentFilterState)
+    applyAllFilters()
+  }) as EventListener)
+
+  // Listen for label filter events (from LabelFilterBar inside FilterToolbar)
+  document.addEventListener("meitheal:label-filter", ((e: CustomEvent) => {
+    currentFilterState.labels = e.detail?.labels ?? []
+    saveFilterState(currentFilterState)
+    applyAllFilters()
+  }) as EventListener)
 
   // Apply grouping first (creates group headers before filtering)
   if (currentGroupBy !== "none") {
@@ -88,14 +121,13 @@ function init() {
     clearFilterState()
     currentFilterState = {}
     currentGroupBy = "none"
-    restoreFilterControls()
     // Reset group-by select
     const groupBySelect = document.getElementById("table-group-by") as HTMLSelectElement | null
     if (groupBySelect) groupBySelect.value = "none"
     // Remove group headers
     applyGrouping("none")
     // Reset type toggles
-    document.querySelectorAll<HTMLButtonElement>(".type-toggle").forEach((btn) => {
+    document.querySelectorAll<HTMLButtonElement>(".filter-toolbar__type-btn").forEach((btn) => {
       btn.classList.add("active")
       btn.setAttribute("aria-pressed", "true")
     })
@@ -711,6 +743,11 @@ function setupInlineEditing() {
           if (row && field === "status") {
             row.dataset.status = sel.value
             row.classList.toggle("row-done", sel.value === "complete")
+            // Gamification + confetti on completion
+            if (sel.value === "complete") {
+              const priority = Number(row?.dataset.priority ?? 3)
+              onTaskCompleted(priority)
+            }
           }
           if (row && field === "priority") {
             row.dataset.priority = sel.value
@@ -884,6 +921,11 @@ async function bulkUpdateField(field: string, value: unknown, ids: string[]) {
           if (field === "status") {
             row.dataset.status = String(value)
             row.classList.toggle("row-done", value === "complete")
+            // Gamification + confetti on completion
+            if (value === "complete") {
+              const priority = Number(row?.dataset.priority ?? 3)
+              onTaskCompleted(priority)
+            }
             // Update inline select
             const sel = row.querySelector<HTMLSelectElement>(`select[data-field="status"]`)
             if (sel) sel.value = String(value)

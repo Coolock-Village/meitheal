@@ -1,0 +1,376 @@
+---
+/**
+ * FilterToolbar — Shared filter bar for table, kanban, and future views
+ *
+ * @domain tasks
+ * @bounded-context tasks/ui
+ *
+ * Renders a configurable filter toolbar with:
+ * - Type toggle buttons (Epic/Story/Task)
+ * - Board filter selector (populated client-side from /api/boards)
+ * - Group-by selector
+ * - Status, Priority, RICE, User select filters (opt-in per view)
+ * - Label filter bar (lazy-loaded)
+ * - Clear all button
+ *
+ * Emits `meitheal:filter-change` CustomEvent whenever any filter changes.
+ * Each view's controller (table-controller.ts, kanban inline script) listens
+ * for this event to apply filtering.
+ *
+ * Usage:
+ *   <FilterToolbar view="table" showSearch showGroupBy showStatusFilter showPriorityFilter showRICEFilter showUserFilter />
+ *   <FilterToolbar view="kanban" showGroupBy />
+ */
+import { t, getLocale } from "@lib/i18n"
+import LabelFilterBar from "./LabelFilterBar.astro"
+
+interface Props {
+  /** View context — controls ID prefixing and default visibility */
+  view: "table" | "kanban"
+  /** Show search input */
+  showSearch?: boolean
+  /** Show group-by selector */
+  showGroupBy?: boolean
+  /** Show status filter select */
+  showStatusFilter?: boolean
+  /** Show priority filter select */
+  showPriorityFilter?: boolean
+  /** Show RICE filter select */
+  showRICEFilter?: boolean
+  /** Show user filter select */
+  showUserFilter?: boolean
+  /** Show user filter pills (kanban-style) */
+  showUserPills?: boolean
+  /** Group-by options override */
+  groupByOptions?: { value: string; label: string }[]
+  /** Additional CSS class */
+  class?: string
+}
+
+const {
+  view,
+  showSearch = view === "table",
+  showGroupBy = true,
+  showStatusFilter = view === "table",
+  showPriorityFilter = view === "table",
+  showRICEFilter = view === "table",
+  showUserFilter = view === "table",
+  showUserPills = view === "kanban",
+  groupByOptions,
+  class: className,
+} = Astro.props
+
+const locale = getLocale(Astro)
+
+const prefix = view === "table" ? "table" : "kanban"
+
+const defaultGroupByOptions = view === "table"
+  ? [
+      { value: "none", label: "No Grouping" },
+      { value: "type", label: "Group by Type" },
+      { value: "priority", label: "Group by Priority" },
+      { value: "board", label: "Group by Board" },
+      { value: "assignee", label: "Group by Assignee" },
+      { value: "status", label: "Group by Status" },
+      { value: "rice", label: "Group by RICE" },
+    ]
+  : [
+      { value: "none", label: t("kanban.group_none", locale) },
+      { value: "type", label: t("kanban.group_type", locale) },
+      { value: "board", label: t("kanban.group_board", locale) },
+      { value: "priority", label: t("kanban.group_priority", locale) },
+    ]
+
+const groupOptions = groupByOptions ?? defaultGroupByOptions
+---
+
+<div
+  class:list={["filter-toolbar", `filter-toolbar--${view}`, className]}
+  id={`${prefix}-filter-bar`}
+  role="toolbar"
+  aria-label="Filter tasks"
+>
+  {/* Search input (table only by default) */}
+  {showSearch && (
+    <input
+      type="text"
+      class="form-input filter-toolbar__search"
+      id={`${prefix}-search`}
+      placeholder={t("table.filter_placeholder", locale)}
+      aria-label="Filter by text"
+    />
+  )}
+
+  {/* Type toggle buttons — shared across views */}
+  <div class="filter-toolbar__type-toggles" id={`${prefix}-type-toggles`}>
+    <button
+      type="button"
+      class="filter-toolbar__type-btn active"
+      data-type="epic"
+      aria-pressed="true"
+      title="Toggle Epics"
+    >
+      <span class="filter-toolbar__type-dot filter-toolbar__type-dot--epic"></span>
+      Epic
+    </button>
+    <button
+      type="button"
+      class="filter-toolbar__type-btn active"
+      data-type="story"
+      aria-pressed="true"
+      title="Toggle Stories"
+    >
+      <span class="filter-toolbar__type-dot filter-toolbar__type-dot--story"></span>
+      Story
+    </button>
+    <button
+      type="button"
+      class="filter-toolbar__type-btn active"
+      data-type="task"
+      aria-pressed="true"
+      title="Toggle Tasks"
+    >
+      <span class="filter-toolbar__type-dot filter-toolbar__type-dot--task"></span>
+      Task
+    </button>
+  </div>
+
+  {/* User filter pills (kanban-style) */}
+  {showUserPills && (
+    <div
+      class="filter-toolbar__user-pills"
+      id={`${prefix}-user-filters`}
+      role="group"
+      aria-label="Filter by assignee"
+    >
+      <button type="button" class="filter-toolbar__user-btn active" data-user="all" title="Show all users">
+        👥 All
+      </button>
+      <button type="button" class="filter-toolbar__user-btn" data-user="unassigned" title="Unassigned tasks">
+        ∅
+      </button>
+      {/* Dynamic user pills populated by JS */}
+    </div>
+  )}
+
+  {/* Status filter (table-style select) */}
+  {showStatusFilter && (
+    <select class="form-select filter-toolbar__select" id={`${prefix}-filter-status`} aria-label="Filter by status">
+      <option value="">{t("tasks.all_statuses", locale)}</option>
+      <option value="pending">{t("task_status.pending", locale)}</option>
+      <option value="active">{t("task_status.active", locale)}</option>
+      <option value="complete">{t("task_status.complete", locale)}</option>
+      <option value="overdue">{t("tasks.overdue", locale)}</option>
+    </select>
+  )}
+
+  {/* Priority filter */}
+  {showPriorityFilter && (
+    <select class="form-select filter-toolbar__select" id={`${prefix}-filter-priority`} aria-label="Filter by priority">
+      <option value="">{t("tasks.all_priorities", locale)}</option>
+      <option value="1">{t("priority.critical", locale)}</option>
+      <option value="2">{t("priority.high", locale)}</option>
+      <option value="3">{t("priority.medium", locale)}</option>
+      <option value="4">{t("priority.low", locale)}</option>
+      <option value="5">{t("priority.minimal", locale)}</option>
+    </select>
+  )}
+
+  {/* RICE filter */}
+  {showRICEFilter && (
+    <select class="form-select filter-toolbar__select" id={`${prefix}-filter-rice`} aria-label="Filter by RICE score">
+      <option value="">{t("tasks.all_rice", locale)}</option>
+      <option value="high">{t("tasks.rice_high", locale)}</option>
+      <option value="medium">{t("tasks.rice_medium", locale)}</option>
+      <option value="low">{t("tasks.rice_low", locale)}</option>
+    </select>
+  )}
+
+  {/* User filter select (table-style) */}
+  {showUserFilter && (
+    <select class="form-select filter-toolbar__select" id={`${prefix}-filter-user`} aria-label="Filter by assigned user">
+      <option value="">{t("tasks.all_users", locale)}</option>
+      <option value="__unassigned__">Unassigned</option>
+    </select>
+  )}
+
+  {/* Board filter — populated client-side from /api/boards */}
+  <select class="form-select filter-toolbar__select" id={`${prefix}-filter-board`} aria-label="Filter by board">
+    <option value="">All Boards</option>
+  </select>
+
+  {/* Group-by selector */}
+  {showGroupBy && (
+    <select class="form-select filter-toolbar__select" id={`${prefix}-group-by`} aria-label="Group tasks by">
+      {groupOptions.map((opt) => (
+        <option value={opt.value}>{opt.label}</option>
+      ))}
+    </select>
+  )}
+
+  {/* Clear all button */}
+  <button
+    type="button"
+    class="filter-toolbar__clear"
+    id={`${prefix}-clear-filters`}
+    title="Clear all filters"
+    aria-label="Clear all active filters"
+  >
+    {t("tasks.clear_filters", locale)}
+  </button>
+</div>
+
+{/* Label filter bar — separate row below main toolbar */}
+<LabelFilterBar id={`${prefix}-label-filter`} />
+
+<script>
+  /**
+   * FilterToolbar client-side controller
+   *
+   * Binds all filter controls and emits a unified `meitheal:filter-change`
+   * CustomEvent whenever any filter value changes. Views listen for this event.
+   */
+  function initFilterToolbar(toolbar: HTMLElement) {
+    const prefix = toolbar.id.startsWith("table") ? "table" : "kanban"
+
+    // Gather all controls
+    const search = toolbar.querySelector<HTMLInputElement>(`#${prefix}-search`)
+    const statusSel = toolbar.querySelector<HTMLSelectElement>(`#${prefix}-filter-status`)
+    const prioritySel = toolbar.querySelector<HTMLSelectElement>(`#${prefix}-filter-priority`)
+    const riceSel = toolbar.querySelector<HTMLSelectElement>(`#${prefix}-filter-rice`)
+    const userSel = toolbar.querySelector<HTMLSelectElement>(`#${prefix}-filter-user`)
+    const boardSel = toolbar.querySelector<HTMLSelectElement>(`#${prefix}-filter-board`)
+    const groupBySel = toolbar.querySelector<HTMLSelectElement>(`#${prefix}-group-by`)
+    const clearBtn = toolbar.querySelector<HTMLButtonElement>(`#${prefix}-clear-filters`)
+    const typeToggles = toolbar.querySelectorAll<HTMLButtonElement>(".filter-toolbar__type-btn")
+    const userPills = toolbar.querySelectorAll<HTMLButtonElement>(".filter-toolbar__user-btn")
+
+    function gatherState() {
+      // Collect active types
+      const activeTypes: string[] = []
+      typeToggles.forEach((btn) => {
+        if (btn.classList.contains("active") && btn.dataset.type) {
+          activeTypes.push(btn.dataset.type)
+        }
+      })
+
+      // Collect active users (pill mode)
+      let activeUser = ""
+      if (userPills.length > 0) {
+        const activeUserBtn = toolbar.querySelector<HTMLButtonElement>(".filter-toolbar__user-btn.active:not([data-user='all'])")
+        activeUser = activeUserBtn?.dataset.user ?? ""
+      } else {
+        activeUser = userSel?.value ?? ""
+      }
+
+      return {
+        search: search?.value ?? "",
+        status: statusSel?.value ?? "",
+        priority: prioritySel?.value ?? "",
+        rice: riceSel?.value ?? "",
+        user: activeUser,
+        board: boardSel?.value ?? "",
+        groupBy: groupBySel?.value ?? "none",
+        types: activeTypes.length === typeToggles.length ? [] : activeTypes,
+      }
+    }
+
+    function emitChange() {
+      const state = gatherState()
+      document.dispatchEvent(
+        new CustomEvent("meitheal:filter-change", {
+          detail: { ...state, view: prefix },
+        })
+      )
+    }
+
+    // Debounce for search
+    let searchTimer: ReturnType<typeof setTimeout>
+    search?.addEventListener("input", () => {
+      clearTimeout(searchTimer)
+      searchTimer = setTimeout(emitChange, 150)
+    })
+
+    // Select change listeners
+    ;[statusSel, prioritySel, riceSel, userSel, boardSel, groupBySel].forEach((sel) => {
+      sel?.addEventListener("change", emitChange)
+    })
+
+    // Type toggle listeners
+    typeToggles.forEach((btn) => {
+      btn.addEventListener("click", () => {
+        btn.classList.toggle("active")
+        btn.setAttribute("aria-pressed", String(btn.classList.contains("active")))
+        emitChange()
+      })
+    })
+
+    // User pill listeners (kanban)
+    userPills.forEach((btn) => {
+      btn.addEventListener("click", () => {
+        const user = btn.dataset.user
+        if (user === "all") {
+          userPills.forEach((b) => {
+            b.classList.remove("active")
+          })
+          btn.classList.add("active")
+        } else {
+          toolbar.querySelector<HTMLButtonElement>(".filter-toolbar__user-btn[data-user='all']")?.classList.remove("active")
+          btn.classList.toggle("active")
+          // If none active, re-activate "all"
+          const anyActive = toolbar.querySelector<HTMLButtonElement>(".filter-toolbar__user-btn.active:not([data-user='all'])")
+          if (!anyActive) {
+            toolbar.querySelector<HTMLButtonElement>(".filter-toolbar__user-btn[data-user='all']")?.classList.add("active")
+          }
+        }
+        emitChange()
+      })
+    })
+
+    // Clear all button
+    clearBtn?.addEventListener("click", () => {
+      if (search) search.value = ""
+      ;[statusSel, prioritySel, riceSel, userSel, boardSel].forEach((sel) => {
+        if (sel) sel.value = ""
+      })
+      if (groupBySel) groupBySel.value = "none"
+      typeToggles.forEach((btn) => {
+        btn.classList.add("active")
+        btn.setAttribute("aria-pressed", "true")
+      })
+      userPills.forEach((btn) => {
+        btn.classList.remove("active")
+      })
+      toolbar.querySelector<HTMLButtonElement>(".filter-toolbar__user-btn[data-user='all']")?.classList.add("active")
+      emitChange()
+    })
+
+    // Load boards into board selector
+    async function loadBoards() {
+      try {
+        const res = await fetch("/api/boards")
+        if (!res.ok) return
+        const data = await res.json()
+        const boards: { id: string; title: string; icon?: string }[] = data.boards || []
+        if (boardSel) {
+          boards.forEach((b) => {
+            const opt = document.createElement("option")
+            opt.value = b.id
+            opt.textContent = `${b.icon ?? "📋"} ${b.title}`
+            boardSel.appendChild(opt)
+          })
+        }
+      } catch { /* offline fallback */ }
+    }
+
+    loadBoards()
+  }
+
+  // Initialize all toolbars on page
+  function bootToolbars() {
+    document.querySelectorAll<HTMLElement>(".filter-toolbar").forEach(initFilterToolbar)
+  }
+
+  document.addEventListener("DOMContentLoaded", bootToolbars)
+  document.addEventListener("astro:page-load", bootToolbars)
+</script>

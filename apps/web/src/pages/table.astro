@@ -5,7 +5,7 @@ import EmptyState from "../components/ui/EmptyState.astro";
 import TaskTypeIcon from "../components/ui/TaskTypeIcon.astro";
 import RiceBadge from "../components/ui/RiceBadge.astro";
 import LabelBadges from "../components/ui/LabelBadges.astro";
-import LabelFilterBar from "../components/ui/LabelFilterBar.astro";
+import FilterToolbar from "../components/ui/FilterToolbar.astro";
 import { t } from "../i18n/translations";
 import type { Locale } from "../lib/locale";
 import { formatRegionalDate } from "../lib/date";
@@ -110,103 +110,16 @@ const treeRows = buildTreeRows(tasks);
           )}
         </div>
 
-        {/* Filter Bar — enhanced with type toggles, board filter, group-by */}
-        <div class="filter-bar" id="table-filter-bar">
-          <input
-            type="text"
-            class="form-input filter-search"
-            id="table-search"
-            placeholder={t("table.filter_placeholder", locale)}
-            aria-label="Filter table rows"
-          />
-
-          {/* Type filter toggles — matches kanban */}
-          <div class="type-toggles" id="type-toggles">
-            <button type="button" class="type-toggle active" data-type="epic" aria-pressed="true" title="Toggle Epics">
-              🎯 Epic
-            </button>
-            <button type="button" class="type-toggle active" data-type="story" aria-pressed="true" title="Toggle Stories">
-              📖 Story
-            </button>
-            <button type="button" class="type-toggle active" data-type="task" aria-pressed="true" title="Toggle Tasks">
-              ✅ Task
-            </button>
-          </div>
-
-          <select
-            class="form-select filter-select"
-            id="table-filter-status"
-            aria-label="Filter by status"
-          >
-            <option value="">{t("tasks.all_statuses", locale)}</option>
-            <option value="pending">{t("task_status.pending", locale)}</option>
-            <option value="active">{t("task_status.active", locale)}</option>
-            <option value="complete">
-              {t("task_status.complete", locale)}
-            </option>
-            <option value="overdue">{t("tasks.overdue", locale)}</option>
-          </select>
-          <select
-            class="form-select filter-select"
-            id="table-filter-priority"
-            aria-label="Filter by priority"
-          >
-            <option value="">{t("tasks.all_priorities", locale)}</option>
-            <option value="1">{t("priority.critical", locale)}</option>
-            <option value="2">{t("priority.high", locale)}</option>
-            <option value="3">{t("priority.medium", locale)}</option>
-            <option value="4">{t("priority.low", locale)}</option>
-            <option value="5">{t("priority.minimal", locale)}</option>
-          </select>
-          <select
-            class="form-select filter-select"
-            id="table-filter-rice"
-            aria-label="Filter by RICE score"
-          >
-            <option value="">{t("tasks.all_rice", locale)}</option>
-            <option value="high">{t("tasks.rice_high", locale)}</option>
-            <option value="medium">{t("tasks.rice_medium", locale)}</option>
-            <option value="low">{t("tasks.rice_low", locale)}</option>
-          </select>
-          <select
-            class="form-select filter-select"
-            id="table-filter-user"
-            aria-label="Filter by assigned user"
-          >
-            <option value="">{t("tasks.all_users", locale)}</option>
-            <option value="__unassigned__">Unassigned</option>
-          </select>
-
-          {/* Board filter — populated client-side from /api/boards */}
-          <select
-            class="form-select filter-select"
-            id="table-filter-board"
-            aria-label="Filter by board"
-          >
-            <option value="">All Boards</option>
-          </select>
-
-          {/* Group-by selector */}
-          <select
-            class="form-select filter-select"
-            id="table-group-by"
-            aria-label="Group tasks by"
-          >
-            <option value="none">No Grouping</option>
-            <option value="type">Group by Type</option>
-            <option value="priority">Group by Priority</option>
-            <option value="board">Group by Board</option>
-            <option value="assignee">Group by Assignee</option>
-            <option value="status">Group by Status</option>
-            <option value="rice">Group by RICE</option>
-          </select>
-
-          <button type="button" class="filter-clear-btn" id="clear-filters">
-            {t("tasks.clear_filters", locale)}
-          </button>
-        </div>
-
-        <LabelFilterBar id="table-label-filter" />
+        {/* Shared FilterToolbar — replaces inline filter HTML (Phase 2) */}
+        <FilterToolbar
+          view="table"
+          showSearch
+          showGroupBy
+          showStatusFilter
+          showPriorityFilter
+          showRICEFilter
+          showUserFilter
+        />
         <div class="table-container">
           <table class="data-table" id="task-table">
             <thead>
