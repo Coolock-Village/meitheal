@@ -184,8 +184,7 @@ const typeConfig: Record<
 
   <!-- Phase 20: Type filter + grouping toolbar -->
   <div
-    class="type-toolbar"
-    style="padding: 8px 0;"
+    class="type-toolbar kanban-type-toolbar"
     role="toolbar"
     aria-label="Filter by work item type"
   >
@@ -391,7 +390,7 @@ const typeConfig: Record<
                       data-task-type={type}
                       aria-label={`Add ${type} to ${col.label}`}
                     >
-                      {t("kanban.add_task", locale)}
+                      + {t("kanban.add_task", locale)}
                     </button>
                   </div>
                 );
@@ -688,7 +687,7 @@ const typeConfig: Record<
               data-status={col.key}
               aria-label={`Add task to ${col.label}`}
             >
-              {t("kanban.add_task", locale)}
+              + {t("kanban.add_task", locale)}
             </button>
           </div>
         );
@@ -2314,7 +2313,7 @@ const typeConfig: Record<
     color: var(--text-muted);
     cursor: pointer;
     font-size: 13px;
-    transition: all 200ms;
+    transition: all 150ms ease;
   }
   .kanban-add-btn:hover {
     border-color: var(--accent);
