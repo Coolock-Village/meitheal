@@ -360,8 +360,7 @@ const typeConfig: Record<
                         class="kanban-card-title"
                       >
                         <span
-                          class="type-badge"
-                          style={`background: ${tc.color}20; color: ${tc.color}; border-color: ${tc.color}40;`}
+                          class={`type-badge type-badge-${tt}`}
                           title={tc.label}
                         >
                           {tc.icon}
@@ -2875,6 +2874,9 @@ const typeConfig: Record<
     flex-shrink: 0;
     line-height: 1;
   }
+  .type-badge-epic { background: rgba(139, 92, 246, 0.12); color: #8b5cf6; border-color: rgba(139, 92, 246, 0.25); }
+  .type-badge-story { background: rgba(59, 130, 246, 0.12); color: #3b82f6; border-color: rgba(59, 130, 246, 0.25); }
+  .type-badge-task { background: rgba(99, 102, 241, 0.12); color: #6366F1; border-color: rgba(99, 102, 241, 0.25); }
 
   /* Phase 20: Swimlane groups */
   .swimlane-group {
