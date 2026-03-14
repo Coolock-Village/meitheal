@@ -75,7 +75,10 @@
 
   .kanban-count {
     @apply bg-bg-card text-text-muted text-xs px-2 py-0.5 rounded-[8px];
+    transition: background-color 0.2s ease, color 0.2s ease;
   }
+  .kanban-count.wip-warning { background: rgba(245, 158, 11, 0.15); color: #f59e0b; }
+  .kanban-count.wip-over { background: rgba(239, 68, 68, 0.2); color: #ef4444; font-weight: 600; }
 
   .kanban-header-right {
     display: flex;

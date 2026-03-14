@@ -1128,6 +1128,50 @@ const typeConfig: Record<
       });
     })();
 
+    // Keyboard shortcuts for kanban (N = new task, C = collapse all swimlanes)
+    document.addEventListener("keydown", (e) => {
+      // Skip if user is typing in an input, textarea, or contenteditable
+      const tag = document.activeElement?.tagName?.toLowerCase();
+      if (tag === "input" || tag === "textarea" || tag === "select") return;
+      if (document.activeElement?.getAttribute("contenteditable") === "true") return;
+
+      // N = open quick-add in first visible column
+      if (e.key === "n" || e.key === "N") {
+        e.preventDefault();
+        const firstBtn = document.querySelector(".kanban-add-btn");
+        if (firstBtn) firstBtn.click();
+      }
+
+      // C = toggle collapse all swimlane groups
+      if (e.key === "c" || e.key === "C") {
+        e.preventDefault();
+        const toggles = document.querySelectorAll(".swimlane-toggle");
+        if (toggles.length === 0) return;
+        // Determine action: if most are open, collapse all; else expand all
+        const openCount = document.querySelectorAll(".swimlane-group:not(.collapsed)").length;
+        const shouldCollapse = openCount > toggles.length / 2;
+        toggles.forEach((btn) => {
+          const group = btn.closest(".swimlane-group");
+          if (shouldCollapse && !group?.classList.contains("collapsed")) btn.click();
+          if (!shouldCollapse && group?.classList.contains("collapsed")) btn.click();
+        });
+      }
+    });
+
+    // WIP limit visual indicator on column badge counts
+    document.querySelectorAll(".kanban-column").forEach((col) => {
+      const wipLimit = parseInt(col.dataset.wipLimit || "0", 10);
+      if (wipLimit <= 0) return;
+      const countBadge = col.querySelector(".kanban-count");
+      if (!countBadge) return;
+      const count = parseInt(countBadge.textContent || "0", 10);
+      if (count >= wipLimit) {
+        countBadge.classList.add("wip-over");
+      } else if (count >= wipLimit * 0.8) {
+        countBadge.classList.add("wip-warning");
+      }
+    });
+
     // Quick add from kanban column — uses inline form, not prompt()
     document.querySelectorAll(".kanban-add-btn").forEach((btn) => {
       btn.addEventListener("click", () => {
