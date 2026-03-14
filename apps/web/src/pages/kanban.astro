@@ -1400,8 +1400,9 @@ const typeConfig: Record<
         }
       });
 
-      // Make board focusable for keyboard events
-      board.setAttribute("tabindex", "0");
+      // Board-level tabindex removed — it causes drag ghost artifacts and
+      // makes the entire board draggable. Keyboard nav works via individual
+      // card tabindex/focus instead.
 
       // Focus first card when board gets focus
       board.addEventListener("focus", () => {
@@ -1551,10 +1552,23 @@ const typeConfig: Record<
         groupBySelect.dispatchEvent(new Event("change"));
       }
 
-      groupBySelect?.addEventListener("change", () => {
+      groupBySelect?.addEventListener("change", async () => {
         const mode = groupBySelect.value;
         // Persist selection
         localStorage.setItem("meitheal-kanban-group-by", mode);
+
+        // Resolve board titles for group-by-board mode
+        let boardTitleMap = {};
+        if (mode === "board") {
+          try {
+            const res = await fetch((window.__ingress_path || "") + "/api/boards");
+            if (res.ok) {
+              const data = await res.json();
+              (data.boards || []).forEach(b => { boardTitleMap[b.id] = `${b.icon || '📋'} ${b.title}`; });
+            }
+          } catch { /* use raw IDs as fallback */ }
+          boardTitleMap["default"] = "📋 Default";
+        }
 
         // Ungroup everything first
         document.querySelectorAll(".kanban-column").forEach((col) => {
@@ -1670,7 +1684,7 @@ const typeConfig: Record<
               const header = document.createElement("div");
               header.className = "swimlane-header";
               const label =
-                icons[key] || (mode === "board" ? `📋 ${key}` : defaultLabel);
+                icons[key] || (mode === "board" ? (boardTitleMap[key] || `📋 ${key}`) : defaultLabel);
               const toggleSpan = document.createElement("span");
               toggleSpan.className = "swimlane-toggle";
               toggleSpan.textContent = "▼";
@@ -1794,10 +1808,8 @@ const typeConfig: Record<
             .slice(0, 2)
             .toUpperCase();
           btn.appendChild(avatar);
-
-          const label = document.createElement("span");
-          label.textContent = u.display_name || u.name || u.id;
-          btn.appendChild(label);
+          // No text label — initials avatar + title tooltip is sufficient
+          // (matches Teamhood/Jira/Linear initials-only pattern)
 
           container.appendChild(btn);
         });
