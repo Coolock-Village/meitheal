@@ -376,7 +376,6 @@ const typeConfig: Record<
                     <button
                       type="button"
                       class="kanban-add-btn swimlane-add-btn"
-                      style="margin-top: 8px; font-size: 13px; color: var(--text-muted); background: none; border: 1px dashed var(--border); width: 100%; text-align: left; padding: 6px 12px; border-radius: 6px;"
                       data-status={col.key}
                       data-task-type={type}
                       aria-label={`Add ${type} to ${col.label}`}
@@ -447,7 +446,6 @@ const typeConfig: Record<
                     <div class="kanban-card-header">
                       <div
                         class="kanban-card-title"
-                        style="font-weight: 600; line-height: 1.4; padding-bottom: 2px;"
                       >
                         <span
                           class="type-badge"
@@ -458,7 +456,6 @@ const typeConfig: Record<
                         </span>
                         <span
                           class="kanban-ticket-key"
-                          style="font-size:11px;font-family:'JetBrains Mono',monospace;color:var(--text-muted);margin-right:6px;font-weight:500;background:rgba(255,255,255,0.05);padding:2px 4px;border-radius:4px;"
                         >
                           {formatTicketKey(Number(task.ticket_number))}
                         </span>

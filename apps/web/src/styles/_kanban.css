@@ -92,6 +92,20 @@
 
   .kanban-card-title {
     @apply font-medium text-sm text-text-primary mb-1;
+    font-weight: 600;
+    line-height: 1.4;
+    padding-bottom: 2px;
+  }
+
+  .kanban-ticket-key {
+    font-size: 11px;
+    font-family: 'JetBrains Mono', monospace;
+    color: var(--text-muted);
+    margin-right: 6px;
+    font-weight: 500;
+    background: rgba(255, 255, 255, 0.05);
+    padding: 2px 4px;
+    border-radius: 4px;
   }
 
   .kanban-card-desc {
@@ -158,6 +172,25 @@
     background: rgba(99, 102, 241, 0.06);
       border-top-color: var(--accent);
       border-top-style: solid;
+  }
+
+  .swimlane-add-btn {
+    margin-top: 8px;
+    font-size: 13px;
+    color: var(--text-muted);
+    background: none;
+    border: 1px dashed var(--border);
+    width: 100%;
+    text-align: left;
+    padding: 6px 12px;
+    border-radius: 6px;
+    cursor: pointer;
+    transition: border-color 0.2s ease, color 0.2s ease;
+  }
+
+  .swimlane-add-btn:hover {
+    border-color: var(--accent);
+    color: var(--accent);
   }
 
   /* --- Lane management --- */
