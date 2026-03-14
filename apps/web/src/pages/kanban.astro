@@ -253,6 +253,20 @@ const typeConfig: Record<
     <div class="type-group-toggle">
       <label
         class="text-xs text-text-muted"
+        for="board-filter-select"
+        style="margin-right: 4px;">📋 {t("kanban.board", locale)}</label
+      >
+      <select
+        id="board-filter-select"
+        class="inline-select"
+        title="Filter by board"
+      >
+        <option value="">All Boards</option>
+      </select>
+    </div>
+    <div class="type-group-toggle">
+      <label
+        class="text-xs text-text-muted"
         for="group-by-select"
         style="margin-right: 4px;">≡ {t("kanban.group", locale)}</label
       >
@@ -1540,6 +1554,56 @@ const typeConfig: Record<
 
       // Swimlane group-by dropdown
       const groupBySelect = document.getElementById("group-by-select");
+
+      // Board filter toolbar integration (P1 fix)
+      const boardFilterSelect = document.getElementById("board-filter-select");
+      if (boardFilterSelect) {
+        // Populate board options from API
+        fetch((window.__ingress_path || "") + "/api/boards")
+          .then(r => r.ok ? r.json() : { boards: [] })
+          .then(data => {
+            (data.boards || []).forEach(b => {
+              const opt = document.createElement("option");
+              opt.value = b.id;
+              opt.textContent = `${b.icon || '📋'} ${b.title}`;
+              boardFilterSelect.appendChild(opt);
+            });
+            // Restore saved board filter
+            const savedBoard = localStorage.getItem("meitheal-kanban-board-filter");
+            if (savedBoard) {
+              boardFilterSelect.value = savedBoard;
+              boardFilterSelect.dispatchEvent(new Event("change"));
+            }
+          })
+          .catch(() => { /* graceful fallback — filter stays on "All Boards" */ });
+
+        // Filter cards when board selection changes
+        boardFilterSelect.addEventListener("change", () => {
+          const boardId = boardFilterSelect.value;
+          localStorage.setItem("meitheal-kanban-board-filter", boardId);
+          document.querySelectorAll(".kanban-card").forEach(card => {
+            if (!boardId || card.dataset.board === boardId) {
+              card.style.display = "";
+            } else {
+              card.style.display = "none";
+            }
+          });
+          updateColumnCounts();
+          // Sync with sidebar
+          document.dispatchEvent(new CustomEvent("board-filter-change", {
+            detail: { boardId }
+          }));
+        });
+
+        // Listen for sidebar board changes to sync toolbar
+        document.addEventListener("board-changed", (e) => {
+          if (e.detail?.boardId) {
+            boardFilterSelect.value = e.detail.boardId;
+            boardFilterSelect.dispatchEvent(new Event("change"));
+          }
+        });
+      }
+
 
       // Restore saved group-by mode from localStorage
       const savedGroupBy = localStorage.getItem("meitheal-kanban-group-by");
