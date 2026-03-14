@@ -1101,7 +1101,7 @@ const typeConfig: Record<
                     card.style.transition = "opacity 0.2s ease, transform 0.2s ease";
                     card.style.opacity = "0";
                     card.style.transform = "scale(0.95)";
-                    setTimeout(() => { card.remove(); updateAllCounts(); }, 200);
+                    setTimeout(() => { card.remove(); window.updateAllCounts(); }, 200);
                   }
                   if (window.showToast) window.showToast("Task deleted", "info");
                 } else {
@@ -1509,7 +1509,7 @@ const typeConfig: Record<
           }
         });
 
-        updateAllCounts();
+        window.updateAllCounts();
       });
     })();
 
@@ -1689,7 +1689,7 @@ const typeConfig: Record<
           localStorage.setItem("meitheal-kanban-type-filter", JSON.stringify(activeTypesArr))
         }
 
-        updateAllCounts();
+        window.updateAllCounts();
         applyLabelFilter();
       }
 
@@ -1751,11 +1751,11 @@ const typeConfig: Record<
             el.style.display = "none";
           }
         });
-        updateAllCounts();
+        window.updateAllCounts();
       }
 
       // Unified visibility helper — checks ALL filter dimensions
-      function isCardVisible(card) {
+      window.isCardVisible = function (card) {
         if (card.style.display === "none") return false
         if (card.classList.contains("user-filtered-out")) return false
         if (card.classList.contains("hidden")) return false
@@ -1763,13 +1763,13 @@ const typeConfig: Record<
       }
 
       // Unified count updater — column headers + swimlane badges
-      function updateAllCounts() {
+      window.updateAllCounts = function () {
         // 1. Column header counts
         document.querySelectorAll(".kanban-column").forEach((col) => {
           const count = col.querySelector(".kanban-count")
           const visible = Array.from(
             col.querySelectorAll(".kanban-card"),
-          ).filter(isCardVisible)
+          ).filter(window.isCardVisible)
           if (count) count.textContent = visible.length
         })
 
@@ -1779,17 +1779,17 @@ const typeConfig: Record<
           if (!countEl) return
           const visible = Array.from(
             group.querySelectorAll(".kanban-card"),
-          ).filter(isCardVisible)
+          ).filter(window.isCardVisible)
           countEl.textContent = visible.length
         })
 
         // Auto-detect filter state for clear button
-        updateFilterClearBtn()
+        window.window.updateFilterClearBtn()
       }
 
       // Show/hide filter clear button based on active filter state
       const filterClearBtn = document.getElementById("kanban-clear-filters")
-      function updateFilterClearBtn() {
+      window.updateFilterClearBtn = function () {
         if (!filterClearBtn) return
         let anyActive = false
         // Type filter: any button NOT active means filter is on
@@ -1850,8 +1850,8 @@ const typeConfig: Record<
           localStorage.removeItem("meitheal-kanban-board-filter")
           localStorage.removeItem("meitheal-kanban-label-filter")
 
-          updateAllCounts()
-          updateFilterClearBtn()
+          window.updateAllCounts()
+          window.updateFilterClearBtn()
 
           if (window.showToast) window.showToast("All filters cleared", "info")
         })
@@ -1893,7 +1893,7 @@ const typeConfig: Record<
               card.style.display = "none";
             }
           });
-          updateAllCounts();
+          window.updateAllCounts();
           // Sync with sidebar
           document.dispatchEvent(new CustomEvent("board-filter-change", {
             detail: { boardId }
@@ -1999,7 +1999,7 @@ const typeConfig: Record<
                 group.classList.toggle("hidden", !activeTypes.has(groupType));
                 const countEl = group.querySelector(".swimlane-count");
                 const cards = group.querySelectorAll(".kanban-card");
-                if (countEl) countEl.textContent = Array.from(cards).filter(isCardVisible).length;
+                if (countEl) countEl.textContent = Array.from(cards).filter(window.isCardVisible).length;
               });
           });
         } else if (mode === "board" || mode === "priority") {
@@ -2059,7 +2059,7 @@ const typeConfig: Record<
               labelSpan.textContent = label;
               const countSpan = document.createElement("span");
               countSpan.className = "swimlane-count";
-              countSpan.textContent = String(cards.filter(isCardVisible).length);
+              countSpan.textContent = String(cards.filter(window.isCardVisible).length);
               header.append(toggleSpan, labelSpan, countSpan);
 
               // Collapse toggle — matches static swimlane CSS class pattern
@@ -2248,7 +2248,7 @@ const typeConfig: Record<
             }
           });
 
-        updateAllCounts()
+        window.updateAllCounts()
       }
 
       // Click handlers

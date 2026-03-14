@@ -24,7 +24,7 @@ export function logApiError(
   error: unknown,
   requestId?: string,
 ) {
-  const errDetail = error instanceof Error ? error.message : String(error);
+  const errDetail = error instanceof Error ? error.stack || error.message : String(error);
   apiLogger.log("error", {
     event: `api.${component}.error`,
     domain: "api",
@@ -32,6 +32,16 @@ export function logApiError(
     request_id: requestId ?? "unknown",
     message: `${message}: ${errDetail}`,
   });
+  try {
+    (async () => {
+      const fs = await import("node:fs");
+      const path = await import("node:path");
+      const logPath = path.join(process.cwd(), ".data", "api_error.log");
+      fs.appendFileSync(logPath, `[${new Date().toISOString()}] ${component} (${requestId}): ${message}\n${errDetail}\n\n`);
+    })();
+  } catch (e) {
+    // ignore
+  }
 }
 
 export function logApiWarn(

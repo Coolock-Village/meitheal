@@ -350,13 +350,17 @@ const groupOptions = groupByOptions ?? defaultGroupByOptions
 
     // Load boards into board selector (idempotent via DOM attribute)
     async function loadBoards() {
+      console.log("[DEBUG] loadBoards called. boardSel:", !!boardSel, "populated:", boardSel?.dataset.populated)
       if (!boardSel || boardSel.dataset.populated) return
       boardSel.dataset.populated = "true"
+      
       try {
         const res = await fetch("/api/boards")
         if (!res.ok) return
         const data = await res.json()
         const boards: { id: string; title: string; icon?: string }[] = data.boards || []
+        console.log("[DEBUG] /api/boards returned", boards.length, "options")
+        
         boards.forEach((b) => {
           const opt = document.createElement("option")
           opt.value = b.id
