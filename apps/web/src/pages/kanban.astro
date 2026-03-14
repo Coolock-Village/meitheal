@@ -466,7 +466,7 @@ const typeConfig: Record<
                         >
                           {formatTicketKey(Number(task.ticket_number))}
                         </span>
-                        {String(task.title)}
+                        <span class="kanban-title-text" data-task-id={String(task.id)}>{String(task.title)}</span>
                       </div>
                       {Number(task.is_favorite ?? 0) === 1 && (
                         <span
@@ -965,6 +965,81 @@ const typeConfig: Record<
         tryOpen();
       });
     });
+
+    // Inline quick-edit: double-click card title to edit in place
+    document.querySelectorAll(".kanban-title-text").forEach((titleSpan) => {
+      titleSpan.addEventListener("dblclick", (e) => {
+        e.stopPropagation()
+        e.preventDefault()
+        if (titleSpan.contentEditable === "true") return
+
+        const card = titleSpan.closest(".kanban-card")
+        const taskId = titleSpan.dataset.taskId
+        if (!taskId) return
+
+        // Save original for revert
+        const originalText = titleSpan.textContent
+
+        // Enter edit mode
+        titleSpan.contentEditable = "true"
+        titleSpan.focus()
+
+        // Select all text for easy replacement
+        const range = document.createRange()
+        range.selectNodeContents(titleSpan)
+        const sel = window.getSelection()
+        sel.removeAllRanges()
+        sel.addRange(range)
+
+        // Prevent drag while editing
+        if (card) card.setAttribute("draggable", "false")
+
+        // Save handler
+        async function saveEdit() {
+          const newTitle = titleSpan.textContent.trim()
+          titleSpan.contentEditable = "false"
+          if (card) card.setAttribute("draggable", "true")
+
+          // Remove listeners
+          titleSpan.removeEventListener("blur", saveEdit)
+          titleSpan.removeEventListener("keydown", handleKeys)
+
+          if (!newTitle || newTitle === originalText) {
+            titleSpan.textContent = originalText
+            return
+          }
+
+          try {
+            const res = await fetch(`${window.__ingress_path || ""}/api/tasks/${taskId}`, {
+              method: "PUT",
+              headers: { "content-type": "application/json" },
+              body: JSON.stringify({ title: newTitle }),
+            })
+            if (!res.ok) throw new Error("save failed")
+          } catch {
+            titleSpan.textContent = originalText
+            if (window.showToast) window.showToast("Failed to save title", "error")
+          }
+        }
+
+        // Key handler
+        function handleKeys(ev) {
+          if (ev.key === "Enter") {
+            ev.preventDefault()
+            titleSpan.blur()
+          } else if (ev.key === "Escape") {
+            titleSpan.textContent = originalText
+            titleSpan.contentEditable = "false"
+            if (card) card.setAttribute("draggable", "true")
+            titleSpan.removeEventListener("blur", saveEdit)
+            titleSpan.removeEventListener("keydown", handleKeys)
+          }
+        }
+
+        titleSpan.addEventListener("blur", saveEdit)
+        titleSpan.addEventListener("keydown", handleKeys)
+      })
+    })
 
     // AI: open ChatGPT with task context prompt
     document.querySelectorAll(".card-ai-btn").forEach((btn) => {

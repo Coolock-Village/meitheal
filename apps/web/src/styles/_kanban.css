@@ -126,6 +126,27 @@
     padding-bottom: 2px;
   }
 
+  .kanban-title-text {
+    cursor: default;
+    border-radius: 3px;
+    padding: 1px 2px;
+    margin: -1px -2px;
+    transition: background 0.15s ease, outline 0.15s ease;
+  }
+
+  .kanban-title-text:hover {
+    background: rgba(255, 255, 255, 0.04);
+  }
+
+  .kanban-title-text[contenteditable="true"] {
+    cursor: text;
+    outline: 1.5px solid var(--accent);
+    background: var(--bg-secondary);
+    padding: 2px 4px;
+    margin: -2px -4px;
+    border-radius: 4px;
+  }
+
   .kanban-ticket-key {
     font-size: 11px;
     font-family: 'JetBrains Mono', monospace;
