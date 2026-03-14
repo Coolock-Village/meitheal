@@ -831,8 +831,10 @@ const typeConfig: Record<
           }
         }
       } catch {
+        // Show error feedback before reverting
+        if (window.showToast) window.showToast("Failed to move task — reverting", "error")
         // Revert on failure — reload to get server state
-        window.location.reload();
+        setTimeout(() => window.location.reload(), 800)
       }
     }
 
@@ -1679,10 +1681,27 @@ const typeConfig: Record<
 
       function __handleLabelFilter(e) {
         activeLabelFilter = (e.detail && e.detail.labels) || [];
+        // Persist label filter state
+        if (activeLabelFilter.length > 0) {
+          localStorage.setItem("meitheal-kanban-label-filter", JSON.stringify(activeLabelFilter))
+        } else {
+          localStorage.removeItem("meitheal-kanban-label-filter")
+        }
         applyLabelFilter();
       }
       document.removeEventListener("meitheal:label-filter", __handleLabelFilter);
       document.addEventListener("meitheal:label-filter", __handleLabelFilter);
+
+      // Restore saved label filter on page load
+      const savedLabelFilter = localStorage.getItem("meitheal-kanban-label-filter")
+      if (savedLabelFilter) {
+        try {
+          const savedLabels = JSON.parse(savedLabelFilter)
+          if (Array.isArray(savedLabels) && savedLabels.length > 0) {
+            activeLabelFilter = savedLabels
+          }
+        } catch {}
+      }
 
       function applyLabelFilter() {
         document.querySelectorAll(".kanban-card").forEach(function (c) {
@@ -1809,6 +1828,7 @@ const typeConfig: Record<
           localStorage.removeItem("meitheal-user-filter")
           localStorage.removeItem("meitheal-kanban-type-filter")
           localStorage.removeItem("meitheal-kanban-board-filter")
+          localStorage.removeItem("meitheal-kanban-label-filter")
 
           updateAllCounts()
           updateFilterClearBtn()
@@ -2914,6 +2934,24 @@ const typeConfig: Record<
     }
     .type-filters {
       flex-wrap: wrap;
+    }
+  }
+
+  /* Accessibility: suppress transitions for reduced-motion users */
+  @media (prefers-reduced-motion: reduce) {
+    .type-filter-btn,
+    .user-filter-btn,
+    .filter-clear-btn,
+    .kanban-title-text,
+    .kanban-progress-bar,
+    .kanban-card-title,
+    .kanban-card-meta,
+    .kanban-card-desc,
+    .kanban-assignee-badge,
+    .kanban-card-due,
+    .kanban-card-header,
+    .kanban-inline-add {
+      transition: none !important;
     }
   }
 </style>
