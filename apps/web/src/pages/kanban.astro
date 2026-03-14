@@ -343,9 +343,10 @@ const typeConfig: Record<
             aria-label={`${col.label} Swimlane`}
 
           >
-            <div class="kanban-column-header">
-              <span>
-                {col.icon} {col.label}
+            <div class="kanban-column-header" data-column-key={col.key}>
+              <span class="kanban-column-title">
+                <span class={`column-status-dot status-${col.key}`}></span>
+                {col.label}
               </span>
               <span class="kanban-header-right">
                 {col.wipLimit > 0 && (
