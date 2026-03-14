@@ -1796,19 +1796,21 @@ const typeConfig: Record<
               countSpan.textContent = String(cards.filter(isCardVisible).length);
               header.append(toggleSpan, labelSpan, countSpan);
 
-              // Collapse toggle — use CSS class (matches static swimlane pattern)
+              // Collapse toggle — matches static swimlane CSS class pattern
+              header.style.cursor = "pointer"
               header.addEventListener("click", () => {
-                const isCollapsed = group.classList.contains("collapsed")
-                group.classList.toggle("collapsed", !isCollapsed)
+                const cardsEl = group.querySelector(".swimlane-cards")
                 const toggle = header.querySelector(".swimlane-toggle")
-                if (toggle) toggle.textContent = isCollapsed ? "▼" : "▶"
+                if (!cardsEl) return
+                const isCollapsed = cardsEl.classList.toggle("collapsed")
+                if (toggle) {
+                  toggle.classList.toggle("collapsed", isCollapsed)
+                  toggle.textContent = isCollapsed ? "▶" : "▼"
+                }
+                group.classList.toggle("swimlane-collapsed", isCollapsed)
                 // Persist collapse state
                 const collapseKey = `meitheal-swimlane-dyn-${key}`
-                if (isCollapsed) {
-                  localStorage.removeItem(collapseKey)
-                } else {
-                  localStorage.setItem(collapseKey, "1")
-                }
+                localStorage.setItem(collapseKey, isCollapsed ? "collapsed" : "expanded")
               });
 
               const swimlaneCards = document.createElement("div");
@@ -1822,6 +1824,15 @@ const typeConfig: Record<
               group.appendChild(header);
               group.appendChild(swimlaneCards);
               cardsContainer.appendChild(group);
+
+              // Restore saved collapse state for dynamic swimlane
+              const collapseKey = `meitheal-swimlane-dyn-${key}`;
+              if (localStorage.getItem(collapseKey) === "collapsed") {
+                swimlaneCards.classList.add("collapsed");
+                toggleSpan.classList.add("collapsed");
+                toggleSpan.textContent = "▶";
+                group.classList.add("swimlane-collapsed");
+              }
             });
           });
         }
