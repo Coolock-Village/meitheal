@@ -32,6 +32,37 @@
     @apply bg-bg-card text-text-muted text-xs px-2 py-0.5 rounded-[8px];
   }
 
+  .kanban-header-right {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+  }
+
+  .kanban-wip {
+    font-size: 11px;
+    padding: 1px 6px;
+    border-radius: 4px;
+    background: rgba(99, 102, 241, 0.1);
+    color: var(--accent);
+  }
+
+  .kanban-wip.wip-over {
+    background: rgba(239, 68, 68, 0.15);
+    color: var(--danger);
+    font-weight: 600;
+    animation: wip-pulse 1.5s ease-in-out infinite;
+  }
+
+  .kanban-column.wip-exceeded {
+    border-color: var(--danger);
+    background: rgba(239, 68, 68, 0.03);
+  }
+
+  @keyframes wip-pulse {
+    0%, 100% { opacity: 1; }
+    50% { opacity: 0.6; }
+  }
+
   .kanban-cards {
     @apply flex flex-col gap-2 p-3 flex-1 min-h-[100px];
     overflow-y: auto;
