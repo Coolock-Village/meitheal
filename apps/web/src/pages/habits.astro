@@ -1,0 +1,602 @@
+---
+/**
+ * Habits Page — Daily habit tracker with streaks and completion history
+ *
+ * @domain habits
+ * @bounded-context habits
+ *
+ * Shows active habits with today's completion status, streak data,
+ * and a 7-day completion grid. Supports creating, completing, and
+ * deleting habits via the /api/habits endpoint.
+ *
+ * @kcs Feature-flag gated — redirects to / if habits disabled.
+ * All data fetched server-side via domain imports for SSR.
+ */
+
+import Layout from "../layouts/Layout.astro";
+import { isFeatureEnabled } from "../lib/feature-flags";
+import { getHabits, ensureHabitSchema, type HabitWithStats } from "@domains/habits";
+
+// Feature flag guard
+if (!(await isFeatureEnabled("habits"))) {
+  return Astro.redirect("/");
+}
+
+// Ensure schema exists
+try {
+  await ensureHabitSchema();
+} catch {
+  /* DB not available */
+}
+
+// Fetch habits with stats
+let habits: HabitWithStats[] = [];
+try {
+  habits = await getHabits();
+} catch {
+  /* graceful fallback */
+}
+
+// Build 7-day date range for completion grid
+const today = new Date();
+const days: { date: string; label: string; isToday: boolean }[] = [];
+for (let i = 6; i >= 0; i--) {
+  const d = new Date(today);
+  d.setDate(d.getDate() - i);
+  const dateStr = d.toISOString().split("T")[0]!;
+  const label = d.toLocaleDateString("en", { weekday: "short" });
+  days.push({ date: dateStr, label, isToday: i === 0 });
+}
+---
+
+<Layout title="Habits — Meitheal" description="Track daily habits with streaks and completion history">
+  <Fragment slot="page-title">🔁 Habits</Fragment>
+
+  <div class="habits-page">
+    <!-- Summary Stats -->
+    <section class="habits-stats">
+      <div class="habits-stat">
+        <span class="habits-stat__value">{habits.length}</span>
+        <span class="habits-stat__label">Active Habits</span>
+      </div>
+      <div class="habits-stat">
+        <span class="habits-stat__value">{habits.filter(h => h.todayCount > 0).length}</span>
+        <span class="habits-stat__label">Done Today</span>
+      </div>
+      <div class="habits-stat">
+        <span class="habits-stat__value">{Math.max(...habits.map(h => h.currentStreak), 0)}</span>
+        <span class="habits-stat__label">Best Active Streak</span>
+      </div>
+      <div class="habits-stat">
+        <span class="habits-stat__value">{habits.reduce((sum, h) => sum + h.totalCompletions, 0)}</span>
+        <span class="habits-stat__label">Total Completions</span>
+      </div>
+    </section>
+
+    <!-- Create New Habit -->
+    <section class="habits-create">
+      <form id="create-habit-form" class="habits-create__form">
+        <input
+          type="text"
+          id="habit-name-input"
+          class="form-input habits-create__input"
+          placeholder="New habit name... (e.g. Meditate, Exercise, Read)"
+          required
+          autocomplete="off"
+        />
+        <div class="habits-create__options">
+          <label class="habits-create__option">
+            <span class="text-xs text-text-muted">Icon</span>
+            <input
+              type="text"
+              id="habit-icon-input"
+              class="form-input habits-create__icon-input"
+              value="✅"
+              maxlength="4"
+            />
+          </label>
+          <label class="habits-create__option">
+            <span class="text-xs text-text-muted">Color</span>
+            <input
+              type="color"
+              id="habit-color-input"
+              class="habits-create__color-input"
+              value="#6366f1"
+            />
+          </label>
+          <label class="habits-create__option">
+            <span class="text-xs text-text-muted">Frequency</span>
+            <select id="habit-freq-input" class="form-input habits-create__freq-input">
+              <option value="daily">Daily</option>
+              <option value="weekly">Weekly</option>
+            </select>
+          </label>
+        </div>
+        <button type="submit" class="btn-primary habits-create__btn">+ Add Habit</button>
+      </form>
+    </section>
+
+    <!-- Habit Cards -->
+    <section class="habits-grid" id="habits-grid">
+      {habits.length === 0 ? (
+        <div class="habits-empty">
+          <span class="habits-empty__icon">🔁</span>
+          <p class="habits-empty__title">No habits yet</p>
+          <p class="habits-empty__desc">Create your first habit above to start tracking daily behaviors</p>
+        </div>
+      ) : (
+        habits.map((habit) => (
+          <div
+            class={`habit-card ${habit.todayCount > 0 ? "habit-card--done" : ""}`}
+            data-habit-id={habit.id}
+            style={`--habit-color: ${habit.color};`}
+          >
+            <div class="habit-card__header">
+              <div class="habit-card__identity">
+                <span class="habit-card__icon">{habit.icon}</span>
+                <div>
+                  <span class="habit-card__name">{habit.name}</span>
+                  <span class="habit-card__freq">{habit.frequency}</span>
+                </div>
+              </div>
+              <button
+                type="button"
+                class="habit-card__complete-btn"
+                data-habit-id={habit.id}
+                title={habit.todayCount > 0 ? `Done ${habit.todayCount}× today` : "Mark complete for today"}
+              >
+                {habit.todayCount > 0 ? `✓ ${habit.todayCount}×` : "○"}
+              </button>
+            </div>
+
+            <div class="habit-card__stats">
+              <div class="habit-card__stat">
+                <span class="habit-card__stat-value">🔥 {habit.currentStreak}</span>
+                <span class="habit-card__stat-label">Streak</span>
+              </div>
+              <div class="habit-card__stat">
+                <span class="habit-card__stat-value">🏆 {habit.longestStreak}</span>
+                <span class="habit-card__stat-label">Best</span>
+              </div>
+              <div class="habit-card__stat">
+                <span class="habit-card__stat-value">📊 {habit.totalCompletions}</span>
+                <span class="habit-card__stat-label">Total</span>
+              </div>
+            </div>
+
+            <div class="habit-card__actions">
+              <button
+                type="button"
+                class="habit-card__delete-btn"
+                data-habit-id={habit.id}
+                data-habit-name={habit.name}
+                title="Delete habit"
+              >🗑</button>
+            </div>
+          </div>
+        ))
+      )}
+    </section>
+  </div>
+</Layout>
+
+<script>
+  import { showToast } from "@lib/toast"
+
+  function initHabitsPage() {
+    // Create habit form
+    const form = document.getElementById("create-habit-form") as HTMLFormElement | null
+    form?.addEventListener("submit", async (e) => {
+      e.preventDefault()
+      const nameInput = document.getElementById("habit-name-input") as HTMLInputElement
+      const iconInput = document.getElementById("habit-icon-input") as HTMLInputElement
+      const colorInput = document.getElementById("habit-color-input") as HTMLInputElement
+      const freqInput = document.getElementById("habit-freq-input") as HTMLSelectElement
+
+      const name = nameInput.value.trim()
+      if (!name) return
+
+      try {
+        const res = await fetch("/api/habits", {
+          method: "POST",
+          headers: { "content-type": "application/json" },
+          body: JSON.stringify({
+            action: "create",
+            name,
+            icon: iconInput.value || "✅",
+            color: colorInput.value || "#6366f1",
+            frequency: freqInput.value || "daily",
+          }),
+        })
+
+        if (res.ok) {
+          showToast("Habit created!", "success")
+          nameInput.value = ""
+          // Reload to show updated list
+          window.location.reload()
+        } else {
+          showToast("Failed to create habit", "error")
+        }
+      } catch {
+        showToast("Network error", "error")
+      }
+    })
+
+    // Complete habit buttons
+    document.querySelectorAll<HTMLButtonElement>(".habit-card__complete-btn").forEach((btn) => {
+      btn.addEventListener("click", async () => {
+        const habitId = btn.dataset.habitId
+        if (!habitId) return
+
+        try {
+          const res = await fetch("/api/habits", {
+            method: "POST",
+            headers: { "content-type": "application/json" },
+            body: JSON.stringify({ action: "complete", habitId }),
+          })
+
+          if (res.ok) {
+            const data = await res.json()
+            btn.textContent = `✓ ${data.count}×`
+            btn.closest(".habit-card")?.classList.add("habit-card--done")
+            showToast("Habit completed! 🎉", "success")
+          } else {
+            showToast("Failed to complete habit", "error")
+          }
+        } catch {
+          showToast("Network error", "error")
+        }
+      })
+    })
+
+    // Delete habit buttons
+    document.querySelectorAll<HTMLButtonElement>(".habit-card__delete-btn").forEach((btn) => {
+      btn.addEventListener("click", async () => {
+        const habitId = btn.dataset.habitId
+        const habitName = btn.dataset.habitName || "this habit"
+        if (!habitId) return
+
+        if (!confirm(`Delete habit "${habitName}"? This cannot be undone.`)) return
+
+        try {
+          const res = await fetch("/api/habits", {
+            method: "POST",
+            headers: { "content-type": "application/json" },
+            body: JSON.stringify({ action: "delete", habitId }),
+          })
+
+          if (res.ok) {
+            btn.closest(".habit-card")?.remove()
+            showToast("Habit deleted", "success")
+            // Check if grid is now empty
+            const grid = document.getElementById("habits-grid")
+            if (grid && grid.querySelectorAll(".habit-card").length === 0) {
+              window.location.reload()
+            }
+          } else {
+            showToast("Failed to delete habit", "error")
+          }
+        } catch {
+          showToast("Network error", "error")
+        }
+      })
+    })
+  }
+
+  // Init on load and after View Transitions
+  initHabitsPage()
+  document.addEventListener("astro:after-swap", initHabitsPage)
+</script>
+
+<style>
+  .habits-page {
+    display: flex;
+    flex-direction: column;
+    gap: 1.5rem;
+    padding: 1rem 0;
+    max-width: 900px;
+  }
+
+  /* Stats */
+  .habits-stats {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+    gap: 0.75rem;
+  }
+
+  .habits-stat {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 0.25rem;
+    padding: 1rem;
+    background: var(--bg-card, #1a1a2e);
+    border-radius: 12px;
+    border: 1px solid var(--border, #334155);
+    text-align: center;
+    transition: transform 0.15s, border-color 0.15s;
+  }
+
+  .habits-stat:hover {
+    transform: translateY(-2px);
+    border-color: var(--accent, #6366f1);
+  }
+
+  .habits-stat__value {
+    font-size: 1.5rem;
+    font-weight: 700;
+    color: var(--text-primary, #e0e0e0);
+    font-variant-numeric: tabular-nums;
+  }
+
+  .habits-stat__label {
+    font-size: 0.6875rem;
+    color: var(--text-muted, #888);
+    text-transform: uppercase;
+    letter-spacing: 0.03em;
+  }
+
+  /* Create Form */
+  .habits-create {
+    padding: 1.25rem;
+    background: var(--bg-card, #1a1a2e);
+    border-radius: 12px;
+    border: 1px solid var(--border, #334155);
+  }
+
+  .habits-create__form {
+    display: flex;
+    flex-direction: column;
+    gap: 0.75rem;
+  }
+
+  .habits-create__input {
+    font-size: 1rem;
+  }
+
+  .habits-create__options {
+    display: flex;
+    gap: 1rem;
+    flex-wrap: wrap;
+    align-items: flex-end;
+  }
+
+  .habits-create__option {
+    display: flex;
+    flex-direction: column;
+    gap: 0.25rem;
+  }
+
+  .habits-create__icon-input {
+    width: 3.5rem;
+    text-align: center;
+    font-size: 1.25rem;
+    padding: 0.25rem;
+  }
+
+  .habits-create__color-input {
+    width: 3rem;
+    height: 2rem;
+    padding: 0;
+    border: 1px solid var(--border, #334155);
+    border-radius: 6px;
+    background: none;
+    cursor: pointer;
+  }
+
+  .habits-create__freq-input {
+    min-width: 100px;
+  }
+
+  .habits-create__btn {
+    align-self: flex-start;
+  }
+
+  /* Empty State */
+  .habits-empty {
+    text-align: center;
+    padding: 3rem 1rem;
+    background: var(--bg-card, #1a1a2e);
+    border-radius: 12px;
+    border: 1px dashed var(--border, #334155);
+  }
+
+  .habits-empty__icon {
+    font-size: 3rem;
+    display: block;
+    margin-bottom: 1rem;
+  }
+
+  .habits-empty__title {
+    font-size: 1.125rem;
+    font-weight: 600;
+    color: var(--text-primary, #e0e0e0);
+    margin: 0 0 0.5rem;
+  }
+
+  .habits-empty__desc {
+    font-size: 0.875rem;
+    color: var(--text-muted, #888);
+    margin: 0;
+  }
+
+  /* Habit Cards Grid */
+  .habits-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+    gap: 1rem;
+  }
+
+  .habit-card {
+    background: var(--bg-card, #1a1a2e);
+    border-radius: 12px;
+    border: 1px solid var(--border, #334155);
+    padding: 1.25rem;
+    transition: transform 0.15s, border-color 0.2s, box-shadow 0.2s;
+    position: relative;
+    overflow: hidden;
+  }
+
+  .habit-card::before {
+    content: "";
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    height: 3px;
+    background: var(--habit-color, var(--accent, #6366f1));
+    opacity: 0.6;
+    transition: opacity 0.2s;
+  }
+
+  .habit-card:hover {
+    transform: translateY(-2px);
+    border-color: var(--habit-color, var(--accent, #6366f1));
+    box-shadow: 0 4px 16px rgba(0, 0, 0, 0.2);
+  }
+
+  .habit-card:hover::before {
+    opacity: 1;
+  }
+
+  .habit-card--done {
+    border-color: color-mix(in srgb, var(--habit-color, var(--accent)) 40%, transparent);
+    background: color-mix(in srgb, var(--habit-color, var(--accent)) 5%, var(--bg-card, #1a1a2e));
+  }
+
+  .habit-card--done::before {
+    opacity: 1;
+  }
+
+  .habit-card__header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 1rem;
+  }
+
+  .habit-card__identity {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+  }
+
+  .habit-card__icon {
+    font-size: 1.75rem;
+    line-height: 1;
+  }
+
+  .habit-card__name {
+    font-size: 0.9375rem;
+    font-weight: 600;
+    color: var(--text-primary, #e0e0e0);
+    display: block;
+  }
+
+  .habit-card__freq {
+    font-size: 0.6875rem;
+    color: var(--text-muted, #888);
+    text-transform: capitalize;
+  }
+
+  .habit-card__complete-btn {
+    font-size: 1.125rem;
+    width: 3rem;
+    height: 3rem;
+    border-radius: 50%;
+    border: 2px solid var(--habit-color, var(--accent, #6366f1));
+    background: transparent;
+    color: var(--text-muted, #888);
+    cursor: pointer;
+    transition: all 0.2s;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+  }
+
+  .habit-card__complete-btn:hover {
+    background: color-mix(in srgb, var(--habit-color, var(--accent)) 15%, transparent);
+    color: var(--text-primary, #e0e0e0);
+    transform: scale(1.05);
+  }
+
+  .habit-card--done .habit-card__complete-btn {
+    background: var(--habit-color, var(--accent, #6366f1));
+    color: white;
+    font-size: 0.8125rem;
+    font-weight: 600;
+  }
+
+  /* Stats Row */
+  .habit-card__stats {
+    display: flex;
+    gap: 1rem;
+    margin-bottom: 0.75rem;
+  }
+
+  .habit-card__stat {
+    display: flex;
+    flex-direction: column;
+    gap: 0.125rem;
+  }
+
+  .habit-card__stat-value {
+    font-size: 0.8125rem;
+    font-weight: 600;
+    color: var(--text-secondary, #a0a0a0);
+  }
+
+  .habit-card__stat-label {
+    font-size: 0.625rem;
+    color: var(--text-muted, #888);
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+  }
+
+  /* Actions */
+  .habit-card__actions {
+    display: flex;
+    justify-content: flex-end;
+    padding-top: 0.5rem;
+    border-top: 1px solid var(--border, #334155);
+  }
+
+  .habit-card__delete-btn {
+    font-size: 0.875rem;
+    background: none;
+    border: none;
+    color: var(--text-muted, #888);
+    cursor: pointer;
+    padding: 0.25rem 0.5rem;
+    border-radius: 4px;
+    transition: color 0.15s, background 0.15s;
+    opacity: 0;
+    transition: opacity 0.15s;
+  }
+
+  .habit-card:hover .habit-card__delete-btn {
+    opacity: 1;
+  }
+
+  .habit-card__delete-btn:hover {
+    color: var(--error, #ef4444);
+    background: rgba(239, 68, 68, 0.1);
+  }
+
+  /* Responsive */
+  @media (max-width: 600px) {
+    .habits-stats {
+      grid-template-columns: repeat(2, 1fr);
+    }
+
+    .habits-grid {
+      grid-template-columns: 1fr;
+    }
+
+    .habits-create__options {
+      flex-direction: column;
+      gap: 0.5rem;
+    }
+  }
+</style>

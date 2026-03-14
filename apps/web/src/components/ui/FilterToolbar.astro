@@ -21,7 +21,8 @@
  *   <FilterToolbar view="table" showSearch showGroupBy showStatusFilter showPriorityFilter showRICEFilter showUserFilter />
  *   <FilterToolbar view="kanban" showGroupBy />
  */
-import { t, getLocale } from "@lib/i18n"
+import { t } from "../../i18n/translations"
+import type { Locale } from "../../lib/locale"
 import LabelFilterBar from "./LabelFilterBar.astro"
 
 interface Props {
@@ -60,7 +61,9 @@ const {
   class: className,
 } = Astro.props
 
-const locale = getLocale(Astro)
+// Resolve locale from cookie (same pattern as pages)
+const cookieLocale = Astro.cookies.get("meitheal-locale")?.value
+const locale: Locale = cookieLocale === "ga" ? "ga" : "en"
 
 const prefix = view === "table" ? "table" : "kanban"
 
@@ -345,7 +348,7 @@ const groupOptions = groupByOptions ?? defaultGroupByOptions
       emitChange()
     })
 
-    // Load boards into board selector
+    // Load boards into board selector (idempotent — clears before appending)
     async function loadBoards() {
       try {
         const res = await fetch("/api/boards")
@@ -353,6 +356,10 @@ const groupOptions = groupByOptions ?? defaultGroupByOptions
         const data = await res.json()
         const boards: { id: string; title: string; icon?: string }[] = data.boards || []
         if (boardSel) {
+          // Remove existing dynamic options (keep first "All Boards" option)
+          while (boardSel.options.length > 1) {
+            boardSel.remove(1)
+          }
           boards.forEach((b) => {
             const opt = document.createElement("option")
             opt.value = b.id
@@ -366,9 +373,13 @@ const groupOptions = groupByOptions ?? defaultGroupByOptions
     loadBoards()
   }
 
-  // Initialize all toolbars on page
+  // Initialize toolbars — skip kanban (has its own inline script)
   function bootToolbars() {
-    document.querySelectorAll<HTMLElement>(".filter-toolbar").forEach(initFilterToolbar)
+    document.querySelectorAll<HTMLElement>(".filter-toolbar").forEach((toolbar) => {
+      // Kanban has its own comprehensive filter handling — skip to avoid double-handling
+      if (toolbar.id.startsWith("kanban")) return
+      initFilterToolbar(toolbar)
+    })
   }
 
   document.addEventListener("DOMContentLoaded", bootToolbars)

@@ -16,7 +16,8 @@ export interface Props {
     | "search"
     | "link"
     | "sparkles"
-    | "trophy";
+    | "trophy"
+    | "habit";
   class?: string;
   size?: number;
 }
@@ -201,6 +202,15 @@ const { name, class: className = "", size = 20 } = Astro.props;
         <path d="M10 14.66V17c0 .55-.47.98-.97 1.21C7.85 18.75 7 20 7 22" />
         <path d="M14 14.66V17c0 .55.47.98.97 1.21C16.15 18.75 17 20 17 22" />
         <path d="M18 2H6v7a6 6 0 0 0 12 0V2Z" />
+      </>
+    )
+  }
+  {
+    name === "habit" && (
+      <>
+        <path d="M21 12a9 9 0 1 1-9-9c2.52 0 4.93 1 6.74 2.74L21 8" />
+        <path d="M21 3v5h-5" />
+        <path d="M12 7v5l3 3" />
       </>
     )
   }

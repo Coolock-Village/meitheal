@@ -342,6 +342,13 @@ Astro.response.headers.set("X-Content-Type-Options", "nosniff");
       html.is-loading .meitheal-loading-bar {
         opacity: 1;
       }
+      @media (prefers-reduced-motion: reduce) {
+        .meitheal-loading-bar {
+          animation: none;
+          transform: translateX(0);
+          width: 100%;
+        }
+      }
     </style>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />

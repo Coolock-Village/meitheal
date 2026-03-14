@@ -56,6 +56,7 @@ const NAV_ITEMS: Record<string, NavItemDef> = {
   upcoming: { href: "/upcoming", i18nKey: "nav.upcoming", icon: "upcoming" },
   calendar: { href: "/calendar", i18nKey: "nav.calendar", icon: "calendar" },
   gamification: { href: "/gamification", i18nKey: "nav.gamification", icon: "trophy" },
+  habits: { href: "/habits", i18nKey: "nav.habits", icon: "habit" },
 };
 
 type NavKey = string;
@@ -67,6 +68,7 @@ const DEFAULT_ORDER: NavKey[] = [
   "upcoming",
   "calendar",
   "gamification",
+  "habits",
 ];
 
 interface CustomNavItem {
@@ -97,11 +99,13 @@ let sidebarConfig: SidebarConfig = {
   upcoming: true,
   calendar: true,
   gamification: true,
+  habits: true,
 };
 
-/** Feature flags — hide gamification if disabled */
+/** Feature flags — hide gamification/habits if disabled */
 const ff = await getFeatureFlags();
 const gamificationEnabled = ff.gamification !== false;
+const habitsEnabled = ff.habits !== false;
 
 /** Fetch streak data for sidebar badge */
 let currentStreak = 0;
@@ -179,6 +183,7 @@ const navItems = order
     if (!(key in NAV_ITEMS)) return false
     // Feature flag: hide gamification nav when disabled
     if (key === "gamification" && !gamificationEnabled) return false
+    if (key === "habits" && !habitsEnabled) return false
     return true
   })
   .map((key) => {

@@ -1916,6 +1916,11 @@
                 newStatus === "complete"
                   ? "↩ Mark as Undone"
                   : "✓ Mark as Done";
+            // Gamification + confetti on completion
+            if (newStatus === "complete") {
+              const priorityEl = document.getElementById("td-priority") as HTMLSelectElement | null;
+              onTaskCompleted(Number(priorityEl?.value ?? 3));
+            }
           });
 
         // Toggle favorite

@@ -2,7 +2,7 @@
 import Layout from "../layouts/Layout.astro";
 import TaskViewTabs from "../components/tasks/TaskViewTabs.astro";
 import LabelBadges from "../components/ui/LabelBadges.astro";
-import LabelFilterBar from "../components/ui/LabelFilterBar.astro";
+import FilterToolbar from "../components/ui/FilterToolbar.astro";
 import { t } from "../i18n/translations";
 import type { Locale } from "../lib/locale";
 import { formatRegionalDate } from "../lib/date";
@@ -180,116 +180,12 @@ const typeConfig: Record<
   <TaskViewTabs activeView="board" />
 
   {/* Label filter bar */}
-  <LabelFilterBar id="kanban-label-filter" />
-
-  <!-- Phase 20: Type filter + grouping toolbar -->
-  <div
-    class="type-toolbar kanban-type-toolbar"
-    role="toolbar"
-    aria-label="Filter by work item type"
-  >
-    <div class="type-filters">
-      <button
-        type="button"
-        class="type-filter-btn active"
-        data-type="all"
-        title={t("kanban.show_all_types", locale)}
-      >
-        📋 {t("kanban.all_types", locale)}
-      </button>
-      <button
-        type="button"
-        class="type-filter-btn active"
-        data-type="epic"
-        title={t("kanban.toggle_epics", locale)}
-      >
-        <span class="type-dot type-dot-epic"></span>
-        {t("kanban.epics", locale)}
-      </button>
-      <button
-        type="button"
-        class="type-filter-btn active"
-        data-type="story"
-        title={t("kanban.toggle_stories", locale)}
-      >
-        <span class="type-dot type-dot-story"></span>
-        {t("kanban.stories", locale)}
-      </button>
-      <button
-        type="button"
-        class="type-filter-btn active"
-        data-type="task"
-        title={t("kanban.toggle_tasks", locale)}
-      >
-        <span class="type-dot type-dot-task"></span>
-        {t("kanban.tasks_label", locale)}
-      </button>
-    </div>
-    <div
-      class="user-filters"
-      id="user-filters"
-      role="group"
-      aria-label="Filter by assignee"
-    >
-      <button
-        type="button"
-        class="user-filter-btn active"
-        data-user="all"
-        title="Show all users"
-      >
-        👥 All
-      </button>
-      <button
-        type="button"
-        class="user-filter-btn"
-        data-user="unassigned"
-        title="Unassigned tasks"
-      >
-        ∅
-      </button>
-      <!-- Dynamic user pills populated by JS -->
-    </div>
-    <div class="type-group-toggle">
-      <label
-        class="text-xs text-text-muted toolbar-label"
-        for="board-filter-select"
-        >📋 {t("kanban.board", locale)}</label
-      >
-      <select
-        id="board-filter-select"
-        class="inline-select"
-        title="Filter by board"
-      >
-        <option value="">All Boards</option>
-      </select>
-    </div>
-    <div class="type-group-toggle">
-      <label
-        class="text-xs text-text-muted toolbar-label"
-        for="group-by-select"
-        >≡ {t("kanban.group", locale)}</label
-      >
-      <select
-        id="group-by-select"
-        class="inline-select"
-        title={t("kanban.group_by_tooltip", locale)}
-      >
-        <option value="none">{t("kanban.group_none", locale)}</option>
-        <option value="type" selected>{t("kanban.group_type", locale)}</option>
-        <option value="board">{t("kanban.group_board", locale)}</option>
-        <option value="priority">{t("kanban.group_priority", locale)}</option>
-      </select>
-    </div>
-    <button
-      type="button"
-      class="filter-clear-btn hidden"
-      id="filter-clear-btn"
-      title="Clear all filters"
-      aria-label="Clear all active filters"
-    >
-      ✕ Clear Filters
-    </button>
-  </div>
+  {/* Shared FilterToolbar — replaces inline type-toolbar + LabelFilterBar (Phase 2) */}
+  <FilterToolbar
+    view="kanban"
+    showGroupBy
+    showUserPills
+  />
 
   <!-- Lane management panel -->
   <div class="lane-mgmt hidden" id="lane-mgmt">
@@ -1595,7 +1491,7 @@ const typeConfig: Record<
             activeTypes.clear()
             savedTypes.forEach(t => activeTypes.add(t))
             // Update button visual state
-            document.querySelectorAll(".type-filter-btn").forEach(btn => {
+            document.querySelectorAll(".filter-toolbar__type-btn").forEach(btn => {
               const type = btn.dataset.type
               if (type === "all") {
                 btn.classList.toggle("active", activeTypes.size === 3)
@@ -1608,7 +1504,7 @@ const typeConfig: Record<
       }
 
       // Type filter buttons
-      document.querySelectorAll(".type-filter-btn").forEach((btn) => {
+      document.querySelectorAll(".filter-toolbar__type-btn").forEach((btn) => {
         btn.addEventListener("click", () => {
           const type = btn.dataset.type;
           if (type === "all") {
@@ -1617,12 +1513,12 @@ const typeConfig: Record<
             if (allActive) {
               activeTypes.clear();
               document
-                .querySelectorAll(".type-filter-btn")
+                .querySelectorAll(".filter-toolbar__type-btn")
                 .forEach((b) => b.classList.remove("active"));
             } else {
               ["epic", "story", "task"].forEach((t) => activeTypes.add(t));
               document
-                .querySelectorAll(".type-filter-btn")
+                .querySelectorAll(".filter-toolbar__type-btn")
                 .forEach((b) => b.classList.add("active"));
             }
           } else {
@@ -1635,7 +1531,7 @@ const typeConfig: Record<
             }
             // Update "All" button state
             const allBtn = document.querySelector(
-              '.type-filter-btn[data-type="all"]',
+              '.filter-toolbar__type-btn[data-type="all"]',
             );
             if (activeTypes.size === 3) {
               allBtn?.classList.add("active");
@@ -1650,7 +1546,7 @@ const typeConfig: Record<
       function applyTypeFilters() {
         // Find visible types using safe match
         const btnTypes = Array.from(
-          document.querySelectorAll(".type-filter-btn.active"),
+          document.querySelectorAll(".filter-toolbar__type-btn.active"),
         ).map((b) => b.getAttribute("data-type") || "");
 
         // 1. Filter all cards (flat + grouped — works in all swimlane modes)
@@ -1775,20 +1671,20 @@ const typeConfig: Record<
       }
 
       // Show/hide filter clear button based on active filter state
-      const filterClearBtn = document.getElementById("filter-clear-btn")
+      const filterClearBtn = document.getElementById("kanban-clear-filters")
       function updateFilterClearBtn() {
         if (!filterClearBtn) return
         let anyActive = false
         // Type filter: any button NOT active means filter is on
-        const typeButtons = document.querySelectorAll(".type-filter-btn:not(.all-type-toggle)")
+        const typeButtons = document.querySelectorAll(".filter-toolbar__type-btn:not(.all-type-toggle)")
         typeButtons.forEach(btn => {
           if (!btn.classList.contains("active")) anyActive = true
         })
         // User filter: not "all" selected
-        const activeUserBtn = document.querySelector(".user-filter-btn.active")
+        const activeUserBtn = document.querySelector(".filter-toolbar__user-btn.active")
         if (activeUserBtn && activeUserBtn.dataset.user !== "all") anyActive = true
         // Board filter: not empty/all
-        const boardSelect = document.getElementById("board-filter-select")
+        const boardSelect = document.getElementById("kanban-filter-board")
         if (boardSelect && boardSelect.value) anyActive = true
         // Label filter: check via event system (label filter dispatches custom events)
         const anyCardHidden = document.querySelector(".kanban-card[style*='display: none']")
@@ -1801,12 +1697,12 @@ const typeConfig: Record<
       if (filterClearBtn) {
         filterClearBtn.addEventListener("click", () => {
           // Reset type filters — activate all
-          document.querySelectorAll(".type-filter-btn").forEach(btn => {
+          document.querySelectorAll(".filter-toolbar__type-btn").forEach(btn => {
             btn.classList.add("active")
           })
 
           // Reset user filter — show all
-          document.querySelectorAll(".user-filter-btn").forEach(btn => {
+          document.querySelectorAll(".filter-toolbar__user-btn").forEach(btn => {
             btn.classList.toggle("active", btn.dataset.user === "all")
           })
           document.querySelectorAll(".kanban-card.user-filtered-out").forEach(card => {
@@ -1814,7 +1710,7 @@ const typeConfig: Record<
           })
 
           // Reset board filter
-          const boardSelect = document.getElementById("board-filter-select")
+          const boardSelect = document.getElementById("kanban-filter-board")
           if (boardSelect) boardSelect.value = ""
 
           // Show all cards
@@ -1845,10 +1741,10 @@ const typeConfig: Record<
       }
 
       // Swimlane group-by dropdown
-      const groupBySelect = document.getElementById("group-by-select");
+      const groupBySelect = document.getElementById("kanban-group-by");
 
       // Board filter toolbar integration (P1 fix)
-      const boardFilterSelect = document.getElementById("board-filter-select");
+      const boardFilterSelect = document.getElementById("kanban-filter-board");
       if (boardFilterSelect) {
         // Populate board options from API
         fetch((window.__ingress_path || "") + "/api/boards")
@@ -2168,7 +2064,7 @@ const typeConfig: Record<
 
     // Phase 32: User filter — Jira-style assignee pills
     (async function initUserFilter() {
-      const container = document.getElementById("user-filters");
+      const container = document.getElementById("kanban-user-filters");
       if (!container) return;
 
       try {
@@ -2209,14 +2105,14 @@ const typeConfig: Record<
       );
       if (savedBtn) {
         container
-          .querySelector(".user-filter-btn.active")
+          .querySelector(".filter-toolbar__user-btn.active")
           ?.classList.remove("active");
         savedBtn.classList.add("active");
       }
 
       // Apply filter
       function applyUserFilter() {
-        const activeBtn = container.querySelector(".user-filter-btn.active");
+        const activeBtn = container.querySelector(".filter-toolbar__user-btn.active");
         const userId = activeBtn?.dataset.user || "all";
         localStorage.setItem("meitheal-kanban-user-filter", userId);
 
@@ -2240,10 +2136,10 @@ const typeConfig: Record<
 
       // Click handlers
       container.addEventListener("click", (e) => {
-        const btn = e.target.closest(".user-filter-btn");
+        const btn = e.target.closest(".filter-toolbar__user-btn");
         if (!btn) return;
         container
-          .querySelectorAll(".user-filter-btn")
+          .querySelectorAll(".filter-toolbar__user-btn")
           .forEach((b) => b.classList.remove("active"));
         btn.classList.add("active");
         applyUserFilter();
@@ -2754,7 +2650,7 @@ const typeConfig: Record<
     align-items: center;
     flex-wrap: wrap;
   }
-  .type-filter-btn {
+  .filter-toolbar__type-btn {
     display: inline-flex;
     align-items: center;
     gap: 5px;
@@ -2769,11 +2665,11 @@ const typeConfig: Record<
     transition: all 200ms;
     white-space: nowrap;
   }
-  .type-filter-btn:hover {
+  .filter-toolbar__type-btn:hover {
     border-color: var(--accent);
     color: var(--text-primary);
   }
-  .type-filter-btn.active {
+  .filter-toolbar__type-btn.active {
     background: var(--accent-light);
     border-color: var(--accent);
     color: var(--accent);
@@ -2789,7 +2685,7 @@ const typeConfig: Record<
     padding-left: 12px;
     margin-left: 4px;
   }
-  .user-filter-btn {
+  .filter-toolbar__user-btn {
     display: inline-flex;
     align-items: center;
     gap: 5px;
@@ -2804,11 +2700,11 @@ const typeConfig: Record<
     transition: all 200ms;
     white-space: nowrap;
   }
-  .user-filter-btn:hover {
+  .filter-toolbar__user-btn:hover {
     border-color: var(--accent);
     color: var(--text-primary);
   }
-  .user-filter-btn.active {
+  .filter-toolbar__user-btn.active {
     background: var(--accent-light);
     border-color: var(--accent);
     color: var(--accent);
@@ -2946,8 +2842,8 @@ const typeConfig: Record<
 
   /* Accessibility: suppress transitions for reduced-motion users */
   @media (prefers-reduced-motion: reduce) {
-    .type-filter-btn,
-    .user-filter-btn,
+    .filter-toolbar__type-btn,
+    .filter-toolbar__user-btn,
     .filter-clear-btn,
     .kanban-title-text,
     .kanban-progress-bar,

@@ -150,20 +150,8 @@ async function loadBoards() {
       boardMap[b.id] = b
     })
 
-    // Populate board filter selector
-    const boardFilter = document.getElementById("table-filter-board") as HTMLSelectElement | null
-    if (boardFilter) {
-      boards.forEach((b) => {
-        const opt = document.createElement("option")
-        opt.value = b.id
-        opt.textContent = `${b.icon ?? "📋"} ${b.title}`
-        boardFilter.appendChild(opt)
-      })
-      // Restore saved board filter
-      if (currentFilterState.board) {
-        boardFilter.value = currentFilterState.board
-      }
-    }
+    // NOTE: Board filter <select> is populated by FilterToolbar's client script
+    // We only populate the bulk board selector and update group headers here
 
     // Populate bulk board selector
     const bulkBoard = document.getElementById("bulk-board") as HTMLSelectElement | null

@@ -275,6 +275,7 @@ const totalTasks = days.reduce((sum, d) => sum + d.tasks.length, 0);
 
 <script>
   import { taskApi } from "../lib/task-api-client"
+  import { onTaskCompleted } from "../lib/gamification-hook"
 
   // Task checkbox completion
   document
@@ -289,6 +290,7 @@ const totalTasks = days.reduce((sum, d) => sum + d.tasks.length, 0);
           });
           const item = cb.closest(".task-item") as HTMLElement | null;
           if (cb.checked && item) {
+            onTaskCompleted();
             item.style.opacity = "0.4";
             item.style.transition = "opacity 0.3s";
             setTimeout(() => item.remove(), 800);

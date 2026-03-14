@@ -1,6 +1,7 @@
 import type { APIRoute } from "astro"
 import { parseTaskInput } from "../../lib/nl-task-parser"
 import { apiJson, apiError } from "../../lib/api-response"
+import { isFeatureEnabled } from "../../lib/feature-flags"
 
 /**
  * NLP Parse API — preview parse results for live task creation preview
@@ -14,6 +15,9 @@ import { apiJson, apiError } from "../../lib/api-response"
  */
 
 export const POST: APIRoute = async ({ request }) => {
+  if (!(await isFeatureEnabled("nlp_parser"))) {
+    return apiError("Smart task parsing is disabled in settings", 404)
+  }
   try {
     const body = (await request.json().catch(() => ({}))) as Record<string, unknown>
     const text = String(body.text || "")

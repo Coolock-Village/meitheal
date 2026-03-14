@@ -73,6 +73,9 @@ const PRECACHE_PATHS = [
   "/table",
   "/calendar",
   "/settings",
+  "/gamification",
+  "/habits",
+  "/gantt",
   "/manifest.webmanifest",
   "/icon-192.png",
 ];
