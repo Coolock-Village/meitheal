@@ -41,11 +41,38 @@
 - **Impact**: Race conditions, double registration events, unnecessary network requests
 - **Fix**: Remove the inline block, keep only the module import version
 
-### Missing Touch Drag Support on Kanban
-- **Files**: `apps/web/src/pages/kanban.astro:443-444`
-- **Issue**: HTML5 Drag API (`ondragstart`, `ondragend`) doesn't work on mobile touch devices
-- **Impact**: Kanban board non-functional on iPhones, iPads, Android phones (touch users)
-- **Fix**: Add touch event handlers (touchstart/touchmove/touchend) with drag simulation, or use a touch-aware drag library
+### ~~Missing Touch Drag Support on Kanban~~ (RESOLVED)
+- Touch drag polyfill implemented at `kanban.astro:1867-1958` (long-press 300ms → ghost drag → column drop)
+
+### Kanban User Filter Pills Show Full Name
+- **Files**: `apps/web/src/pages/kanban.astro:1783-1802`
+- **Issue**: User filter pills render full `display_name` as visible text alongside initials avatar. Results in oversized pills that break toolbar layout
+- **Impact**: Toolbar wraps or overflows with 3+ users. Inconsistent with Jira/Teamhood/Linear initials-only pattern
+- **Fix**: Remove text label `<span>`, keep only initials avatar circle. Full name already on `btn.title` hover tooltip
+
+### Kanban Board-Level tabindex Causes Drag Artifacts
+- **Files**: `apps/web/src/pages/kanban.astro:1404`
+- **Issue**: `board.setAttribute("tabindex", "0")` makes entire `.kanban-board` focusable and draggable. Causes ghost image when clicking empty space and dragging
+- **Impact**: Confusing UX — users see the board "move" when trying to scroll or interact
+- **Fix**: Remove board-level `tabindex`. Keep keyboard nav via individual card `tabindex`/`focus`
+
+### Kanban Group-by-Board Shows Raw board_id
+- **Files**: `apps/web/src/pages/kanban.astro:1625-1710` (line 1673)
+- **Issue**: Uses raw `board_id` string (e.g., "default67", "default6") instead of resolving board title from API
+- **Impact**: Swimlane headers show meaningless IDs instead of board names
+- **Fix**: Fetch board titles from `/api/boards` at start of group-by handler, use lookup map
+
+### Kanban Columns Have No Vertical Scroll
+- **Files**: `apps/web/src/styles/_kanban.css:33-35`, `apps/web/src/pages/kanban.astro:309`
+- **Issue**: `.kanban-cards` has `flex-1` but no `max-height` or `overflow-y`. Columns grow infinitely, pushing cards below viewport fold
+- **Impact**: Tasks below fold are invisible and effectively lost
+- **Fix**: Add `max-height: calc(100vh - 280px)` + `overflow-y: auto` to `.kanban-cards`
+
+### Board Filter Not Integrated with Kanban Toolbar
+- **Files**: `apps/web/src/components/layout/SidebarBoardSwitcher.astro:96-118`
+- **Issue**: Board filtering only applies `display:none` to cards. Doesn't update swimlane group counts or interact with type/user filters
+- **Impact**: When filtering by board + grouping by type, swimlane counts show total (not filtered) count
+- **Fix**: Add inline board filter to Kanban toolbar, sync with sidebar, update swimlane counts on filter change
 
 ### Missing `is:inline` Script Tests
 - All client-side interactivity is in `<script is:inline>` blocks within `.astro` files
