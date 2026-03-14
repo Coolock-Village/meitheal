@@ -184,3 +184,226 @@
 [data-theme="light"] .data-table td:first-child {
   background: var(--bg-primary);
 }
+
+/* =============================================================================
+ * Row Grouping / Swimlane Styles (Phase 7: List View Overhaul)
+ * ============================================================================= */
+
+/* Unified filtered visibility class — replaces inline style.display = "none" */
+.filtered-out {
+  display: none !important;
+}
+
+/* Group header row */
+.group-header-row {
+  cursor: pointer;
+  user-select: none;
+}
+
+.group-header-row td {
+  background: var(--bg-secondary) !important;
+  border-bottom: 2px solid var(--border);
+  padding: 8px 12px !important;
+}
+
+.group-header-cell {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-weight: 600;
+  font-size: 13px;
+  color: var(--text-primary);
+}
+
+.group-toggle {
+  background: none;
+  border: none;
+  color: var(--text-muted);
+  cursor: pointer;
+  font-size: 12px;
+  width: 20px;
+  height: 20px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  border-radius: var(--radius-sm);
+  transition: background 0.15s, transform 0.2s;
+}
+
+.group-toggle:hover {
+  background: var(--bg-input);
+  color: var(--text-primary);
+}
+
+.group-toggle-arrow {
+  display: inline-block;
+  transition: transform 0.2s ease;
+}
+
+.group-header-row.collapsed .group-toggle-arrow {
+  transform: rotate(-90deg);
+}
+
+.group-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  flex-shrink: 0;
+}
+
+.group-icon {
+  font-size: 14px;
+  flex-shrink: 0;
+}
+
+.group-label {
+  flex: 1;
+  font-weight: 600;
+  letter-spacing: 0.02em;
+}
+
+.group-count {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 22px;
+  height: 22px;
+  border-radius: 11px;
+  background: var(--accent, #6366f1);
+  color: #fff;
+  font-size: 11px;
+  font-weight: 700;
+  padding: 0 6px;
+  letter-spacing: 0.02em;
+}
+
+.group-checkbox-wrapper {
+  margin-left: auto;
+  display: flex;
+  align-items: center;
+}
+
+.group-select-all {
+  width: 16px;
+  height: 16px;
+  cursor: pointer;
+  accent-color: var(--accent);
+}
+
+/* Collapsed group rows are hidden */
+.group-collapsed-row {
+  display: none;
+}
+
+/* Empty groups auto-hide */
+.group-empty {
+  display: none;
+}
+
+/* Color-coded group header borders (based on group-dot color) */
+.group-header-row td {
+  border-left: 3px solid transparent;
+}
+
+/* =============================================================================
+ * Type Toggle Styles
+ * ============================================================================= */
+
+.type-toggles {
+  display: flex;
+  gap: 4px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-md, 6px);
+  padding: 2px;
+  background: var(--bg-secondary);
+}
+
+.type-toggle {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 4px 10px;
+  border: none;
+  border-radius: var(--radius-sm, 4px);
+  background: transparent;
+  color: var(--text-muted);
+  font-size: 12px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: background 0.15s, color 0.15s, opacity 0.15s;
+  white-space: nowrap;
+}
+
+.type-toggle.active {
+  background: var(--bg-card);
+  color: var(--text-primary);
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.08);
+}
+
+.type-toggle:not(.active) {
+  opacity: 0.5;
+}
+
+.type-toggle:hover {
+  background: var(--bg-hover);
+  color: var(--text-primary);
+  opacity: 1;
+}
+
+/* =============================================================================
+ * Enhanced Bulk Bar Styles
+ * ============================================================================= */
+
+.bulk-divider {
+  color: var(--border);
+  font-size: 14px;
+}
+
+.bulk-close-btn {
+  background: transparent;
+  border: 1px solid var(--border);
+  color: var(--text-muted);
+  width: 28px;
+  height: 28px;
+  border-radius: 50%;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  font-size: 12px;
+  transition: background 0.15s, color 0.15s;
+  padding: 0;
+  margin-left: auto;
+}
+
+.bulk-close-btn:hover {
+  background: var(--bg-hover);
+  color: var(--text-primary);
+}
+
+/* =============================================================================
+ * Responsive Filter Bar
+ * ============================================================================= */
+
+@container (max-width: 600px) {
+  .type-toggles {
+    display: none;
+  }
+}
+
+/* Fallback for small screens without container query support */
+@media (max-width: 640px) {
+  .filter-bar {
+    gap: 6px;
+  }
+  .filter-select {
+    max-width: 120px;
+    font-size: 12px;
+  }
+  .type-toggles {
+    order: 10;
+    width: 100%;
+  }
+}
+

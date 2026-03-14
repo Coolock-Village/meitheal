@@ -110,7 +110,7 @@ const treeRows = buildTreeRows(tasks);
           )}
         </div>
 
-        {/* Filter Bar — parity with tasks page */}
+        {/* Filter Bar — enhanced with type toggles, board filter, group-by */}
         <div class="filter-bar" id="table-filter-bar">
           <input
             type="text"
@@ -119,6 +119,20 @@ const treeRows = buildTreeRows(tasks);
             placeholder={t("table.filter_placeholder", locale)}
             aria-label="Filter table rows"
           />
+
+          {/* Type filter toggles — matches kanban */}
+          <div class="type-toggles" id="type-toggles">
+            <button type="button" class="type-toggle active" data-type="epic" aria-pressed="true" title="Toggle Epics">
+              🎯 Epic
+            </button>
+            <button type="button" class="type-toggle active" data-type="story" aria-pressed="true" title="Toggle Stories">
+              📖 Story
+            </button>
+            <button type="button" class="type-toggle active" data-type="task" aria-pressed="true" title="Toggle Tasks">
+              ✅ Task
+            </button>
+          </div>
+
           <select
             class="form-select filter-select"
             id="table-filter-status"
@@ -162,6 +176,31 @@ const treeRows = buildTreeRows(tasks);
             <option value="">{t("tasks.all_users", locale)}</option>
             <option value="__unassigned__">Unassigned</option>
           </select>
+
+          {/* Board filter — populated client-side from /api/boards */}
+          <select
+            class="form-select filter-select"
+            id="table-filter-board"
+            aria-label="Filter by board"
+          >
+            <option value="">All Boards</option>
+          </select>
+
+          {/* Group-by selector */}
+          <select
+            class="form-select filter-select"
+            id="table-group-by"
+            aria-label="Group tasks by"
+          >
+            <option value="none">No Grouping</option>
+            <option value="type">Group by Type</option>
+            <option value="priority">Group by Priority</option>
+            <option value="board">Group by Board</option>
+            <option value="assignee">Group by Assignee</option>
+            <option value="status">Group by Status</option>
+            <option value="rice">Group by RICE</option>
+          </select>
+
           <button type="button" class="filter-clear-btn" id="clear-filters">
             {t("tasks.clear_filters", locale)}
           </button>
@@ -265,6 +304,7 @@ const treeRows = buildTreeRows(tasks);
                     data-labels={JSON.stringify(task.labels ?? [])}
                     data-title={task.title.toLowerCase()}
                     data-search={searchText}
+                    data-task-type={task.task_type}
                     data-depth={String(task.depth)}
                     data-parent-id={task.parent_id ? String(task.parent_id) : ""}
                     data-has-children={task.hasChildren ? "true" : ""}
@@ -483,17 +523,30 @@ const treeRows = buildTreeRows(tasks);
 
   <div class="bulk-bar" id="bulk-bar">
     <span id="selected-count">0 selected</span>
+    <span class="bulk-divider">|</span>
     <select class="form-select bulk-select" id="bulk-status">
       <option value="">{t("table.change_status", locale)}</option>
       <option value="pending">{t("task_status.pending", locale)}</option>
       <option value="active">{t("task_status.active", locale)}</option>
       <option value="complete">{t("task_status.complete", locale)}</option>
     </select>
+    <select class="form-select bulk-select" id="bulk-priority">
+      <option value="">Priority</option>
+      <option value="1">{t("priority.critical", locale)}</option>
+      <option value="2">{t("priority.high", locale)}</option>
+      <option value="3">{t("priority.medium", locale)}</option>
+      <option value="4">{t("priority.low", locale)}</option>
+      <option value="5">{t("priority.minimal", locale)}</option>
+    </select>
+    <select class="form-select bulk-select" id="bulk-board">
+      <option value="">Board</option>
+    </select>
     <button
       type="button"
       class="btn bulk-delete-btn"
       id="bulk-delete">🗑 {t("table.delete_selected", locale)}</button
     >
+    <button type="button" class="btn bulk-close-btn" id="bulk-close" aria-label="Close bulk actions">✕</button>
   </div>
 
   <div

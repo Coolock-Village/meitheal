@@ -1,631 +1,1105 @@
 /**
- * Table controller — extracted from table.astro
+ * Table Controller — Client-side logic for the table/list view
  *
- * Handles: subtask tree expand/collapse, filtering (text/status/priority/rice/user/label),
- * inline editing, inline select changes, row click → detail panel, delete rows,
- * bulk actions (status change, bulk delete), column sorting, table scroll detection.
+ * Handles:
+ * - Row grouping (swimlanes) with collapse/expand
+ * - Unified filtering (search, status, priority, RICE, user, type, board, labels)
+ * - Subtask tree expand/collapse (mutually exclusive with grouping)
+ * - Inline editing (title, status, priority)
+ * - Bulk actions (status, priority, board, delete)
+ * - Column sorting (within groups when grouped)
+ * - Table scroll shadow detection
+ * - Board selector population from /api/boards
+ *
+ * @domain tasks
+ * @bounded-context tasks (view-layer controller)
  */
+
 import { showToast } from "@lib/toast"
 import { confirmDialog } from "@lib/confirm-dialog"
-import { taskApi } from "../lib/task-api-client"
 import {
-  saveFilterState as persistFilters,
+  saveFilterState,
   loadFilterState,
-  matchesStatusFilter,
-  matchesRiceFilter,
+  clearFilterState,
+  isTaskVisible,
+  getGroupKey,
+  getGroupDisplay,
+  DEFAULT_SORT,
+  type FilterState,
 } from "@lib/filter-state"
 
-// ── Subtask tree expand/collapse ────────────────────────────
-const COLLAPSE_KEY = "meitheal-table-collapsed"
-const collapsedParents = new Set<string>(
-  JSON.parse(sessionStorage.getItem(COLLAPSE_KEY) ?? "[]")
-)
+// =============================================================================
+// Types
+// =============================================================================
 
-function saveCollapsedState() {
-  sessionStorage.setItem(COLLAPSE_KEY, JSON.stringify([...collapsedParents]))
+interface BoardInfo {
+  id: string
+  title: string
+  icon?: string
+  color?: string
 }
 
-function getDescendantIds(parentId: string): string[] {
-  const ids: string[] = []
-  const row = document.querySelector(`tr[data-id="${parentId}"]`)
-  const childIds = row?.getAttribute("data-child-ids")?.split(",").filter(Boolean) ?? []
-  for (const cid of childIds) {
-    ids.push(cid)
-    ids.push(...getDescendantIds(cid))
+// =============================================================================
+// State
+// =============================================================================
+
+let currentGroupBy = "none"
+let boardMap: Record<string, BoardInfo> = {}
+let currentFilterState: Partial<FilterState> = {}
+
+// =============================================================================
+// Initialization
+// =============================================================================
+
+function init() {
+  const table = document.getElementById("task-table") as HTMLTableElement | null
+  if (!table) return
+
+  // Load persisted filter state
+  currentFilterState = loadFilterState()
+  currentGroupBy = currentFilterState.groupBy ?? "none"
+
+  // Initialize all features
+  loadBoards()
+  restoreFilterControls()
+  setupFilterListeners()
+  setupTypeToggleListeners()
+  setupGroupByListener()
+  setupSubtaskToggles()
+  setupInlineEditing()
+  setupRowClicks()
+  setupBulkActions()
+  setupSortableHeaders()
+  setupTableOverflow()
+
+  // Apply initial filters and grouping
+  applyAllFilters()
+  if (currentGroupBy !== "none") {
+    applyGrouping(currentGroupBy)
   }
-  return ids
 }
 
-function toggleSubtree(parentId: string, collapse: boolean) {
-  const descendants = getDescendantIds(parentId)
-  for (const did of descendants) {
-    const row = document.querySelector(`tr[data-id="${did}"]`) as HTMLElement
-    if (row) {
-      row.style.display = collapse ? "none" : ""
-      // If this descendant is also collapsed, keep its children hidden
-      if (!collapse && collapsedParents.has(did)) {
-        const subDescendants = getDescendantIds(did)
-        for (const sd of subDescendants) {
-          const subRow = document.querySelector(`tr[data-id="${sd}"]`) as HTMLElement
-          if (subRow) subRow.style.display = "none"
-        }
+// =============================================================================
+// Board Data Loading
+// =============================================================================
+
+async function loadBoards() {
+  try {
+    const res = await fetch("/api/boards")
+    if (!res.ok) return
+    const data = await res.json()
+    const boards: BoardInfo[] = data.boards || []
+
+    boards.forEach((b) => {
+      boardMap[b.id] = b
+    })
+
+    // Populate board filter selector
+    const boardFilter = document.getElementById("table-filter-board") as HTMLSelectElement | null
+    if (boardFilter) {
+      boards.forEach((b) => {
+        const opt = document.createElement("option")
+        opt.value = b.id
+        opt.textContent = `${b.icon ?? "📋"} ${b.title}`
+        boardFilter.appendChild(opt)
+      })
+      // Restore saved board filter
+      if (currentFilterState.board) {
+        boardFilter.value = currentFilterState.board
       }
     }
-  }
-}
 
-// Initialize collapse state
-for (const pid of collapsedParents) {
-  toggleSubtree(pid, true)
-  const btn = document.querySelector(`.subtree-toggle[data-parent-id="${pid}"]`) as HTMLElement
-  if (btn) {
-    btn.textContent = "▸"
-    btn.setAttribute("aria-expanded", "false")
-  }
-}
-
-// Bind toggle buttons
-document.querySelectorAll(".subtree-toggle").forEach(btn => {
-  btn.addEventListener("click", (e) => {
-    e.stopPropagation()
-    const parentId = (btn as HTMLElement).getAttribute("data-parent-id")!
-    const isCollapsed = collapsedParents.has(parentId)
-    if (isCollapsed) {
-      collapsedParents.delete(parentId)
-      toggleSubtree(parentId, false)
-      ;(btn as HTMLElement).textContent = "▾"
-      btn.setAttribute("aria-expanded", "true")
-    } else {
-      collapsedParents.add(parentId)
-      toggleSubtree(parentId, true)
-      ;(btn as HTMLElement).textContent = "▸"
-      btn.setAttribute("aria-expanded", "false")
+    // Populate bulk board selector
+    const bulkBoard = document.getElementById("bulk-board") as HTMLSelectElement | null
+    if (bulkBoard) {
+      boards.forEach((b) => {
+        const opt = document.createElement("option")
+        opt.value = b.id
+        opt.textContent = `${b.icon ?? "📋"} ${b.title}`
+        bulkBoard.appendChild(opt)
+      })
     }
-    saveCollapsedState()
+
+    // Update group headers with board names if grouped by board
+    if (currentGroupBy === "board") {
+      updateGroupHeaderLabels()
+    }
+
+    // Populate user filter from data attributes on rows
+    populateUserFilter()
+  } catch {
+    /* offline fallback — board filter stays as-is */
+  }
+}
+
+function populateUserFilter() {
+  const userFilter = document.getElementById("table-filter-user") as HTMLSelectElement | null
+  if (!userFilter) return
+
+  const rows = document.querySelectorAll<HTMLElement>(".table-row")
+  const userSet = new Set<string>()
+  rows.forEach((row) => {
+    const assigned = row.dataset.assigned
+    if (assigned) userSet.add(assigned)
   })
-})
 
-// Label filter state — updated by LabelFilterBar events
-let activeLabelFilter: string[] = []
-
-document.addEventListener("meitheal:label-filter", ((e: CustomEvent) => {
-  activeLabelFilter = e.detail?.labels ?? []
-  applyTableFilters()
-}) as EventListener)
-
-
-// ── Filtering — parity with tasks page, shared localStorage key ──
-
-// Populate user filter dropdown from data-assigned attributes
-;(function populateUserFilter() {
-  const userSelect = document.getElementById(
-    "table-filter-user",
-  ) as HTMLSelectElement
-  if (!userSelect) return
-  const users = new Set<string>()
-  document.querySelectorAll("#task-table tbody tr").forEach((row) => {
-    const assigned = (row as HTMLElement).dataset.assigned
-    if (assigned) users.add(assigned)
-  })
-  Array.from(users)
+  Array.from(userSet)
     .sort()
     .forEach((user) => {
+      // Avoid duplicates
+      if (userFilter.querySelector(`option[value="${user}"]`)) return
       const opt = document.createElement("option")
       opt.value = user
       opt.textContent = user.replace(/^(ha_|custom_)/, "")
-      userSelect.appendChild(opt)
+      userFilter.appendChild(opt)
     })
-})()
 
-function applyTableFilters() {
-  const searchVal =
-    (
-      document.getElementById("table-search") as HTMLInputElement
-    )?.value.toLowerCase() ?? ""
-  const statusFilter =
-    (document.getElementById("table-filter-status") as HTMLSelectElement)
-      ?.value ?? ""
-  const priorityFilter =
-    (document.getElementById("table-filter-priority") as HTMLSelectElement)
-      ?.value ?? ""
-  const riceFilter =
-    (document.getElementById("table-filter-rice") as HTMLSelectElement)
-      ?.value ?? ""
-  const userFilter =
-    (document.getElementById("table-filter-user") as HTMLSelectElement)
-      ?.value ?? ""
+  // Restore saved user filter
+  if (currentFilterState.user) {
+    userFilter.value = currentFilterState.user
+  }
+}
 
-  document.querySelectorAll("#task-table tbody tr").forEach((row) => {
-    const el = row as HTMLElement
-    const title = el.dataset.search ?? el.dataset.title ?? ""
-    const matchSearch = !searchVal || title.includes(searchVal)
-    const matchStatus = matchesStatusFilter(el, statusFilter)
-    const matchPriority =
-      !priorityFilter || el.dataset.priority === priorityFilter
+// =============================================================================
+// Filter State Restore
+// =============================================================================
 
-    const matchRice = matchesRiceFilter(el, riceFilter)
+function restoreFilterControls() {
+  const s = currentFilterState
+  const setVal = (id: string, val: string | undefined) => {
+    const el = document.getElementById(id) as HTMLSelectElement | HTMLInputElement | null
+    if (el && val) el.value = val
+  }
 
-    let matchUser = true
-    if (userFilter === "__unassigned__") {
-      matchUser = !el.dataset.assigned
-    } else if (userFilter) {
-      matchUser = el.dataset.assigned === userFilter
+  setVal("table-search", s.search)
+  setVal("table-filter-status", s.status)
+  setVal("table-filter-priority", s.priority)
+  setVal("table-filter-rice", s.rice)
+  setVal("table-filter-user", s.user)
+  setVal("table-filter-board", s.board)
+  setVal("table-group-by", s.groupBy ?? "none")
+
+  // Restore type toggles
+  if (s.types && s.types.length > 0) {
+    document.querySelectorAll<HTMLButtonElement>(".type-toggle").forEach((btn) => {
+      const type = btn.dataset.type ?? ""
+      const isActive = s.types!.includes(type)
+      btn.classList.toggle("active", isActive)
+      btn.setAttribute("aria-pressed", String(isActive))
+    })
+  }
+}
+
+// =============================================================================
+// Filter Listeners
+// =============================================================================
+
+function setupFilterListeners() {
+  const search = document.getElementById("table-search") as HTMLInputElement | null
+  const statusFilter = document.getElementById("table-filter-status") as HTMLSelectElement | null
+  const priorityFilter = document.getElementById("table-filter-priority") as HTMLSelectElement | null
+  const riceFilter = document.getElementById("table-filter-rice") as HTMLSelectElement | null
+  const userFilter = document.getElementById("table-filter-user") as HTMLSelectElement | null
+  const boardFilter = document.getElementById("table-filter-board") as HTMLSelectElement | null
+  const clearBtn = document.getElementById("clear-filters")
+
+  const onFilterChange = () => {
+    currentFilterState = {
+      ...currentFilterState,
+      search: search?.value ?? "",
+      status: statusFilter?.value ?? "",
+      priority: priorityFilter?.value ?? "",
+      rice: riceFilter?.value ?? "",
+      user: userFilter?.value ?? "",
+      board: boardFilter?.value ?? "",
     }
+    saveFilterState(currentFilterState)
+    applyAllFilters()
+  }
 
-    // Label filter matching
-    let matchLabel = true
-    if (activeLabelFilter.length > 0) {
+  search?.addEventListener("input", debounce(onFilterChange, 150))
+  statusFilter?.addEventListener("change", onFilterChange)
+  priorityFilter?.addEventListener("change", onFilterChange)
+  riceFilter?.addEventListener("change", onFilterChange)
+  userFilter?.addEventListener("change", onFilterChange)
+  boardFilter?.addEventListener("change", onFilterChange)
+
+  clearBtn?.addEventListener("click", () => {
+    clearFilterState()
+    currentFilterState = {}
+    if (search) search.value = ""
+    if (statusFilter) statusFilter.value = ""
+    if (priorityFilter) priorityFilter.value = ""
+    if (riceFilter) riceFilter.value = ""
+    if (userFilter) userFilter.value = ""
+    if (boardFilter) boardFilter.value = ""
+
+    // Reset type toggles to all active
+    document.querySelectorAll<HTMLButtonElement>(".type-toggle").forEach((btn) => {
+      btn.classList.add("active")
+      btn.setAttribute("aria-pressed", "true")
+    })
+
+    applyAllFilters()
+  })
+
+  // Listen for label filter changes
+  document.addEventListener("meitheal:label-filter", ((e: CustomEvent) => {
+    currentFilterState.labels = e.detail?.labels ?? []
+    saveFilterState(currentFilterState)
+    applyAllFilters()
+  }) as EventListener)
+}
+
+// =============================================================================
+// Type Toggle Listeners
+// =============================================================================
+
+function setupTypeToggleListeners() {
+  document.querySelectorAll<HTMLButtonElement>(".type-toggle").forEach((btn) => {
+    btn.addEventListener("click", () => {
+      btn.classList.toggle("active")
+      const isActive = btn.classList.contains("active")
+      btn.setAttribute("aria-pressed", String(isActive))
+
+      // Collect active types
+      const activeTypes: string[] = []
+      document.querySelectorAll<HTMLButtonElement>(".type-toggle.active").forEach((b) => {
+        if (b.dataset.type) activeTypes.push(b.dataset.type)
+      })
+
+      // If all are active, store empty array (meaning "all")
+      const allTypes = document.querySelectorAll<HTMLButtonElement>(".type-toggle")
+      currentFilterState.types = activeTypes.length === allTypes.length ? [] : activeTypes
+      saveFilterState(currentFilterState)
+      applyAllFilters()
+    })
+  })
+}
+
+// =============================================================================
+// Group-By Listener
+// =============================================================================
+
+function setupGroupByListener() {
+  const groupBySelect = document.getElementById("table-group-by") as HTMLSelectElement | null
+  groupBySelect?.addEventListener("change", () => {
+    currentGroupBy = groupBySelect.value
+    currentFilterState.groupBy = currentGroupBy
+    saveFilterState(currentFilterState)
+    applyGrouping(currentGroupBy)
+    applyAllFilters()
+  })
+}
+
+// =============================================================================
+// Unified Filter Application
+// =============================================================================
+
+function applyAllFilters() {
+  const rows = document.querySelectorAll<HTMLElement>(".table-row")
+  let visibleCount = 0
+
+  rows.forEach((row) => {
+    const visible = isTaskVisible(row, currentFilterState)
+    row.classList.toggle("filtered-out", !visible)
+    if (visible) visibleCount++
+  })
+
+  // Update group counts
+  updateGroupCounts()
+
+  // Show/hide no-results row
+  const noResults = document.querySelector<HTMLElement>(".no-results-row")
+  if (noResults) {
+    noResults.style.display = visibleCount === 0 ? "" : "none"
+  }
+}
+
+// =============================================================================
+// Row Grouping Engine
+// =============================================================================
+
+function applyGrouping(groupBy: string) {
+  const tbody = document.querySelector<HTMLElement>("#task-table tbody")
+  if (!tbody) return
+
+  // Remove existing group headers
+  tbody.querySelectorAll(".group-header-row").forEach((el) => el.remove())
+
+  if (groupBy === "none") {
+    // Remove all group data attributes
+    tbody.querySelectorAll<HTMLElement>(".table-row").forEach((row) => {
+      row.removeAttribute("data-group-value")
+      row.classList.remove("group-collapsed-row")
+    })
+    // Re-enable subtask tree
+    enableSubtaskTree()
+    return
+  }
+
+  // Disable subtask tree when grouping is active
+  disableSubtaskTree()
+
+  // Collect rows and compute groups
+  const rows = Array.from(tbody.querySelectorAll<HTMLElement>(".table-row"))
+  const groups = new Map<string, HTMLElement[]>()
+  const groupOrder: string[] = []
+
+  rows.forEach((row) => {
+    const key = getGroupKey(row, groupBy)
+    row.setAttribute("data-group-value", key)
+    if (!groups.has(key)) {
+      groups.set(key, [])
+      groupOrder.push(key)
+    }
+    groups.get(key)!.push(row)
+  })
+
+  // Sort groups by a natural order
+  groupOrder.sort((a, b) => {
+    if (groupBy === "priority") return Number(a) - Number(b)
+    if (groupBy === "rice") {
+      const order = { high: 0, medium: 1, low: 2, none: 3 }
+      return (order[a as keyof typeof order] ?? 99) - (order[b as keyof typeof order] ?? 99)
+    }
+    if (groupBy === "status") {
+      const order = { backlog: 0, pending: 1, active: 2, complete: 3 }
+      return (order[a as keyof typeof order] ?? 99) - (order[b as keyof typeof order] ?? 99)
+    }
+    if (groupBy === "type") {
+      const order = { epic: 0, story: 1, task: 2 }
+      return (order[a as keyof typeof order] ?? 99) - (order[b as keyof typeof order] ?? 99)
+    }
+    return a.localeCompare(b)
+  })
+
+  // Build grouped DOM using DocumentFragment for performance
+  const fragment = document.createDocumentFragment()
+  const colCount = document.querySelectorAll("#task-table thead th").length
+
+  // Load collapse states from sessionStorage
+  const collapseKey = `meitheal-table-groups-${groupBy}`
+  let collapsedGroups: string[] = []
+  try {
+    collapsedGroups = JSON.parse(sessionStorage.getItem(collapseKey) ?? "[]")
+  } catch { /* ignore */ }
+
+  for (const key of groupOrder) {
+    const groupRows = groups.get(key) ?? []
+    const display = getGroupDisplayForKey(groupBy, key)
+    const isCollapsed = collapsedGroups.includes(key)
+
+    // Create group header row
+    const headerRow = document.createElement("tr")
+    headerRow.className = `group-header-row${isCollapsed ? " collapsed" : ""}`
+    headerRow.setAttribute("data-group-key", key)
+    headerRow.setAttribute("data-group-by", groupBy)
+    headerRow.setAttribute("role", "rowgroup")
+    headerRow.setAttribute("aria-expanded", String(!isCollapsed))
+
+    const td = document.createElement("td")
+    td.setAttribute("colspan", String(colCount))
+    td.className = "group-header-cell"
+    td.innerHTML = `
+      <button type="button" class="group-toggle" aria-label="Toggle group ${display.label}">
+        <span class="group-toggle-arrow">▾</span>
+      </button>
+      <span class="group-dot" style="background: ${display.color}"></span>
+      <span class="group-icon">${display.icon}</span>
+      <span class="group-label">${display.label}</span>
+      <span class="group-count">${groupRows.length}</span>
+      <span class="group-checkbox-wrapper">
+        <input type="checkbox" class="group-select-all" data-group-key="${key}" aria-label="Select all in ${display.label}" />
+      </span>
+    `
+    headerRow.appendChild(td)
+    fragment.appendChild(headerRow)
+
+    // Add rows
+    groupRows.forEach((row) => {
+      row.classList.toggle("group-collapsed-row", isCollapsed)
+      fragment.appendChild(row)
+    })
+  }
+
+  // Preserve no-results row
+  const noResults = tbody.querySelector(".no-results-row")
+  tbody.innerHTML = ""
+  tbody.appendChild(fragment)
+  if (noResults) tbody.appendChild(noResults)
+
+  // Set up group header click handlers
+  setupGroupHeaderListeners()
+}
+
+function getGroupDisplayForKey(groupBy: string, key: string): { label: string, icon: string, color: string } {
+  if (groupBy === "board" && boardMap[key]) {
+    const b = boardMap[key]
+    return { label: b.title, icon: b.icon ?? "📋", color: b.color ?? "#6366F1" }
+  }
+  return getGroupDisplay(groupBy, key)
+}
+
+function setupGroupHeaderListeners() {
+  document.querySelectorAll<HTMLElement>(".group-header-row").forEach((header) => {
+    const toggle = header.querySelector<HTMLButtonElement>(".group-toggle")
+    const groupKey = header.dataset.groupKey ?? ""
+    const groupBy = header.dataset.groupBy ?? currentGroupBy
+    const collapseKey = `meitheal-table-groups-${groupBy}`
+
+    toggle?.addEventListener("click", (e) => {
+      e.stopPropagation()
+      const isCollapsed = header.classList.toggle("collapsed")
+      header.setAttribute("aria-expanded", String(!isCollapsed))
+
+      // Toggle row visibility
+      const tbody = header.closest("tbody")
+      if (tbody) {
+        let sibling = header.nextElementSibling
+        while (sibling && !sibling.classList.contains("group-header-row") && !sibling.classList.contains("no-results-row")) {
+          ;(sibling as HTMLElement).classList.toggle("group-collapsed-row", isCollapsed)
+          sibling = sibling.nextElementSibling
+        }
+      }
+
+      // Persist collapse state
       try {
-        const rowLabels = JSON.parse(el.dataset.labels ?? "[]") as (string | { name: string })[]
-        const labelNames = rowLabels.map((l) =>
-          (typeof l === "string" ? l : l.name ?? "").toLowerCase()
-        )
-        matchLabel = activeLabelFilter.some((f) =>
-          labelNames.includes(f.toLowerCase())
-        )
-      } catch {
-        matchLabel = false
-      }
-    }
-
-    const visible =
-      matchSearch && matchStatus && matchPriority && matchRice && matchUser && matchLabel
-    el.style.display = visible ? "" : "none"
-  })
-
-  // P2 T9: Re-apply collapse state — filters may have shown children of collapsed parents
-  for (const pid of collapsedParents) {
-    toggleSubtree(pid, true)
-  }
-
-  // P4 T14: Show/hide no-results row
-  const visibleRows = document.querySelectorAll("#task-table tbody tr:not(.no-results-row)")
-  const anyVisible = Array.from(visibleRows).some(
-    (r) => (r as HTMLElement).style.display !== "none"
-  )
-  const noResultsRow = document.querySelector(".no-results-row") as HTMLElement | null
-  if (noResultsRow) noResultsRow.style.display = anyVisible ? "none" : ""
-
-  saveFilterState()
-}
-
-function saveFilterState() {
-  const state = {
-    search:
-      (document.getElementById("table-search") as HTMLInputElement)
-        ?.value ?? "",
-    status:
-      (document.getElementById("table-filter-status") as HTMLSelectElement)
-        ?.value ?? "",
-    priority:
-      (
-        document.getElementById(
-          "table-filter-priority",
-        ) as HTMLSelectElement
-      )?.value ?? "",
-    rice:
-      (document.getElementById("table-filter-rice") as HTMLSelectElement)
-        ?.value ?? "",
-    user:
-      (document.getElementById("table-filter-user") as HTMLSelectElement)
-        ?.value ?? "",
-  }
-  persistFilters(state)
-}
-
-// Attach filter listeners
-;[
-  "table-search",
-  "table-filter-status",
-  "table-filter-priority",
-  "table-filter-rice",
-  "table-filter-user",
-].forEach((id) => {
-  const el = document.getElementById(id)
-  if (!el) return
-  el.addEventListener(
-    id === "table-search" ? "input" : "change",
-    applyTableFilters,
-  )
-})
-
-// Clear all filters
-document.getElementById("clear-filters")?.addEventListener("click", () => {
-  ;(document.getElementById("table-search") as HTMLInputElement).value = ""
-  ;(
-    document.getElementById("table-filter-status") as HTMLSelectElement
-  ).value = ""
-  ;(
-    document.getElementById("table-filter-priority") as HTMLSelectElement
-  ).value = ""
-  ;(
-    document.getElementById("table-filter-rice") as HTMLSelectElement
-  ).value = ""
-  ;(
-    document.getElementById("table-filter-user") as HTMLSelectElement
-  ).value = ""
-  applyTableFilters()
-})
-
-// Restore filter state — URL params take priority, then localStorage
-try {
-  const source = loadFilterState()
-
-  if (source.search)
-    (document.getElementById("table-search") as HTMLInputElement).value =
-      source.search
-  if (source.status)
-    (
-      document.getElementById("table-filter-status") as HTMLSelectElement
-    ).value = source.status
-  if (source.priority)
-    (
-      document.getElementById("table-filter-priority") as HTMLSelectElement
-    ).value = source.priority
-  if (source.rice)
-    (
-      document.getElementById("table-filter-rice") as HTMLSelectElement
-    ).value = source.rice
-  if (source.user)
-    (
-      document.getElementById("table-filter-user") as HTMLSelectElement
-    ).value = source.user
-  if (
-    source.search ||
-    source.status ||
-    source.priority ||
-    source.rice ||
-    source.user
-  )
-    applyTableFilters()
-} catch {
-  /* ignore */
-}
-
-// ── Inline editing — with empty-revert ──────────────────────
-
-document.querySelectorAll(".editable-cell").forEach((cell) => {
-  cell.addEventListener("blur", async () => {
-    const el = cell as HTMLElement
-    const id = el.dataset.id
-    const field = el.dataset.field
-    const value = el.textContent?.trim()
-    const original = el.dataset.original ?? ""
-
-    // Revert to original value if user cleared the field
-    if (!id || !field || !value) {
-      if (original) el.textContent = original
-      return
-    }
-
-    // No change — skip API call
-    if (value === original) return
-
-    try {
-      await taskApi.updateTask(id, { [field]: value })
-      el.dataset.original = value // Update stored original
-      // P1 T7: Keep data-search/data-title in sync for filtering after inline edit
-      if (field === "title") {
-        const row = el.closest("tr") as HTMLElement | null
-        if (row) {
-          row.dataset.title = value.toLowerCase()
-          const desc = row.dataset.search?.split("\n")[1] ?? ""
-          row.dataset.search = [value, desc].join(" ").toLowerCase()
-        }
-      }
-      showToast("common.updated")
-    } catch {
-      el.textContent = original // Revert on error
-      showToast("common.failed", "error")
-    }
-  })
-  cell.addEventListener("keydown", (e: Event) => {
-    if ((e as KeyboardEvent).key === "Enter") {
-      (e as KeyboardEvent).preventDefault()
-      ;(cell as HTMLElement).blur()
-    }
-  })
-})
-
-// ── Inline select changes ───────────────────────────────────
-
-document.querySelectorAll(".inline-select").forEach((sel) => {
-  sel.addEventListener("change", async (e) => {
-    const el = e.target as HTMLSelectElement
-    const id = el.dataset.id
-    const field = el.dataset.field
-    try {
-      const value = field === "priority" ? Number(el.value) : el.value
-      await taskApi.updateTask(id!, { [field!]: value })
-      showToast(
-        field === "priority"
-          ? "table.priority_updated"
-          : "table.status_updated",
-      )
-      const row = el.closest("tr") as HTMLElement | null
-      if (field === "status" && row) {
-        // P0 T1: Keep data-status in sync so filters work after inline change
-        row.dataset.status = el.value
-        if (el.value === "complete") {
-          row.classList.add("row-done")
+        let collapsed: string[] = JSON.parse(sessionStorage.getItem(collapseKey) ?? "[]")
+        if (isCollapsed) {
+          if (!collapsed.includes(groupKey)) collapsed.push(groupKey)
         } else {
-          row.classList.remove("row-done")
+          collapsed = collapsed.filter((k) => k !== groupKey)
+        }
+        sessionStorage.setItem(collapseKey, JSON.stringify(collapsed))
+      } catch { /* ignore */ }
+    })
+
+    // Group select-all checkbox
+    const groupCheckbox = header.querySelector<HTMLInputElement>(".group-select-all")
+    groupCheckbox?.addEventListener("click", (e) => {
+      e.stopPropagation()
+      const checked = groupCheckbox.checked
+      let sibling = header.nextElementSibling
+      while (sibling && !sibling.classList.contains("group-header-row") && !sibling.classList.contains("no-results-row")) {
+        const checkbox = (sibling as HTMLElement).querySelector<HTMLInputElement>(".row-check")
+        if (checkbox && !(sibling as HTMLElement).classList.contains("filtered-out")) {
+          checkbox.checked = checked
+        }
+        sibling = sibling.nextElementSibling
+      }
+      updateBulkBar()
+    })
+  })
+}
+
+function updateGroupCounts() {
+  document.querySelectorAll<HTMLElement>(".group-header-row").forEach((header) => {
+    const groupKey = header.dataset.groupKey ?? ""
+    const countEl = header.querySelector<HTMLElement>(".group-count")
+    if (!countEl) return
+
+    // Count visible rows in this group
+    let count = 0
+    let sibling = header.nextElementSibling
+    while (sibling && !sibling.classList.contains("group-header-row") && !sibling.classList.contains("no-results-row")) {
+      if (!(sibling as HTMLElement).classList.contains("filtered-out")) {
+        count++
+      }
+      sibling = sibling.nextElementSibling
+    }
+    countEl.textContent = String(count)
+
+    // Auto-hide empty groups
+    if (count === 0) {
+      header.classList.add("group-empty")
+    } else {
+      header.classList.remove("group-empty")
+    }
+  })
+}
+
+function updateGroupHeaderLabels() {
+  // Called after boards load — updates board group header labels
+  document.querySelectorAll<HTMLElement>(".group-header-row[data-group-by='board']").forEach((header) => {
+    const key = header.dataset.groupKey ?? ""
+    if (boardMap[key]) {
+      const label = header.querySelector<HTMLElement>(".group-label")
+      const icon = header.querySelector<HTMLElement>(".group-icon")
+      const dot = header.querySelector<HTMLElement>(".group-dot")
+      if (label) label.textContent = boardMap[key].title
+      if (icon) icon.textContent = boardMap[key].icon ?? "📋"
+      if (dot) dot.style.background = boardMap[key].color ?? "#6366F1"
+    }
+  })
+}
+
+// =============================================================================
+// Subtask Tree (mutually exclusive with grouping)
+// =============================================================================
+
+function setupSubtaskToggles() {
+  document.querySelectorAll<HTMLButtonElement>(".subtree-toggle").forEach((btn) => {
+    btn.addEventListener("click", (e) => {
+      e.stopPropagation()
+      const parentId = btn.dataset.parentId
+      if (!parentId) return
+
+      const isCollapsed = btn.textContent?.trim() === "▸"
+      btn.textContent = isCollapsed ? "▾" : "▸"
+      btn.setAttribute("aria-expanded", String(isCollapsed))
+
+      toggleChildRows(parentId, isCollapsed)
+    })
+  })
+}
+
+function toggleChildRows(parentId: string, show: boolean) {
+  const childRows = document.querySelectorAll<HTMLElement>(
+    `.table-row[data-parent-id="${parentId}"]`
+  )
+  childRows.forEach((row) => {
+    row.style.display = show ? "" : "none"
+    // Recursively toggle grandchildren if this child has children
+    if (row.dataset.hasChildren === "true" && !show) {
+      const toggle = row.querySelector<HTMLButtonElement>(".subtree-toggle")
+      if (toggle) {
+        toggle.textContent = "▸"
+        toggle.setAttribute("aria-expanded", "false")
+      }
+      toggleChildRows(row.dataset.id ?? "", false)
+    }
+  })
+}
+
+function disableSubtaskTree() {
+  // When grouping is active, flatten the tree
+  document.querySelectorAll<HTMLElement>(".subtree-toggle").forEach((btn) => {
+    btn.style.display = "none"
+  })
+  document.querySelectorAll<HTMLElement>(".subtree-indent-marker").forEach((m) => {
+    m.style.display = "none"
+  })
+  // Remove subtask indentation
+  document.querySelectorAll<HTMLElement>(".task-title-cell").forEach((cell) => {
+    cell.style.paddingLeft = ""
+  })
+  document.querySelectorAll<HTMLElement>(".cell-description").forEach((cell) => {
+    cell.style.marginLeft = ""
+  })
+  // Show all rows (un-collapse subtrees)
+  document.querySelectorAll<HTMLElement>(".table-row").forEach((row) => {
+    if (row.style.display === "none" && row.dataset.parentId) {
+      row.style.display = ""
+    }
+  })
+}
+
+function enableSubtaskTree() {
+  // Restore subtask tree when grouping is "none"
+  document.querySelectorAll<HTMLElement>(".subtree-toggle").forEach((btn) => {
+    btn.style.display = ""
+  })
+  document.querySelectorAll<HTMLElement>(".subtree-indent-marker").forEach((m) => {
+    m.style.display = ""
+  })
+  // Restore subtask indentation
+  document.querySelectorAll<HTMLElement>(".table-row").forEach((row) => {
+    const depth = Number(row.dataset.depth ?? 0)
+    if (depth > 0) {
+      const titleCell = row.querySelector<HTMLElement>(".task-title-cell")
+      const descCell = row.querySelector<HTMLElement>(".cell-description")
+      if (titleCell) titleCell.style.paddingLeft = `${depth * 20}px`
+      if (descCell) descCell.style.marginLeft = `${depth * 20}px`
+    }
+  })
+}
+
+// =============================================================================
+// Inline Editing
+// =============================================================================
+
+function setupInlineEditing() {
+  // Inline title editing
+  document.querySelectorAll<HTMLElement>(".editable-cell").forEach((cell) => {
+    cell.addEventListener("blur", async () => {
+      const newVal = cell.textContent?.trim() ?? ""
+      const original = cell.dataset.original ?? ""
+      if (newVal === original || !newVal) {
+        cell.textContent = original
+        return
+      }
+      const id = cell.dataset.id
+      if (!id) return
+
+      try {
+        const res = await fetch(`/api/tasks/${id}`, {
+          method: "PATCH",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ title: newVal }),
+        })
+        if (res.ok) {
+          cell.dataset.original = newVal
+          showToast("Title updated", "success")
+        } else {
+          cell.textContent = original
+          showToast("Failed to update", "error")
+        }
+      } catch {
+        cell.textContent = original
+        showToast("Network error", "error")
+      }
+    })
+
+    cell.addEventListener("keydown", (e) => {
+      if (e.key === "Enter") {
+        e.preventDefault()
+        cell.blur()
+      }
+      if (e.key === "Escape") {
+        cell.textContent = cell.dataset.original ?? ""
+        cell.blur()
+      }
+    })
+
+    // Stop click from opening task detail
+    cell.addEventListener("click", (e) => e.stopPropagation())
+  })
+
+  // Inline select changes (status, priority)
+  document.querySelectorAll<HTMLSelectElement>(".inline-select").forEach((sel) => {
+    sel.addEventListener("click", (e) => e.stopPropagation())
+    sel.addEventListener("change", async () => {
+      const id = sel.dataset.id
+      const field = sel.dataset.field
+      if (!id || !field) return
+
+      try {
+        const res = await fetch(`/api/tasks/${id}`, {
+          method: "PATCH",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ [field]: field === "priority" ? Number(sel.value) : sel.value }),
+        })
+        if (res.ok) {
+          showToast(`${field} updated`, "success")
+          // Update row data attribute
+          const row = sel.closest<HTMLElement>(".table-row")
+          if (row && field === "status") {
+            row.dataset.status = sel.value
+            row.classList.toggle("row-done", sel.value === "complete")
+          }
+          if (row && field === "priority") {
+            row.dataset.priority = sel.value
+          }
+          // Re-apply filters (status/priority change may affect visibility)
+          applyAllFilters()
+        } else {
+          showToast("Failed to update", "error")
+        }
+      } catch {
+        showToast("Network error", "error")
+      }
+    })
+  })
+}
+
+// =============================================================================
+// Row Click to Open Detail
+// =============================================================================
+
+function setupRowClicks() {
+  document.querySelectorAll<HTMLElement>(".table-row").forEach((row) => {
+    row.addEventListener("click", (e) => {
+      const target = e.target as HTMLElement
+      // Skip if clicking interactive elements
+      if (
+        target.closest("button") ||
+        target.closest("select") ||
+        target.closest("input") ||
+        target.closest(".editable-cell") ||
+        target.closest("a")
+      ) return
+
+      const id = row.dataset.id
+      if (id) {
+        document.dispatchEvent(
+          new CustomEvent("meitheal:open-task", { detail: { taskId: id } })
+        )
+      }
+    })
+  })
+}
+
+// =============================================================================
+// Bulk Actions
+// =============================================================================
+
+function setupBulkActions() {
+  const bulkBar = document.getElementById("bulk-bar")
+  const selectAll = document.getElementById("select-all") as HTMLInputElement | null
+  const selectedCountEl = document.getElementById("selected-count")
+  const bulkStatus = document.getElementById("bulk-status") as HTMLSelectElement | null
+  const bulkPriority = document.getElementById("bulk-priority") as HTMLSelectElement | null
+  const bulkBoard = document.getElementById("bulk-board") as HTMLSelectElement | null
+  const bulkDelete = document.getElementById("bulk-delete")
+  const bulkClose = document.getElementById("bulk-close")
+
+  // Row checkboxes
+  document.querySelectorAll<HTMLInputElement>(".row-check").forEach((cb) => {
+    cb.addEventListener("click", (e) => e.stopPropagation())
+    cb.addEventListener("change", updateBulkBar)
+  })
+
+  // Select all
+  selectAll?.addEventListener("change", () => {
+    const checked = selectAll.checked
+    document.querySelectorAll<HTMLInputElement>(".row-check").forEach((cb) => {
+      const row = cb.closest<HTMLElement>(".table-row")
+      if (row && !row.classList.contains("filtered-out")) {
+        cb.checked = checked
+      }
+    })
+    updateBulkBar()
+  })
+
+  // Bulk status change
+  bulkStatus?.addEventListener("change", async () => {
+    const val = bulkStatus.value
+    if (!val) return
+    const ids = getSelectedIds()
+    if (ids.length === 0) return
+
+    await bulkUpdateField("status", val, ids)
+    bulkStatus.value = ""
+  })
+
+  // Bulk priority change
+  bulkPriority?.addEventListener("change", async () => {
+    const val = bulkPriority.value
+    if (!val) return
+    const ids = getSelectedIds()
+    if (ids.length === 0) return
+
+    await bulkUpdateField("priority", Number(val), ids)
+    bulkPriority.value = ""
+  })
+
+  // Bulk board change
+  bulkBoard?.addEventListener("change", async () => {
+    const val = bulkBoard.value
+    if (!val) return
+    const ids = getSelectedIds()
+    if (ids.length === 0) return
+
+    await bulkUpdateField("board_id", val, ids)
+    bulkBoard.value = ""
+  })
+
+  // Bulk delete
+  bulkDelete?.addEventListener("click", async () => {
+    const ids = getSelectedIds()
+    if (ids.length === 0) return
+
+    const confirmed = await confirmDialog({
+      title: `Delete ${ids.length} task${ids.length > 1 ? "s" : ""}?`,
+      message: "This action cannot be undone.",
+      confirmText: "Delete",
+      variant: "danger",
+    })
+    if (!confirmed) return
+
+    let deleted = 0
+    for (const id of ids) {
+      try {
+        const res = await fetch(`/api/tasks/${id}`, { method: "DELETE" })
+        if (res.ok) {
+          const row = document.querySelector<HTMLElement>(`.table-row[data-id="${id}"]`)
+          row?.remove()
+          deleted++
+        }
+      } catch { /* continue */ }
+    }
+
+    showToast(`Deleted ${deleted} task${deleted > 1 ? "s" : ""}`, "success")
+    updateBulkBar()
+    updateGroupCounts()
+  })
+
+  // Bulk close button
+  bulkClose?.addEventListener("click", () => {
+    document.querySelectorAll<HTMLInputElement>(".row-check").forEach((cb) => {
+      cb.checked = false
+    })
+    if (selectAll) selectAll.checked = false
+    updateBulkBar()
+  })
+}
+
+function getSelectedIds(): string[] {
+  const ids: string[] = []
+  document.querySelectorAll<HTMLInputElement>(".row-check:checked").forEach((cb) => {
+    const id = cb.dataset.id
+    if (id) ids.push(id)
+  })
+  return ids
+}
+
+async function bulkUpdateField(field: string, value: unknown, ids: string[]) {
+  let updated = 0
+  for (const id of ids) {
+    try {
+      const res = await fetch(`/api/tasks/${id}`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ [field]: value }),
+      })
+      if (res.ok) {
+        updated++
+        const row = document.querySelector<HTMLElement>(`.table-row[data-id="${id}"]`)
+        if (row) {
+          if (field === "status") {
+            row.dataset.status = String(value)
+            row.classList.toggle("row-done", value === "complete")
+            // Update inline select
+            const sel = row.querySelector<HTMLSelectElement>(`select[data-field="status"]`)
+            if (sel) sel.value = String(value)
+          }
+          if (field === "priority") {
+            row.dataset.priority = String(value)
+            const sel = row.querySelector<HTMLSelectElement>(`select[data-field="priority"]`)
+            if (sel) sel.value = String(value)
+          }
+          if (field === "board_id") {
+            row.dataset.board = String(value)
+          }
         }
       }
-      if (field === "priority" && row) {
-        // P0 T2: Keep data-priority in sync so sorting/filtering works
-        row.dataset.priority = el.value
-        const classes = [
-          "priority-critical",
-          "priority-high",
-          "priority-medium",
-          "priority-low",
-          "priority-minimal",
-        ]
-        el.classList.remove(...classes)
-        const idx = Number(el.value) - 1
-        if (classes[idx]) el.classList.add(classes[idx])
-      }
-    } catch {
-      showToast("common.failed", "error")
-    }
-  })
-})
+    } catch { /* continue */ }
+  }
 
-// ── Row click → open task detail panel ──────────────────────
-
-document.querySelectorAll("#task-table tbody tr").forEach((row) => {
-  row.addEventListener("click", (e) => {
-    const target = e.target as HTMLElement
-    // Don't trigger on interactive elements or their containers
-    if (
-      target.tagName === "INPUT" ||
-      target.tagName === "SELECT" ||
-      target.tagName === "BUTTON" ||
-      target.closest("button") ||
-      target.closest("select") ||
-      target.closest("input") ||
-      target.contentEditable === "true" ||
-      target.closest("[contenteditable]")
-    ) {
-      return
-    }
-    const id = (row as HTMLElement).dataset.id
-    if (id) {
-      document.dispatchEvent(
-        new CustomEvent("meitheal:open-task-detail", { detail: { id } }),
-      )
-    }
-  })
-})
-
-// ── Delete rows ─────────────────────────────────────────────
-
-document.querySelectorAll(".delete-row").forEach((btn) => {
-  btn.addEventListener("click", async (e) => {
-    e.stopPropagation()
-    const id = (btn as HTMLElement).dataset.id
-    const ok = await confirmDialog({
-      message: "This task will be permanently deleted.",
-      variant: "danger",
-      confirmText: "Delete",
-      title: "Delete Task",
-    })
-    if (!ok) return
-    try {
-      await taskApi.deleteTask(id!)
-      showToast("common.task_deleted")
-      ;(btn as HTMLElement).closest("tr")?.remove()
-      // P2 T10: Update bulk bar after row removal
-      updateBulkBar()
-    } catch {
-      showToast("common.failed_delete", "error")
-    }
-  })
-})
-
-// ── Bulk actions ────────────────────────────────────────────
-
-const selectAll = document.getElementById("select-all") as HTMLInputElement
-const bulkBar = document.getElementById("bulk-bar")!
-const selectedCount = document.getElementById("selected-count")!
+  showToast(`Updated ${updated} task${updated > 1 ? "s" : ""}`, "success")
+  applyAllFilters()
+}
 
 function updateBulkBar() {
-  const checked = document.querySelectorAll(".row-check:checked")
-  if (checked.length > 0) {
-    bulkBar.style.display = "flex"
-    selectedCount.textContent = `${checked.length} selected`
+  const bulkBar = document.getElementById("bulk-bar")
+  const selectedCountEl = document.getElementById("selected-count")
+  const selected = getSelectedIds()
+
+  if (bulkBar) {
+    bulkBar.style.display = selected.length > 0 ? "flex" : "none"
+  }
+  if (selectedCountEl) {
+    selectedCountEl.textContent = `${selected.length} selected`
+  }
+}
+
+// =============================================================================
+// Column Sorting
+// =============================================================================
+
+function setupSortableHeaders() {
+  let currentSortCol = ""
+  let currentSortDir: "asc" | "desc" = "asc"
+
+  // Restore sort from filter state
+  const savedSort = currentFilterState.sort ?? DEFAULT_SORT
+  if (savedSort && savedSort !== DEFAULT_SORT) {
+    const parts = savedSort.split("-")
+    currentSortCol = parts[0] ?? ""
+    currentSortDir = (parts[1] as "asc" | "desc") ?? "asc"
+
+    // Mark the sorted header
+    const header = document.querySelector<HTMLElement>(`th[data-col="${currentSortCol}"]`)
+    if (header) {
+      const indicator = header.querySelector<HTMLElement>(".sort-indicator")
+      if (indicator) indicator.textContent = currentSortDir === "asc" ? "▲" : "▼"
+    }
+  }
+
+  document.querySelectorAll<HTMLElement>("th.sortable").forEach((th) => {
+    th.addEventListener("click", () => {
+      const col = th.dataset.col ?? ""
+      const isNumeric = th.dataset.numeric === "true"
+
+      if (currentSortCol === col) {
+        currentSortDir = currentSortDir === "asc" ? "desc" : "asc"
+      } else {
+        currentSortCol = col
+        currentSortDir = "asc"
+      }
+
+      // Update indicators
+      document.querySelectorAll<HTMLElement>(".sort-indicator").forEach((si) => {
+        si.textContent = ""
+      })
+      const indicator = th.querySelector<HTMLElement>(".sort-indicator")
+      if (indicator) indicator.textContent = currentSortDir === "asc" ? "▲" : "▼"
+
+      // Save sort state
+      currentFilterState.sort = `${col}-${currentSortDir}`
+      saveFilterState(currentFilterState)
+
+      // Sort rows (within groups if grouped, global if not)
+      sortTableRows(col, currentSortDir, isNumeric)
+    })
+  })
+}
+
+function sortTableRows(col: string, dir: "asc" | "desc", isNumeric: boolean) {
+  const tbody = document.querySelector<HTMLElement>("#task-table tbody")
+  if (!tbody) return
+
+  if (currentGroupBy !== "none") {
+    // Sort within each group
+    sortRowsWithinGroups(tbody, col, dir, isNumeric)
   } else {
-    bulkBar.style.display = "none"
+    // Sort all rows globally
+    sortRowsGlobally(tbody, col, dir, isNumeric)
   }
 }
 
-selectAll?.addEventListener("change", () => {
-  // P1 T5: Only select visible rows — skip hidden/filtered rows
-  document.querySelectorAll(".row-check").forEach((cb) => {
-    const row = cb.closest("tr") as HTMLElement | null
-    if (row && row.style.display !== "none") {
-      ;(cb as HTMLInputElement).checked = selectAll.checked
-    } else {
-      ;(cb as HTMLInputElement).checked = false
+function sortRowsGlobally(tbody: HTMLElement, col: string, dir: "asc" | "desc", isNumeric: boolean) {
+  const rows = Array.from(tbody.querySelectorAll<HTMLElement>(".table-row"))
+  const noResults = tbody.querySelector<HTMLElement>(".no-results-row")
+
+  // Only sort root rows (depth 0), children stay with their parents
+  const rootRows = rows.filter((r) => Number(r.dataset.depth ?? 0) === 0)
+  const childMap = new Map<string, HTMLElement[]>()
+
+  // Build child map
+  rows.forEach((row) => {
+    const parentId = row.dataset.parentId
+    if (parentId) {
+      if (!childMap.has(parentId)) childMap.set(parentId, [])
+      childMap.get(parentId)!.push(row)
     }
   })
-  updateBulkBar()
-})
 
-document.querySelectorAll(".row-check").forEach((cb) => {
-  // Prevent row click from intercepting checkbox interactions
-  cb.addEventListener("click", (e) => e.stopPropagation())
-  cb.addEventListener("change", updateBulkBar)
-})
-
-// Bulk status change
-document
-  .getElementById("bulk-status")
-  ?.addEventListener("change", async (e) => {
-    const newStatus = (e.target as HTMLSelectElement).value
-    if (!newStatus) return
-    const checked = Array.from(document.querySelectorAll(".row-check:checked"))
-    // P3 T12: Disable bulk bar during operation
-    const bulkBtns = bulkBar.querySelectorAll("button, select") as NodeListOf<HTMLButtonElement | HTMLSelectElement>
-    bulkBtns.forEach((b) => (b.disabled = true))
-    selectedCount.textContent = `Processing ${checked.length}…`
-    let ok = 0
-    let fail = 0
-    for (const cb of checked) {
-      try {
-        await taskApi.updateTask((cb as HTMLElement).dataset.id!, { status: newStatus })
-        ok++
-        const row = cb.closest("tr") as HTMLElement | null
-        const select = row?.querySelector("select.inline-select[data-field=\"status\"]") as HTMLSelectElement
-        if (select) select.value = newStatus
-        if (row) {
-          // P0 T1 (bulk): Keep data-status in sync during bulk ops
-          row.dataset.status = newStatus
-          if (newStatus === "complete") row.classList.add("row-done")
-          else row.classList.remove("row-done")
-        }
-      } catch {
-        fail++
-      }
-      await new Promise((r) => setTimeout(r, 100))
-    }
-    // P3 T11: Structured toast instead of raw template literal
-    showToast(fail ? `${ok} updated, ${fail} failed` : `${ok} tasks updated`)
-    bulkBtns.forEach((b) => (b.disabled = false))
-    ;(e.target as HTMLSelectElement).value = ""
-    document.querySelectorAll(".row-check:checked").forEach((cb) => {
-      ;(cb as HTMLInputElement).checked = false
-    })
-    updateBulkBar()
+  rootRows.sort((a, b) => {
+    const aVal = getCellSortValue(a, col, isNumeric)
+    const bVal = getCellSortValue(b, col, isNumeric)
+    return compareSortValues(aVal, bVal, dir, isNumeric)
   })
 
-// Bulk delete
-document
-  .getElementById("bulk-delete")
-  ?.addEventListener("click", async () => {
-    const checked = Array.from(document.querySelectorAll(".row-check:checked"))
-    const ok = await confirmDialog({
-      message: `Delete ${checked.length} selected tasks? This cannot be undone.`,
-      variant: "danger",
-      confirmText: `Delete ${checked.length} Tasks`,
-      title: "Bulk Delete",
-    })
-    if (!ok) return
-    // P3 T12: Disable bulk bar during operation
-    const bulkBtns = bulkBar.querySelectorAll("button, select") as NodeListOf<HTMLButtonElement | HTMLSelectElement>
-    bulkBtns.forEach((b) => (b.disabled = true))
-    selectedCount.textContent = `Deleting ${checked.length}…`
-    let deleted = 0
-    let fail = 0
-    for (const cb of checked) {
-      try {
-        await taskApi.deleteTask((cb as HTMLElement).dataset.id!)
-        cb.closest("tr")?.remove()
-        deleted++
-      } catch {
-        fail++
-      }
-      await new Promise((r) => setTimeout(r, 100))
-    }
-    showToast(fail ? `${deleted} deleted, ${fail} failed` : `${deleted} tasks deleted`)
-    bulkBtns.forEach((b) => (b.disabled = false))
-    updateBulkBar()
-  })
-
-// ── Column sorting — with numeric comparison fix ────────────
-
-// P1 T4 + P2 T8: Subtask-aware sorting with proper date handling
-function getSortValue(row: HTMLElement, col: string): string {
-  if (col === "rice") return row.dataset.rice ?? "0"
-  if (col === "priority") return row.dataset.priority ?? "3"
-  if (col === "due_date") {
-    // P2 T8: Extract raw date text from the cell
-    const cell = row.querySelector(".td-due")
-    const text = cell?.textContent?.trim()?.replace(/Overdue$/i, "").trim() ?? ""
-    if (!text || text === "—") return "9999-12-31" // No date = sort to end
-    return text
+  // Rebuild with children following parents
+  const fragment = document.createDocumentFragment()
+  function appendWithChildren(row: HTMLElement) {
+    fragment.appendChild(row)
+    const children = childMap.get(row.dataset.id ?? "") ?? []
+    children.forEach((child) => appendWithChildren(child))
   }
-  return row.querySelector(`[data-field="${col}"]`)?.textContent?.trim() ?? ""
+  rootRows.forEach((row) => appendWithChildren(row))
+  if (noResults) fragment.appendChild(noResults)
+
+  tbody.innerHTML = ""
+  tbody.appendChild(fragment)
+
+  // Re-setup row event listeners
+  setupRowClicks()
+  setupInlineEditing()
 }
 
-function compareValues(aVal: string, bVal: string, col: string, asc: boolean, isNumeric: boolean): number {
-  if (isNumeric || col === "rice" || col === "priority") {
-    const aNum = Number(aVal) || 0
-    const bNum = Number(bVal) || 0
-    return asc ? aNum - bNum : bNum - aNum
-  }
-  if (col === "due_date") {
-    // P2 T8: Date comparison — parse to timestamps
-    const aTime = new Date(aVal).getTime() || Infinity
-    const bTime = new Date(bVal).getTime() || Infinity
-    return asc ? aTime - bTime : bTime - aTime
-  }
-  return asc ? aVal.localeCompare(bVal) : bVal.localeCompare(aVal)
-}
+function sortRowsWithinGroups(tbody: HTMLElement, col: string, dir: "asc" | "desc", isNumeric: boolean) {
+  const headers = Array.from(tbody.querySelectorAll<HTMLElement>(".group-header-row"))
+  const noResults = tbody.querySelector<HTMLElement>(".no-results-row")
 
-document.querySelectorAll(".sortable").forEach((th) => {
-  th.addEventListener("click", () => {
-    const col = (th as HTMLElement).dataset.col
-    const isNumeric = (th as HTMLElement).dataset.numeric === "true"
-    const tbody = document.querySelector("#task-table tbody")
-    if (!tbody || !col) return
-
-    const asc = !(th as HTMLElement).classList.contains("sort-asc")
-    document.querySelectorAll(".sortable").forEach((h) => {
-      h.classList.remove("sort-asc", "sort-desc")
-      const indicator = h.querySelector(".sort-indicator")
-      if (indicator) indicator.textContent = ""
-    })
-    ;(th as HTMLElement).classList.add(asc ? "sort-asc" : "sort-desc")
-    const sortIndicator = (th as HTMLElement).querySelector(".sort-indicator")
-    if (sortIndicator) sortIndicator.textContent = asc ? " ▲" : " ▼"
-
-    // P1 T4: Subtask-aware sort — sort roots only, keep children after parents
-    const allRows = Array.from(tbody.querySelectorAll("tr")) as HTMLElement[]
-    const rootRows = allRows.filter((r) => !r.dataset.parentId)
-    const childMap = new Map<string, HTMLElement[]>()
-    for (const r of allRows) {
-      const pid = r.dataset.parentId
-      if (pid) {
-        if (!childMap.has(pid)) childMap.set(pid, [])
-        childMap.get(pid)!.push(r)
+  headers.forEach((header) => {
+    const groupRows: HTMLElement[] = []
+    let sibling = header.nextElementSibling
+    while (sibling && !sibling.classList.contains("group-header-row") && !sibling.classList.contains("no-results-row")) {
+      if (sibling.classList.contains("table-row")) {
+        groupRows.push(sibling as HTMLElement)
       }
+      sibling = sibling.nextElementSibling
     }
 
-    // Sort root rows
-    rootRows.sort((a, b) => {
-      const aVal = getSortValue(a, col)
-      const bVal = getSortValue(b, col)
-      return compareValues(aVal, bVal, col, asc, isNumeric)
+    if (groupRows.length <= 1) return
+
+    groupRows.sort((a, b) => {
+      const aVal = getCellSortValue(a, col, isNumeric)
+      const bVal = getCellSortValue(b, col, isNumeric)
+      return compareSortValues(aVal, bVal, dir, isNumeric)
     })
 
-    // Rebuild: root followed by children (preserving child order)
-    function appendWithChildren(row: HTMLElement) {
-      tbody!.appendChild(row)
-      const id = row.dataset.id
-      if (id && childMap.has(id)) {
-        for (const child of childMap.get(id)!) {
-          appendWithChildren(child)
-        }
-      }
-    }
-    for (const root of rootRows) appendWithChildren(root)
+    // Re-insert sorted rows after header
+    groupRows.forEach((row) => {
+      header.parentElement?.insertBefore(row, sibling as Node)
+    })
   })
-})
-
-// ── Detect table horizontal overflow for scroll shadow ──────
-const tableContainer = document.querySelector(".table-container")
-if (tableContainer) {
-  const checkScroll = () => {
-    const hasScroll =
-      tableContainer.scrollWidth > tableContainer.clientWidth
-    tableContainer.classList.toggle("has-scroll", hasScroll)
-  }
-  checkScroll()
-  // Cleanup previous resize listener to prevent accumulation
-  if ((window as any).__tableResizeCleanup) (window as any).__tableResizeCleanup()
-  const ac = new AbortController()
-  window.addEventListener("resize", checkScroll, { signal: ac.signal })
-  ;(window as any).__tableResizeCleanup = () => ac.abort()
 }
+
+function getCellSortValue(row: HTMLElement, col: string, isNumeric: boolean): string | number {
+  switch (col) {
+    case "title":
+      return row.dataset.title ?? ""
+    case "key": {
+      const badge = row.querySelector<HTMLElement>(".ticket-key-badge")
+      return badge?.textContent?.trim() ?? ""
+    }
+    case "type":
+      return row.dataset.taskType ?? "task"
+    case "status":
+      return row.dataset.status ?? ""
+    case "priority":
+      return Number(row.dataset.priority ?? 3)
+    case "due_date": {
+      const cell = row.querySelector<HTMLElement>(".td-due")
+      const text = cell?.textContent?.trim() ?? ""
+      if (text === "—") return "zzz"
+      return text
+    }
+    case "rice":
+      return Number(row.dataset.rice ?? -1)
+    default:
+      return ""
+  }
+}
+
+function compareSortValues(aVal: string | number, bVal: string | number, dir: "asc" | "desc", isNumeric: boolean): number {
+  let cmp = 0
+  if (isNumeric || typeof aVal === "number") {
+    cmp = (Number(aVal) || 0) - (Number(bVal) || 0)
+  } else {
+    cmp = String(aVal).localeCompare(String(bVal))
+  }
+  return dir === "asc" ? cmp : -cmp
+}
+
+// =============================================================================
+// Table Overflow Detection
+// =============================================================================
+
+function setupTableOverflow() {
+  const container = document.querySelector<HTMLElement>(".table-container")
+  if (!container) return
+
+  function checkOverflow() {
+    const hasScroll = container!.scrollWidth > container!.clientWidth
+    container!.classList.toggle("has-scroll", hasScroll)
+  }
+
+  checkOverflow()
+  window.addEventListener("resize", debounce(checkOverflow, 200))
+}
+
+// =============================================================================
+// Utilities
+// =============================================================================
+
+function debounce<T extends (...args: unknown[]) => void>(fn: T, ms: number): T {
+  let timer: ReturnType<typeof setTimeout>
+  return ((...args: unknown[]) => {
+    clearTimeout(timer)
+    timer = setTimeout(() => fn(...args), ms)
+  }) as T
+}
+
+// =============================================================================
+// Boot
+// =============================================================================
+
+document.addEventListener("DOMContentLoaded", init)
+
+// Also handle Astro view transitions
+document.addEventListener("astro:page-load", init)
