@@ -1,6 +1,6 @@
 import { defineConfig } from "astro/config";
 import node from "@astrojs/node";
-import tailwind from "@astrojs/tailwind";
+import tailwindcss from "@tailwindcss/vite";
 import { readFileSync, writeFileSync } from "node:fs";
 import { resolve } from "node:path";
 
@@ -34,11 +34,13 @@ export default defineConfig({
   output: "server",
   trailingSlash: "never",
   adapter: node({ mode: "standalone" }),
-  integrations: [tailwind()],
+  integrations: [],
   compressHTML: true,
   prefetch: true,
   vite: {
     plugins: [
+      // Tailwind CSS v4 — replaces @astrojs/tailwind integration
+      tailwindcss(),
       // Fix font 404s in HA ingress: @fontsource CSS embeds absolute
       // url(/_astro/font.woff2) paths. Static CSS files bypass middleware
       // rewriting, so browsers resolve against HA root → 404.

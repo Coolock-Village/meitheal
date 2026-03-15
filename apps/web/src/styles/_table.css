@@ -300,9 +300,24 @@
   accent-color: var(--accent);
 }
 
-/* Collapsed group rows are hidden */
-.group-collapsed-row {
-  display: none;
+/* Collapsed group rows are hidden — !important needed to override table-row display */
+tr.group-collapsed-row {
+  display: none !important;
+}
+
+/* Collapsed group header arrow rotation */
+.group-header-row .group-toggle-arrow {
+  display: inline-block;
+  transition: transform 0.15s ease;
+}
+
+.group-header-row.collapsed .group-toggle-arrow {
+  transform: rotate(-90deg);
+}
+
+/* Clickable group header */
+.group-header-cell {
+  cursor: pointer;
 }
 
 /* Empty groups auto-hide */
@@ -416,3 +431,20 @@
   }
 }
 
+/* =============================================================================
+ * Critical Overrides — Outside @layer for cascade precedence
+ * 
+ * Rules inside @layer have lower cascade priority than unlayered rules.
+ * The browser's default `display: table-row` for <tr> elements is unlayered,
+ * so these must also be unlayered to override it.
+ * ============================================================================= */
+
+/* Group collapse — hide rows when their group is collapsed */
+tr.group-collapsed-row {
+  display: none !important;
+}
+
+/* Filtered-out rows */
+tr.filtered-out {
+  display: none !important;
+}

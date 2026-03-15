@@ -2,7 +2,8 @@
  * _tokens.css — Design tokens, themes, font faces
  *
  * Domain: Design system foundation
- * Owns: @font-face, :root vars, theme overrides, HA passthrough vars
+ * Owns: @font-face, :root vars, theme overrides, HA passthrough vars,
+ *       Tailwind @theme overrides (replaces tailwind.config.mjs)
  * Does NOT own: component styles, layout, responsive overrides
  *
  * Brand Palette: "Hearth Slate + Electric Indigo"
@@ -12,6 +13,50 @@
  * No external CDN URLs — complies with strict font-src 'self' CSP.
  * If adding new url() references, ensure they are local assets only.
  * ============================================= */
+
+/* ===== Tailwind v4 Theme — replaces tailwind.config.mjs ===== */
+@theme {
+  /* --- Colors --- */
+  --color-bg-primary: rgb(var(--bg-primary-rgb));
+  --color-bg-secondary: rgb(var(--bg-secondary-rgb));
+  --color-bg-card: rgb(var(--bg-card-rgb));
+  --color-bg-hover: rgb(var(--bg-hover-rgb));
+  --color-bg-input: rgb(var(--bg-input-rgb));
+  --color-text-primary: rgb(var(--text-primary-rgb));
+  --color-text-secondary: rgb(var(--text-secondary-rgb));
+  --color-text-muted: rgb(var(--text-muted-rgb));
+  --color-accent: rgb(var(--accent-rgb));
+  --color-accent-hover: rgb(var(--accent-hover-rgb));
+  --color-accent-light: var(--accent-light);
+  --color-warning: rgb(var(--warning-rgb));
+  --color-danger: rgb(var(--danger-rgb));
+  --color-info: rgb(var(--info-rgb));
+  --color-border: rgb(var(--border-rgb));
+  --color-border-focus: rgb(var(--border-focus-rgb));
+  --color-black: #000000;
+  --color-white: #ffffff;
+
+  /* --- Border Radius --- */
+  --radius-sm: 6px;
+  --radius-md: 10px;
+  --radius-lg: 16px;
+
+  /* --- Box Shadow --- */
+  --shadow-sm: var(--shadow-sm);
+  --shadow-md: var(--shadow-md);
+  --shadow-lg: var(--shadow-lg);
+
+  /* --- Typography --- */
+  --font-sans: 'Geist Variable', 'Inter Variable', 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+  --font-heading: 'Outfit', 'Geist Variable', 'Inter Variable', -apple-system, sans-serif;
+
+  /* --- Animation --- */
+  --animate-slide-in: slideIn 300ms ease-out;
+  --animate-fade-in: fadeIn 200ms ease;
+
+  /* --- Spacing --- */
+  --spacing-sidebar: 240px;
+}
 
 /* Self-hosted Inter font — latin subset only (fallback for Geist/Outfit) */
 @font-face {

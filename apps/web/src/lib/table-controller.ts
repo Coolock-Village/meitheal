@@ -486,54 +486,70 @@ function getGroupDisplayForKey(groupBy: string, key: string): { label: string, i
 }
 
 function setupGroupHeaderListeners() {
-  document.querySelectorAll<HTMLElement>(".group-header-row").forEach((header) => {
-    const toggle = header.querySelector<HTMLButtonElement>(".group-toggle")
+  const tbody = document.querySelector("#task-table tbody")
+  if (!tbody || (tbody as HTMLElement).dataset.groupListenerBound) return
+  ;(tbody as HTMLElement).dataset.groupListenerBound = "true"
+
+  // Event delegation on tbody — handles all current and future group headers
+  tbody.addEventListener("click", (e) => {
+    const target = e.target as HTMLElement
+
+    // Skip if clicking on checkbox area
+    if (target.closest(".group-checkbox-wrapper")) return
+
+    // Check if click is within a group header cell
+    const headerCell = target.closest(".group-header-cell")
+    if (!headerCell) return
+
+    const header = headerCell.closest<HTMLElement>(".group-header-row")
+    if (!header) return
+
+    e.stopPropagation()
+
     const groupKey = header.dataset.groupKey ?? ""
     const groupBy = header.dataset.groupBy ?? currentGroupBy
     const collapseKey = `meitheal-table-groups-${groupBy}`
 
-    toggle?.addEventListener("click", (e) => {
-      e.stopPropagation()
-      const isCollapsed = header.classList.toggle("collapsed")
-      header.setAttribute("aria-expanded", String(!isCollapsed))
+    const isCollapsed = header.classList.toggle("collapsed")
+    header.setAttribute("aria-expanded", String(!isCollapsed))
 
-      // Toggle row visibility
-      const tbody = header.closest("tbody")
-      if (tbody) {
-        let sibling = header.nextElementSibling
-        while (sibling && !sibling.classList.contains("group-header-row") && !sibling.classList.contains("no-results-row")) {
-          ;(sibling as HTMLElement).classList.toggle("group-collapsed-row", isCollapsed)
-          sibling = sibling.nextElementSibling
-        }
+    // Toggle row visibility for all siblings until next group header
+    let sibling = header.nextElementSibling
+    while (sibling && !sibling.classList.contains("group-header-row") && !sibling.classList.contains("no-results-row")) {
+      ;(sibling as HTMLElement).classList.toggle("group-collapsed-row", isCollapsed)
+      sibling = sibling.nextElementSibling
+    }
+
+    // Persist collapse state
+    try {
+      let collapsed: string[] = JSON.parse(sessionStorage.getItem(collapseKey) ?? "[]")
+      if (isCollapsed) {
+        if (!collapsed.includes(groupKey)) collapsed.push(groupKey)
+      } else {
+        collapsed = collapsed.filter((k) => k !== groupKey)
       }
+      sessionStorage.setItem(collapseKey, JSON.stringify(collapsed))
+    } catch { /* ignore */ }
+  })
 
-      // Persist collapse state
-      try {
-        let collapsed: string[] = JSON.parse(sessionStorage.getItem(collapseKey) ?? "[]")
-        if (isCollapsed) {
-          if (!collapsed.includes(groupKey)) collapsed.push(groupKey)
-        } else {
-          collapsed = collapsed.filter((k) => k !== groupKey)
-        }
-        sessionStorage.setItem(collapseKey, JSON.stringify(collapsed))
-      } catch { /* ignore */ }
-    })
+  // Group select-all checkbox delegation
+  tbody.addEventListener("change", (e) => {
+    const target = e.target as HTMLElement
+    if (!target.classList.contains("group-select-all")) return
 
-    // Group select-all checkbox
-    const groupCheckbox = header.querySelector<HTMLInputElement>(".group-select-all")
-    groupCheckbox?.addEventListener("click", (e) => {
-      e.stopPropagation()
-      const checked = groupCheckbox.checked
-      let sibling = header.nextElementSibling
-      while (sibling && !sibling.classList.contains("group-header-row") && !sibling.classList.contains("no-results-row")) {
-        const checkbox = (sibling as HTMLElement).querySelector<HTMLInputElement>(".row-check")
-        if (checkbox && !(sibling as HTMLElement).classList.contains("filtered-out")) {
-          checkbox.checked = checked
-        }
-        sibling = sibling.nextElementSibling
+    const header = target.closest<HTMLElement>(".group-header-row")
+    if (!header) return
+
+    const checked = (target as HTMLInputElement).checked
+    let sibling = header.nextElementSibling
+    while (sibling && !sibling.classList.contains("group-header-row") && !sibling.classList.contains("no-results-row")) {
+      const checkbox = (sibling as HTMLElement).querySelector<HTMLInputElement>(".row-check")
+      if (checkbox && !(sibling as HTMLElement).classList.contains("filtered-out")) {
+        checkbox.checked = checked
       }
-      updateBulkBar()
-    })
+      sibling = sibling.nextElementSibling
+    }
+    updateBulkBar()
   })
 }
 
