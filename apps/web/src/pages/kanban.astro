@@ -1594,173 +1594,58 @@ const typeConfig: Record<
       });
     })();
 
-    // Phase 20: Type filter + swimlane grouping
+    // Phase 20 (Refactored): Unified filtering via FilterToolbar + filter-state
     (() => {
-      const activeTypes = new Set(["epic", "story", "task"]);
-      let isGrouped = false;
-
-      // Restore saved type filter state
-      const savedTypeFilter = localStorage.getItem("meitheal-kanban-type-filter")
-      if (savedTypeFilter) {
-        try {
-          const savedTypes = JSON.parse(savedTypeFilter)
-          if (Array.isArray(savedTypes) && savedTypes.length > 0) {
-            activeTypes.clear()
-            savedTypes.forEach(t => activeTypes.add(t))
-            // Update button visual state
-            document.querySelectorAll(".filter-toolbar__type-btn").forEach(btn => {
-              const type = btn.dataset.type
-              if (type === "all") {
-                btn.classList.toggle("active", activeTypes.size === 3)
-              } else {
-                btn.classList.toggle("active", activeTypes.has(type))
-              }
-            })
-          }
-        } catch {}
+      // Restore group-by state
+      const groupBySelect = document.getElementById("kanban-group-by");
+      const savedGroupBy = localStorage.getItem("meitheal-kanban-group-by") || "none";
+      if (groupBySelect && savedGroupBy !== "none") {
+        groupBySelect.value = savedGroupBy;
+        // Don't auto-dispatch here; FilterToolbar handles initialization and emits meitheal:filter-change
       }
 
-      // Type filter buttons
-      document.querySelectorAll(".filter-toolbar__type-btn").forEach((btn) => {
-        btn.addEventListener("click", () => {
-          const type = btn.dataset.type;
-          if (type === "all") {
-            // Toggle all types
-            const allActive = activeTypes.size === 3;
-            if (allActive) {
-              activeTypes.clear();
-              document
-                .querySelectorAll(".filter-toolbar__type-btn")
-                .forEach((b) => b.classList.remove("active"));
-            } else {
-              ["epic", "story", "task"].forEach((t) => activeTypes.add(t));
-              document
-                .querySelectorAll(".filter-toolbar__type-btn")
-                .forEach((b) => b.classList.add("active"));
-            }
-          } else {
-            if (activeTypes.has(type)) {
-              activeTypes.delete(type);
-              btn.classList.remove("active");
-            } else {
-              activeTypes.add(type);
-              btn.classList.add("active");
-            }
-            // Update "All" button state
-            const allBtn = document.querySelector(
-              '.filter-toolbar__type-btn[data-type="all"]',
-            );
-            if (activeTypes.size === 3) {
-              allBtn?.classList.add("active");
-            } else {
-              allBtn?.classList.remove("active");
-            }
-          }
-          applyTypeFilters();
-        });
-      });
+      // We share isCardVisible with the global scope for updateAllCounts
+      let currentFilterState = {};
 
-      function applyTypeFilters() {
-        // Find visible types using safe match
-        const btnTypes = Array.from(
-          document.querySelectorAll(".filter-toolbar__type-btn.active"),
-        ).map((b) => b.getAttribute("data-type") || "");
-
-        // 1. Filter all cards (flat + grouped — works in all swimlane modes)
-        document.querySelectorAll(".kanban-card").forEach((c) => {
-          const ct = String(
-            c.getAttribute("data-task-type") || "task",
-          ).toLowerCase();
-          // Graceful fallback: treat invalid types as "task" for filtering
-          const safeType = ["epic", "story", "task"].includes(ct) ? ct : "task";
-
-          if (btnTypes.includes("all") || btnTypes.includes(safeType)) {
-            c.style.display = "";
-          } else {
-            c.style.display = "none";
-          }
-        });
-
-        // Persist active type filter state
-        const activeTypesArr = btnTypes.filter(t => t !== "all")
-        if (activeTypesArr.length === 3) {
-          localStorage.removeItem("meitheal-kanban-type-filter")
-        } else {
-          localStorage.setItem("meitheal-kanban-type-filter", JSON.stringify(activeTypesArr))
-        }
-
-        window.updateAllCounts();
-        applyLabelFilter();
-      }
-
-      // =============================================
-      // Label filter — listens for LabelFilterBar events
-      // Guard: remove any previous listener to prevent stacking on ViewTransition re-exec
-      // =============================================
-      var activeLabelFilter = [];
-
-      function __handleLabelFilter(e) {
-        activeLabelFilter = (e.detail && e.detail.labels) || [];
-        // Persist label filter state
-        if (activeLabelFilter.length > 0) {
-          localStorage.setItem("meitheal-kanban-label-filter", JSON.stringify(activeLabelFilter))
-        } else {
-          localStorage.removeItem("meitheal-kanban-label-filter")
-        }
-        applyLabelFilter();
-      }
-      document.removeEventListener("meitheal:label-filter", __handleLabelFilter);
-      document.addEventListener("meitheal:label-filter", __handleLabelFilter);
-
-      // Restore saved label filter on page load
-      const savedLabelFilter = localStorage.getItem("meitheal-kanban-label-filter")
-      if (savedLabelFilter) {
-        try {
-          const savedLabels = JSON.parse(savedLabelFilter)
-          if (Array.isArray(savedLabels) && savedLabels.length > 0) {
-            activeLabelFilter = savedLabels
-          }
-        } catch {}
-      }
-
-      function applyLabelFilter() {
-        document.querySelectorAll(".kanban-card").forEach(function (c) {
-          var el = c;
-          if (activeLabelFilter.length === 0) {
-            // No label filter — don't override type filter visibility
-            return;
-          }
-
-          // Parse card labels
-          var cardLabels = [];
-          try {
-            var raw = el.getAttribute("data-labels") || "[]";
-            var parsed = JSON.parse(raw);
-            if (Array.isArray(parsed)) {
-              cardLabels = parsed.map(function (l) {
-                return (typeof l === "string" ? l : (l.name || "")).toLowerCase();
-              });
-            }
-          } catch (ex) { /* skip */ }
-
-          var matchesLabel = activeLabelFilter.some(function (f) {
-            return cardLabels.indexOf(f.toLowerCase()) >= 0;
-          });
-
-          if (!matchesLabel) {
-            el.style.display = "none";
-          }
-        });
-        window.updateAllCounts();
-      }
-
-      // Unified visibility helper — checks ALL filter dimensions
       window.isCardVisible = function (card) {
-        if (card.style.display === "none") return false
-        if (card.classList.contains("user-filtered-out")) return false
-        if (card.classList.contains("hidden")) return false
-        return true
+        if (!window.__filterStateLoaded) return true; // Show all before first filter event
+        // We need to dynamically import the filter logic or assume it is bundled
+        // Since isTaskVisible is in @lib/filter-state, we can import it dynamically
+        // But table-controller.ts uses it directly. Wait, kanban is an inline script.
+        // Let's implement a lighter standalone visibility check, OR import it.
+        // Given we are in a module-like block:
+        if (typeof window.__isTaskVisible === "function") {
+          return window.__isTaskVisible(card, currentFilterState);
+        }
+        return true;
       }
+
+      // Listen for unified filter events from FilterToolbar
+      document.addEventListener("meitheal:filter-change", (e) => {
+        if (e.detail?.view !== "kanban") return;
+        currentFilterState = e.detail;
+
+        // Apply groupBy
+        const mode = currentFilterState.groupBy || "none";
+        if (mode !== (localStorage.getItem("meitheal-kanban-group-by") || "none")) {
+          // Sync select element if needed
+          if (groupBySelect && groupBySelect.value !== mode) groupBySelect.value = mode;
+          applyGroupBy(mode);
+        }
+
+        // Apply visibility to all cards
+        if (typeof window.__isTaskVisible === "function") {
+          document.querySelectorAll(".kanban-card").forEach(card => {
+            if (window.__isTaskVisible(card, currentFilterState)) {
+               card.style.display = "";
+            } else {
+               card.style.display = "none";
+            }
+          });
+        }
+        
+        window.updateAllCounts();
+      });
 
       // Unified count updater — column headers + swimlane badges
       window.updateAllCounts = function () {
@@ -1769,7 +1654,7 @@ const typeConfig: Record<
           const count = col.querySelector(".kanban-count")
           const visible = Array.from(
             col.querySelectorAll(".kanban-card"),
-          ).filter(window.isCardVisible)
+          ).filter(c => c.style.display !== "none")
           if (count) count.textContent = visible.length
         })
 
@@ -1779,151 +1664,23 @@ const typeConfig: Record<
           if (!countEl) return
           const visible = Array.from(
             group.querySelectorAll(".kanban-card"),
-          ).filter(window.isCardVisible)
+          ).filter(c => c.style.display !== "none")
           countEl.textContent = visible.length
         })
 
-        // Auto-detect filter state for clear button
-        window.window.updateFilterClearBtn()
+        // Hide clear button (handled internally by FilterToolbar UI, but we can sync)
+        const filterClearBtn = document.getElementById("kanban-clear-filters")
+        if (filterClearBtn) {
+           filterClearBtn.classList.toggle("hidden", 
+             Object.values(currentFilterState).every(v => v === "" || v === "none" || (Array.isArray(v) && v.length === 0))
+           )
+        }
       }
 
-      // Show/hide filter clear button based on active filter state
-      const filterClearBtn = document.getElementById("kanban-clear-filters")
-      window.updateFilterClearBtn = function () {
-        if (!filterClearBtn) return
-        let anyActive = false
-        // Type filter: any button NOT active means filter is on
-        const typeButtons = document.querySelectorAll(".filter-toolbar__type-btn:not(.all-type-toggle)")
-        typeButtons.forEach(btn => {
-          if (!btn.classList.contains("active")) anyActive = true
-        })
-        // User filter: not "all" selected
-        const activeUserBtn = document.querySelector(".filter-toolbar__user-btn.active")
-        if (activeUserBtn && activeUserBtn.dataset.user !== "all") anyActive = true
-        // Board filter: not empty/all
-        const boardSelect = document.getElementById("kanban-filter-board")
-        if (boardSelect && boardSelect.value) anyActive = true
-        // Label filter: check via event system (label filter dispatches custom events)
-        const anyCardHidden = document.querySelector(".kanban-card[style*='display: none']")
-        if (anyCardHidden) anyActive = true
-
-        filterClearBtn.classList.toggle("hidden", !anyActive)
-      }
-
-      // Clear all filters handler
-      if (filterClearBtn) {
-        filterClearBtn.addEventListener("click", () => {
-          // Reset type filters — activate all
-          document.querySelectorAll(".filter-toolbar__type-btn").forEach(btn => {
-            btn.classList.add("active")
-          })
-
-          // Reset user filter — show all
-          document.querySelectorAll(".filter-toolbar__user-btn").forEach(btn => {
-            btn.classList.toggle("active", btn.dataset.user === "all")
-          })
-          document.querySelectorAll(".kanban-card.user-filtered-out").forEach(card => {
-            card.classList.remove("user-filtered-out")
-          })
-
-          // Reset board filter
-          const boardSelect = document.getElementById("kanban-filter-board")
-          if (boardSelect) boardSelect.value = ""
-
-          // Show all cards
-          document.querySelectorAll(".kanban-card").forEach(card => {
-            card.style.display = ""
-          })
-
-          // Show all swimlane groups
-          document.querySelectorAll(".swimlane-group.hidden").forEach(group => {
-            group.classList.remove("hidden")
-          })
-
-          // Clear label filter via event
-          document.dispatchEvent(new CustomEvent("meitheal:label-filter", { detail: { label: "" } }))
-
-          // Clear saved filter state
-          localStorage.removeItem("meitheal-board-filter")
-          localStorage.removeItem("meitheal-user-filter")
-          localStorage.removeItem("meitheal-kanban-type-filter")
-          localStorage.removeItem("meitheal-kanban-board-filter")
-          localStorage.removeItem("meitheal-kanban-label-filter")
-
-          window.updateAllCounts()
-          window.updateFilterClearBtn()
-
-          if (window.showToast) window.showToast("All filters cleared", "info")
-        })
-      }
-
-      // Swimlane group-by dropdown
-      const groupBySelect = document.getElementById("kanban-group-by");
-
-      // Board filter toolbar integration (P1 fix)
-      const boardFilterSelect = document.getElementById("kanban-filter-board");
-      if (boardFilterSelect) {
-        // Populate board options from API
-        fetch((window.__ingress_path || "") + "/api/boards")
-          .then(r => r.ok ? r.json() : { boards: [] })
-          .then(data => {
-            (data.boards || []).forEach(b => {
-              const opt = document.createElement("option");
-              opt.value = b.id;
-              opt.textContent = `${b.icon || '📋'} ${b.title}`;
-              boardFilterSelect.appendChild(opt);
-            });
-            // Restore saved board filter
-            const savedBoard = localStorage.getItem("meitheal-kanban-board-filter");
-            if (savedBoard) {
-              boardFilterSelect.value = savedBoard;
-              boardFilterSelect.dispatchEvent(new Event("change"));
-            }
-          })
-          .catch(() => { /* graceful fallback — filter stays on "All Boards" */ });
-
-        // Filter cards when board selection changes
-        boardFilterSelect.addEventListener("change", () => {
-          const boardId = boardFilterSelect.value;
-          localStorage.setItem("meitheal-kanban-board-filter", boardId);
-          document.querySelectorAll(".kanban-card").forEach(card => {
-            if (!boardId || card.dataset.board === boardId) {
-              card.style.display = "";
-            } else {
-              card.style.display = "none";
-            }
-          });
-          window.updateAllCounts();
-          // Sync with sidebar
-          document.dispatchEvent(new CustomEvent("board-filter-change", {
-            detail: { boardId }
-          }));
-        });
-
-        // Listen for sidebar board changes to sync toolbar
-        document.addEventListener("board-changed", (e) => {
-          if (e.detail?.boardId) {
-            boardFilterSelect.value = e.detail.boardId;
-            boardFilterSelect.dispatchEvent(new Event("change"));
-          }
-        });
-      }
-
-
-      // Restore saved group-by mode from localStorage
-      const savedGroupBy = localStorage.getItem("meitheal-kanban-group-by");
-      if (savedGroupBy && groupBySelect) {
-        groupBySelect.value = savedGroupBy;
-        // Trigger change event to apply saved mode
-        groupBySelect.dispatchEvent(new Event("change"));
-      }
-
-      groupBySelect?.addEventListener("change", async () => {
-        const mode = groupBySelect.value;
-        // Persist selection
+      // Group-by implementation
+      async function applyGroupBy(mode) {
         localStorage.setItem("meitheal-kanban-group-by", mode);
 
-        // Resolve board titles for group-by-board mode
         let boardTitleMap = {};
         if (mode === "board") {
           try {
@@ -1969,10 +1726,8 @@ const typeConfig: Record<
             });
         });
 
-        isGrouped = mode !== "none";
-
         if (mode === "none") {
-          applyTypeFilters();
+          window.updateAllCounts();
           return;
         }
 
@@ -1996,7 +1751,7 @@ const typeConfig: Record<
               .querySelectorAll(".swimlane-group:not(.dynamic-group)")
               .forEach((group) => {
                 const groupType = group.dataset.swimlaneType;
-                group.classList.toggle("hidden", !activeTypes.has(groupType));
+                group.style.display = ""; // Show all type swimlanes — visibility filtering handled by isTaskVisible
                 const countEl = group.querySelector(".swimlane-count");
                 const cards = group.querySelectorAll(".kanban-card");
                 if (countEl) countEl.textContent = Array.from(cards).filter(window.isCardVisible).length;
@@ -2099,13 +1854,10 @@ const typeConfig: Record<
                 toggleSpan.textContent = "▶";
                 group.classList.add("swimlane-collapsed");
               }
-            });
-          });
-        }
-
-        applyTypeFilters();
-      });
-
+            }); // end sortedKeys.forEach
+          }); // end col.forEach
+        } // end else if
+      } // end applyGroupBy
       // Swimlane header collapse toggle — CSS animation + localStorage persistence
       document.querySelectorAll(".swimlane-header").forEach((header) => {
         const group = header.closest(".swimlane-group");
@@ -2152,7 +1904,7 @@ const typeConfig: Record<
       try {
         // Dynamic import — Vite resolves this at build time into the
         // bundled chunk. No @vite-ignore needed since path is static.
-        var mod = await import("../../domains/offline/offline-store.ts").catch(
+        var mod = await import("@domains/offline/offline-store").catch(
           function () {
             return null; // Silently skip if module not available
           },

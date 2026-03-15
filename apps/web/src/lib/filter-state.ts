@@ -11,6 +11,8 @@
  * Bounded Context: Tasks (view-layer utility)
  */
 
+import { evaluateFilterGroup } from "./filter-engine"
+
 // =============================================================================
 // Types
 // =============================================================================
@@ -32,6 +34,8 @@ export interface FilterState {
   subGroupBy: string
   /** Active label filters — multi-select (empty = all labels visible) */
   labels: string[]
+  /** Advanced compound AND/OR filter conditions */
+  advancedFilter?: import("./filter-engine").FilterGroup | null
 }
 
 // =============================================================================
@@ -81,6 +85,16 @@ function deserializeArray(val: string | null | undefined): string[] {
   return val.split(",").filter(Boolean)
 }
 
+/** Deserialize URL param string back to an object */
+function parseJsonParam(val: string | null | undefined): any | null {
+  if (!val) return null
+  try {
+    return JSON.parse(decodeURIComponent(val))
+  } catch {
+    return null
+  }
+}
+
 // =============================================================================
 // Persistence
 // =============================================================================
@@ -88,7 +102,8 @@ function deserializeArray(val: string | null | undefined): string[] {
 /** All persisted filter keys (scalar + array) */
 const SCALAR_KEYS = ["search", "status", "priority", "rice", "sort", "user", "board", "groupBy", "subGroupBy"] as const
 const ARRAY_KEYS = ["types", "labels"] as const
-const ALL_KEYS = [...SCALAR_KEYS, ...ARRAY_KEYS] as const
+const JSON_KEYS = ["advancedFilter"] as const
+const ALL_KEYS = [...SCALAR_KEYS, ...ARRAY_KEYS, ...JSON_KEYS] as const
 
 /**
  * Save filter state to both localStorage and URL search params.
@@ -110,6 +125,14 @@ export function saveFilterState(state: Partial<FilterState>): void {
     const arr = state[key]
     if (Array.isArray(arr) && arr.length > 0) {
       url.searchParams.set(key, serializeArray(arr))
+    } else {
+      url.searchParams.delete(key)
+    }
+  }
+  for (const key of JSON_KEYS) {
+    const obj = state[key]
+    if (obj) {
+      url.searchParams.set(key, encodeURIComponent(JSON.stringify(obj)))
     } else {
       url.searchParams.delete(key)
     }
@@ -138,6 +161,7 @@ export function loadFilterState(): Partial<FilterState> {
       groupBy: urlParams.get("groupBy") ?? "none",
       subGroupBy: urlParams.get("subGroupBy") ?? "none",
       labels: deserializeArray(urlParams.get("labels")),
+      advancedFilter: parseJsonParam(urlParams.get("advancedFilter")),
     }
   }
 
@@ -224,6 +248,27 @@ export function isTaskVisible(
   el: HTMLElement,
   state: Partial<FilterState>,
 ): boolean {
+  // Advanced Filter (early exit if it fails)
+  if (state.advancedFilter) {
+    // Extract data from the element just like the filter engine expects
+    const data = { ...el.dataset }
+    if (data.labels) {
+      try {
+        const parsed = JSON.parse(data.labels)
+        data.labels = JSON.stringify(parsed.map((l: any) => typeof l === 'string' ? l : l.name || ''))
+      } catch {
+        data.labels = "[]"
+      }
+    } else {
+      data.labels = "[]"
+    }
+    data.type = data.taskType || data.task_type || "task"
+
+    if (!evaluateFilterGroup(state.advancedFilter, data)) {
+      return false
+    }
+  }
+
   // Search
   if (state.search) {
     const searchText = el.dataset.search ?? el.dataset.title ?? ""

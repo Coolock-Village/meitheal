@@ -200,3 +200,104 @@
     width: 100%;
   }
 }
+
+/* =============================================
+ * Advanced Filter Panel
+ * ============================================= */
+
+.filter-toolbar__advanced-toggle {
+  background: transparent;
+  border: none;
+  color: var(--text-muted);
+  cursor: pointer;
+  padding: 4px;
+  border-radius: var(--radius-sm, 4px);
+  transition: color 0.15s, background 0.15s;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.filter-toolbar__advanced-toggle:hover {
+  color: var(--text-primary);
+  background: var(--bg-hover);
+}
+
+.filter-toolbar__advanced-toggle[aria-expanded="true"] {
+  background: var(--accent);
+  color: #fff;
+}
+
+.filter-toolbar__advanced-panel {
+  position: absolute;
+  top: 100%;
+  right: 16px;
+  width: 450px;
+  max-width: calc(100vw - 32px);
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-md, 8px);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+  z-index: 50;
+  padding: 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.filter-toolbar__advanced-panel.hidden {
+  display: none;
+}
+
+.advanced-panel__header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  border-bottom: 1px solid var(--border);
+  padding-bottom: 8px;
+  margin-bottom: 4px;
+}
+
+.advanced-panel__body {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  max-height: 400px;
+  overflow-y: auto;
+}
+
+.advanced-filter-row {
+  display: flex;
+  gap: 6px;
+  align-items: center;
+  background: var(--bg-secondary);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm, 4px);
+  padding: 6px;
+}
+
+.advanced-filter-row select,
+.advanced-filter-row input {
+  font-size: 13px;
+  padding: 4px 8px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm, 4px);
+  background: var(--bg-primary);
+  color: var(--text-primary);
+  flex: 1;
+  min-width: 0;
+}
+
+.advanced-filter-row select {
+  appearance: none;
+  background-image: url("data:image/svg+xml;charset=US-ASCII,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20width%3D%22292.4%22%20height%3D%22292.4%22%3E%3Cpath%20fill%3D%22%239CA3AF%22%20d%3D%22M287%2069.4a17.6%2017.6%200%200%200-13-5.4H18.4c-5%200-9.3%201.8-12.9%205.4A17.6%2017.6%200%200%200%200%2082.2c0%205%201.8%209.3%205.4%2012.9l128%20127.9c3.6%203.6%207.8%205.4%2012.8%205.4s9.2-1.8%2012.8-5.4L287%2095c3.5-3.5%205.4-7.8%205.4-12.8%200-5-1.9-9.2-5.5-12.8z%22%2F%3E%3C%2Fsvg%3E");
+  background-repeat: no-repeat;
+  background-position: right 0.5rem center;
+  background-size: 0.65em auto;
+  padding-right: 24px;
+}
+
+/* Ensure relative positioning on the toolbar container to anchor the absolute panel */
+.filter-toolbar {
+  position: relative;
+}

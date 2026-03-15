@@ -221,12 +221,66 @@ const groupOptions = groupByOptions ?? defaultGroupByOptions
   >
     {t("tasks.clear_filters", locale)}
   </button>
+
+  {/* Advanced Filter Toggle */}
+  <button
+    type="button"
+    class="filter-toolbar__advanced-toggle"
+    id={`${prefix}-advanced-toggle`}
+    title="Advanced Filters"
+    aria-label="Toggle advanced filters"
+    aria-expanded="false"
+  >
+    <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-sliders-horizontal"><line x1="21" x2="14" y1="4" y2="4"/><line x1="10" x2="3" y1="4" y2="4"/><line x1="21" x2="12" y1="12" y2="12"/><line x1="8" x2="3" y1="12" y2="12"/><line x1="21" x2="16" y1="20" y2="20"/><line x1="12" x2="3" y1="20" y2="20"/><line x1="14" x2="14" y1="2" y2="6"/><line x1="8" x2="8" y1="10" y2="14"/><line x1="16" x2="16" y1="18" y2="22"/></svg>
+  </button>
+
+  {/* Advanced Filter Builder Dropdown (Hidden by default) */}
+<div class="filter-toolbar__advanced-panel hidden" id={`${prefix}-advanced-panel`} role="region" aria-label="Advanced Filter Builder">
+  <div class="advanced-panel__header">
+    <h4 class="text-sm font-semibold text-text">Advanced Filters</h4>
+    <button type="button" class="btn-icon" id={`${prefix}-advanced-close`} aria-label="Close advanced filters">
+      <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-x"><path d="M18 6 6 18"/><path d="m6 6 12 12"/></svg>
+    </button>
+  </div>
+  
+  <div class="advanced-panel__body" id={`${prefix}-advanced-conditions-container`}>
+    <!-- Conditions rendered here by JS -->
+    <div class="advanced-panel__empty-state text-sm text-text-muted italic py-2">
+      No advanced rules applied. Add a condition to start filtering.
+    </div>
+  </div>
+
+  <div class="advanced-panel__footer mt-3 pt-3 border-t border-border flex justify-between items-center gap-2">
+    <div class="flex gap-2">
+      <button type="button" class="btn btn-outline text-xs py-1" id={`${prefix}-advanced-add-condition`}>
+        + Add Condition
+      </button>
+      <button type="button" class="btn btn-outline text-xs py-1" id={`${prefix}-advanced-add-group`}>
+        + Add Group
+      </button>
+    </div>
+    <div class="flex gap-2">
+      <button type="button" class="btn text-xs py-1 text-text-muted hover:text-text" id={`${prefix}-advanced-clear`}>
+        Clear Rules
+      </button>
+      <button type="button" class="btn btn-primary text-xs py-1" id={`${prefix}-advanced-apply`}>
+        Apply Rules
+      </button>
+    </div>
+  </div>
+</div>
+
 </div>
 
 {/* Label filter bar — separate row below main toolbar */}
 <LabelFilterBar id={`${prefix}-label-filter`} />
 
 <script>
+  import { isTaskVisible } from "../../lib/filter-state"
+
+  // Expose for Kanban's inline scripts which can't do module imports easily
+  ;(window as any).__isTaskVisible = isTaskVisible
+
   /**
    * FilterToolbar client-side controller
    *
@@ -247,6 +301,175 @@ const groupOptions = groupByOptions ?? defaultGroupByOptions
     const clearBtn = toolbar.querySelector<HTMLButtonElement>(`#${prefix}-clear-filters`)
     const typeToggles = toolbar.querySelectorAll<HTMLButtonElement>(".filter-toolbar__type-btn")
     const userPills = toolbar.querySelectorAll<HTMLButtonElement>(".filter-toolbar__user-btn")
+
+    // Advanced Filter controls
+    const advToggleBtn = toolbar.querySelector<HTMLButtonElement>(`#${prefix}-advanced-toggle`)
+    const advPanel = toolbar.querySelector<HTMLElement>(`#${prefix}-advanced-panel`)
+    const advCloseBtn = toolbar.querySelector<HTMLButtonElement>(`#${prefix}-advanced-close`)
+    const advAddCondBtn = toolbar.querySelector<HTMLButtonElement>(`#${prefix}-advanced-add-condition`)
+    const advAddGroupBtn = toolbar.querySelector<HTMLButtonElement>(`#${prefix}-advanced-add-group`)
+    const advClearBtn = toolbar.querySelector<HTMLButtonElement>(`#${prefix}-advanced-clear`)
+    const advApplyBtn = toolbar.querySelector<HTMLButtonElement>(`#${prefix}-advanced-apply`)
+    const advContainer = toolbar.querySelector<HTMLElement>(`#${prefix}-advanced-conditions-container`)
+
+    // Internal state for advanced filters
+    let advancedFilterState: any = null
+
+    // Field definition for dropdowns
+    const fields = [
+      { id: "title", label: "Task Title" },
+      { id: "status", label: "Status" },
+      { id: "priority", label: "Priority" },
+      { id: "rice", label: "RICE Score" },
+      { id: "type", label: "Task Type" },
+      { id: "assigned", label: "Assignee" },
+      { id: "labels", label: "Labels" },
+      { id: "board", label: "Board ID" },
+    ]
+
+    const operators = [
+      { id: "equals", label: "Equals" },
+      { id: "notEquals", label: "Does not equal" },
+      { id: "contains", label: "Contains" },
+      { id: "notContains", label: "Does not contain" },
+      { id: "greaterThan", label: "Greater than" },
+      { id: "lessThan", label: "Less than" },
+      { id: "isEmpty", label: "Is empty" },
+      { id: "isNotEmpty", label: "Is not empty" },
+    ]
+
+    function renderAdvancedConditionRow() {
+      const row = document.createElement("div")
+      row.className = "advanced-filter-row"
+      row.dataset.type = "condition"
+
+      const fieldSel = document.createElement("select")
+      fieldSel.className = "adv-field"
+      fields.forEach(f => {
+        const opt = document.createElement("option")
+        opt.value = f.id
+        opt.textContent = f.label
+        fieldSel.appendChild(opt)
+      })
+
+      const opSel = document.createElement("select")
+      opSel.className = "adv-op"
+      operators.forEach(o => {
+        const opt = document.createElement("option")
+        opt.value = o.id
+        opt.textContent = o.label
+        opSel.appendChild(opt)
+      })
+
+      const valInput = document.createElement("input")
+      valInput.className = "adv-val"
+      valInput.type = "text"
+      valInput.placeholder = "Value..."
+
+      // Hide value input for empty/not-empty operators
+      opSel.addEventListener("change", () => {
+        if (opSel.value === "isEmpty" || opSel.value === "isNotEmpty") {
+          valInput.style.display = "none"
+        } else {
+          valInput.style.display = ""
+        }
+      })
+
+      const removeBtn = document.createElement("button")
+      removeBtn.type = "button"
+      removeBtn.className = "btn-icon text-text-muted hover:text-red-500"
+      removeBtn.innerHTML = `<svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 6h18"/><path d="M19 6v14c0 1-1 2-2 2H7c-1 0-2-1-2-2V6"/><path d="M8 6V4c0-1 1-2 2-2h4c1 0 2 1 2 2v2"/></svg>`
+      removeBtn.addEventListener("click", () => {
+        row.remove()
+        checkEmptyState()
+      })
+
+      row.append(fieldSel, opSel, valInput, removeBtn)
+      return row
+    }
+
+    function checkEmptyState() {
+      if (!advContainer) return
+      const emptyState = advContainer.querySelector(".advanced-panel__empty-state")
+      const hasRows = advContainer.querySelectorAll(".advanced-filter-row").length > 0
+      if (emptyState) {
+        (emptyState as HTMLElement).style.display = hasRows ? "none" : "block"
+      }
+    }
+
+    // Toggle Advanced Panel
+    advToggleBtn?.addEventListener("click", () => {
+      const isExpanded = advToggleBtn.getAttribute("aria-expanded") === "true"
+      advToggleBtn.setAttribute("aria-expanded", String(!isExpanded))
+      advPanel?.classList.toggle("hidden")
+    })
+
+    advCloseBtn?.addEventListener("click", () => {
+      advToggleBtn?.setAttribute("aria-expanded", "false")
+      advPanel?.classList.add("hidden")
+    })
+
+    // Click outside to close advanced panel
+    document.addEventListener("click", (e) => {
+      if (!advPanel?.classList.contains("hidden") && advToggleBtn && advPanel) {
+        if (!advPanel.contains(e.target as Node) && !advToggleBtn.contains(e.target as Node)) {
+          advToggleBtn.setAttribute("aria-expanded", "false")
+          advPanel.classList.add("hidden")
+        }
+      }
+    })
+
+    // Advanced Panel Actions
+    advAddCondBtn?.addEventListener("click", () => {
+      if (!advContainer) return
+      const emptyState = advContainer.querySelector(".advanced-panel__empty-state")
+      if (emptyState) (emptyState as HTMLElement).style.display = "none"
+      
+      const row = renderAdvancedConditionRow()
+      advContainer.appendChild(row)
+    })
+
+    advClearBtn?.addEventListener("click", () => {
+      if (!advContainer) return
+      const rows = advContainer.querySelectorAll(".advanced-filter-row")
+      rows.forEach(r => r.remove())
+      checkEmptyState()
+      advancedFilterState = null
+      emitChange()
+    })
+
+    advApplyBtn?.addEventListener("click", () => {
+      if (!advContainer) return
+      const rows = advContainer.querySelectorAll(".advanced-filter-row")
+      if (rows.length === 0) {
+        advancedFilterState = null
+      } else {
+        // Build the root AND group from the flat list of conditions for now
+        // (Full recursive group UI can be added later, starting with a flat AND block)
+        const conditions = Array.from(rows).map(row => {
+          const field = row.querySelector<HTMLSelectElement>(".adv-field")?.value ?? ""
+          const operator = row.querySelector<HTMLSelectElement>(".adv-op")?.value ?? "equals"
+          const value = row.querySelector<HTMLInputElement>(".adv-val")?.value ?? ""
+          return { id: Math.random().toString(36).substring(7), field, operator, value }
+        })
+        advancedFilterState = {
+          id: "root",
+          logic: "AND",
+          conditions
+        }
+      }
+      
+      // Visual feedback on toggle button
+      if (advancedFilterState && advancedFilterState.conditions.length > 0) {
+        advToggleBtn?.classList.add("text-accent")
+      } else {
+        advToggleBtn?.classList.remove("text-accent")
+      }
+
+      advToggleBtn?.setAttribute("aria-expanded", "false")
+      advPanel?.classList.add("hidden")
+      emitChange()
+    })
 
     function gatherState() {
       // Collect active types
@@ -275,6 +498,7 @@ const groupOptions = groupByOptions ?? defaultGroupByOptions
         board: boardSel?.value ?? "",
         groupBy: groupBySel?.value ?? "none",
         types: activeTypes.length === typeToggles.length ? [] : activeTypes,
+        advancedFilter: advancedFilterState,
       }
     }
 
@@ -345,6 +569,16 @@ const groupOptions = groupByOptions ?? defaultGroupByOptions
         btn.classList.remove("active")
       })
       toolbar.querySelector<HTMLButtonElement>(".filter-toolbar__user-btn[data-user='all']")?.classList.add("active")
+      
+      // Clear advanced filters too
+      if (advContainer) {
+        const rows = advContainer.querySelectorAll(".advanced-filter-row")
+        rows.forEach(r => r.remove())
+        checkEmptyState()
+      }
+      advancedFilterState = null
+      advToggleBtn?.classList.remove("text-accent")
+
       emitChange()
     })
 
@@ -371,11 +605,9 @@ const groupOptions = groupByOptions ?? defaultGroupByOptions
     loadBoards()
   }
 
-  // Initialize toolbars — skip kanban (has its own inline script)
+  // Initialize toolbars
   function bootToolbars() {
     document.querySelectorAll<HTMLElement>(".filter-toolbar").forEach((toolbar) => {
-      // Kanban has its own comprehensive filter handling — skip to avoid double-handling
-      if (toolbar.id.startsWith("kanban")) return
       // Guard: don't re-initialize if already done
       if (toolbar.dataset.initialized) return
       toolbar.dataset.initialized = "true"
