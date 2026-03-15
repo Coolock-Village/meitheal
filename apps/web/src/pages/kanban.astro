@@ -1802,6 +1802,13 @@ const typeConfig: Record<
               group.className = "swimlane-group dynamic-group";
               group.dataset.swimlaneType = key;
 
+              // Color accent for dynamic swimlanes (matches static type swimlanes)
+              const colorMap = mode === "priority"
+                ? { "1": "#ef4444", "2": "#f97316", "3": "#eab308", "4": "#22c55e", "5": "#6b7280" }
+                : {}; // board mode — use a neutral accent
+              const accentColor = colorMap[key] || "#6366F1";
+              group.style.borderTop = `3px solid ${accentColor}`;
+
               const header = document.createElement("div");
               header.className = "swimlane-header";
               const label =
@@ -1809,13 +1816,19 @@ const typeConfig: Record<
               const toggleSpan = document.createElement("span");
               toggleSpan.className = "swimlane-toggle";
               toggleSpan.textContent = "▼";
+
+              // Color dot (matches static .swimlane-type-dot)
+              const dotSpan = document.createElement("span");
+              dotSpan.className = "swimlane-type-dot";
+              dotSpan.style.background = accentColor;
+
               const labelSpan = document.createElement("span");
               labelSpan.className = "swimlane-label";
               labelSpan.textContent = label;
               const countSpan = document.createElement("span");
               countSpan.className = "swimlane-count";
               countSpan.textContent = String(cards.filter(window.isCardVisible).length);
-              header.append(toggleSpan, labelSpan, countSpan);
+              header.append(toggleSpan, dotSpan, labelSpan, countSpan);
 
               // Collapse toggle — matches static swimlane CSS class pattern
               header.style.cursor = "pointer"

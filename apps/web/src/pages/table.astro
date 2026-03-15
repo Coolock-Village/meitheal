@@ -6,6 +6,7 @@ import TaskTypeIcon from "../components/ui/TaskTypeIcon.astro";
 import RiceBadge from "../components/ui/RiceBadge.astro";
 import LabelBadges from "../components/ui/LabelBadges.astro";
 import FilterToolbar from "../components/ui/FilterToolbar.astro";
+import ColumnCustomizer from "../components/ui/ColumnCustomizer.astro";
 import { t } from "../i18n/translations";
 import type { Locale } from "../lib/locale";
 import { formatRegionalDate } from "../lib/date";
@@ -120,6 +121,9 @@ const treeRows = buildTreeRows(tasks);
           showRICEFilter
           showUserFilter
         />
+        <div class="table-toolbar-row">
+          <ColumnCustomizer />
+        </div>
         <div class="table-container">
           <table class="data-table" id="task-table">
             <thead>

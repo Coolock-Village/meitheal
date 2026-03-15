@@ -6,6 +6,15 @@
  * Does NOT own: kanban board (_kanban.css), task items (_tasks.css), empty states (_feedback.css)
  * ============================================= */
 @layer components {
+  /* --- Secondary toolbar row (column customizer, etc.) --- */
+  .table-toolbar-row {
+    display: flex;
+    justify-content: flex-end;
+    padding: 4px 16px;
+    border-bottom: 1px solid var(--border);
+    background: var(--bg-primary);
+  }
+
   /* --- Table view --- */
   .table-container {
     @apply overflow-x-auto;

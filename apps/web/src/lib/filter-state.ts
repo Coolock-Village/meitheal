@@ -36,6 +36,8 @@ export interface FilterState {
   labels: string[]
   /** Advanced compound AND/OR filter conditions */
   advancedFilter?: import("./filter-engine").FilterGroup | null
+  /** Visible column IDs in the table view */
+  columns?: string[]
 }
 
 // =============================================================================
@@ -102,7 +104,7 @@ function parseJsonParam(val: string | null | undefined): any | null {
 /** All persisted filter keys (scalar + array) */
 const SCALAR_KEYS = ["search", "status", "priority", "rice", "sort", "user", "board", "groupBy", "subGroupBy"] as const
 const ARRAY_KEYS = ["types", "labels"] as const
-const JSON_KEYS = ["advancedFilter"] as const
+const JSON_KEYS = ["advancedFilter", "columns"] as const
 const ALL_KEYS = [...SCALAR_KEYS, ...ARRAY_KEYS, ...JSON_KEYS] as const
 
 /**
