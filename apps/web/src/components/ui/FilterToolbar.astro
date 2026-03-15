@@ -211,6 +211,18 @@ const groupOptions = groupByOptions ?? defaultGroupByOptions
     </select>
   )}
 
+  {/* Sub-group-by selector — only for table view with groupBy active */}
+  {showGroupBy && view === "table" && (
+    <select class="form-select filter-toolbar__select" id={`${prefix}-sub-group-by`} aria-label="Sub-group tasks by" title="Then group by">
+      <option value="none">No sub-group</option>
+      <option value="status">Then by Status</option>
+      <option value="priority">Then by Priority</option>
+      <option value="type">Then by Type</option>
+      <option value="board">Then by Board</option>
+      <option value="rice">Then by RICE</option>
+    </select>
+  )}
+
   {/* Clear all button */}
   <button
     type="button"
@@ -298,6 +310,7 @@ const groupOptions = groupByOptions ?? defaultGroupByOptions
     const userSel = toolbar.querySelector<HTMLSelectElement>(`#${prefix}-filter-user`)
     const boardSel = toolbar.querySelector<HTMLSelectElement>(`#${prefix}-filter-board`)
     const groupBySel = toolbar.querySelector<HTMLSelectElement>(`#${prefix}-group-by`)
+    const subGroupBySel = toolbar.querySelector<HTMLSelectElement>(`#${prefix}-sub-group-by`)
     const clearBtn = toolbar.querySelector<HTMLButtonElement>(`#${prefix}-clear-filters`)
     const typeToggles = toolbar.querySelectorAll<HTMLButtonElement>(".filter-toolbar__type-btn")
     const userPills = toolbar.querySelectorAll<HTMLButtonElement>(".filter-toolbar__user-btn")
@@ -497,6 +510,7 @@ const groupOptions = groupByOptions ?? defaultGroupByOptions
         user: activeUser,
         board: boardSel?.value ?? "",
         groupBy: groupBySel?.value ?? "none",
+        subGroupBy: subGroupBySel?.value ?? "none",
         types: activeTypes.length === typeToggles.length ? [] : activeTypes,
         advancedFilter: advancedFilterState,
       }
@@ -519,7 +533,7 @@ const groupOptions = groupByOptions ?? defaultGroupByOptions
     })
 
     // Select change listeners
-    ;[statusSel, prioritySel, riceSel, userSel, boardSel, groupBySel].forEach((sel) => {
+    ;[statusSel, prioritySel, riceSel, userSel, boardSel, groupBySel, subGroupBySel].forEach((sel) => {
       sel?.addEventListener("change", emitChange)
     })
 
@@ -561,6 +575,7 @@ const groupOptions = groupByOptions ?? defaultGroupByOptions
         if (sel) sel.value = ""
       })
       if (groupBySel) groupBySel.value = "none"
+      if (subGroupBySel) subGroupBySel.value = "none"
       typeToggles.forEach((btn) => {
         btn.classList.add("active")
         btn.setAttribute("aria-pressed", "true")
