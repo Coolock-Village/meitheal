@@ -55,12 +55,39 @@
 - PGD-01→05 (5 requirements)
 - Dependencies: Phase 2 complete ✓ (extracted scripts should use domain queries)
 
+## Phase 7 Summary (IN PROGRESS)
+
+Kanban + Table list view overhaul, running in parallel with feature phases.
+
+| SHA | Description |
+|-----|-------------|
+| `19aaae9` | Unify filtering via shared FilterToolbar + filter-state |
+| `8172a5a` | Dynamic swimlane color accent bars (priority/board) |
+| `c8d64f0` | Silence baseUrl deprecation + tsconfig fixes |
+| `4ad4e4c` | Quick actions, group collapse, ColumnCustomizer, Astro 6 migration |
+
+### Delivered
+- **07-02**: Shared `FilterToolbar.astro` — replaced ~300 lines of inline Kanban filter logic
+- **filter-state.ts**: Unified filter persistence (localStorage + URL params) for all dimensions
+- **Swimlane colors**: Dynamic groups (priority/board) get colored top accent + dot matching static type swimlanes
+- **Card quick actions**: Add Child, Assign User, Set Color — Teamhood-style popover buttons
+- **ColumnCustomizer**: Checkbox-based column visibility toggle
+- **Astro 6 migration**: ViewTransitions → ClientRouter, content config, Vite 7
+
+### Key Files
+- `apps/web/src/components/ui/FilterToolbar.astro` — shared filter toolbar
+- `apps/web/src/lib/filter-state.ts` — unified filter persistence
+- `apps/web/src/lib/filter-engine.ts` — advanced AND/OR filter logic
+- `apps/web/src/lib/table-controller.ts` — event-delegation group collapse
+
 ## Decisions
 
 - Feature phases (1-3) before architecture phases (4-5)
 - SQL migration after features so new code writes domain queries from day one
 - TaskRepository already has 45+ methods — Phase 3 scripts can import directly
 - Each WP tested independently with full regression suite (286+ tests)
+- FilterToolbar uses `meitheal:filter-change` CustomEvent for cross-view consistency
+- Card quick actions use existing schema columns — pure UI additions, no backend changes
 
 ## Sessions
 
@@ -76,3 +103,14 @@
 - 107→4 inline SQL calls migrated (96%)
 - Security hardening: STATUS parameterization
 - Phase 2 verified: 4/4 success criteria PASSED
+
+### 2026-03-14 Session 4
+- Phase 07-02: Shared FilterToolbar component — unified Kanban/Table filtering
+- Dynamic swimlane color bars for priority/board group-by
+- Card quick actions: Add Child, Assign User, Set Color
+
+### 2026-03-15 Session 5
+- Astro 6 migration, group collapse improvements, ColumnCustomizer
+- ViewTransitions → ClientRouter test fix
+- Tests: 286 passed, 65 skipped
+

@@ -299,6 +299,53 @@
   align-items: center;
 }
 
+/* =============================================================================
+ * Sub-Group Header Styles (secondary grouping dimension)
+ * ============================================================================= */
+
+/* Sub-group rows are visually lighter and indented */
+tr.sub-group-header-row td {
+  background: var(--bg-primary);
+}
+
+.sub-group-header-cell {
+  padding-left: 36px !important; /* Indented relative to primary group */
+  font-size: 11px;
+  opacity: 0.85;
+}
+
+.sub-group-header-cell .group-toggle {
+  width: 18px;
+  height: 18px;
+}
+
+.sub-group-header-cell .group-toggle-arrow {
+  font-size: 10px;
+}
+
+.sub-group-header-cell .group-dot {
+  width: 6px;
+  height: 6px;
+}
+
+.sub-group-header-cell .group-label {
+  font-weight: 500;
+  font-size: 11px;
+  letter-spacing: 0.01em;
+}
+
+/* Sub-group count badge — neutral, smaller than primary */
+.sub-group-header-cell .group-count {
+  min-width: 18px;
+  height: 18px;
+  border-radius: 9px;
+  background: var(--bg-secondary);
+  color: var(--text-muted);
+  font-size: 10px;
+  padding: 0 5px;
+}
+
+
 .group-select-all {
   width: 16px;
   height: 16px;
