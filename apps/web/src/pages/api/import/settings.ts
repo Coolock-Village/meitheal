@@ -45,7 +45,12 @@ export const POST: APIRoute = async ({ request }) => {
             return new Response(JSON.stringify({ error: "Import payload too large (max 100KB)" }), { status: 413, headers: { "Content-Type": "application/json" } })
         }
 
-        const data = await request.json()
+        let data: unknown
+        try {
+            data = await request.json()
+        } catch {
+            return new Response(JSON.stringify({ error: "Malformed JSON in request body" }), { status: 400, headers: { "Content-Type": "application/json" } })
+        }
 
         if (!data || typeof data !== "object" || Array.isArray(data)) {
             return new Response(JSON.stringify({ error: "Invalid settings payload format. Expected a key-value object." }), { status: 400, headers: { "Content-Type": "application/json" } })

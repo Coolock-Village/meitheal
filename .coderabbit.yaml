@@ -22,7 +22,7 @@ reviews:
       instructions: |
         Astro-first architecture. Components must use scoped CSS or domain partials from src/styles/.
         No external CDN imports. Self-hosted fonts only (Outfit, Geist, JetBrains Mono).
-        ViewTransitions + is:inline scripts for tab switching.
+        ClientRouter + is:inline scripts for tab switching.
         Flag any absolute /_astro/ paths in CSS as a P0 bug (breaks HA ingress).
     - path: "integrations/home-assistant/**"
       instructions: |
