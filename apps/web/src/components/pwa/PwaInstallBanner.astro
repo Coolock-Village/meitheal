@@ -213,11 +213,11 @@
     hideBanner();
   }
 
-  // Bind DOM event listeners — re-runs after each ViewTransitions swap
+  // Bind DOM event listeners — re-runs after each ClientRouter swap
   function bindBannerListeners() {
     const banner = document.getElementById("pwa-install-banner");
     if (!banner) return;
-    // Guard: prevent duplicate listener accumulation on ViewTransitions
+    // Guard: prevent duplicate listener accumulation on ClientRouter
     if ((banner as HTMLElement).dataset.bannerBound) return;
     (banner as HTMLElement).dataset.bannerBound = "true";
 
@@ -250,7 +250,7 @@
     }
   }
 
-  // Window-level listeners — guarded to prevent accumulation across ViewTransitions
+  // Window-level listeners — guarded to prevent accumulation across ClientRouter
   if (!(window as any).__pwaBannerListenersBound) {
     (window as any).__pwaBannerListenersBound = true;
 
@@ -265,7 +265,7 @@
     });
   }
 
-  // Initial bind + re-bind after ViewTransitions page swap
+  // Initial bind + re-bind after ClientRouter page swap
   bindBannerListeners();
   document.addEventListener("astro:page-load", bindBannerListeners);
 </script>

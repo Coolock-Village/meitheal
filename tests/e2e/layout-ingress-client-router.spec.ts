@@ -1,6 +1,6 @@
 import { expect, test } from "@playwright/test";
 
-test("Layout disables ViewTransitions when behindIngress is true", async () => {
+test("Layout disables ClientRouter when behindIngress is true", async () => {
   const fs = await import("node:fs/promises");
   const path = await import("node:path");
   const layoutPath = path.resolve(
@@ -10,5 +10,5 @@ test("Layout disables ViewTransitions when behindIngress is true", async () => {
   const content = await fs.readFile(layoutPath, "utf-8");
 
   expect(content).toContain("behindIngress = false");
-  expect(content).toContain("{!behindIngress && <ViewTransitions fallback=\"swap\" />}");
+  expect(content).toContain("{!behindIngress && <ClientRouter fallback=\"swap\" />}");
 });
