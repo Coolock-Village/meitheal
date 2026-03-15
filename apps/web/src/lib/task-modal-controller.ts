@@ -7,7 +7,7 @@
         import { confirmDialog } from "@lib/confirm-dialog";
         import { pageLifecycle } from "@lib/page-lifecycle";
         import { marked } from "marked";
-        import { sanitize } from "@lib/sanitize";
+        import { sanitizeClient } from "@lib/sanitize-client";
         import { onTaskCompleted } from "@lib/gamification-hook";
         import { createFocusTrap } from "@lib/focus-trap";
 
@@ -661,7 +661,7 @@
                   row.className = "flex items-center gap-2 group";
                   row.innerHTML = `
                     <input type="checkbox" class="form-checkbox h-4 w-4 bg-transparent border-border rounded" ${item.done ? "checked" : ""} />
-                    <input type="text" class="form-input flex-1 text-sm bg-transparent border-transparent px-1 py-0.5 focus:bg-[var(--bg-input)] focus:border-[var(--border-focus)] hover:bg-[var(--bg-hover)]" value="${item.text.replace(/"/g, "&quot;")}" placeholder="Checklist item..." />
+                    <input type="text" class="form-input flex-1 text-sm bg-transparent border-transparent px-1 py-0.5 focus:bg-(--bg-input) focus:border-(--border-focus) hover:bg-(--bg-hover)" value="${item.text.replace(/"/g, "&quot;")}" placeholder="Checklist item..." />
                     <button type="button" class="text-danger opacity-0 group-hover:opacity-100 transition-opacity text-xs p-1" title="Delete item">×</button>
                   `;
                   // Toggle done
@@ -885,16 +885,16 @@
         descEditBtn?.addEventListener("click", () => {
           descEditContainer?.classList.remove("hidden");
           descPreviewContainer?.classList.add("hidden");
-          descEditBtn.classList.add("bg-[var(--bg-hover)]");
-          descPreviewBtn?.classList.remove("bg-[var(--bg-hover)]");
+          descEditBtn.classList.add("bg-(--bg-hover)");
+          descPreviewBtn?.classList.remove("bg-(--bg-hover)");
           tdDescription?.focus();
         });
 
         descPreviewBtn?.addEventListener("click", () => {
           descEditContainer?.classList.add("hidden");
           descPreviewContainer?.classList.remove("hidden");
-          descPreviewBtn.classList.add("bg-[var(--bg-hover)]");
-          descEditBtn?.classList.remove("bg-[var(--bg-hover)]");
+          descPreviewBtn.classList.add("bg-(--bg-hover)");
+          descEditBtn?.classList.remove("bg-(--bg-hover)");
 
           if (descPreview && tdDescription) {
             const rawMarkdown = tdDescription.value;
@@ -903,7 +903,7 @@
               const dirtyHtml = marked.parse(
                 rawMarkdown || "*No description provided.*",
               ) as string;
-              descPreview.innerHTML = sanitize(dirtyHtml);
+              descPreview.innerHTML = sanitizeClient(dirtyHtml);
             } catch (e: any) {
               console.error("Markdown render error:", e);
               descPreview.innerHTML = `<div class="text-red-500">Error rendering markdown: ${e.message}</div>`;
