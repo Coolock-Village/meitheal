@@ -1,15 +1,16 @@
 # Technology Stack
 
-> Last mapped: 2026-03-09 — v0.1.99
+> Last mapped: 2026-03-15 — v0.2.10
 
 ## Runtime
 
 | Component | Technology | Version |
 |-----------|-----------|---------|
 | Language | TypeScript | 5.9.3 |
-| Runtime | Node.js | 22 LTS |
-| Framework | Astro SSR | 5.18.0 |
-| Node Adapter | @astrojs/node | 9.5.4 |
+| Runtime | Node.js | 25 |
+| Framework | Astro SSR | 6.0.4 |
+| Node Adapter | @astrojs/node | 10.0.1 |
+| Build Tooling | Vite 7 (Rolldown) | — |
 | Package Manager | pnpm | 10.8.0 |
 | Monorepo | pnpm workspaces | — |
 
@@ -17,12 +18,12 @@
 
 | Package | Version | Purpose |
 |---------|---------|---------|
-| `astro` | ^5.18.0 | SSR framework (pages, API routes, middleware) |
-| `@astrojs/node` | ^9.5.4 | Node.js SSR adapter for standalone server |
-| `@astrojs/mdx` | ^4.3.13 | MDX content support |
+| `astro` | ^6.0.4 | SSR framework (pages, API routes, middleware) |
+| `@astrojs/node` | ^10.0.1 | Node.js SSR adapter for standalone server |
+| `@astrojs/mdx` | ^5.0.0 | MDX content support |
 | `@astrojs/sitemap` | ^3.7.0 | Auto-generate sitemap |
-| `@astrojs/tailwind` | ^6.0.2 | Tailwind CSS integration (dev) |
-| `tailwindcss` | ^3.4.19 | Utility-first CSS (dev) |
+| `@tailwindcss/vite` | ^4.2.1 | Tailwind CSS v4 Vite plugin (replaces @astrojs/tailwind) |
+| `tailwindcss` | ^4.2.1 | Utility-first CSS v4 — CSS-first config via @theme (dev) |
 | `drizzle-orm` | ^0.45.1 | Type-safe ORM (schema definition only) |
 | `drizzle-kit` | ^0.31.9 | Drizzle migration tooling (dev) |
 | `@libsql/client` | ^0.17.0 | SQLite client (libSQL/Turso compatible) |
@@ -33,8 +34,7 @@
 | `zod` | ^4.3.6 | Runtime schema validation |
 | `marked` | ^17.0.4 | Markdown → HTML rendering |
 | `sanitize-html` | ^2.17.1 | XSS prevention for user HTML |
-| `undici` | ^7.22.0 | HTTP client (faster than native fetch) |
-| `postcss-import` | ^16.1.1 | CSS @import resolution |
+| `undici` | ^7.24.3 | HTTP client (faster than native fetch) |
 
 ## Fonts
 
@@ -73,7 +73,10 @@
 
 ## CSS Architecture
 
-17 partials imported via `global.css`:
+Tailwind CSS v4 — CSS-first. 17 partials imported via `global.css`.
+`@import "tailwindcss"` replaces old `@tailwind base/components/utilities` directives.
+Design tokens defined in `@theme` block in `_tokens.css` (replaces `tailwind.config.mjs`).
+No `postcss.config.mjs` — TW4 handles PostCSS internally.
 
 | File | Purpose |
 |------|---------|
