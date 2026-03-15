@@ -570,7 +570,7 @@ const typeConfig: Record<
                         title="Add child task"
                         aria-label={`Add subtask to: ${String(task.title ?? "").slice(0, 50)}`}
                       >
-                        <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M16 3h5v5"/><path d="M8 3H3v5"/><path d="M12 22v-8.3a4 4 0 0 0-1.172-2.872L3 3"/><path d="m15 9 6-6"/></svg>
+                        <svg aria-hidden="true" xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M16 3h5v5"/><path d="M8 3H3v5"/><path d="M12 22v-8.3a4 4 0 0 0-1.172-2.872L3 3"/><path d="m15 9 6-6"/></svg>
                       </button>
                       <button
                         class="card-action-btn card-assign-btn"
@@ -578,16 +578,19 @@ const typeConfig: Record<
                         data-assigned={String(task.assigned_to ?? "")}
                         title="Assign user"
                         aria-label={`Assign user to: ${String(task.title ?? "").slice(0, 50)}`}
+                        aria-haspopup="true"
                       >
-                        <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><line x1="19" x2="19" y1="8" y2="14"/><line x1="22" x2="16" y1="11" y2="11"/></svg>
+                        <svg aria-hidden="true" xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><line x1="19" x2="19" y1="8" y2="14"/><line x1="22" x2="16" y1="11" y2="11"/></svg>
                       </button>
                       <button
                         class="card-action-btn card-color-btn"
                         data-id={String(task.id)}
+                        data-color={String(task.color ?? "")}
                         title="Set card color"
                         aria-label={`Set color for: ${String(task.title ?? "").slice(0, 50)}`}
+                        aria-haspopup="true"
                       >
-                        <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 20a7.966 7.966 0 0 1-5.002-1.756l.002.001v-.683c0-1.794 1.492-3.25 3.333-3.25h3.334c1.84 0 3.333 1.456 3.333 3.25v.683A7.966 7.966 0 0 1 12 20Z"/><path d="M2 12C2 6.477 6.477 2 12 2s10 4.477 10 10"/><circle cx="12" cy="10" r="3"/></svg>
+                        <svg aria-hidden="true" xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 20a7.966 7.966 0 0 1-5.002-1.756l.002.001v-.683c0-1.794 1.492-3.25 3.333-3.25h3.334c1.84 0 3.333 1.456 3.333 3.25v.683A7.966 7.966 0 0 1 12 20Z"/><path d="M2 12C2 6.477 6.477 2 12 2s10 4.477 10 10"/><circle cx="12" cy="10" r="3"/></svg>
                       </button>
                       <button
                         class="card-action-btn card-more-btn"
@@ -1077,19 +1080,131 @@ const typeConfig: Record<
     });
 
     // =============================================
-    // Quick Action: Add Child Task
+    // Quick Actions: Shared Popover Utility (P4-1)
+    // =============================================
+    const _qa = (() => {
+      let activePopover = null;
+      let _scrollCleanup = null;
+
+      /** Close any open quick-action popover with exit animation (P3-5) */
+      function close() {
+        if (!activePopover) return;
+        const el = activePopover;
+        activePopover = null;
+        el.classList.add("popover-exiting");
+        setTimeout(() => el.remove(), 150);
+        if (_scrollCleanup) { _scrollCleanup(); _scrollCleanup = null; }
+      }
+
+      /** Reusable toast with fallback (P2-6) */
+      function toast(msg, type = "success") {
+        if (window.showToast) window.showToast(msg, type);
+        else console.log(`[Meitheal] ${type}: ${msg}`);
+      }
+
+      /**
+       * Open a popover near a trigger button (P1-4 scroll-aware, P3-5 animation)
+       * @param {HTMLElement} btn - trigger button
+       * @param {HTMLElement} content - popover content element
+       * @param {string} title - popover header text
+       * @returns {HTMLElement} the popover element
+       */
+      function open(btn, content, title) {
+        close();
+        const popover = document.createElement("div");
+        popover.className = "quick-action-popover";
+        popover.setAttribute("role", "dialog");
+        popover.setAttribute("aria-label", title);
+
+        const header = document.createElement("div");
+        header.className = "popover-title";
+        header.id = "qa-popover-title-" + Date.now();
+        header.textContent = title;
+        popover.setAttribute("aria-labelledby", header.id);
+        popover.appendChild(header);
+        popover.appendChild(content);
+
+        // Position near button
+        const rect = btn.getBoundingClientRect();
+        popover.style.position = "fixed";
+        popover.style.top = `${rect.bottom + 4}px`;
+        popover.style.left = `${rect.left}px`;
+        popover.style.zIndex = "9999";
+        document.body.appendChild(popover);
+        activePopover = popover;
+
+        // Keep in viewport (P1-4)
+        requestAnimationFrame(() => {
+          const popRect = popover.getBoundingClientRect();
+          if (popRect.right > window.innerWidth) {
+            popover.style.left = `${window.innerWidth - popRect.width - 8}px`;
+          }
+          if (popRect.bottom > window.innerHeight) {
+            popover.style.top = `${rect.top - popRect.height - 4}px`;
+          }
+        });
+
+        // Close on scroll (P1-4)
+        const board = document.querySelector(".kanban-scroll-area, .kanban-board");
+        const onScroll = () => close();
+        board?.addEventListener("scroll", onScroll, { once: true });
+        window.addEventListener("scroll", onScroll, { once: true });
+        _scrollCleanup = () => {
+          board?.removeEventListener("scroll", onScroll);
+          window.removeEventListener("scroll", onScroll);
+        };
+
+        // Focus first interactive element (P1-1)
+        requestAnimationFrame(() => {
+          const first = popover.querySelector("button, [tabindex]");
+          if (first) first.focus();
+        });
+
+        return popover;
+      }
+
+      // P0-3: Single consolidated document listener for all popovers
+      document.addEventListener("click", (e) => {
+        if (activePopover && !activePopover.contains(e.target) &&
+            !e.target.closest(".card-assign-btn, .card-color-btn")) {
+          close();
+        }
+      });
+      document.addEventListener("keydown", (e) => {
+        if (!activePopover) return;
+        if (e.key === "Escape") { close(); return; }
+        // Arrow key navigation within popover items (P1-1)
+        if (e.key === "ArrowDown" || e.key === "ArrowUp") {
+          e.preventDefault();
+          const items = [...activePopover.querySelectorAll("button.popover-item, button.color-swatch")];
+          if (!items.length) return;
+          const idx = items.indexOf(document.activeElement);
+          const next = e.key === "ArrowDown"
+            ? items[(idx + 1) % items.length]
+            : items[(idx - 1 + items.length) % items.length];
+          next?.focus();
+        }
+      });
+
+      // P2-4: Cleanup listeners on Astro navigation
+      document.addEventListener("astro:before-swap", () => close(), { once: true });
+
+      return { close, toast, open };
+    })();
+
+    // =============================================
+    // Quick Action: Add Child Task (P1-3, P1-6, P3-6)
     // =============================================
     document.querySelectorAll(".card-child-btn").forEach((btn) => {
       btn.addEventListener("click", async (e) => {
         e.stopPropagation();
         const parentId = btn.dataset.id;
         const parentTitle = btn.dataset.title || "Task";
-        const parentStatus = btn.dataset.status || "pending";
         const parentPriority = btn.dataset.priority || "3";
         if (!parentId) return;
 
         const card = btn.closest(".kanban-card");
-        const boardId = card?.dataset.board || "default";
+        const boardId = card?.dataset.board || "";
 
         btn.disabled = true;
         btn.classList.add("btn-loading");
@@ -1098,23 +1213,26 @@ const typeConfig: Record<
             method: "POST",
             headers: { "content-type": "application/json" },
             body: JSON.stringify({
-              title: `Subtask of: ${parentTitle.slice(0, 80)}`,
+              title: `${parentTitle.slice(0, 80)} — Subtask`,
               parent_id: parentId,
-              status: parentStatus,
+              status: "pending",
               priority: Number(parentPriority),
-              board_id: boardId,
+              board_id: boardId || undefined,
               task_type: "task",
             }),
           });
           if (res.ok) {
-            if (window.showToast) window.showToast("Child task created", "success");
+            _qa.toast("Child task created", "success");
+            // P1-6: Reload to show new card (DOM insertion would require full card template)
+            const scrollLeft = document.querySelector(".kanban-scroll-area")?.scrollLeft || 0;
+            sessionStorage.setItem("meitheal-kanban-scroll", String(scrollLeft));
             window.location.reload();
           } else {
-            if (window.showToast) window.showToast("Failed to create child task", "error");
+            _qa.toast("Failed to create child task", "error");
           }
         } catch (err) {
           console.warn("[Meitheal] Add child failed:", err);
-          if (window.showToast) window.showToast("Failed to create child task", "error");
+          _qa.toast("Failed to create child task", "error");
         } finally {
           btn.disabled = false;
           btn.classList.remove("btn-loading");
@@ -1122,121 +1240,113 @@ const typeConfig: Record<
       });
     });
 
+    // Restore scroll position after child task reload (P1-6)
+    const savedScroll = sessionStorage.getItem("meitheal-kanban-scroll");
+    if (savedScroll) {
+      sessionStorage.removeItem("meitheal-kanban-scroll");
+      requestAnimationFrame(() => {
+        const scrollArea = document.querySelector(".kanban-scroll-area");
+        if (scrollArea) scrollArea.scrollLeft = Number(savedScroll);
+      });
+    }
+
     // =============================================
-    // Quick Action: Assign User (popover)
+    // Quick Action: Assign User (P1-5 skeleton, P2-7 colors, P3-4 optimistic)
     // =============================================
-    (() => {
-      let activePopover = null;
+    document.querySelectorAll(".card-assign-btn").forEach((btn) => {
+      btn.addEventListener("click", async (e) => {
+        e.stopPropagation();
 
-      function closeAssignPopover() {
-        if (activePopover) { activePopover.remove(); activePopover = null; }
-      }
+        const taskId = btn.dataset.id;
+        const currentAssigned = btn.dataset.assigned || "";
+        if (!taskId) return;
 
-      document.addEventListener("click", (e) => {
-        if (activePopover && !activePopover.contains(e.target) && !e.target.closest(".card-assign-btn")) {
-          closeAssignPopover();
-        }
-      });
-      document.addEventListener("keydown", (e) => {
-        if (e.key === "Escape") closeAssignPopover();
-      });
+        // P1-5: Show popover immediately with loading skeleton
+        const content = document.createElement("div");
+        content.innerHTML = `
+          <div class="popover-item skeleton" style="height:28px;border-radius:var(--radius-sm);background:var(--bg-hover);animation:pulse 1.5s infinite"></div>
+          <div class="popover-item skeleton" style="height:28px;border-radius:var(--radius-sm);background:var(--bg-hover);animation:pulse 1.5s infinite;animation-delay:0.3s"></div>
+        `;
+        const popover = _qa.open(btn, content, "Assign User");
 
-      document.querySelectorAll(".card-assign-btn").forEach((btn) => {
-        btn.addEventListener("click", async (e) => {
-          e.stopPropagation();
-          closeAssignPopover();
-
-          const taskId = btn.dataset.id;
-          const currentAssigned = btn.dataset.assigned || "";
-          if (!taskId) return;
-
-          // Fetch users
-          let users = [];
-          try {
-            const res = await fetch((window.__ingress_path || "") + "/api/users");
-            if (res.ok) {
-              const data = await res.json();
-              users = data.users || [];
-            }
-          } catch { /* fallback to empty */ }
-
-          // Build popover
-          const popover = document.createElement("div");
-          popover.className = "quick-action-popover assign-popover";
-
-          const title = document.createElement("div");
-          title.className = "popover-title";
-          title.textContent = "Assign User";
-          popover.appendChild(title);
-
-          // Unassign option
-          const unassignItem = document.createElement("button");
-          unassignItem.className = "popover-item" + (!currentAssigned ? " active" : "");
-          unassignItem.textContent = "∅ Unassigned";
-          unassignItem.addEventListener("click", async () => {
-            await patchAssignment(taskId, null, btn);
-            closeAssignPopover();
-          });
-          popover.appendChild(unassignItem);
-
-          // User list
-          users.forEach((user) => {
-            const item = document.createElement("button");
-            const userId = user.id || user.name;
-            item.className = "popover-item" + (currentAssigned === userId ? " active" : "");
-            item.textContent = `👤 ${user.name || user.id}`;
-            item.addEventListener("click", async () => {
-              await patchAssignment(taskId, userId, btn);
-              closeAssignPopover();
-            });
-            popover.appendChild(item);
-          });
-
-          // Position near button
-          const rect = btn.getBoundingClientRect();
-          popover.style.position = "fixed";
-          popover.style.top = `${rect.bottom + 4}px`;
-          popover.style.left = `${rect.left}px`;
-          popover.style.zIndex = "9999";
-          document.body.appendChild(popover);
-          activePopover = popover;
-
-          // Keep popover in viewport
-          requestAnimationFrame(() => {
-            const popRect = popover.getBoundingClientRect();
-            if (popRect.right > window.innerWidth) {
-              popover.style.left = `${window.innerWidth - popRect.width - 8}px`;
-            }
-            if (popRect.bottom > window.innerHeight) {
-              popover.style.top = `${rect.top - popRect.height - 4}px`;
-            }
-          });
-        });
-      });
-
-      async function patchAssignment(taskId, userId, btn) {
+        // Fetch users
+        let users = [];
         try {
-          const res = await fetch(`${window.__ingress_path || ""}/api/tasks/${taskId}`, {
-            method: "PUT",
-            headers: { "content-type": "application/json" },
-            body: JSON.stringify({ assigned_to: userId }),
-          });
+          const res = await fetch((window.__ingress_path || "") + "/api/users");
           if (res.ok) {
-            btn.dataset.assigned = userId || "";
-            // Update card's assigned badge if visible
-            const card = btn.closest(".kanban-card");
-            if (card) card.dataset.assigned = userId || "";
-            if (window.showToast) window.showToast(userId ? `Assigned to ${userId.replace(/^(ha_|custom_)/, "")}` : "Unassigned", "success");
+            const data = await res.json();
+            users = data.users || [];
           }
-        } catch (err) {
-          console.warn("[Meitheal] Assign failed:", err);
-          if (window.showToast) window.showToast("Failed to assign user", "error");
+        } catch { /* fallback to empty */ }
+
+        // Replace skeleton with real content
+        if (!popover.parentNode) return; // popover was closed during fetch
+        content.innerHTML = "";
+
+        // Unassign option
+        const unassignItem = document.createElement("button");
+        unassignItem.className = "popover-item" + (!currentAssigned ? " active" : "");
+        unassignItem.setAttribute("role", "menuitem");
+        unassignItem.textContent = "∅ Unassigned";
+        unassignItem.addEventListener("click", async () => {
+          // P3-4: Optimistic update
+          btn.dataset.assigned = "";
+          const card = btn.closest(".kanban-card");
+          if (card) card.dataset.assigned = "";
+          _qa.close();
+          try {
+            const res = await fetch(`${window.__ingress_path || ""}/api/tasks/${taskId}`, {
+              method: "PUT",
+              headers: { "content-type": "application/json" },
+              body: JSON.stringify({ assigned_to: null }),
+            });
+            if (res.ok) _qa.toast("Unassigned", "success");
+            else { btn.dataset.assigned = currentAssigned; _qa.toast("Failed to unassign", "error"); }
+          } catch { btn.dataset.assigned = currentAssigned; _qa.toast("Failed to unassign", "error"); }
+        });
+        content.appendChild(unassignItem);
+
+        // User list with colored dots (P2-7)
+        users.forEach((user) => {
+          const userId = user.id || user.name;
+          const item = document.createElement("button");
+          item.className = "popover-item" + (currentAssigned === userId ? " active" : "");
+          item.setAttribute("role", "menuitem");
+          // P2-7: Colored dot for user recognition
+          const dot = user.color ? `<span style="display:inline-block;width:8px;height:8px;border-radius:50%;background:${user.color};margin-right:6px;vertical-align:middle"></span>` : "👤 ";
+          item.innerHTML = `${dot}${user.name || user.id}`;
+          item.addEventListener("click", async () => {
+            // P3-4: Optimistic update
+            btn.dataset.assigned = userId;
+            const card = btn.closest(".kanban-card");
+            if (card) card.dataset.assigned = userId;
+            _qa.close();
+            try {
+              const res = await fetch(`${window.__ingress_path || ""}/api/tasks/${taskId}`, {
+                method: "PUT",
+                headers: { "content-type": "application/json" },
+                body: JSON.stringify({ assigned_to: userId }),
+              });
+              if (res.ok) _qa.toast(`Assigned to ${(user.name || userId).replace(/^(ha_|custom_)/, "")}`, "success");
+              else { btn.dataset.assigned = currentAssigned; _qa.toast("Failed to assign", "error"); }
+            } catch { btn.dataset.assigned = currentAssigned; _qa.toast("Failed to assign", "error"); }
+          });
+          content.appendChild(item);
+        });
+
+        if (!users.length) {
+          const empty = document.createElement("div");
+          empty.className = "popover-item";
+          empty.style.color = "var(--text-muted)";
+          empty.style.fontStyle = "italic";
+          empty.textContent = "No users configured";
+          content.appendChild(empty);
         }
-      }
-    })();
+      });
+    });
 
     // =============================================
-    // Quick Action: Set Color (swatch popover)
+    // Quick Action: Set Color (P1-2 active indicator, P3-4 optimistic)
     // =============================================
     (() => {
       const COLOR_SWATCHES = [
@@ -1250,111 +1360,79 @@ const typeConfig: Record<
         { color: "#6b7280", label: "Gray" },
       ];
 
-      let activePopover = null;
-
-      function closeColorPopover() {
-        if (activePopover) { activePopover.remove(); activePopover = null; }
-      }
-
-      document.addEventListener("click", (e) => {
-        if (activePopover && !activePopover.contains(e.target) && !e.target.closest(".card-color-btn")) {
-          closeColorPopover();
-        }
-      });
-      document.addEventListener("keydown", (e) => {
-        if (e.key === "Escape") closeColorPopover();
-      });
-
       document.querySelectorAll(".card-color-btn").forEach((btn) => {
         btn.addEventListener("click", (e) => {
           e.stopPropagation();
-          closeColorPopover();
 
           const taskId = btn.dataset.id;
           if (!taskId) return;
 
           const card = btn.closest(".kanban-card");
-          const currentColor = card?.style.borderLeftColor || "";
+          const currentColor = btn.dataset.color || "";
 
-          // Build popover
-          const popover = document.createElement("div");
-          popover.className = "quick-action-popover color-popover";
-
-          const title = document.createElement("div");
-          title.className = "popover-title";
-          title.textContent = "Card Color";
-          popover.appendChild(title);
+          const content = document.createElement("div");
 
           const grid = document.createElement("div");
           grid.className = "color-swatch-grid";
+          grid.setAttribute("role", "radiogroup");
+          grid.setAttribute("aria-label", "Color options");
 
           COLOR_SWATCHES.forEach(({ color, label }) => {
             const swatch = document.createElement("button");
             swatch.className = "color-swatch";
+            // P1-2: Active color indicator
+            if (currentColor && currentColor.toLowerCase() === color.toLowerCase()) {
+              swatch.classList.add("swatch-active");
+            }
             swatch.style.background = color;
             swatch.title = label;
+            swatch.setAttribute("role", "radio");
+            swatch.setAttribute("aria-checked", currentColor === color ? "true" : "false");
             swatch.setAttribute("aria-label", `Set color: ${label}`);
             swatch.addEventListener("click", async () => {
-              await patchColor(taskId, color, card);
-              closeColorPopover();
+              // P3-4: Optimistic UI
+              if (card) card.style.borderLeft = `5px solid ${color}`;
+              btn.dataset.color = color;
+              _qa.close();
+              try {
+                const res = await fetch(`${window.__ingress_path || ""}/api/tasks/${taskId}`, {
+                  method: "PUT",
+                  headers: { "content-type": "application/json" },
+                  body: JSON.stringify({ color }),
+                });
+                if (res.ok) _qa.toast("Color updated", "success");
+                else { if (card) card.style.borderLeft = currentColor ? `5px solid ${currentColor}` : ""; _qa.toast("Failed to set color", "error"); }
+              } catch { if (card) card.style.borderLeft = currentColor ? `5px solid ${currentColor}` : ""; _qa.toast("Failed to set color", "error"); }
             });
             grid.appendChild(swatch);
           });
 
-          popover.appendChild(grid);
+          content.appendChild(grid);
 
           // Clear color button
           const clearBtn = document.createElement("button");
           clearBtn.className = "popover-item clear-color-btn";
+          clearBtn.setAttribute("role", "menuitem");
           clearBtn.textContent = "✕ Clear color";
           clearBtn.addEventListener("click", async () => {
-            await patchColor(taskId, null, card);
-            closeColorPopover();
+            if (card) card.style.borderLeft = "";
+            btn.dataset.color = "";
+            _qa.close();
+            try {
+              const res = await fetch(`${window.__ingress_path || ""}/api/tasks/${taskId}`, {
+                method: "PUT",
+                headers: { "content-type": "application/json" },
+                body: JSON.stringify({ color: null }),
+              });
+              if (res.ok) _qa.toast("Color cleared", "success");
+              else _qa.toast("Failed to clear color", "error");
+            } catch { _qa.toast("Failed to clear color", "error"); }
           });
-          popover.appendChild(clearBtn);
+          content.appendChild(clearBtn);
 
-          // Position near button
-          const rect = btn.getBoundingClientRect();
-          popover.style.position = "fixed";
-          popover.style.top = `${rect.bottom + 4}px`;
-          popover.style.left = `${rect.left}px`;
-          popover.style.zIndex = "9999";
-          document.body.appendChild(popover);
-          activePopover = popover;
-
-          // Keep in viewport
-          requestAnimationFrame(() => {
-            const popRect = popover.getBoundingClientRect();
-            if (popRect.right > window.innerWidth) {
-              popover.style.left = `${window.innerWidth - popRect.width - 8}px`;
-            }
-            if (popRect.bottom > window.innerHeight) {
-              popover.style.top = `${rect.top - popRect.height - 4}px`;
-            }
-          });
+          _qa.open(btn, content, "Card Color");
         });
       });
-
-      async function patchColor(taskId, color, card) {
-        try {
-          const res = await fetch(`${window.__ingress_path || ""}/api/tasks/${taskId}`, {
-            method: "PUT",
-            headers: { "content-type": "application/json" },
-            body: JSON.stringify({ color: color }),
-          });
-          if (res.ok && card) {
-            if (color) {
-              card.style.borderLeft = `4px solid ${color}`;
-            } else {
-              card.style.borderLeft = "";
-            }
-            if (window.showToast) window.showToast(color ? "Color updated" : "Color cleared", "success");
-          }
-        } catch (err) {
-          console.warn("[Meitheal] Set color failed:", err);
-          if (window.showToast) window.showToast("Failed to set color", "error");
-        }
-      }
     })();
 
     // T-1903: Click anywhere on kanban card is natively handled by Layout.astro delegated click listener.
@@ -2744,13 +2822,13 @@ const typeConfig: Record<
     color: var(--warning);
   }
   .card-child-btn:hover {
-    color: #3b82f6;
+    color: var(--info);
   }
   .card-assign-btn:hover {
-    color: #8b5cf6;
+    color: var(--accent);
   }
   .card-color-btn:hover {
-    color: #ec4899;
+    color: var(--warning);
   }
   .card-action-btn svg {
     display: block;
@@ -2765,10 +2843,20 @@ const typeConfig: Record<
     min-width: 160px;
     padding: 4px;
     animation: popover-in 150ms ease-out;
+    transition: opacity 150ms ease, transform 150ms ease;
+  }
+  .quick-action-popover.popover-exiting {
+    opacity: 0;
+    transform: translateY(-4px);
+    pointer-events: none;
   }
   @keyframes popover-in {
     from { opacity: 0; transform: translateY(-4px); }
     to { opacity: 1; transform: translateY(0); }
+  }
+  @keyframes pulse {
+    0%, 100% { opacity: 1; }
+    50% { opacity: 0.4; }
   }
   .popover-title {
     font-size: 11px;
@@ -2814,17 +2902,42 @@ const typeConfig: Record<
     border: 2px solid transparent;
     cursor: pointer;
     transition: transform 100ms, border-color 100ms, box-shadow 100ms;
+    position: relative;
   }
   .color-swatch:hover {
     transform: scale(1.15);
-    border-color: rgba(255, 255, 255, 0.4);
-    box-shadow: 0 0 8px rgba(255, 255, 255, 0.15);
+    border-color: var(--text-muted);
+    box-shadow: 0 0 8px rgba(0, 0, 0, 0.2);
+  }
+  .color-swatch:focus-visible {
+    outline: 2px solid var(--accent);
+    outline-offset: 2px;
+  }
+  .color-swatch.swatch-active {
+    border-color: var(--text-primary);
+    box-shadow: 0 0 0 2px var(--bg-card), 0 0 0 4px var(--text-primary);
+  }
+  .color-swatch.swatch-active::after {
+    content: '✓';
+    position: absolute;
+    inset: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: #fff;
+    font-size: 12px;
+    font-weight: 700;
+    text-shadow: 0 1px 2px rgba(0, 0, 0, 0.5);
   }
   .clear-color-btn {
     border-top: 1px solid var(--border);
     margin-top: 2px;
     color: var(--text-muted);
     font-size: 12px;
+  }
+  .popover-item:focus-visible {
+    outline: 2px solid var(--accent);
+    outline-offset: -2px;
   }
   .view-switcher {
     display: flex;
