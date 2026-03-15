@@ -141,17 +141,30 @@ const { locale } = Astro.props;
 </script>
 
 <style>
-  @reference "tailwindcss";
   .search-item {
-    @apply px-4 py-3 border-b border-border/50 hover:bg-bg-hover transition-colors flex flex-col gap-1;
+    padding: 0.75rem 1rem;
+    border-bottom: 1px solid rgba(var(--border-rgb), 0.5);
+    transition: background-color 200ms ease;
+    display: flex;
+    flex-direction: column;
+    gap: 0.25rem;
+  }
+  .search-item:hover {
+    background: var(--bg-hover);
   }
   .search-item:last-child {
-    @apply border-b-0;
+    border-bottom: none;
   }
   .search-meta {
-    @apply text-xs text-text-muted capitalize;
+    font-size: 0.75rem;
+    color: var(--text-muted);
+    text-transform: capitalize;
   }
   .search-empty {
-    @apply px-4 py-6 text-center text-text-muted text-sm italic;
+    padding: 1.5rem 1rem;
+    text-align: center;
+    color: var(--text-muted);
+    font-size: 0.875rem;
+    font-style: italic;
   }
 </style>

@@ -275,9 +275,18 @@ const navItems = order
 </nav>
 
 <style>
-  @reference "tailwindcss";
   .sidebar {
-    @apply flex flex-col h-full bg-bg-secondary/90 backdrop-blur-md border-r border-border transition-transform duration-300 w-[240px] fixed z-40 p-4;
+    display: flex;
+    flex-direction: column;
+    height: 100%;
+    background: rgba(var(--bg-secondary-rgb), 0.9);
+    backdrop-filter: blur(12px);
+    border-right: 1px solid var(--border);
+    transition: transform 300ms ease;
+    width: 240px;
+    position: fixed;
+    z-index: 40;
+    padding: 1rem;
     overflow: hidden;
   }
 
@@ -302,7 +311,8 @@ const navItems = order
   }
 
   .sidebar-header {
-    @apply mb-6 px-2;
+    margin-bottom: 1.5rem;
+    padding: 0 0.5rem;
     position: relative;
   }
 
@@ -372,31 +382,64 @@ const navItems = order
 
   /* Expose these styles globally for the sub-components to use cleanly without duplicate scopes */
   :global(.sidebar .nav-links) {
-    @apply flex flex-col gap-1 list-none p-0 m-0 mb-6;
+    display: flex;
+    flex-direction: column;
+    gap: 0.25rem;
+    list-style: none;
+    padding: 0;
+    margin: 0 0 1.5rem 0;
   }
 
   :global(.sidebar .nav-link) {
-    @apply flex items-center justify-start px-3 py-2 rounded-md text-sm font-medium text-text-secondary transition-all no-underline;
+    display: flex;
+    align-items: center;
+    justify-content: flex-start;
+    padding: 0.5rem 0.75rem;
+    border-radius: var(--radius-sm, 6px);
+    font-size: 0.875rem;
+    font-weight: 500;
+    color: var(--text-secondary);
+    transition: all 200ms ease;
+    text-decoration: none;
   }
 
   :global(.sidebar .nav-link:hover) {
-    @apply bg-bg-hover text-text-primary translate-x-1;
+    background: var(--bg-hover);
+    color: var(--text-primary);
+    transform: translateX(0.25rem);
   }
 
   :global(.sidebar .nav-link.active) {
-    @apply bg-accent/10 text-accent;
+    background: rgba(var(--accent-rgb), 0.1);
+    color: var(--accent);
   }
 
   :global(.sidebar .nav-link.active .nav-icon) {
-    @apply text-accent;
+    color: var(--accent);
   }
 
   :global(.sidebar .nav-icon) {
-    @apply flex items-center justify-center w-6 h-6 mr-3 text-text-muted transition-colors;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 1.5rem;
+    height: 1.5rem;
+    margin-right: 0.75rem;
+    color: var(--text-muted);
+    transition: color 200ms ease;
   }
 
   :global(.sidebar .nav-badge) {
-    @apply ml-auto bg-bg-primary text-text-muted text-[10px] font-bold px-2 py-0.5 rounded-full border border-border/50 min-w-[20px] text-center;
+    margin-left: auto;
+    background: var(--bg-primary);
+    color: var(--text-muted);
+    font-size: 10px;
+    font-weight: 700;
+    padding: 0.125rem 0.5rem;
+    border-radius: 9999px;
+    border: 1px solid rgba(var(--border-rgb), 0.5);
+    min-width: 20px;
+    text-align: center;
   }
 
   /* --- Mobile sidebar --- */

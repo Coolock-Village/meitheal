@@ -45,6 +45,7 @@ interface BoardInfo {
 // =============================================================================
 
 let currentGroupBy = "none"
+let currentSubGroupBy = "none"
 let boardMap: Record<string, BoardInfo> = {}
 let currentFilterState: Partial<FilterState> = {}
 
@@ -59,6 +60,7 @@ function init() {
   // Load persisted filter state
   currentFilterState = loadFilterState()
   currentGroupBy = currentFilterState.groupBy ?? "none"
+  currentSubGroupBy = currentFilterState.subGroupBy ?? "none"
 
   // Table-specific features
   setupSubtaskToggles()
@@ -86,12 +88,16 @@ function init() {
       types: detail.types ?? [],
     }
 
-    // Handle groupBy changes
+    // Handle groupBy + subGroupBy changes
     const newGroupBy = detail.groupBy ?? "none"
-    if (newGroupBy !== currentGroupBy) {
+    const newSubGroupBy = detail.subGroupBy ?? "none"
+    const groupChanged = newGroupBy !== currentGroupBy || newSubGroupBy !== currentSubGroupBy
+    if (groupChanged) {
       currentGroupBy = newGroupBy
+      currentSubGroupBy = newSubGroupBy
       currentFilterState.groupBy = currentGroupBy
-      applyGrouping(currentGroupBy)
+      currentFilterState.subGroupBy = currentSubGroupBy
+      applyGrouping(currentGroupBy, currentSubGroupBy)
     }
 
     saveFilterState(currentFilterState)
@@ -107,7 +113,7 @@ function init() {
 
   // Apply grouping first (creates group headers before filtering)
   if (currentGroupBy !== "none") {
-    applyGrouping(currentGroupBy)
+    applyGrouping(currentGroupBy, currentSubGroupBy)
   }
 
   // Apply initial filters — with stale-state protection
@@ -364,7 +370,7 @@ function applyAllFilters() {
 // Row Grouping Engine
 // =============================================================================
 
-function applyGrouping(groupBy: string) {
+function applyGrouping(groupBy: string, subGroupBy = "none") {
   const tbody = document.querySelector<HTMLElement>("#task-table tbody")
   if (!tbody) return
 
@@ -460,11 +466,62 @@ function applyGrouping(groupBy: string) {
     headerRow.appendChild(td)
     fragment.appendChild(headerRow)
 
-    // Add rows
-    groupRows.forEach((row) => {
-      row.classList.toggle("group-collapsed-row", isCollapsed)
-      fragment.appendChild(row)
-    })
+    if (subGroupBy !== "none" && subGroupBy !== groupBy) {
+      // --- Sub-grouping: nest a second dimension within this primary group ---
+      const subGroups = new Map<string, HTMLElement[]>()
+      const subOrder: string[] = []
+      groupRows.forEach((row) => {
+        const sk = getGroupKey(row, subGroupBy)
+        row.setAttribute("data-sub-group-value", sk)
+        if (!subGroups.has(sk)) { subGroups.set(sk, []); subOrder.push(sk) }
+        subGroups.get(sk)!.push(row)
+      })
+
+      const subCollapseKey = `meitheal-table-subgroups-${groupBy}-${subGroupBy}-${key}`
+      let collapsedSubs: string[] = []
+      try { collapsedSubs = JSON.parse(sessionStorage.getItem(subCollapseKey) ?? "[]") } catch { /* */ }
+
+      for (const sk of subOrder) {
+        const subRows = subGroups.get(sk) ?? []
+        const subDisplay = getGroupDisplayForKey(subGroupBy, sk)
+        const subIsCollapsed = isCollapsed || collapsedSubs.includes(sk)
+
+        const subHeaderRow = document.createElement("tr")
+        subHeaderRow.className = `group-header-row sub-group-header-row${subIsCollapsed ? " collapsed" : ""}`
+        subHeaderRow.setAttribute("data-group-key", sk)
+        subHeaderRow.setAttribute("data-group-by", subGroupBy)
+        subHeaderRow.setAttribute("data-parent-group-key", key)
+        subHeaderRow.setAttribute("data-sub-group-collapse-key", subCollapseKey)
+        subHeaderRow.setAttribute("role", "rowgroup")
+        subHeaderRow.setAttribute("aria-expanded", String(!subIsCollapsed))
+        if (isCollapsed) subHeaderRow.classList.add("group-collapsed-row")
+
+        const subTd = document.createElement("td")
+        subTd.setAttribute("colspan", String(colCount))
+        subTd.className = "group-header-cell sub-group-header-cell"
+        subTd.innerHTML = `
+          <button type="button" class="group-toggle sub-group-toggle" aria-label="Toggle sub-group ${subDisplay.label}">
+            <span class="group-toggle-arrow">▾</span>
+          </button>
+          <span class="group-dot" style="background: ${subDisplay.color}"></span>
+          <span class="group-label">${subDisplay.label}</span>
+          <span class="group-count">${subRows.length}</span>
+        `
+        subHeaderRow.appendChild(subTd)
+        fragment.appendChild(subHeaderRow)
+
+        subRows.forEach((row) => {
+          row.classList.toggle("group-collapsed-row", subIsCollapsed)
+          fragment.appendChild(row)
+        })
+      }
+    } else {
+      // --- No sub-grouping: add rows directly ---
+      groupRows.forEach((row) => {
+        row.classList.toggle("group-collapsed-row", isCollapsed)
+        fragment.appendChild(row)
+      })
+    }
   }
 
   // Preserve no-results row
@@ -506,30 +563,44 @@ function setupGroupHeaderListeners() {
 
     e.stopPropagation()
 
+    const isSubGroup = header.classList.contains("sub-group-header-row")
     const groupKey = header.dataset.groupKey ?? ""
     const groupBy = header.dataset.groupBy ?? currentGroupBy
-    const collapseKey = `meitheal-table-groups-${groupBy}`
-
     const isCollapsed = header.classList.toggle("collapsed")
     header.setAttribute("aria-expanded", String(!isCollapsed))
 
-    // Toggle row visibility for all siblings until next group header
-    let sibling = header.nextElementSibling
-    while (sibling && !sibling.classList.contains("group-header-row") && !sibling.classList.contains("no-results-row")) {
-      ;(sibling as HTMLElement).classList.toggle("group-collapsed-row", isCollapsed)
-      sibling = sibling.nextElementSibling
-    }
-
-    // Persist collapse state
-    try {
-      let collapsed: string[] = JSON.parse(sessionStorage.getItem(collapseKey) ?? "[]")
-      if (isCollapsed) {
-        if (!collapsed.includes(groupKey)) collapsed.push(groupKey)
-      } else {
-        collapsed = collapsed.filter((k) => k !== groupKey)
+    if (isSubGroup) {
+      // Sub-group: collapse rows until next sub-group or primary group header
+      const subCollapseKey = header.dataset.subGroupCollapseKey ?? `meitheal-table-subgroups-${groupBy}-${groupKey}`
+      let sibling = header.nextElementSibling
+      while (sibling && !sibling.classList.contains("group-header-row") && !sibling.classList.contains("no-results-row")) {
+        ;(sibling as HTMLElement).classList.toggle("group-collapsed-row", isCollapsed)
+        sibling = sibling.nextElementSibling
       }
-      sessionStorage.setItem(collapseKey, JSON.stringify(collapsed))
-    } catch { /* ignore */ }
+      try {
+        let collapsed: string[] = JSON.parse(sessionStorage.getItem(subCollapseKey) ?? "[]")
+        if (isCollapsed) { if (!collapsed.includes(groupKey)) collapsed.push(groupKey) }
+        else { collapsed = collapsed.filter((k) => k !== groupKey) }
+        sessionStorage.setItem(subCollapseKey, JSON.stringify(collapsed))
+      } catch { /* ignore */ }
+    } else {
+      // Primary group: collapse all siblings (rows + sub-group headers) until next primary group
+      const collapseKey = `meitheal-table-groups-${groupBy}`
+      let sibling = header.nextElementSibling
+      while (sibling && !sibling.classList.contains("group-header-row") || (sibling?.classList.contains("sub-group-header-row") ?? false)) {
+        if (sibling && (!sibling.classList.contains("group-header-row") || sibling.classList.contains("sub-group-header-row"))) {
+          ;(sibling as HTMLElement).classList.toggle("group-collapsed-row", isCollapsed)
+        }
+        if (!sibling || (sibling.classList.contains("group-header-row") && !sibling.classList.contains("sub-group-header-row"))) break
+        sibling = sibling.nextElementSibling
+      }
+      try {
+        let collapsed: string[] = JSON.parse(sessionStorage.getItem(collapseKey) ?? "[]")
+        if (isCollapsed) { if (!collapsed.includes(groupKey)) collapsed.push(groupKey) }
+        else { collapsed = collapsed.filter((k) => k !== groupKey) }
+        sessionStorage.setItem(collapseKey, JSON.stringify(collapsed))
+      } catch { /* ignore */ }
+    }
   })
 
   // Group select-all checkbox delegation

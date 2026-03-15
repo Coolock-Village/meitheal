@@ -42,13 +42,24 @@ const { locale } = Astro.props;
 </div>
 
 <style>
-  @reference "tailwindcss";
   .board-switcher {
-    @apply flex flex-col gap-2 p-3 bg-bg-primary/50 rounded-lg border border-border/50 mt-auto mb-4;
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+    padding: 0.75rem;
+    background: rgba(var(--bg-primary-rgb), 0.5);
+    border-radius: var(--radius-md, 10px);
+    border: 1px solid rgba(var(--border-rgb), 0.5);
+    margin-top: auto;
+    margin-bottom: 1rem;
   }
 
   .board-switcher-label {
-    @apply text-xs uppercase tracking-wider font-semibold text-text-muted;
+    font-size: 0.75rem;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    font-weight: 600;
+    color: var(--text-muted);
   }
 </style>
 
