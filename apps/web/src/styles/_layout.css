@@ -5,282 +5,280 @@
  * Owns: .sidebar, .main-content, .topbar, .stat-card, .page-header, .content-area
  * Does NOT own: cards (_cards.css), tasks (_tasks.css), modals (_modal.css)
  * ============================================= */
-@layer components {
-  /* --- Layout --- */
-  .sidebar {
-    @apply w-sidebar bg-bg-secondary/90 backdrop-blur-md flex flex-col border-r border-border fixed h-screen z-40;
-    transition: transform 250ms cubic-bezier(0.4, 0, 0.2, 1);
-    }
-
-    /* Collapsed sidebar slides off-screen */
-    body.sidebar-collapsed .sidebar {
-      transform: translateX(-100%);
-    }
-
-    /* Toggle pill that hugs the sidebar edge */
-    .sidebar-toggle {
-      position: fixed;
-      top: 50%;
-      left: 240px;
-      transform: translateY(-50%) translateX(-50%);
-      z-index: 41;
-      width: 24px;
-      height: 48px;
-      border-radius: 0 8px 8px 0;
-      background: var(--bg-secondary);
-      border: 1px solid var(--border);
-      border-left: none;
-      cursor: pointer;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      color: var(--text-muted);
-      font-size: 12px;
-      opacity: 0;
-      transition: left 250ms cubic-bezier(0.4, 0, 0.2, 1),
-        opacity 200ms ease;
-    }
-
-    .sidebar-toggle:hover {
-      opacity: 1 !important;
-      color: var(--accent);
-      background: var(--bg-hover);
-    }
-
-    /* Show on sidebar hover or when page is hovered near the edge */
-    .sidebar:hover~.sidebar-toggle,
-    .sidebar-toggle:hover {
-      opacity: 0.7;
-    }
-
-    /* When collapsed, move toggle to left edge and always show */
-    body.sidebar-collapsed .sidebar-toggle {
-      left: 0;
-      opacity: 1;
-      border-radius: 0 8px 8px 0;
-      border-left: 1px solid var(--border);
+/* --- Layout --- */
+.sidebar {
+  @apply w-sidebar bg-bg-secondary/90 backdrop-blur-md flex flex-col border-r border-border fixed h-screen z-40;
+  transition: transform 250ms cubic-bezier(0.4, 0, 0.2, 1);
   }
 
-  .sidebar-header {
-    @apply p-5 border-b border-border;
+  /* Collapsed sidebar slides off-screen */
+  body.sidebar-collapsed .sidebar {
+    transform: translateX(-100%);
   }
 
-  .sidebar-header h1 {
-    @apply text-lg font-bold text-accent;
+  /* Toggle pill that hugs the sidebar edge */
+  .sidebar-toggle {
+    position: fixed;
+    top: 50%;
+    left: 240px;
+    transform: translateY(-50%) translateX(-50%);
+    z-index: 41;
+    width: 24px;
+    height: 48px;
+    border-radius: 0 8px 8px 0;
+    background: var(--bg-secondary);
+    border: 1px solid var(--border);
+    border-left: none;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: var(--text-muted);
+    font-size: 12px;
+    opacity: 0;
+    transition: left 250ms cubic-bezier(0.4, 0, 0.2, 1),
+      opacity 200ms ease;
   }
 
-  .sidebar-nav {
-    @apply flex-1 py-3;
+  .sidebar-toggle:hover {
+    opacity: 1 !important;
+    color: var(--accent);
+    background: var(--bg-hover);
   }
 
-  .nav-link {
-    @apply flex items-center gap-3 px-5 py-2.5 text-sm text-text-secondary transition-colors rounded-none;
+  /* Show on sidebar hover or when page is hovered near the edge */
+  .sidebar:hover~.sidebar-toggle,
+  .sidebar-toggle:hover {
+    opacity: 0.7;
   }
 
-  .nav-link:hover {
-    @apply bg-bg-hover text-text-primary;
+  /* When collapsed, move toggle to left edge and always show */
+  body.sidebar-collapsed .sidebar-toggle {
+    left: 0;
+    opacity: 1;
+    border-radius: 0 8px 8px 0;
+    border-left: 1px solid var(--border);
+}
+
+.sidebar-header {
+  @apply p-5 border-b border-border;
+}
+
+.sidebar-header h1 {
+  @apply text-lg font-bold text-accent;
+}
+
+.sidebar-nav {
+  @apply flex-1 py-3;
+}
+
+.nav-link {
+  @apply flex items-center gap-3 px-5 py-2.5 text-sm text-text-secondary transition-colors rounded-none;
+}
+
+.nav-link:hover {
+  @apply bg-bg-hover text-text-primary;
+}
+
+.nav-link.active {
+  @apply bg-accent/10 text-accent border-r-2 border-accent;
+}
+
+.nav-badge {
+  @apply ml-auto text-xs bg-accent/20 text-accent px-2 py-0.5 rounded-[10px] min-w-[20px] text-center;
+}
+
+.sidebar-footer {
+  @apply px-5 py-4 border-t border-border;
+}
+
+.board-switcher {
+  @apply px-5 py-3 border-t border-border;
+}
+
+.board-switcher-label {
+  @apply text-[10px] uppercase tracking-wide text-text-muted mb-1.5 font-semibold;
+}
+
+.board-select {
+  @apply bg-bg-input border border-border rounded-sm text-text-primary text-[13px] px-2 py-1.5 cursor-pointer w-[calc(100%-32px)];
+}
+
+.board-select option {
+  @apply bg-bg-card text-text-primary;
+}
+
+.board-select:focus {
+  @apply outline-none border-accent;
+}
+
+.board-add-btn {
+  @apply w-[26px] h-[26px] border border-dashed border-border rounded-full bg-transparent text-text-muted cursor-pointer text-base leading-none ml-1 align-middle transition-all;
+}
+
+.board-add-btn:hover {
+  @apply border-accent text-accent;
+}
+
+/* --- Main content area --- */
+.main-content {
+  @apply ml-0 md:ml-sidebar flex-1 flex flex-col;
+  min-height: 100vh;
+  min-width: 0;
+  /* prevent horizontal overflow from flex children */
+  overflow-x: hidden;
+  /* NO overflow-y here — body handles natural scrolling.
+     Previous height:100vh + overflow-y:auto created a nested scroll
+     context that blocked mouse wheel events on initial page load. */
+  /* P0-2: Enable native touch scrolling in HA WebView iframe */
+  touch-action: pan-y;
+  -webkit-overflow-scrolling: touch;
+  transition: margin-left 250ms cubic-bezier(0.4, 0, 0.2, 1);
+  /* P0-3: Style containment only — `contain: layout` was removed because
+     it creates an independent formatting context that blocks wheel-event
+     scroll propagation to the body scroll container. With layout containment,
+     wheel events over .main-content couldn't reach body's overflow-y:auto,
+     so scrolling only worked when the cursor was directly on the scrollbar.
+     `contain: style` is safe (isolates counters/quotes, no layout side-effects). */
+  contain: style;
+}
+
+  /* When sidebar is collapsed, expand main content to full width */
+  body.sidebar-collapsed .main-content {
+    margin-left: 0;
+}
+
+.page-header {
+  @apply flex items-center justify-between px-6 py-4 bg-bg-secondary/50 border-b border-border;
+}
+
+  /* --- Stats / Dashboard ---
+   * Restored from pre-split global.css (commit b0e2f1b^).
+   * These rules were lost during Phase 58 CSS split into domain partials. */
+  .stats-grid {
+    @apply grid grid-cols-2 md:grid-cols-4 gap-4 mb-6;
   }
 
-  .nav-link.active {
-    @apply bg-accent/10 text-accent border-r-2 border-accent;
+  .stat-card {
+    @apply bg-bg-card/80 backdrop-blur-md border border-border rounded-xl p-5 flex items-center shadow-sm;
+    gap: 14px;
+    min-height: 88px;
+    transition:
+      transform 0.2s cubic-bezier(0.175, 0.885, 0.32, 1.275),
+      box-shadow 0.2s ease,
+      border-color 0.2s ease,
+      background-color 0.2s ease;
+    cursor: default;
   }
 
-  .nav-badge {
-    @apply ml-auto text-xs bg-accent/20 text-accent px-2 py-0.5 rounded-[10px] min-w-[20px] text-center;
+      /* Clickable stat cards — navigational links to filtered views */
+      a.stat-card-link {
+        cursor: pointer;
+        text-decoration: none;
+        color: inherit;
+      }
+  .stat-card:hover {
+    @apply bg-bg-card/95;
+    transform: translateY(-2px) scale(1.02);
+    box-shadow:
+      0 4px 20px rgba(99, 102, 241, 0.12),
+      var(--shadow-md);
+    border-color: var(--accent);
   }
 
-  .sidebar-footer {
-    @apply px-5 py-4 border-t border-border;
+  .stat-icon {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 42px;
+    height: 42px;
+    border-radius: 10px;
+    background: var(--bg-hover);
+    font-size: 1.25rem;
+    flex-shrink: 0;
   }
 
-  .board-switcher {
-    @apply px-5 py-3 border-t border-border;
+  .stat-value {
+    font-size: 1.5rem;
+    font-weight: 700;
+    line-height: 1.1;
+    letter-spacing: -0.02em;
+    color: var(--text-primary);
   }
 
-  .board-switcher-label {
-    @apply text-[10px] uppercase tracking-wide text-text-muted mb-1.5 font-semibold;
+  .stat-label {
+    font-size: 0.75rem;
+    color: var(--text-muted);
+    margin-top: 2px;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    font-weight: 500;
+  }
+  /* --- Empty State --- */
+  .empty-state {
+    @apply flex flex-col items-center justify-center p-12 text-center rounded-xl border border-dashed border-border/60 my-8 mx-auto w-full max-w-2xl;
+      background: linear-gradient(135deg, var(--bg-secondary) 0%, rgba(99, 102, 241, 0.03) 100%);
+      animation: fade-in-up 0.4s ease-out;
   }
 
-  .board-select {
-    @apply bg-bg-input border border-border rounded-sm text-text-primary text-[13px] px-2 py-1.5 cursor-pointer w-[calc(100%-32px)];
+  .empty-state-icon {
+    @apply mb-4 flex items-center justify-center;
+    filter: drop-shadow(0 0 12px rgba(99, 102, 241, 0.15));
   }
 
-  .board-select option {
-    @apply bg-bg-card text-text-primary;
+  .empty-state-title {
+    @apply text-lg font-semibold text-text-primary mb-2 tracking-tight;
   }
 
-  .board-select:focus {
-    @apply outline-none border-accent;
+  .empty-state-desc {
+    @apply text-sm text-text-secondary max-w-sm mx-auto mb-6;
+    line-height: 1.6;
   }
 
-  .board-add-btn {
-    @apply w-[26px] h-[26px] border border-dashed border-border rounded-full bg-transparent text-text-muted cursor-pointer text-base leading-none ml-1 align-middle transition-all;
+  .empty-state-actions {
+    @apply flex items-center justify-center gap-3 mt-2;
   }
 
-  .board-add-btn:hover {
-    @apply border-accent text-accent;
-  }
+      .empty-state-actions .btn-primary {
+        @apply shadow-md;
+        box-shadow: 0 4px 14px rgba(99, 102, 241, 0.3);
+      }
+.content-area {
+  @apply flex-1 p-6;
+}
 
-  /* --- Main content area --- */
-  .main-content {
-    @apply ml-0 md:ml-sidebar flex-1 flex flex-col;
-    min-height: 100vh;
-    min-width: 0;
-    /* prevent horizontal overflow from flex children */
-    overflow-x: hidden;
-    /* NO overflow-y here — body handles natural scrolling.
-       Previous height:100vh + overflow-y:auto created a nested scroll
-       context that blocked mouse wheel events on initial page load. */
-    /* P0-2: Enable native touch scrolling in HA WebView iframe */
-    touch-action: pan-y;
-    -webkit-overflow-scrolling: touch;
-    transition: margin-left 250ms cubic-bezier(0.4, 0, 0.2, 1);
-    /* P0-3: Style containment only — `contain: layout` was removed because
-       it creates an independent formatting context that blocks wheel-event
-       scroll propagation to the body scroll container. With layout containment,
-       wheel events over .main-content couldn't reach body's overflow-y:auto,
-       so scrolling only worked when the cursor was directly on the scrollbar.
-       `contain: style` is safe (isolates counters/quotes, no layout side-effects). */
-    contain: style;
-  }
+/* --- Topbar actions --- */
+.topbar-actions {
+  @apply flex items-center gap-2;
+}
 
-    /* When sidebar is collapsed, expand main content to full width */
-    body.sidebar-collapsed .main-content {
-      margin-left: 0;
-  }
+.status-text {
+  @apply text-xs;
+}
 
-  .page-header {
-    @apply flex items-center justify-between px-6 py-4 bg-bg-secondary/50 border-b border-border;
-  }
+/* --- Search --- */
+.search-container {
+  @apply relative flex-1 max-w-sm mx-6;
+}
 
-    /* --- Stats / Dashboard ---
-     * Restored from pre-split global.css (commit b0e2f1b^).
-     * These rules were lost during Phase 58 CSS split into domain partials. */
-    .stats-grid {
-      @apply grid grid-cols-2 md:grid-cols-4 gap-4 mb-6;
-    }
+.search-input {
+  @apply w-full bg-bg-input border border-border rounded-md px-3 py-2 text-sm text-text-primary outline-none transition-colors;
+}
 
-    .stat-card {
-      @apply bg-bg-card/80 backdrop-blur-md border border-border rounded-xl p-5 flex items-center shadow-sm;
-      gap: 14px;
-      min-height: 88px;
-      transition:
-        transform 0.2s cubic-bezier(0.175, 0.885, 0.32, 1.275),
-        box-shadow 0.2s ease,
-        border-color 0.2s ease,
-        background-color 0.2s ease;
-      cursor: default;
-    }
+.search-input::placeholder {
+  @apply text-text-muted;
+}
 
-        /* Clickable stat cards — navigational links to filtered views */
-        a.stat-card-link {
-          cursor: pointer;
-          text-decoration: none;
-          color: inherit;
-        }
-    .stat-card:hover {
-      @apply bg-bg-card/95;
-      transform: translateY(-2px) scale(1.02);
-      box-shadow:
-        0 4px 20px rgba(99, 102, 241, 0.12),
-        var(--shadow-md);
-      border-color: var(--accent);
-    }
+.search-input:focus {
+  @apply border-accent ring-2 ring-accent/15;
+}
 
-    .stat-icon {
-      display: inline-flex;
-      align-items: center;
-      justify-content: center;
-      width: 42px;
-      height: 42px;
-      border-radius: 10px;
-      background: var(--bg-hover);
-      font-size: 1.25rem;
-      flex-shrink: 0;
-    }
+.search-results {
+  @apply absolute top-full left-0 right-0 mt-1 bg-bg-card border border-border rounded-lg shadow-lg overflow-hidden z-50;
+}
 
-    .stat-value {
-      font-size: 1.5rem;
-      font-weight: 700;
-      line-height: 1.1;
-      letter-spacing: -0.02em;
-      color: var(--text-primary);
-    }
-
-    .stat-label {
-      font-size: 0.75rem;
-      color: var(--text-muted);
-      margin-top: 2px;
-      text-transform: uppercase;
-      letter-spacing: 0.05em;
-      font-weight: 500;
-    }
-    /* --- Empty State --- */
-    .empty-state {
-      @apply flex flex-col items-center justify-center p-12 text-center rounded-xl border border-dashed border-border/60 my-8 mx-auto w-full max-w-2xl;
-        background: linear-gradient(135deg, var(--bg-secondary) 0%, rgba(99, 102, 241, 0.03) 100%);
-        animation: fade-in-up 0.4s ease-out;
-    }
-
-    .empty-state-icon {
-      @apply mb-4 flex items-center justify-center;
-      filter: drop-shadow(0 0 12px rgba(99, 102, 241, 0.15));
-    }
-
-    .empty-state-title {
-      @apply text-lg font-semibold text-text-primary mb-2 tracking-tight;
-    }
-
-    .empty-state-desc {
-      @apply text-sm text-text-secondary max-w-sm mx-auto mb-6;
-      line-height: 1.6;
-    }
-
-    .empty-state-actions {
-      @apply flex items-center justify-center gap-3 mt-2;
-    }
-
-        .empty-state-actions .btn-primary {
-          @apply shadow-md;
-          box-shadow: 0 4px 14px rgba(99, 102, 241, 0.3);
-        }
-  .content-area {
-    @apply flex-1 p-6;
-  }
-
-  /* --- Topbar actions --- */
-  .topbar-actions {
-    @apply flex items-center gap-2;
-  }
-
-  .status-text {
-    @apply text-xs;
-  }
-
-  /* --- Search --- */
-  .search-container {
-    @apply relative flex-1 max-w-sm mx-6;
-  }
-
-  .search-input {
-    @apply w-full bg-bg-input border border-border rounded-md px-3 py-2 text-sm text-text-primary outline-none transition-colors;
-  }
-
-  .search-input::placeholder {
-    @apply text-text-muted;
-  }
-
-  .search-input:focus {
-    @apply border-accent ring-2 ring-accent/15;
-  }
-
-  .search-results {
-    @apply absolute top-full left-0 right-0 mt-1 bg-bg-card border border-border rounded-lg shadow-lg overflow-hidden z-50;
-  }
-
-  .search-item {
-    @apply flex flex-col gap-0.5 px-4 py-2.5 text-sm text-text-primary no-underline transition-colors;
-  }
+.search-item {
+  @apply flex flex-col gap-0.5 px-4 py-2.5 text-sm text-text-primary no-underline transition-colors;
 }
 
 /* HA Ingress compact mode — restored from pre-split global.css */

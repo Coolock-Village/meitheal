@@ -4,62 +4,166 @@
  * Domain: Button bounded context
  * Owns: .btn, .btn-ghost, .btn-danger, .btn-icon, .btn-sm, hover/focus states
  * Does NOT own: form inputs (_forms.css), card actions (_cards.css)
+ *
+ * Tailwind v4: @layer components no longer supports @apply with custom classes.
+ * Each variant defines its own properties explicitly to avoid composition issues.
  * ============================================= */
-@layer components {
-  /* --- Buttons --- */
-    /* --- Buttons --- */
-    .btn {
-      @apply inline-flex items-center justify-center gap-2 px-4 py-2.5 rounded-md font-medium text-sm transition-colors cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed;
-    }
-  .btn-primary {
-    @apply btn bg-accent text-white border-transparent;
-  }
 
-    .btn-primary:hover:not(:disabled) {
-    @apply bg-accent-hover;
-  }
+/* --- Shared button base --- */
+.btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  padding: 0.625rem 1rem;
+  border-radius: var(--radius-sm, 6px);
+  font-weight: 500;
+  font-size: 0.875rem;
+  line-height: 1.25rem;
+  transition: background 200ms ease, transform 100ms ease, box-shadow 200ms ease;
+  cursor: pointer;
+}
 
-  .btn-secondary {
-    @apply btn bg-transparent text-text-secondary border border-border;
-    }
+.btn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
 
-    .btn-secondary:hover:not(:disabled) {
-      @apply bg-bg-hover text-text-primary;
-    }
+.btn-primary {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  padding: 0.625rem 1rem;
+  border-radius: var(--radius-sm, 6px);
+  font-weight: 500;
+  font-size: 0.875rem;
+  line-height: 1.25rem;
+  cursor: pointer;
+  background: var(--accent);
+  color: #fff;
+  border: 1px solid transparent;
+  transition: background 200ms ease, transform 100ms ease, box-shadow 200ms ease;
+}
 
-    .btn-ghost {
-      @apply btn bg-transparent text-text-secondary border-transparent;
-    }
+.btn-primary:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
 
-    .btn-ghost:hover:not(:disabled) {
-      @apply bg-bg-secondary/50 text-text-primary;
-    }
+.btn-primary:hover:not(:disabled) {
+  background: var(--accent-hover);
+}
 
-    .btn-icon {
-      @apply p-2 rounded-md bg-transparent text-text-secondary transition-colors cursor-pointer border border-transparent;
-      display: inline-flex;
-      align-items: center;
-      justify-content: center;
-  }
+.btn-secondary {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  padding: 0.625rem 1rem;
+  border-radius: var(--radius-sm, 6px);
+  font-weight: 500;
+  font-size: 0.875rem;
+  line-height: 1.25rem;
+  cursor: pointer;
+  background: transparent;
+  color: var(--text-secondary);
+  border: 1px solid var(--border);
+  transition: background 200ms ease, transform 100ms ease, box-shadow 200ms ease;
+}
 
-    .btn-icon:hover:not(:disabled) {
-    @apply bg-bg-hover text-text-primary;
-  }
+.btn-secondary:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
 
-  .btn-danger {
-    @apply bg-danger text-white border-none px-4 py-2.5 rounded-md font-medium text-sm cursor-pointer transition-colors;
-  }
+.btn-secondary:hover:not(:disabled) {
+  background: var(--bg-hover);
+  color: var(--text-primary);
+}
 
-  .btn-danger:hover {
-    @apply bg-red-600;
-  }
+.btn-ghost {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  padding: 0.625rem 1rem;
+  border-radius: var(--radius-sm, 6px);
+  font-weight: 500;
+  font-size: 0.875rem;
+  line-height: 1.25rem;
+  cursor: pointer;
+  background: transparent;
+  color: var(--text-secondary);
+  border: 1px solid transparent;
+  transition: background 200ms ease, transform 100ms ease, box-shadow 200ms ease;
+}
+
+.btn-ghost:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.btn-ghost:hover:not(:disabled) {
+  background: var(--bg-secondary);
+  color: var(--text-primary);
+}
+
+.btn-icon {
+  padding: 0.5rem;
+  border-radius: var(--radius-sm, 6px);
+  background: transparent;
+  color: var(--text-secondary);
+  transition: background 200ms ease, color 200ms ease;
+  cursor: pointer;
+  border: 1px solid transparent;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.btn-icon:hover:not(:disabled) {
+  background: var(--bg-hover);
+  color: var(--text-primary);
+}
+
+.btn-danger {
+  background: var(--danger);
+  color: #fff;
+  border: none;
+  padding: 0.625rem 1rem;
+  border-radius: var(--radius-sm, 6px);
+  font-weight: 500;
+  font-size: 0.875rem;
+  cursor: pointer;
+  transition: background 200ms ease;
+}
+
+.btn-danger:hover {
+  filter: brightness(0.9);
+}
+
 .btn-ghost-accent {
-  @apply btn bg-transparent text-accent border border-accent/30;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  padding: 0.625rem 1rem;
+  border-radius: var(--radius-sm, 6px);
+  font-weight: 500;
+  font-size: 0.875rem;
+  line-height: 1.25rem;
+  cursor: pointer;
+  background: transparent;
+  color: var(--accent);
+  border: 1px solid rgba(99, 102, 241, 0.3);
+  transition: background 200ms ease, transform 100ms ease, box-shadow 200ms ease;
 }
 
 .btn-ghost-accent:hover:not(:disabled) {
-  @apply bg-accent/10 text-accent border-accent/50;
-}
+  background: rgba(99, 102, 241, 0.1);
+  color: var(--accent);
+  border-color: rgba(99, 102, 241, 0.5);
 }
 
 /* Button micro-interactions */
@@ -68,10 +172,6 @@
 .task-action-btn:active,
 .task-fav-btn:active {
   transform: scale(0.96);
-}
-
-.btn {
-  transition: background 200ms ease, transform 100ms ease, box-shadow 200ms ease;
 }
 
 .btn:hover {

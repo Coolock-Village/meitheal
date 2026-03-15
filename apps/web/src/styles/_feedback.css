@@ -106,22 +106,20 @@ tbody tr:nth-child(n+6),
 }
 
 /* Shortcut hint toast */
-@layer components {
-  .shortcut-hint {
-    @apply fixed top-4 right-4 bg-bg-card border border-border rounded-lg px-4 py-2 text-xs text-text-muted shadow-md cursor-pointer z-50;
-    animation: fade-in 0.2s ease forwards;
+.shortcut-hint {
+  @apply fixed top-4 right-4 bg-bg-card border border-border rounded-lg px-4 py-2 text-xs text-text-muted shadow-md cursor-pointer z-50;
+  animation: fade-in 0.2s ease forwards;
+}
+
+  .n8n-event {
+    @apply flex items-center justify-between py-2 px-3 bg-bg-secondary/50 rounded-md text-sm;
   }
 
-    .n8n-event {
-      @apply flex items-center justify-between py-2 px-3 bg-bg-secondary/50 rounded-md text-sm;
-    }
+  /* Empty state variants */
+  .empty-icon {
+    @apply text-5xl mb-4 opacity-30;
+  }
 
-    /* Empty state variants */
-    .empty-icon {
-      @apply text-5xl mb-4 opacity-30;
-    }
-
-}
 
 /* Error boundary */
 .error-boundary {
